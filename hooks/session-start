@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# SessionStart hook for razorback plugin
+
+set -euo pipefail
+
+# Determine plugin root directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+# Read using-razorback content
+using_razorback_content=$(cat "${PLUGIN_ROOT}/skills/using-razorback/SKILL.md" 2>&1 || echo "Error reading using-razorback skill")
+
+# Escape string for JSON embedding using bash parameter substitution.
+# Each ${s//old/new} is a single C-level pass - orders of magnitude
+# faster than the character-by-character loop this replaces.
+escape_for_json() {
+    local s="$1"
+    s="${s//\\/\\\\}"
+    s="${s//\"/\\\"}"
+    s="${s//$'\n'/\\n}"
+    s="${s//$'\r'/\\r}"
+    s="${s//$'\t'/\\t}"
+    printf '%s' "$s"
+}
+
+using_razorback_escaped=$(escape_for_json "$using_razorback_content")
+session_context="<EXTREMELY_IMPORTANT>\nYou have razorback.\n\n**Below is the full content of your 'razorback:using-razorback' skill - your introduction to using skills. For all other skills, use the 'Skill' tool:**\n\n${using_razorback_escaped}\n</EXTREMELY_IMPORTANT>"
+
+# Output context injection as JSON.
+# Keep both shapes for compatibility:
+# - Cursor hooks expect additional_context.
+# - Claude hooks expect hookSpecificOutput.additionalContext.
+cat <<EOF
+{
+  "additional_context": "${session_context}",
+  "hookSpecificOutput": {
+    "hookEventName": "SessionStart",
+    "additionalContext": "${session_context}"
+  }
+}
+EOF
+
+exit 0
