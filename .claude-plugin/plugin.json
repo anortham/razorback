@@ -1,0 +1,10 @@
+{
+  "name": "razorback",
+  "description": "Julie/Goldfish-aware development workflow skills. Fork of Superpowers with explicit code intelligence and developer memory integration.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Murphy"
+  },
+  "license": "MIT",
+  "keywords": ["skills", "tdd", "debugging", "julie", "goldfish", "workflows"]
+}
