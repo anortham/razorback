@@ -5,6 +5,7 @@
   "author": {
     "name": "Murphy"
   },
+  "homepage": "https://github.com/murphy/razorback",
   "license": "MIT",
   "keywords": ["skills", "tdd", "debugging", "julie", "goldfish", "workflows"]
 }
