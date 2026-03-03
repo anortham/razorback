@@ -22,10 +22,15 @@ You are reviewing code changes for production readiness.
 **Base:** {BASE_SHA}
 **Head:** {HEAD_SHA}
 
-```bash
-git diff --stat {BASE_SHA}..{HEAD_SHA}
-git diff {BASE_SHA}..{HEAD_SHA}
-```
+**Review approach — Julie first, targeted diff second:**
+
+1. Start with the overview: `git diff --stat {BASE_SHA}..{HEAD_SHA}`
+2. For each changed file: `get_symbols(file_path='<changed file>')` — see structure before reading
+3. For key modified symbols: `deep_dive(symbol='<symbol>')` — understand callers, callees, types
+4. For changed public APIs: `fast_refs(symbol='<symbol>')` — verify no broken dependents
+5. Only then: `git diff {BASE_SHA}..{HEAD_SHA} -- <specific-file>` for targeted sections that need line-level review
+
+**Do NOT dump the full diff upfront.** Use Julie tools to understand what changed structurally, then read targeted diffs for the areas that matter.
 
 ## Review Checklist
 

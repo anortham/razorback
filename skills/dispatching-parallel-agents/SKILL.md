@@ -60,7 +60,12 @@ Each agent gets:
 - **Clear goal:** Make these tests pass
 - **Constraints:** Don't change other code
 - **Expected output:** Summary of what you found and fixed
-- **Tool guidance:** Use `get_context(query)` to orient independently rather than Glob/Read chains
+- **Tool guidance (include in every agent prompt):**
+  - `get_context(query='<problem area>')` — orient on the subsystem independently
+  - `deep_dive(symbol='<buggy function>')` — understand callers, callees, types before modifying
+  - `fast_refs(symbol='<symbol>')` — check all references before changing anything
+  - `get_symbols(file_path='<file>')` — see file structure before reading full content
+  - Do NOT use Glob → Read → Grep chains. Julie tools return targeted context in 1-2 calls.
 
 ### 3. Dispatch in Parallel
 

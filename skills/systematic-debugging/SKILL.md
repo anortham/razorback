@@ -129,7 +129,8 @@ You MUST complete each phase before proceeding to the next.
 **Find the pattern before fixing:**
 
 1. **Find Working Examples**
-   - Locate similar working code in same codebase
+   - `fast_search(query='<working pattern>')` — find similar working code in the codebase
+   - `get_context(query='<subsystem>')` — get token-budgeted view of the relevant area
    - What works that's similar to what's broken?
 
 2. **Compare Against References**
@@ -143,6 +144,7 @@ You MUST complete each phase before proceeding to the next.
    - Don't assume "that can't matter"
 
 4. **Understand Dependencies**
+   - `deep_dive(symbol='<broken function>')` — see callers, callees, types, children
    - What other components does this need?
    - What settings, config, environment?
    - What assumptions does it make?

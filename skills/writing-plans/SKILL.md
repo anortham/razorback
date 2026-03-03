@@ -17,6 +17,17 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 
 **Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
 
+## Codebase Orientation (REQUIRED before writing plan)
+
+You cannot write accurate file paths, line ranges, or implementation steps without understanding the code. Before writing any task:
+
+1. **Orient on the area:** `get_context(query='<feature area>')` — returns token-budgeted context with pivots and neighbors
+2. **Understand key symbols:** `deep_dive(symbol='<symbol to modify>')` — shows callers, callees, types, children
+3. **Find exact locations:** `get_symbols(file_path='<file>')` — get file structure with line numbers for `Modify:` references
+4. **Assess impact:** `fast_refs(symbol='<public API>')` — find all callers before planning changes
+
+**Do NOT guess file paths or line numbers.** Use Julie tools to discover them. Plans with wrong paths waste implementer time on dead ends.
+
 ## Bite-Sized Task Granularity
 
 **Each step is one action (2-5 minutes):**

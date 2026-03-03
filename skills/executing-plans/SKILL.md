@@ -26,9 +26,15 @@ Load plan, review critically, execute tasks in batches, report for review betwee
 
 For each task:
 1. Mark as in_progress
-2. Follow each step exactly (plan has bite-sized steps)
-3. Run verifications as specified
-4. Mark as completed
+2. **Orient before coding:** Use Julie tools to understand the area before making changes
+   - `get_context(query='<task area>')` — token-budgeted codebase orientation
+   - `deep_dive(symbol='<symbol to modify>')` — understand callers, callees, types before touching it
+   - `fast_refs(symbol='<symbol>')` — check all references before changing any symbol
+   - `get_symbols(file_path='<file>')` — see file structure before reading full content
+   - **Do NOT fall back to Glob → Read → Grep chains.** Julie tools return targeted context in 1-2 calls.
+3. Follow each step exactly (plan has bite-sized steps)
+4. Run verifications as specified
+5. Mark as completed
 
 ### Step 3: Report
 When batch complete:

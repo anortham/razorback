@@ -68,6 +68,15 @@ digraph tdd_cycle {
 }
 ```
 
+### Understand Before Testing
+
+Before writing any test, understand what you're testing:
+
+1. `deep_dive(symbol='<function/module to test>')` — understand interface, callers, types, existing behavior
+2. `get_context(query='<test area>')` — find existing test patterns and conventions in the codebase
+
+This prevents writing tests against wrong assumptions about the API. Skip only if you just wrote the code being tested.
+
 ### RED - Write Failing Test
 
 Write one minimal test showing what should happen.
