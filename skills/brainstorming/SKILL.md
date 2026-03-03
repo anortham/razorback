@@ -23,12 +23,12 @@ Every project goes through this process. A todo list, a single-function utility,
 
 You MUST create a task for each of these items and complete them in order:
 
-1. **Explore project context** — use `julie:get_context` to orient on the relevant codebase area, use `goldfish:recall` to check for prior decisions or related work, check recent commits
+1. **Explore project context** — use `julie:get_context` to orient on the relevant codebase area, check recent commits
 2. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
 3. **Propose 2-3 approaches** — with trade-offs and your recommendation
 4. **Present design** — in sections scaled to their complexity, get user approval after each section
 5. **Write design doc** — save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit
-6. **Transition to implementation** — save design to `goldfish:plan` for persistence, then invoke writing-plans skill to create implementation plan
+6. **Transition to implementation** — invoke writing-plans skill to create implementation plan
 
 ## Process Flow
 
@@ -76,10 +76,6 @@ digraph brainstorming {
 - Be ready to go back and clarify if something doesn't make sense
 
 ## After the Design
-
-**Memory:**
-- Save the design as a Goldfish plan: `goldfish:plan(action='save', title='...', content='...', activate=true)`
-- This ensures the design survives context compaction and is visible in future sessions via `goldfish:recall()`
 
 **Documentation:**
 - Write the validated design to `docs/plans/YYYY-MM-DD-<topic>-design.md`

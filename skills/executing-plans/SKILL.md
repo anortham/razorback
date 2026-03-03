@@ -16,7 +16,6 @@ Load plan, review critically, execute tasks in batches, report for review betwee
 ## The Process
 
 ### Step 1: Load and Review Plan
-0. Check Goldfish for context: `goldfish:recall()` — restore any prior session context
 1. Read plan file
 2. Review critically - identify any questions or concerns about the plan
 3. If concerns: Raise them with your human partner before starting
@@ -30,7 +29,6 @@ For each task:
 2. Follow each step exactly (plan has bite-sized steps)
 3. Run verifications as specified
 4. Mark as completed
-5. Checkpoint progress: `goldfish:checkpoint("Completed batch: <task names>")` after each batch
 
 ### Step 3: Report
 When batch complete:

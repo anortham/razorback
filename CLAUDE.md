@@ -1,6 +1,6 @@
 # Razorback — Project Instructions
 
-Razorback is a Claude Code plugin (skill set) forked from [Superpowers](https://github.com/obra/superpowers) v4.3.1. It adds explicit Julie (code intelligence) and Goldfish (developer memory) MCP server awareness to every skill and subagent prompt.
+Razorback is a Claude Code plugin (skill set) forked from [Superpowers](https://github.com/obra/superpowers) v4.3.1. It adds explicit Julie (code intelligence) MCP server awareness to every skill and subagent prompt.
 
 ## Project Structure
 
@@ -39,7 +39,7 @@ docs/plans/                   — Historical design and implementation plans
 - Hook scripts are extensionless bash files for cross-platform compatibility
 - `run-hook.cmd` is a polyglot that works as both a cmd.exe batch file and bash script
 
-## Julie/Goldfish Integration Pattern
+## Julie Integration Pattern
 
 When modifying skills, follow this pattern for adding tool awareness:
 
@@ -49,11 +49,6 @@ When modifying skills, follow this pattern for adding tool awareness:
 - `fast_refs(symbol)` before changing public APIs
 - `get_symbols(file_path)` before reading full files
 
-**Goldfish** — Add at state management points:
-- `recall()` at session/task start for prior context
-- `checkpoint(description)` at milestone completion
-- `plan(action, ...)` for persistent plan management
-
 Use directive language: "Use julie:deep_dive BEFORE modifying any symbol" not "consider using deep_dive".
 
 ## Naming Rules
@@ -62,8 +57,8 @@ Use directive language: "Use julie:deep_dive BEFORE modifying any symbol" not "c
 - SessionStart hook announces "You have razorback."
 
 ## Dependencies
-- Julie and Goldfish MCP servers are **hard requirements** — no fallback to generic tools
-- Skills assume both servers are configured and available
+- Julie MCP server is a **hard requirement** — no fallback to generic tools
+- Skills assume Julie is configured and available
 
 ## What Not to Change
 - Process flows (brainstorm → plan → TDD → execute → review → finish)

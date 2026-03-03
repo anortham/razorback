@@ -55,9 +55,6 @@ Skip any step = lying, not verifying
 - `fast_refs(symbol)` on all modified/new symbols — verify nothing is broken
 - `deep_dive(symbol)` on changed public APIs — confirm callers still work
 
-**Use Goldfish to record verification:**
-- `checkpoint(description='Verified: <what was verified and evidence>')` after completing verification
-
 ## Red Flags - STOP
 
 - Using "should", "probably", "seems to"

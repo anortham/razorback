@@ -149,18 +149,6 @@ git worktree remove <worktree-path>
 
 **For Option 3:** Keep worktree.
 
-### Step 6: Record Completion
-
-After cleanup, save the completed work to memory:
-```
-goldfish:checkpoint("Completed <feature-name>: <summary of what was built>")
-```
-
-If a Goldfish plan is active for this work:
-```
-goldfish:plan(action='complete')
-```
-
 ## Quick Reference
 
 | Option | Merge | Push | Keep Worktree | Cleanup Branch |

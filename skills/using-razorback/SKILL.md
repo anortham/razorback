@@ -106,16 +106,8 @@ Razorback skills assume these MCP servers are available and MUST be used:
 - `get_symbols(file_path)` — See file structure without reading full content
 - `rename_symbol(old, new)` — Safe workspace-wide renames
 
-**Goldfish** (developer memory — use for session continuity):
-- `checkpoint(description)` — Save progress at meaningful milestones
-- `recall()` — Restore context from prior sessions
-- `plan(action, ...)` — Persist and track multi-session plans
-
 **Rules:**
 1. Use Julie tools for ALL codebase exploration. Do NOT fall back to Glob → Read → Grep chains.
 2. Use `get_symbols` before Read to see file structure first.
 3. Use `deep_dive` before modifying any symbol.
 4. Use `fast_refs` before changing any symbol to check impact.
-5. Use Goldfish `recall` at session start if prior context might exist.
-6. Use Goldfish `checkpoint` after completing meaningful milestones.
-7. Use Goldfish `plan` to persist implementation plans.

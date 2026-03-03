@@ -120,7 +120,6 @@ Spec reviewer: ✅ Spec compliant - all requirements met, nothing extra
 Code reviewer: Strengths: Good test coverage, clean. Issues: None. Approved.
 
 [Mark Task 1 complete]
-[Checkpoint: goldfish:checkpoint("Completed Task 1: Hook installation script")]
 
 Task 2: Recovery modes
 
@@ -155,7 +154,6 @@ Implementer: Extracted PROGRESS_INTERVAL constant
 Code reviewer: ✅ Approved
 
 [Mark Task 2 complete]
-[Checkpoint: goldfish:checkpoint("Completed Task 2: Recovery modes")]
 
 ...
 
@@ -185,7 +183,6 @@ Done!
 - Subagent gets complete information upfront
 - Questions surfaced before work begins (not after)
 - Julie tools replace Glob/Grep/Read chains (2-3 calls vs 5-8 for orientation)
-- Goldfish checkpoints persist progress across context compaction
 
 **Quality gates:**
 - Self-review catches issues before handoff

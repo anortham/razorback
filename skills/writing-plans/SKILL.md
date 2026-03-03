@@ -98,19 +98,11 @@ git commit -m "feat: add specific feature"
 
 After saving the plan, offer execution choice:
 
-**Save plan to Goldfish for persistence:**
-
-```
-goldfish:plan(action='save', title='<feature-name> implementation', content='<plan summary>', activate=true)
-```
-
-This ensures the plan survives context compaction and is visible across sessions.
-
 **"Plan complete and saved to `docs/plans/<filename>.md`. Two execution options:**
 
 **1. Subagent-Driven (this session)** - I dispatch fresh subagent per task, review between tasks, fast iteration
 
-**2. Parallel Session (separate)** - Open new session with executing-plans, batch execution with checkpoints
+**2. Parallel Session (separate)** - Open new session with executing-plans, batch execution with review between batches
 
 **Which approach?"**
 
