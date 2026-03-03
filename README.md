@@ -21,14 +21,52 @@ Superpowers produces high-quality results but burns tokens and time because ever
 
 ## Installation
 
+Razorback is a pure-content plugin (skills, commands, hooks) — no build step or runtime dependencies required.
+
+### Option 1: Install from GitHub (Recommended)
+
 ```bash
-claude plugin add razorback
+# Add the Razorback repository as a plugin marketplace
+/plugin marketplace add anortham/razorback
+
+# Install the plugin (user scope, available across all projects)
+/plugin install razorback@razorback
 ```
 
-Or for development:
+You can also scope the installation to a specific project:
+
 ```bash
-claude --plugin-dir ~/source/razorback
+# Project scope (shared with team via version control)
+/plugin install razorback@razorback --scope project
 ```
+
+### Option 2: Install from a Local Clone
+
+If you prefer to clone the repo yourself (useful for development or contributing):
+
+```bash
+# Clone the repository
+git clone https://github.com/anortham/razorback.git
+
+# Install as a Claude Code plugin
+claude plugin install /path/to/razorback
+```
+
+**For development (loads plugin from local directory each time):**
+
+```bash
+claude --plugin-dir /path/to/razorback
+```
+
+### After Installation
+
+Once the plugin is loaded, Razorback works automatically:
+
+1. **Session starts** — the `SessionStart` hook fires, injecting the `using-razorback` skill
+2. **You request work** — Claude checks for applicable skills before every response
+3. **Skills guide the workflow** — brainstorming, planning, TDD, debugging, code review, and verification all route exploration through Julie and state through Goldfish
+
+No configuration needed beyond plugin installation (assuming Julie and Goldfish are already set up).
 
 ## What Changed from Superpowers
 
