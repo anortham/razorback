@@ -16,8 +16,8 @@ Superpowers produces high-quality results but burns tokens and time because ever
 ## Requirements
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
-- [Julie MCP Server](https://github.com/murphy/julie) — must be configured and indexing your workspace
-- [Goldfish MCP Server](https://github.com/murphy/goldfish) — must be configured
+- [Julie MCP Server](https://github.com/anortham/julie) — must be configured and indexing your workspace
+- [Goldfish MCP Server](https://github.com/anortham/goldfish) — must be configured
 
 ## Installation
 
