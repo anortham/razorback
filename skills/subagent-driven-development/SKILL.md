@@ -5,9 +5,9 @@ description: Use when executing implementation plans with independent tasks in t
 
 # Subagent-Driven Development
 
-Execute plan by dispatching fresh subagent per task, with two-stage review after each: spec compliance review first, then code quality review.
+Execute plan by dispatching fresh subagent per task, with code quality review after each. Spec compliance review is added when plans are vague or complex. When reviewers find issues, **resume** the implementer — never dispatch a fresh fix subagent.
 
-**Core principle:** Fresh subagent per task + two-stage review (spec then quality) = high quality, fast iteration
+**Core principle:** Fresh subagent per task + resume for fixes + right-sized review = high quality without wasted ceremony
 
 ## When to Use
 
@@ -32,7 +32,7 @@ digraph when_to_use {
 **vs. Executing Plans (parallel session):**
 - Same session (no context switch)
 - Fresh subagent per task (no context pollution)
-- Two-stage review after each task: spec compliance first, then code quality
+- Code quality review after each task, spec compliance when plan is vague or complex
 - Faster iteration (no human-in-loop between tasks)
 
 ## The Process
@@ -49,10 +49,10 @@ digraph process {
         "Implementer subagent implements, tests, commits, self-reviews" [shape=box];
         "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [shape=box];
         "Spec reviewer subagent confirms code matches spec?" [shape=diamond];
-        "Implementer subagent fixes spec gaps" [shape=box];
+        "Resume implementer with spec gaps (./fix-prompt.md)" [shape=box];
         "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [shape=box];
         "Code quality reviewer subagent approves?" [shape=diamond];
-        "Implementer subagent fixes quality issues" [shape=box];
+        "Resume implementer with quality issues (./fix-prompt.md)" [shape=box];
         "Mark task complete (TaskUpdate)" [shape=box];
     }
 
@@ -68,12 +68,12 @@ digraph process {
     "Implementer subagent asks questions?" -> "Implementer subagent implements, tests, commits, self-reviews" [label="no"];
     "Implementer subagent implements, tests, commits, self-reviews" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)";
     "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" -> "Spec reviewer subagent confirms code matches spec?";
-    "Spec reviewer subagent confirms code matches spec?" -> "Implementer subagent fixes spec gaps" [label="no"];
-    "Implementer subagent fixes spec gaps" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [label="re-review"];
+    "Spec reviewer subagent confirms code matches spec?" -> "Resume implementer with spec gaps (./fix-prompt.md)" [label="no"];
+    "Resume implementer with spec gaps (./fix-prompt.md)" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [label="re-review"];
     "Spec reviewer subagent confirms code matches spec?" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="yes"];
     "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" -> "Code quality reviewer subagent approves?";
-    "Code quality reviewer subagent approves?" -> "Implementer subagent fixes quality issues" [label="no"];
-    "Implementer subagent fixes quality issues" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="re-review"];
+    "Code quality reviewer subagent approves?" -> "Resume implementer with quality issues (./fix-prompt.md)" [label="no"];
+    "Resume implementer with quality issues (./fix-prompt.md)" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="re-review"];
     "Code quality reviewer subagent approves?" -> "Mark task complete (TaskUpdate)" [label="yes"];
     "Mark task complete (TaskUpdate)" -> "More tasks remain?";
     "More tasks remain?" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
@@ -85,8 +85,38 @@ digraph process {
 ## Prompt Templates
 
 - `./implementer-prompt.md` - Dispatch implementer subagent
+- `./fix-prompt.md` - Resume implementer to fix review issues
 - `./spec-reviewer-prompt.md` - Dispatch spec compliance reviewer subagent
 - `./code-quality-reviewer-prompt.md` - Dispatch code quality reviewer subagent
+
+## Resume Over Fresh: Fixing Review Issues
+
+When a reviewer finds issues, **resume the implementer subagent** — do not dispatch a fresh one.
+
+A fresh subagent spends most of its budget re-orienting (reading files, understanding context, running Julie queries) before it can make a small fix. The implementer already has full context from its implementation pass. Resuming it skips all that orientation and goes straight to the fix.
+
+**How it works:**
+1. When the implementer completes, the Agent tool returns an **agent ID**. Save it.
+2. When a reviewer finds issues, use `Agent(resume: "<agent-id>")` with the fix prompt from `./fix-prompt.md`.
+3. The resumed subagent picks up with full prior context — files it read, decisions it made, tests it wrote.
+
+**When to dispatch fresh instead:** Only if the implementer subagent's context is genuinely stale — e.g., another task modified the same files in between, or the fix requires a fundamentally different approach. This should be rare.
+
+## When to Skip Spec Review
+
+Spec compliance review catches mismatches between what was requested and what was built. It's valuable when there's room for misinterpretation — but when the plan is specific and the task is small, it just rubber-stamps the obvious.
+
+**Skip spec review when:**
+- The plan has specific acceptance criteria or detailed requirements (not vague bullets)
+- The task is a single coherent feature (not a multi-part system)
+- The implementer's report clearly addresses all requirements
+
+**Keep spec review when:**
+- The plan is high-level or ambiguous (light plans with broad "what to build" descriptions)
+- The task has multiple interacting requirements that could be partially implemented
+- The feature has subtle correctness constraints (e.g., security, data integrity)
+
+When skipping spec review, the code quality reviewer still checks requirements as part of its review (the code-reviewer template already includes a "Requirements" section). The spec reviewer is an additional dedicated pass, not the only place requirements get checked.
 
 ## Example Workflow
 
@@ -138,7 +168,7 @@ Spec reviewer: ❌ Issues:
   - Missing: Progress reporting (spec says "report every 100 items")
   - Extra: Added --json flag (not requested)
 
-[Implementer fixes issues]
+[Resume implementer (agent ID from earlier) with spec issues]
 Implementer: Removed --json flag, added progress reporting
 
 [Spec reviewer reviews again]
@@ -147,7 +177,7 @@ Spec reviewer: ✅ Spec compliant now
 [Dispatch code quality reviewer]
 Code reviewer: Strengths: Solid. Issues (Important): Magic number (100)
 
-[Implementer fixes]
+[Resume implementer (same agent ID) with quality issues]
 Implementer: Extracted PROGRESS_INTERVAL constant
 
 [Code reviewer reviews again]
@@ -186,13 +216,12 @@ Done!
 
 **Quality gates:**
 - Self-review catches issues before handoff
-- Two-stage review: spec compliance, then code quality
+- Code quality review always, spec compliance review when needed
 - Review loops ensure fixes actually work
-- Spec compliance prevents over/under-building
 - Code quality ensures implementation is well-built
 
 **Cost:**
-- More subagent invocations (implementer + 2 reviewers per task)
+- Subagent invocations scale with plan complexity (implementer + 1-2 reviewers per task)
 - Controller does more prep work (extracting all tasks upfront)
 - Review loops add iterations
 - But catches issues early (cheaper than debugging later)
@@ -201,17 +230,16 @@ Done!
 
 **Never:**
 - Start implementation on main/master branch without explicit user consent
-- Skip reviews (spec compliance OR code quality)
+- Skip code quality review (always mandatory — consistently catches real issues)
 - Proceed with unfixed issues
 - Dispatch multiple implementation subagents in parallel (conflicts)
 - Make subagent read plan file (provide full text instead)
 - Skip scene-setting context (subagent needs to understand where task fits)
 - Ignore subagent questions (answer before letting them proceed)
-- Accept "close enough" on spec compliance (spec reviewer found issues = not done)
 - Skip review loops (reviewer found issues = implementer fixes = review again)
 - Let implementer self-review replace actual review (both are needed)
-- **Start code quality review before spec compliance is ✅** (wrong order)
-- Move to next task while either review has open issues
+- If running spec review: **start code quality review before spec compliance is done** (wrong order)
+- Move to next task while any review has open issues
 
 **If subagent asks questions:**
 - Answer clearly and completely
@@ -219,14 +247,16 @@ Done!
 - Don't rush them into implementation
 
 **If reviewer finds issues:**
-- Implementer (same subagent) fixes them
-- Reviewer reviews again
+- **Resume** the implementer subagent (Agent tool `resume` parameter with saved agent ID)
+- Provide reviewer findings via `./fix-prompt.md`
+- Reviewer reviews again after fix
 - Repeat until approved
 - Don't skip the re-review
+- Don't dispatch a fresh subagent — it wastes tokens re-orienting on code the implementer already knows
 
-**If subagent fails task:**
-- Dispatch fix subagent with specific instructions
-- Don't try to fix manually (context pollution)
+**If implementer subagent is unreachable** (session error, context limit):
+- Dispatch fresh subagent with specific fix instructions + reviewer findings
+- This is the fallback, not the default
 
 ## Integration
 

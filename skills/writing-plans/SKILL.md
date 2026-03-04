@@ -7,15 +7,30 @@ description: Use when you have a spec or requirements for a multi-step task, bef
 
 ## Overview
 
-Write comprehensive implementation plans assuming the engineer has zero context for our codebase and questionable taste. Document everything they need to know: which files to touch for each task, code, testing, docs they might need to check, how to test it. Give them the whole plan as bite-sized tasks. DRY. YAGNI. TDD. Frequent commits.
-
-Assume they are a skilled developer, but know almost nothing about our toolset or problem domain. Assume they don't know good test design very well.
+Write implementation plans scaled to the situation. The right level of detail depends on who's executing and when.
 
 **Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
 
 **Context:** This should be run in a dedicated worktree (created by brainstorming skill).
 
 **Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
+
+## Plan Depth: Full vs. Light
+
+**Full plan** — for async handoffs, complex multi-session work, or unfamiliar domains:
+- Complete code snippets in every task
+- Step-by-step TDD choreography (write test → verify fail → implement → verify pass → commit)
+- Exact commands with expected output
+- Assumes the engineer has zero codebase context and questionable taste
+
+**Light plan** — for same-session execution where a subagent implements immediately:
+- Task-level granularity: what to build, which files, acceptance criteria
+- Exact file paths (always useful) but no complete code snippets
+- Brief approach notes instead of full implementations — the implementer uses Julie tools to read the actual code
+- TDD expectation stated once, not choreographed per-step — the implementer follows TDD naturally
+- Typically 1/3 the length of a full plan
+
+**How to choose:** If the plan will be executed by a subagent in this session (subagent-driven-development), use light. If it's a handoff to another session or developer, use full. When in doubt, ask.
 
 ## Codebase Orientation (REQUIRED before writing plan)
 
@@ -28,7 +43,7 @@ You cannot write accurate file paths, line ranges, or implementation steps witho
 
 **Do NOT guess file paths or line numbers.** Use Julie tools to discover them. Plans with wrong paths waste implementer time on dead ends.
 
-## Bite-Sized Task Granularity
+## Bite-Sized Task Granularity (Full Plans)
 
 **Each step is one action (2-5 minutes):**
 - "Write the failing test" - step
@@ -36,6 +51,8 @@ You cannot write accurate file paths, line ranges, or implementation steps witho
 - "Implement the minimal code to make the test pass" - step
 - "Run the tests and make sure they pass" - step
 - "Commit" - step
+
+Light plans use task-level granularity instead: each task is a coherent unit of work (add a function, modify an API, write tests for a component). Steps within a task are left to the implementer's judgment.
 
 ## Plan Document Header
 
@@ -98,12 +115,36 @@ git commit -m "feat: add specific feature"
 ```
 ````
 
+## Light Plan Task Structure
+
+````markdown
+### Task N: [Component Name]
+
+**Files:**
+- Create: `exact/path/to/file.py`
+- Modify: `exact/path/to/existing.py:123-145`
+- Test: `tests/exact/path/to/test.py`
+
+**What to build:** [2-3 sentences describing the feature/change and why]
+
+**Approach:** [Key decisions — which pattern to follow, what to call things, edge cases to handle]
+
+**Acceptance criteria:**
+- [ ] [Specific, testable requirement]
+- [ ] [Another requirement]
+- [ ] Tests pass, committed
+````
+
 ## Remember
-- Exact file paths always
-- Complete code in plan (not "add validation")
-- Exact commands with expected output
+
+**Always (both plan types):**
+- Exact file paths
 - Reference relevant skills with @ syntax
 - DRY, YAGNI, TDD, frequent commits
+
+**Full plans only:**
+- Complete code in plan (not "add validation")
+- Exact commands with expected output
 
 ## Execution Handoff
 
