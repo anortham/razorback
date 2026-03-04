@@ -21,7 +21,7 @@ Every project goes through this process. A todo list, a single-function utility,
 
 ## Checklist
 
-You MUST create a task for each of these items and complete them in order:
+Create a task (TaskCreate) for each of these items and complete them in order:
 
 1. **Explore project context** — use `julie:get_context` to orient on the relevant codebase area, check recent commits
 2. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
@@ -52,7 +52,7 @@ digraph brainstorming {
 }
 ```
 
-**The terminal state is invoking writing-plans.** Do NOT invoke frontend-design, mcp-builder, or any other implementation skill. The ONLY skill you invoke after brainstorming is writing-plans.
+**The terminal state is invoking writing-plans.** Do NOT invoke any other implementation skill. The ONLY skill you invoke after brainstorming is writing-plans.
 
 ## The Process
 
@@ -80,7 +80,6 @@ digraph brainstorming {
 
 **Documentation:**
 - Write the validated design to `docs/plans/YYYY-MM-DD-<topic>-design.md`
-- Use elements-of-style:writing-clearly-and-concisely skill if available
 - Commit the design document to git
 
 **Implementation:**

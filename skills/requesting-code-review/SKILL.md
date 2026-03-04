@@ -31,7 +31,7 @@ HEAD_SHA=$(git rev-parse HEAD)
 
 **2. Dispatch code-reviewer subagent:**
 
-Use Task tool with razorback:code-reviewer type, fill template at `code-reviewer.md`
+Use Agent tool with razorback:code-reviewer subagent type, fill template at `code-reviewer.md`
 
 **Placeholders:**
 - `{WHAT_WAS_IMPLEMENTED}` - What you just built
