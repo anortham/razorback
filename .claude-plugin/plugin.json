@@ -1,7 +1,7 @@
 {
   "name": "razorback",
   "description": "Team-first, Julie-powered development workflow. Agent Teams for parallel execution, Julie MCP for token-efficient codebase orientation.",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "author": {
     "name": "anortham"
   },
