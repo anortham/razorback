@@ -42,21 +42,28 @@ Every project goes through this process. A todo list, a single-function utility,
 1. **Explore project context** — use `julie:get_context` to orient, check recent commits
 2. **Summarize agreed design with acceptance criteria** — present for user confirmation
 3. **Write design doc** — save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit. Include acceptance criteria checklist — this is the implementer's spec.
-4. **Dispatch implementer directly** — see "Lightweight Implementation" section below
+4. **Spec self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below)
+5. **User reviews written spec** — ask user to review the spec file before proceeding
+6. **Dispatch implementer directly** — see "Lightweight Implementation" section below
 
 **Fast path** (design agreed, large or multi-session task):
 1. **Explore project context** — use `julie:get_context` to orient, check recent commits
 2. **Summarize agreed design** — present concrete summary for user confirmation
 3. **Write design doc** — save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit
-4. **Transition to implementation** — invoke writing-plans skill
+4. **Spec self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below)
+5. **User reviews written spec** — ask user to review the spec file before proceeding
+6. **Transition to implementation** — invoke writing-plans skill
 
 **Full process** (requirements unclear or multiple approaches):
 1. **Explore project context** — use `julie:get_context` to orient on the relevant codebase area, check recent commits
-2. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
-3. **Propose 2-3 approaches** — with trade-offs and your recommendation
-4. **Present design** — in sections scaled to their complexity, get user approval after each section
-5. **Write design doc** — save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit
-6. **Transition to implementation** — invoke writing-plans skill to create implementation plan
+2. **Offer visual companion** (if topic will involve visual questions) — this is its own message, not combined with a clarifying question. See the Visual Companion section below.
+3. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
+4. **Propose 2-3 approaches** — with trade-offs and your recommendation
+5. **Present design** — in sections scaled to their complexity, get user approval after each section
+6. **Write design doc** — save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit
+7. **Spec self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below)
+8. **User reviews written spec** — ask user to review the spec file before proceeding
+9. **Transition to implementation** — invoke writing-plans skill to create implementation plan
 
 ## Process Flow
 
@@ -66,11 +73,15 @@ digraph brainstorming {
     "Task moderate + same-session?" [shape=diamond];
     "Explore project context" [shape=box];
     "Summarize agreed design" [shape=box];
+    "Visual questions ahead?" [shape=diamond];
+    "Offer Visual Companion\n(own message, no other content)" [shape=box];
     "Ask clarifying questions" [shape=box];
     "Propose 2-3 approaches" [shape=box];
     "Present design sections" [shape=box];
     "User approves design?" [shape=diamond];
     "Write design doc" [shape=box];
+    "Spec self-review\n(fix inline)" [shape=box];
+    "User reviews spec?" [shape=diamond];
     "Invoke writing-plans skill" [shape=doublecircle];
     "Lightweight implementation" [shape=doublecircle];
 
@@ -78,7 +89,10 @@ digraph brainstorming {
     "Design already agreed?" -> "Explore project context" [label="no (full process)"];
 
     "Explore project context" -> "Summarize agreed design" [label="agreed"];
-    "Explore project context" -> "Ask clarifying questions" [label="unclear"];
+    "Explore project context" -> "Visual questions ahead?" [label="unclear"];
+    "Visual questions ahead?" -> "Offer Visual Companion\n(own message, no other content)" [label="yes"];
+    "Visual questions ahead?" -> "Ask clarifying questions" [label="no"];
+    "Offer Visual Companion\n(own message, no other content)" -> "Ask clarifying questions";
     "Ask clarifying questions" -> "Propose 2-3 approaches";
     "Propose 2-3 approaches" -> "Present design sections";
     "Present design sections" -> "User approves design?";
@@ -86,7 +100,10 @@ digraph brainstorming {
 
     "User approves design?" -> "Present design sections" [label="no, revise"];
     "User approves design?" -> "Write design doc" [label="yes"];
-    "Write design doc" -> "Task moderate + same-session?";
+    "Write design doc" -> "Spec self-review\n(fix inline)";
+    "Spec self-review\n(fix inline)" -> "User reviews spec?";
+    "User reviews spec?" -> "Write design doc" [label="changes requested"];
+    "User reviews spec?" -> "Task moderate + same-session?" [label="approved"];
     "Task moderate + same-session?" -> "Lightweight implementation" [label="yes"];
     "Task moderate + same-session?" -> "Invoke writing-plans skill" [label="no"];
 }
@@ -122,6 +139,23 @@ digraph brainstorming {
 - Write the validated design to `docs/plans/YYYY-MM-DD-<topic>-design.md`
 - Commit the design document to git
 
+**Spec Self-Review:**
+After writing the spec document, look at it with fresh eyes:
+
+1. **Placeholder scan:** Any "TBD", "TODO", incomplete sections, or vague requirements? Fix them.
+2. **Internal consistency:** Do any sections contradict each other? Does the architecture match the feature descriptions?
+3. **Scope check:** Is this focused enough for a single implementation plan, or does it need decomposition?
+4. **Ambiguity check:** Could any requirement be interpreted two different ways? If so, pick one and make it explicit.
+
+Fix any issues inline. No need to re-review, just fix and move on.
+
+**User Review Gate:**
+After the spec review loop passes, ask the user to review the written spec before proceeding:
+
+> "Spec written and committed to `<path>`. Please review it and let me know if you want to make any changes before we start writing out the implementation plan."
+
+Wait for the user's response. If they request changes, make them and re-run the spec review loop. Only proceed once the user approves.
+
 **Full/fast path → writing-plans:**
 - Invoke the writing-plans skill to create an implementation plan
 
@@ -154,6 +188,23 @@ Agent tool:
 **Review:** Lead does inline review when implementer reports back (spec compliance + code quality). If issues found, message the teammate directly. See review checklist in team-driven-development skill.
 
 **Done:** After review passes, use razorback:finishing-a-development-branch.
+
+## Visual Companion
+
+A browser-based companion for showing mockups, diagrams, and visual options during brainstorming. Available as a tool, not a mode. Accepting the companion means it's available for questions that benefit from visual treatment; it does NOT mean every question goes through the browser.
+
+**Offering the companion:** When you anticipate that upcoming questions will involve visual content (mockups, layouts, diagrams), offer it once for consent:
+> "Some of what we're working on might be easier to explain if I can show it to you in a web browser. I can put together mockups, diagrams, comparisons, and other visuals as we go. This feature is still new and can be token-intensive. Want to try it? (Requires opening a local URL)"
+
+**This offer MUST be its own message.** Do not combine it with clarifying questions, context summaries, or any other content. The message should contain ONLY the offer above and nothing else. Wait for the user's response before continuing. If they decline, proceed with text-only brainstorming.
+
+**Per-question decision:** Even after the user accepts, decide FOR EACH QUESTION whether to use the browser or the terminal. The test: **would the user understand this better by seeing it than reading it?**
+
+- **Use the browser** for content that IS visual (mockups, wireframes, layout comparisons, architecture diagrams, side-by-side visual designs)
+- **Use the terminal** for content that is text (requirements questions, conceptual choices, tradeoff lists, A/B/C/D text options, scope decisions)
+
+If they agree to the companion, read the detailed guide before proceeding:
+`skills/brainstorming/visual-companion.md`
 
 ## Key Principles
 
