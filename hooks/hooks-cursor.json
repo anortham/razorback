@@ -1,15 +1,9 @@
 {
+  "version": 1,
   "hooks": {
-    "SessionStart": [
+    "sessionStart": [
       {
-        "matcher": "startup|clear|compact",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "./hooks/session-start",
-            "async": false
-          }
-        ]
+        "command": "./hooks/session-start"
       }
     ]
   }
