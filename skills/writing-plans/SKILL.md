@@ -32,6 +32,29 @@ Write implementation plans scaled to the situation. The right level of detail de
 
 **How to choose:** If the plan will be executed by a team in this session (team-driven-development), use light. If it's a handoff to another session or developer, use full. When in doubt, ask.
 
+## Scope Check
+
+If the spec covers multiple independent subsystems, it should have been broken into sub-project specs during brainstorming. If it wasn't, suggest breaking this into separate plans, one per subsystem. Each plan should produce working, testable software on its own.
+
+## File Structure
+
+Before defining tasks, map out which files will be created or modified and what each one is responsible for. This is where decomposition decisions get locked in.
+
+- Design units with clear boundaries and well-defined interfaces. Each file should have one clear responsibility.
+- Prefer smaller, focused files over large ones that do too much.
+- Files that change together should live together. Split by responsibility, not by technical layer.
+- In existing codebases, follow established patterns. If the codebase uses large files, don't unilaterally restructure, but if a file you're modifying has grown unwieldy, including a split in the plan is reasonable.
+
+This structure informs the task decomposition. Each task should produce self-contained changes that make sense independently.
+
+## No Placeholders
+
+Every step must contain the actual content an engineer needs. These are **plan failures**, never write them:
+- "TBD", "TODO", "implement later", "fill in details"
+- "Add appropriate error handling" / "add validation" / "handle edge cases"
+- "Write tests for the above" (without actual test code)
+- "Similar to Task N" (repeat the code, the engineer may be reading tasks out of order)
+
 ## Codebase Orientation (REQUIRED before writing plan)
 
 You cannot write accurate file paths, line ranges, or implementation steps without understanding the code. Before writing any task:
