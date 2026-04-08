@@ -1,25 +1,24 @@
 # Razorback
 
-**Julie-aware development workflow skills for Claude Code.**
+**Team-first, Julie-powered development workflow for Claude Code.**
 
-Razorback is a fork of [Superpowers](https://github.com/obra/superpowers) (v4.3.1) that adds explicit awareness of the Julie MCP server to every skill and subagent prompt:
-
-- **Julie** — Code intelligence (search, symbols, references, context)
+Razorback is a Claude Code plugin that diverged from [Superpowers](https://github.com/obra/superpowers). It uses Julie MCP for token-efficient codebase orientation and Agent Teams for parallel plan execution.
 
 ## Why?
 
-Superpowers produces high-quality results but burns tokens and time because every agent (controller and subagents) explores the codebase using generic Glob/Grep/Read chains. Razorback keeps the exact same proven workflow but routes all exploration through Julie's purpose-built tools.
+AI-assisted development burns tokens on repetitive codebase exploration. Every agent, teammate, and subagent re-discovers the same code through Glob/Grep/Read chains. Razorback solves this two ways:
 
-**Same process. Better tools. Faster results.**
+- **Julie MCP** routes all exploration through purpose-built code intelligence tools (get_context, deep_dive, fast_refs, get_symbols) that return targeted context in 1-2 calls instead of 5-8
+- **Agent Teams** replace the sequential subagent model with persistent teammates that work in parallel. When a reviewer finds issues, you message the teammate who already has context. No cold restart.
 
 ## Requirements
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
-- [Julie MCP Server](https://github.com/anortham/julie) — must be configured and indexing your workspace
+- [Julie MCP Server](https://github.com/anortham/julie) -- must be configured and indexing your workspace
 
 ## Installation
 
-Razorback is a pure-content plugin (skills, commands, hooks) — no build step or runtime dependencies required.
+Razorback is a pure-content plugin (skills, commands, hooks) -- no build step or runtime dependencies required.
 
 ### Option 1: Install from GitHub (Recommended)
 
@@ -60,55 +59,52 @@ claude --plugin-dir /path/to/razorback
 
 Once the plugin is loaded, Razorback works automatically:
 
-1. **Session starts** — the `SessionStart` hook fires, injecting the `using-razorback` skill
-2. **You request work** — Claude checks for applicable skills before every response
-3. **Skills guide the workflow** — brainstorming, planning, TDD, debugging, code review, and verification all route exploration through Julie
+1. **Session starts** -- the `SessionStart` hook fires, injecting the `using-razorback` skill
+2. **You request work** -- Claude checks for applicable skills before every response
+3. **Skills guide the workflow** -- brainstorming, planning, TDD, execution, review, and verification all route through Julie and Agent Teams
 
 No configuration needed beyond plugin installation (assuming Julie is already set up).
 
-## What Changed from Superpowers
+## Workflow
 
-**Everything kept:**
-- All 14 skills with identical process flows
-- Same brainstorming → planning → TDD → execution → review → completion workflow
-- Same two-stage code review (spec compliance + code quality)
-- Same anti-rationalization tables and red flags
-- Same SessionStart hook for skill activation
+The core process: brainstorm, plan, TDD, execute, review, finish.
 
-**What was added:**
-- Julie tool calls at every exploration point (get_context, deep_dive, fast_refs, get_symbols)
-- Toolchain documentation in the entry-point skill
+**Execution model:**
+- **2+ independent tasks:** `team-driven-development` creates an Agent Team with parallel teammates, lead does inline review (spec compliance + code quality), messages teammates for fixes
+- **1 task or sequential:** `executing-plans` runs single-agent batch execution
+- **Ad-hoc parallel work:** `dispatching-parallel-agents` for independent tasks outside plans
 
 ## Skills
 
-| Skill | Julie Integration |
-|-------|-------------------|
-| using-razorback | Toolchain docs |
-| brainstorming | get_context for exploration |
-| writing-plans | — |
-| subagent-driven-development | — |
-| executing-plans | — |
-| test-driven-development | get_symbols for patterns |
-| systematic-debugging | deep_dive + fast_refs |
-| requesting-code-review | deep_dive + fast_refs |
-| receiving-code-review | deep_dive + fast_refs |
-| verification-before-completion | fast_refs for impact |
-| finishing-a-development-branch | — |
-| dispatching-parallel-agents | get_context hint |
-| using-git-worktrees | — |
-| writing-skills | — |
+| Skill | Purpose |
+|-------|---------|
+| using-razorback | Entry point: skill routing, execution model, Julie toolchain |
+| brainstorming | Requirements exploration, design, approach selection |
+| writing-plans | Implementation plans (full or light) with Julie-verified file paths |
+| **team-driven-development** | **Primary execution: Agent Teams, parallel teammates, inline review** |
+| executing-plans | Single-agent execution (fallback for sequential/single-task work) |
+| test-driven-development | Red-green-refactor with Julie-powered test discovery |
+| systematic-debugging | Root cause investigation with Julie-powered tracing |
+| requesting-code-review | Inline review (team-driven) or standalone review (ad-hoc) |
+| receiving-code-review | Process for acting on review feedback |
+| verification-before-completion | Evidence-before-claims verification |
+| finishing-a-development-branch | Merge/PR/cleanup decision workflow |
+| dispatching-parallel-agents | Ad-hoc parallel agent dispatch |
+| using-git-worktrees | Isolated workspace setup |
+| writing-skills | Meta-skill for creating/editing skills |
+| ~~subagent-driven-development~~ | Deprecated: replaced by team-driven-development |
 
-## Subagent Prompt Changes
+## Teammate Prompt Templates
 
-| Prompt | Julie Integration |
-|--------|-------------------|
-| implementer-prompt.md | Full orientation block: get_context → deep_dive → fast_refs → get_symbols |
-| spec-reviewer-prompt.md | get_symbols + fast_refs for targeted review |
-| code-quality-reviewer-prompt.md | deep_dive + fast_refs for impact analysis |
+| Template | Purpose |
+|----------|---------|
+| team-driven-development/implementer-prompt.md | Teammate spawn: task assignment, file ownership, Julie directives, status protocol |
+| subagent-driven-development/spec-reviewer-prompt.md | Review guide: spec compliance criteria |
+| subagent-driven-development/code-quality-reviewer-prompt.md | Review guide: code quality criteria |
 
 ## License
 
-MIT (forked from Superpowers, also MIT)
+MIT (diverged from Superpowers, also MIT)
 
 ## Credits
 

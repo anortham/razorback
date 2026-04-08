@@ -1,6 +1,6 @@
 ---
 name: executing-plans
-description: Use when you have a written implementation plan to execute in a separate session
+description: Use when you have a written implementation plan to execute in a separate session with review checkpoints, or as single-agent fallback when team-driven-development is not appropriate
 ---
 
 # Executing Plans
@@ -10,6 +10,8 @@ description: Use when you have a written implementation plan to execute in a sep
 Load plan, review critically, execute tasks in batches, report for review between batches.
 
 **Core principle:** Batch execution with checkpoints for architect review.
+
+**When to use this vs. team-driven-development:** Use this skill for single-task plans, tightly sequential work, or separate-session execution. For plans with 2+ independent tasks in the same session, prefer `razorback:team-driven-development` for parallel execution.
 
 **Announce at start:** "I'm using the executing-plans skill to implement this plan."
 

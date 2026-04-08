@@ -23,14 +23,14 @@ Write implementation plans scaled to the situation. The right level of detail de
 - Exact commands with expected output
 - Assumes the engineer has zero codebase context and questionable taste
 
-**Light plan** — for same-session execution where a subagent implements immediately:
+**Light plan** — for same-session execution where teammates implement immediately:
 - Task-level granularity: what to build, which files, acceptance criteria
 - Exact file paths (always useful) but no complete code snippets
 - Brief approach notes instead of full implementations — the implementer uses Julie tools to read the actual code
 - TDD expectation stated once, not choreographed per-step — the implementer follows TDD naturally
 - Typically 1/3 the length of a full plan
 
-**How to choose:** If the plan will be executed by a subagent in this session (subagent-driven-development), use light. If it's a handoff to another session or developer, use full. When in doubt, ask.
+**How to choose:** If the plan will be executed by a team in this session (team-driven-development), use light. If it's a handoff to another session or developer, use full. When in doubt, ask.
 
 ## Codebase Orientation (REQUIRED before writing plan)
 
@@ -152,17 +152,21 @@ After saving the plan, offer execution choice:
 
 **"Plan complete and saved to `docs/plans/<filename>.md`. Two execution options:**
 
-**1. Subagent-Driven (this session)** - I dispatch fresh subagent per task, review between tasks, fast iteration
+**1. Team-Driven (this session, recommended)** - I create a team with parallel teammates, inline review, fast iteration
 
-**2. Parallel Session (separate)** - Open new session with executing-plans, batch execution with review between batches
+**2. Single-Agent (separate session)** - Open new session with executing-plans, batch execution with review between batches
 
 **Which approach?"**
 
-**If Subagent-Driven chosen:**
-- **REQUIRED SUB-SKILL:** Use razorback:subagent-driven-development
+**If Team-Driven chosen (2+ independent tasks):**
+- **REQUIRED SUB-SKILL:** Use razorback:team-driven-development
 - Stay in this session
-- Fresh subagent per task + code review
+- Parallel teammates + inline review
 
-**If Parallel Session chosen:**
+**If Team-Driven chosen (1 task or sequential):**
+- Execute directly in this session using razorback:executing-plans
+- No team needed for single-task plans
+
+**If Single-Agent chosen:**
 - Guide them to open new session in worktree
 - **REQUIRED SUB-SKILL:** New session uses razorback:executing-plans

@@ -72,6 +72,16 @@ These thoughts mean STOP—you're rationalizing:
 | "This feels productive" | Undisciplined action wastes time. Skills prevent this. |
 | "I know what that means" | Knowing the concept ≠ using the skill. Invoke it. |
 
+## Execution Model
+
+When executing implementation plans:
+
+- **2+ independent tasks:** Use `razorback:team-driven-development` (Agent Teams, parallel teammates, inline review)
+- **1 task or sequential:** Use `razorback:executing-plans` (single agent, batch execution)
+- **Ad-hoc parallel work:** Use `razorback:dispatching-parallel-agents` (independent agent dispatch)
+
+Team-driven is the primary execution path. Teammates persist for fixes (no cold restart), work in parallel, and get Julie-powered orientation.
+
 ## Skill Priority
 
 When multiple skills could apply, use this order:

@@ -5,23 +5,30 @@ description: Use when completing tasks, implementing major features, or before m
 
 # Requesting Code Review
 
-Dispatch razorback:code-reviewer subagent to catch issues before they cascade.
+Two review modes, depending on context.
 
 **Core principle:** Review early, review often.
 
-## When to Request Review
+## Mode 1: Inline Review (Team-Driven Development)
 
-**Mandatory:**
-- After each task in subagent-driven development
-- After completing major feature
-- Before merge to main
+When using `razorback:team-driven-development`, the **lead does inline review** after each teammate reports DONE. No separate reviewer agent needed.
 
-**Optional but valuable:**
-- When stuck (fresh perspective)
-- Before refactoring (baseline check)
-- After fixing complex bug
+**The lead checks two things:**
 
-## How to Request
+**Spec compliance:** Did the teammate build what was requested? Nothing missing, nothing extra?
+- Use `get_symbols(file_path)` to scan changed files quickly
+- Compare actual code to task requirements line by line
+
+**Code quality:** Is the code clean, tested, and maintainable?
+- Use `deep_dive(symbol)` on key modified symbols
+- Use `fast_refs(symbol)` to verify changes don't break dependents
+- Check tests verify behavior, not just that code runs
+
+**If issues found:** Message the teammate directly with findings. They fix and re-report. Review cap: 3 iterations.
+
+## Mode 2: Standalone Review (Ad-Hoc / Pre-Merge)
+
+For work done outside team-driven-development, dispatch the `razorback:code-reviewer` agent.
 
 **1. Get git SHAs:**
 ```bash
@@ -29,9 +36,9 @@ BASE_SHA=$(git rev-parse HEAD~1)  # or origin/main
 HEAD_SHA=$(git rev-parse HEAD)
 ```
 
-**2. Dispatch code-reviewer subagent:**
+**2. Dispatch code-reviewer agent:**
 
-Use Agent tool with razorback:code-reviewer subagent type, fill template at `code-reviewer.md`
+Use Agent tool with razorback:code-reviewer type, fill template at `code-reviewer.md`
 
 **Placeholders:**
 - `{WHAT_WAS_IMPLEMENTED}` - What you just built
@@ -46,48 +53,31 @@ Use Agent tool with razorback:code-reviewer subagent type, fill template at `cod
 - Note Minor issues for later
 - Push back if reviewer is wrong (with reasoning)
 
-## Example
+## When to Request Review
 
-```
-[Just completed Task 2: Add verification function]
+**Mandatory:**
+- After each task in team-driven development (inline by lead)
+- After completing major feature (standalone)
+- Before merge to main (standalone)
 
-You: Let me request code review before proceeding.
-
-BASE_SHA=$(git log --oneline | grep "Task 1" | head -1 | awk '{print $1}')
-HEAD_SHA=$(git rev-parse HEAD)
-
-[Dispatch razorback:code-reviewer subagent]
-  WHAT_WAS_IMPLEMENTED: Verification and repair functions for conversation index
-  PLAN_OR_REQUIREMENTS: Task 2 from docs/plans/deployment-plan.md
-  BASE_SHA: a7981ec
-  HEAD_SHA: 3df7661
-  DESCRIPTION: Added verifyIndex() and repairIndex() with 4 issue types
-
-[Subagent returns]:
-  Strengths: Clean architecture, real tests
-  Issues:
-    Important: Missing progress indicators
-    Minor: Magic number (100) for reporting interval
-  Assessment: Ready to proceed
-
-You: [Fix progress indicators]
-[Continue to Task 3]
-```
+**Optional but valuable:**
+- When stuck (fresh perspective)
+- Before refactoring (baseline check)
+- After fixing complex bug
 
 ## Integration with Workflows
 
-**Subagent-Driven Development:**
-- Review after EACH task
-- Catch issues before they compound
-- Fix before moving to next task
+**Team-Driven Development:**
+- Lead does inline review (Mode 1) after each teammate reports DONE
+- See team-driven-development skill for full review checklist
 
 **Executing Plans:**
 - Review after each batch (3 tasks)
-- Get feedback, apply, continue
+- Standalone review (Mode 2)
 
 **Ad-Hoc Development:**
-- Review before merge
-- Review when stuck
+- Standalone review before merge
+- Standalone review when stuck
 
 ## Red Flags
 

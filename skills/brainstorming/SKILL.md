@@ -130,7 +130,7 @@ digraph brainstorming {
 
 ## Lightweight Implementation
 
-For moderate, well-understood tasks executed in the same session. Skips writing-plans and subagent-driven-development — dispatches implementer and reviewer directly.
+For moderate, well-understood tasks executed in the same session. Skips writing-plans — dispatches directly to implementation.
 
 **The design doc IS the plan.** Make sure it includes:
 - What to build and why
@@ -138,32 +138,22 @@ For moderate, well-understood tasks executed in the same session. Skips writing-
 - Acceptance criteria checklist
 - Key decisions and edge cases
 
-**Step 1: Dispatch implementer subagent**
+**If the task has 2+ independent parts:** Use `razorback:team-driven-development`. The design doc serves as the plan. Create a team with one teammate per independent part, assigning file ownership to prevent conflicts.
 
-Use the implementer-prompt.md template from subagent-driven-development. The "Task Description" is the design doc content. The "Context" is the conversational background.
+**If the task is a single coherent unit:** Dispatch one implementer using the teammate prompt template from team-driven-development.
 
 ```
-Agent tool (general-purpose):
+Agent tool:
   description: "Implement [feature name]"
   prompt: |
-    [Follow implementer-prompt.md template]
+    [Follow team-driven-development/implementer-prompt.md template]
     Task description = the design doc
     Context = conversational agreement
 ```
 
-Save the returned **agent ID** — you'll need it if the reviewer finds issues.
+**Review:** Lead does inline review when implementer reports back (spec compliance + code quality). If issues found, message the teammate directly. See review checklist in team-driven-development skill.
 
-**Step 2: Code quality review**
-
-After the implementer reports back, dispatch a code quality reviewer using the code-quality-reviewer-prompt.md template from subagent-driven-development.
-
-**Step 3: Fix if needed**
-
-If the reviewer finds issues, **resume** the implementer (Agent tool `resume` parameter) with the reviewer's findings. Don't dispatch a fresh subagent. See fix-prompt.md in subagent-driven-development.
-
-**Step 4: Done**
-
-After review passes, use razorback:finishing-a-development-branch.
+**Done:** After review passes, use razorback:finishing-a-development-branch.
 
 ## Key Principles
 

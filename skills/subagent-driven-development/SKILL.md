@@ -1,9 +1,21 @@
 ---
 name: subagent-driven-development
-description: Use when executing implementation plans with independent tasks in the current session
+description: "DEPRECATED: Use razorback:team-driven-development instead. Kept for reference only."
 ---
 
-# Subagent-Driven Development
+# Subagent-Driven Development (DEPRECATED)
+
+> **This skill is deprecated.** Use `razorback:team-driven-development` instead.
+>
+> Team-driven development improves on this approach:
+> - Teammates persist and can be messaged for fixes (no cold restart)
+> - True parallelism (teammates work simultaneously)
+> - Lead does inline review (no separate reviewer subagents)
+> - Same Julie-powered orientation, lower total token cost
+>
+> The content below is kept for reference only.
+
+---
 
 Execute plan by dispatching fresh subagent per task, with code quality review after each. Spec compliance review is added when plans are vague or complex. When reviewers find issues, **resume** the implementer — never dispatch a fresh fix subagent.
 
