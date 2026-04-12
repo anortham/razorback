@@ -1,8 +1,14 @@
 /**
  * Razorback plugin for OpenCode.ai
  *
- * Injects razorback bootstrap context via system prompt transform.
- * Skills are discovered via OpenCode's native skill tool from symlinked directory.
+ * Registers razorback's skills directory via the config hook — no symlinks required.
+ * Injects razorback bootstrap on the first user message via messages.transform
+ * (not system.transform) to avoid per-turn token bloat and multi-system-message
+ * issues with some models (Qwen, etc).
+ *
+ * The bootstrap's "Execution Model" section is string-replaced with an
+ * opencode-specific variant that names subagent-driven-development as primary
+ * (Agent Teams are a Claude Code feature not available in opencode).
  */
 
 import path from 'path';
@@ -46,6 +52,26 @@ const normalizePath = (p, homeDir) => {
   return path.resolve(normalized);
 };
 
+const OPENCODE_EXECUTION_MODEL = `## Execution Model
+
+When executing implementation plans:
+
+- **2+ independent tasks:** Use \`razorback:subagent-driven-development\` (fresh subagent per task, inline review by lead)
+- **1 task or sequential:** Use \`razorback:executing-plans\` (single agent, batch execution)
+- **Ad-hoc parallel work:** Use \`razorback:dispatching-parallel-agents\` (independent agent dispatch)
+
+Subagent-driven is the primary execution path in opencode. Agent Teams are not available in opencode — use subagents via @mention. Lead does inline review of each subagent's output (spec compliance + code quality).
+`;
+
+// Replace the "## Execution Model" section with the opencode variant.
+// Matches from "## Execution Model" header up to the next "## " header (exclusive).
+// If the section is not found, returns the body unchanged (defensive).
+const replaceExecutionModel = (body) => {
+  const re = /^## Execution Model\n[\s\S]*?(?=^## )/m;
+  if (!re.test(body)) return body;
+  return body.replace(re, OPENCODE_EXECUTION_MODEL + '\n');
+};
+
 export const RazorbackPlugin = async ({ client, directory }) => {
   const homeDir = os.homedir();
   const razorbackSkillsDir = path.resolve(__dirname, '../../skills');
@@ -59,16 +85,15 @@ export const RazorbackPlugin = async ({ client, directory }) => {
 
     const fullContent = fs.readFileSync(skillPath, 'utf8');
     const { content } = extractAndStripFrontmatter(fullContent);
+    const opencodeBody = replaceExecutionModel(content);
 
     const toolMapping = `**Tool Mapping for OpenCode:**
-When skills reference tools you don't have, substitute OpenCode equivalents:
-- \`TodoWrite\` → \`update_plan\`
-- \`Task\` tool with subagents → Use OpenCode's subagent system (@mention)
-- \`Skill\` tool → OpenCode's native \`skill\` tool
-- \`Read\`, \`Write\`, \`Edit\`, \`Bash\` → Your native tools
+When skills reference tools, substitute OpenCode equivalents:
+- \`TodoWrite\` → \`todowrite\`
+- \`Task\` with subagents → opencode's \`@mention\` syntax
+- \`Skill\` tool → opencode's native \`skill\` tool
+- \`Read\`/\`Write\`/\`Edit\`/\`Bash\` → your native tools
 
-**Skills location:**
-Razorback skills are in \`${configDir}/skills/razorback/\`
 Use OpenCode's native \`skill\` tool to list and load skills.`;
 
     return `<EXTREMELY_IMPORTANT>
@@ -76,19 +101,38 @@ You have razorback.
 
 **IMPORTANT: The using-razorback skill content is included below. It is ALREADY LOADED - you are currently following it. Do NOT use the skill tool to load "using-razorback" again - that would be redundant.**
 
-${content}
+${opencodeBody}
 
 ${toolMapping}
 </EXTREMELY_IMPORTANT>`;
   };
 
   return {
-    // Use system prompt transform to inject bootstrap
-    'experimental.chat.system.transform': async (_input, output) => {
-      const bootstrap = getBootstrapContent();
-      if (bootstrap) {
-        (output.system ||= []).push(bootstrap);
+    // Inject skills path into live config so OpenCode discovers razorback skills
+    // without requiring manual symlinks or config file edits.
+    // This works because Config.get() returns a cached singleton — modifications
+    // here are visible when skills are lazily discovered later.
+    config: async (config) => {
+      config.skills = config.skills || {};
+      config.skills.paths = config.skills.paths || [];
+      if (!config.skills.paths.includes(razorbackSkillsDir)) {
+        config.skills.paths.push(razorbackSkillsDir);
       }
+    },
+
+    // Inject bootstrap into the first user message of each session.
+    // Using a user message instead of a system message avoids:
+    //   1. Token bloat from system messages repeated every turn
+    //   2. Multiple system messages breaking Qwen and other models
+    'experimental.chat.messages.transform': async (_input, output) => {
+      const bootstrap = getBootstrapContent();
+      if (!bootstrap || !output.messages.length) return;
+      const firstUser = output.messages.find(m => m.info.role === 'user');
+      if (!firstUser || !firstUser.parts.length) return;
+      // Only inject once
+      if (firstUser.parts.some(p => p.type === 'text' && p.text.includes('EXTREMELY_IMPORTANT'))) return;
+      const ref = firstUser.parts[0];
+      firstUser.parts.unshift({ ...ref, type: 'text', text: bootstrap });
     }
   };
 };
