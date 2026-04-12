@@ -1,25 +1,13 @@
 ---
 name: subagent-driven-development
-description: "DEPRECATED: Use razorback:team-driven-development instead. Kept for reference only."
+description: Execute an implementation plan by dispatching a fresh subagent per task with inline review by the lead. Primary execution path for opencode (no Agent Teams), and a Claude Code fallback when teams don't fit.
 ---
 
-# Subagent-Driven Development (DEPRECATED)
+# Subagent-Driven Development
 
-> **This skill is deprecated.** Use `razorback:team-driven-development` instead.
->
-> Team-driven development improves on this approach:
-> - Teammates persist and can be messaged for fixes (no cold restart)
-> - True parallelism (teammates work simultaneously)
-> - Lead does inline review (no separate reviewer subagents)
-> - Same Julie-powered orientation, lower total token cost
->
-> The content below is kept for reference only.
+Execute a plan by dispatching a fresh subagent per task, with the lead doing inline review (spec compliance + code quality) after each task. When review finds issues, **resume** the implementer subagent with the fix prompt — never dispatch a fresh fix subagent.
 
----
-
-Execute plan by dispatching fresh subagent per task, with code quality review after each. Spec compliance review is added when plans are vague or complex. When reviewers find issues, **resume** the implementer — never dispatch a fresh fix subagent.
-
-**Core principle:** Fresh subagent per task + resume for fixes + right-sized review = high quality without wasted ceremony
+**Core principle:** Fresh subagent per task + resume for fixes + inline review by lead = high quality without wasted ceremony.
 
 ## When to Use
 
@@ -28,7 +16,7 @@ digraph when_to_use {
     "Have implementation plan?" [shape=diamond];
     "Tasks mostly independent?" [shape=diamond];
     "Stay in this session?" [shape=diamond];
-    "subagent-driven-development" [shape=box];
+    "subagent-driven-development" [shape=box style=filled fillcolor=lightgreen];
     "executing-plans" [shape=box];
     "Manual execution or brainstorm first" [shape=box];
 
@@ -44,8 +32,12 @@ digraph when_to_use {
 **vs. Executing Plans (parallel session):**
 - Same session (no context switch)
 - Fresh subagent per task (no context pollution)
-- Code quality review after each task, spec compliance when plan is vague or complex
+- Lead does inline review after each task (one pass, no reviewer subagents)
 - Faster iteration (no human-in-loop between tasks)
+
+**vs. Team-Driven Development (Claude Code only):**
+- Sequential per-task subagents instead of parallel teammates
+- Used when Agent Teams are unavailable (opencode) or when tasks are sequential enough that parallelism doesn't help
 
 ## The Process
 
@@ -56,79 +48,122 @@ digraph process {
     subgraph cluster_per_task {
         label="Per Task";
         "Dispatch implementer subagent (./implementer-prompt.md)" [shape=box];
-        "Implementer subagent asks questions?" [shape=diamond];
+        "Implementer asks questions?" [shape=diamond];
         "Answer questions, provide context" [shape=box];
-        "Implementer subagent implements, tests, commits, self-reviews" [shape=box];
-        "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [shape=box];
-        "Spec reviewer subagent confirms code matches spec?" [shape=diamond];
-        "Resume implementer with spec gaps (./fix-prompt.md)" [shape=box];
-        "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [shape=box];
-        "Code quality reviewer subagent approves?" [shape=diamond];
-        "Resume implementer with quality issues (./fix-prompt.md)" [shape=box];
+        "Implementer implements, tests, commits, reports" [shape=box];
+        "Lead: inline review (spec + quality)" [shape=box];
+        "Issues found?" [shape=diamond];
+        "Resume implementer with findings (./fix-prompt.md)" [shape=box];
         "Mark task complete (TaskUpdate)" [shape=box];
     }
 
     "Read plan, extract tasks, create tasks via TaskCreate" [shape=box];
     "More tasks remain?" [shape=diamond];
-    "Dispatch final code reviewer subagent for entire implementation" [shape=box];
+    "Lead: final verification" [shape=box];
     "Use razorback:finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
 
     "Read plan, extract tasks, create tasks via TaskCreate" -> "Dispatch implementer subagent (./implementer-prompt.md)";
-    "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer subagent asks questions?";
-    "Implementer subagent asks questions?" -> "Answer questions, provide context" [label="yes"];
+    "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer asks questions?";
+    "Implementer asks questions?" -> "Answer questions, provide context" [label="yes"];
     "Answer questions, provide context" -> "Dispatch implementer subagent (./implementer-prompt.md)";
-    "Implementer subagent asks questions?" -> "Implementer subagent implements, tests, commits, self-reviews" [label="no"];
-    "Implementer subagent implements, tests, commits, self-reviews" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)";
-    "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" -> "Spec reviewer subagent confirms code matches spec?";
-    "Spec reviewer subagent confirms code matches spec?" -> "Resume implementer with spec gaps (./fix-prompt.md)" [label="no"];
-    "Resume implementer with spec gaps (./fix-prompt.md)" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [label="re-review"];
-    "Spec reviewer subagent confirms code matches spec?" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="yes"];
-    "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" -> "Code quality reviewer subagent approves?";
-    "Code quality reviewer subagent approves?" -> "Resume implementer with quality issues (./fix-prompt.md)" [label="no"];
-    "Resume implementer with quality issues (./fix-prompt.md)" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="re-review"];
-    "Code quality reviewer subagent approves?" -> "Mark task complete (TaskUpdate)" [label="yes"];
+    "Implementer asks questions?" -> "Implementer implements, tests, commits, reports" [label="no"];
+    "Implementer implements, tests, commits, reports" -> "Lead: inline review (spec + quality)";
+    "Lead: inline review (spec + quality)" -> "Issues found?";
+    "Issues found?" -> "Resume implementer with findings (./fix-prompt.md)" [label="yes"];
+    "Resume implementer with findings (./fix-prompt.md)" -> "Lead: inline review (spec + quality)" [label="re-review"];
+    "Issues found?" -> "Mark task complete (TaskUpdate)" [label="no, approved"];
     "Mark task complete (TaskUpdate)" -> "More tasks remain?";
     "More tasks remain?" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
-    "More tasks remain?" -> "Dispatch final code reviewer subagent for entire implementation" [label="no"];
-    "Dispatch final code reviewer subagent for entire implementation" -> "Use razorback:finishing-a-development-branch";
+    "More tasks remain?" -> "Lead: final verification" [label="no"];
+    "Lead: final verification" -> "Use razorback:finishing-a-development-branch";
 }
 ```
 
-## Prompt Templates
+## Step 1: Extract Tasks from the Plan
 
-- `./implementer-prompt.md` - Dispatch implementer subagent
-- `./fix-prompt.md` - Resume implementer to fix review issues
-- `./spec-reviewer-prompt.md` - Dispatch spec compliance reviewer subagent
-- `./code-quality-reviewer-prompt.md` - Dispatch code quality reviewer subagent
+Read the plan file once. Extract every task with its full text and surrounding context. Create tracking tasks via `TaskCreate` so progress is visible.
 
-## Resume Over Fresh: Fixing Review Issues
+Before dispatching, orient yourself on the codebase with Julie:
+- `get_context(query)` for initial orientation around the areas the plan touches
+- `get_symbols(file_path)` on files the plan will modify, so you can spot later drift during review
+- Do NOT chain Glob/Grep/Read for orientation — Julie is the required entry point
 
-When a reviewer finds issues, **resume the implementer subagent** — do not dispatch a fresh one.
+## Step 2: Dispatch Implementer Subagent
 
-A fresh subagent spends most of its budget re-orienting (reading files, understanding context, running Julie queries) before it can make a small fix. The implementer already has full context from its implementation pass. Resuming it skips all that orientation and goes straight to the fix.
+Use the template at `./implementer-prompt.md`. The spawn prompt MUST include:
+
+1. **Task text** copied from the plan (don't make the subagent read the plan file)
+2. **Scene-setting context** (how this task fits the larger plan)
+3. **File ownership** (which files this task may modify)
+4. **Julie tool directives** (use `get_context`, `deep_dive` before modifying any symbol, `fast_refs` before changing public APIs, `get_symbols` before reading full files)
+5. **TDD expectations** (from `razorback:test-driven-development`)
+6. **Verification commands** specific to this task
+
+Save the **agent ID** returned by the dispatch — you'll need it to resume the subagent for fixes.
+
+If the subagent asks questions, answer completely before letting it proceed.
+
+## Step 3: Lead Inline Review
+
+When the implementer reports completion, the lead does a single inline review covering both spec compliance and code quality. No reviewer subagents — the lead does this directly.
+
+**Spec compliance:**
+- Did the implementer build everything requested?
+- Did they add anything not requested? Flag extras for removal.
+- Did they misinterpret any requirement?
+- Use `get_symbols(file_path)` to scan changed files without reading them fully.
+
+**Code quality:**
+- Is the code clean, tested, and maintainable?
+- Do tests assert on meaningful values (not just "code ran without crashing")?
+- Code smells: duplication, tight coupling, unclear names, missing error paths?
+- Use `deep_dive(symbol)` on key new/modified symbols to check callers, callees, and types.
+- Use `fast_refs(symbol)` to verify API changes don't break dependents.
+
+**Review cap: 3 iterations max** for a single task. If issues persist, escalate to the user.
+
+### When Lighter Review Is Appropriate
+
+Spec compliance checking earns its keep when the plan leaves room for misinterpretation. When the plan is concrete, the review can focus on quality:
+
+**Lighter (quality-focused) review when:**
+- The plan has specific acceptance criteria or detailed requirements
+- The task is a single coherent feature (not a multi-part system)
+- The implementer's report clearly addresses every requirement
+
+**Full (spec + quality) review when:**
+- The plan is high-level or ambiguous
+- The task has multiple interacting requirements that could be partially implemented
+- The feature has subtle correctness constraints (security, data integrity)
+
+Either way, the review is a single pass by the lead. Never collapse the loop to skip re-reviewing after a fix.
+
+## Step 4: Resume for Fixes, Don't Dispatch Fresh
+
+When review finds issues, **resume the implementer subagent** — do not spawn a new one.
+
+A fresh subagent spends most of its budget re-orienting (reading files, running Julie queries) before it can make even a small fix. The implementer already has full context. Resuming skips orientation and goes straight to the fix.
 
 **How it works:**
-1. When the implementer completes, the Agent tool returns an **agent ID**. Save it.
-2. When a reviewer finds issues, use `Agent(resume: "<agent-id>")` with the fix prompt from `./fix-prompt.md`.
-3. The resumed subagent picks up with full prior context — files it read, decisions it made, tests it wrote.
+1. Dispatch returned an **agent ID**. You saved it in Step 2.
+2. Use `Agent(resume: "<agent-id>")` with the prompt from `./fix-prompt.md`, including the reviewer findings.
+3. The resumed subagent picks up with prior context intact — files it read, decisions it made, tests it wrote.
+4. Re-review after the fix. Repeat until approved.
 
-**When to dispatch fresh instead:** Only if the implementer subagent's context is genuinely stale — e.g., another task modified the same files in between, or the fix requires a fundamentally different approach. This should be rare.
+**When to dispatch fresh instead:** Rare. Only when the implementer's context is genuinely stale (another task modified the same files in between, or the fix needs a fundamentally different approach), or when the subagent is unreachable (session error, context limit).
 
-## When to Skip Spec Review
+## Step 5: Complete
 
-Spec compliance review catches mismatches between what was requested and what was built. It's valuable when there's room for misinterpretation — but when the plan is specific and the task is small, it just rubber-stamps the obvious.
+When all tasks are approved and marked complete:
 
-**Skip spec review when:**
-- The plan has specific acceptance criteria or detailed requirements (not vague bullets)
-- The task is a single coherent feature (not a multi-part system)
-- The implementer's report clearly addresses all requirements
+1. **Final verification:** Run the full test suite and check for integration issues across tasks.
+2. **Finish:** Use `razorback:finishing-a-development-branch`.
 
-**Keep spec review when:**
-- The plan is high-level or ambiguous (light plans with broad "what to build" descriptions)
-- The task has multiple interacting requirements that could be partially implemented
-- The feature has subtle correctness constraints (e.g., security, data integrity)
+## Prompt Templates
 
-When skipping spec review, the code quality reviewer still checks requirements as part of its review (the code-reviewer template already includes a "Requirements" section). The spec reviewer is an additional dedicated pass, not the only place requirements get checked.
+- `./implementer-prompt.md` — Dispatch implementer subagent
+- `./fix-prompt.md` — Resume implementer to fix review issues
+- `./spec-reviewer-prompt.md` and `./code-quality-reviewer-prompt.md` — Review checklists the lead consults during inline review. Not dispatched as separate subagents; they encode the criteria the lead applies directly.
 
 ## Example Workflow
 
@@ -136,74 +171,70 @@ When skipping spec review, the code quality reviewer still checks requirements a
 You: I'm using Subagent-Driven Development to execute this plan.
 
 [Read plan file once: docs/plans/feature-plan.md]
+[get_context("hook installation recovery") for orientation]
 [Extract all 5 tasks with full text and context]
-[Create tasks with TaskCreate]
+[TaskCreate for each task]
 
-Task 1: Hook installation script
+--- Task 1: Hook installation script ---
 
-[Get Task 1 text and context (already extracted)]
-[Dispatch implementation subagent with full task text + context]
+[Dispatch implementer subagent with full task text + context + Julie directives]
+[Save agent ID: impl-a1b2]
 
-Implementer: "Before I begin - should the hook be installed at user or system level?"
+Implementer (impl-a1b2): "Before I begin — should the hook be installed at user or system level?"
 
-You: "User level (~/.config/razorback/hooks/)"
+You: "User level (~/.config/razorback/hooks/)."
 
 Implementer: "Got it. Implementing now..."
-[Later] Implementer:
+[Later] Implementer reports:
   - Implemented install-hook command
   - Added tests, 5/5 passing
-  - Self-review: Found I missed --force flag, added it
-  - Committed
+  - Committed (SHA abc123)
+  Status: DONE
 
-[Dispatch spec compliance reviewer]
-Spec reviewer: ✅ Spec compliant - all requirements met, nothing extra
+[Lead inline review]
+[get_symbols on install-hook.ts to scan structure]
+[deep_dive on installHook() to check flow]
+[Spec check: all requirements met, nothing extra]
+[Quality check: clean, well-tested, no smells]
+[Approved — TaskUpdate task 1 completed]
 
-[Get git SHAs, dispatch code quality reviewer]
-Code reviewer: Strengths: Good test coverage, clean. Issues: None. Approved.
+--- Task 2: Recovery modes ---
 
-[Mark Task 1 complete]
-
-Task 2: Recovery modes
-
-[Get Task 2 text and context (already extracted)]
-[Dispatch implementation subagent with full task text + context]
-
+[Dispatch implementer subagent. Save agent ID: impl-c3d4]
 Implementer: [No questions, proceeds]
-Implementer:
+Implementer reports:
   - Added verify/repair modes
   - 8/8 tests passing
-  - Self-review: All good
-  - Committed
+  - Committed (SHA def456)
+  Status: DONE
 
-[Dispatch spec compliance reviewer]
-Spec reviewer: ❌ Issues:
-  - Missing: Progress reporting (spec says "report every 100 items")
-  - Extra: Added --json flag (not requested)
+[Lead inline review]
+[get_symbols on recovery.ts]
+[deep_dive on verifyMode(), repairMode()]
+[Spec check: MISSING — progress reporting ("report every 100 items")]
+[Spec check: EXTRA — --json flag not requested]
+[Quality check: magic number 100 hard-coded]
 
-[Resume implementer (agent ID from earlier) with spec issues]
-Implementer: Removed --json flag, added progress reporting
+[Resume impl-c3d4 with ./fix-prompt.md:]
+  "Three issues:
+   1. Spec: add progress reporting every 100 items (missing)
+   2. Spec: remove --json flag (not requested)
+   3. Quality: extract 100 into a PROGRESS_INTERVAL constant"
 
-[Spec reviewer reviews again]
-Spec reviewer: ✅ Spec compliant now
+Implementer (resumed): Progress reporting added, --json removed,
+  PROGRESS_INTERVAL extracted. Tests still passing. Committed (SHA ghi789).
 
-[Dispatch code quality reviewer]
-Code reviewer: Strengths: Solid. Issues (Important): Magic number (100)
+[Lead re-review]
+[Approved — TaskUpdate task 2 completed]
 
-[Resume implementer (same agent ID) with quality issues]
-Implementer: Extracted PROGRESS_INTERVAL constant
+--- ...remaining tasks follow the same pattern... ---
 
-[Code reviewer reviews again]
-Code reviewer: ✅ Approved
+[After all tasks complete]
+[Lead final verification: full test suite, integration check]
+[All green]
+[Use razorback:finishing-a-development-branch]
 
-[Mark Task 2 complete]
-
-...
-
-[After all tasks]
-[Dispatch final code-reviewer]
-Final reviewer: All requirements met, ready to merge
-
-Done!
+Done.
 ```
 
 ## Advantages
@@ -211,7 +242,6 @@ Done!
 **vs. Manual execution:**
 - Subagents follow TDD naturally
 - Fresh context per task (no confusion)
-- Parallel-safe (subagents don't interfere)
 - Subagent can ask questions (before AND during work)
 
 **vs. Executing Plans:**
@@ -220,66 +250,62 @@ Done!
 - Review checkpoints automatic
 
 **Efficiency gains:**
-- No file reading overhead (controller provides full text)
-- Controller curates exactly what context is needed
-- Subagent gets complete information upfront
-- Questions surfaced before work begins (not after)
+- Lead curates exactly what context each subagent needs
+- No file reading overhead inside the subagent (lead provides full text)
+- Questions surface before work begins (not after)
 - Julie tools replace Glob/Grep/Read chains (2-3 calls vs 5-8 for orientation)
+- Inline review by lead avoids spawning reviewer subagents (lower total token cost)
 
 **Quality gates:**
-- Self-review catches issues before handoff
-- Code quality review always, spec compliance review when needed
-- Review loops ensure fixes actually work
-- Code quality ensures implementation is well-built
+- Inline review catches spec + quality issues in one pass
+- Resume-for-fix preserves the implementer's context
+- Re-review loop ensures fixes actually work
 
 **Cost:**
-- Subagent invocations scale with plan complexity (implementer + 1-2 reviewers per task)
-- Controller does more prep work (extracting all tasks upfront)
-- Review loops add iterations
-- But catches issues early (cheaper than debugging later)
+- Subagent invocations scale with plan complexity (one implementer per task, plus resume rounds)
+- Lead does more prep (extracting tasks, curating context, reviewing inline)
+- Catches issues early — cheaper than debugging later
 
 ## Red Flags
 
 **Never:**
 - Start implementation on main/master branch without explicit user consent
-- Skip code quality review (always mandatory — consistently catches real issues)
-- Proceed with unfixed issues
-- Dispatch multiple implementation subagents in parallel (conflicts)
-- Make subagent read plan file (provide full text instead)
-- Skip scene-setting context (subagent needs to understand where task fits)
+- Skip inline review (it consistently catches real issues)
+- Proceed to the next task while any review has open issues
+- Dispatch multiple implementer subagents in parallel on overlapping files (conflicts)
+- Make the subagent read the plan file (provide the full task text instead)
+- Skip scene-setting context (the subagent needs to know where the task fits)
 - Ignore subagent questions (answer before letting them proceed)
-- Skip review loops (reviewer found issues = implementer fixes = review again)
-- Let implementer self-review replace actual review (both are needed)
-- If running spec review: **start code quality review before spec compliance is done** (wrong order)
-- Move to next task while any review has open issues
+- Skip the re-review after a fix
+- Dispatch a separate reviewer subagent when the lead can review inline
+- Dispatch a fresh subagent for fixes when resume is possible (wastes tokens re-orienting)
 
-**If subagent asks questions:**
+**If the subagent asks questions:**
 - Answer clearly and completely
 - Provide additional context if needed
 - Don't rush them into implementation
 
-**If reviewer finds issues:**
-- **Resume** the implementer subagent (Agent tool `resume` parameter with saved agent ID)
-- Provide reviewer findings via `./fix-prompt.md`
-- Reviewer reviews again after fix
-- Repeat until approved
-- Don't skip the re-review
-- Don't dispatch a fresh subagent — it wastes tokens re-orienting on code the implementer already knows
+**If review finds issues:**
+- **Resume** the implementer subagent (Agent tool `resume` parameter with the saved agent ID)
+- Provide findings via `./fix-prompt.md`
+- Re-review after the fix
+- Repeat until approved (cap: 3 iterations, then escalate)
 
-**If implementer subagent is unreachable** (session error, context limit):
-- Dispatch fresh subagent with specific fix instructions + reviewer findings
+**If the implementer subagent is unreachable** (session error, context limit):
+- Dispatch a fresh subagent with specific fix instructions + review findings
 - This is the fallback, not the default
 
 ## Integration
 
 **Required workflow skills:**
-- **razorback:using-git-worktrees** - REQUIRED: Set up isolated workspace before starting
-- **razorback:writing-plans** - Creates the plan this skill executes
-- **razorback:requesting-code-review** - Code review template for reviewer subagents
-- **razorback:finishing-a-development-branch** - Complete development after all tasks
+- **razorback:using-git-worktrees** — REQUIRED: Set up isolated workspace before starting
+- **razorback:writing-plans** — Creates the plan this skill executes
+- **razorback:requesting-code-review** — Review criteria the lead applies during inline review
+- **razorback:finishing-a-development-branch** — Complete development after all tasks
 
-**Subagents should use:**
-- **razorback:test-driven-development** - Subagents follow TDD for each task
+**Subagents should follow:**
+- **razorback:test-driven-development** — TDD for each task (embedded in the implementer prompt)
 
-**Alternative workflow:**
-- **razorback:executing-plans** - Use for parallel session instead of same-session execution
+**Alternative workflows:**
+- **razorback:team-driven-development** — Alternative for Claude Code (Agent Teams instead of sequential subagents)
+- **razorback:executing-plans** — Use for parallel-session or single-agent execution
