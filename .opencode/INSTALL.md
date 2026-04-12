@@ -47,15 +47,27 @@ use skill tool to load razorback/brainstorming
 
 ## Updating
 
-Razorback updates automatically when you restart OpenCode.
-
-To pin a specific version:
+**Recommended: pin to a version and bump the pin to update.** Bun caches the git+https install by the full package spec, so changing `#ref` forces a fresh fetch.
 
 ```json
 {
   "plugin": ["razorback@git+https://github.com/anortham/razorback.git#v0.7.2"]
 }
 ```
+
+To update, change `#v0.7.2` to a newer tag (see [releases](https://github.com/anortham/razorback/releases)) and restart OpenCode.
+
+**Unpinned installs** (`razorback@git+…razorback.git` with no `#ref`) may or may not refresh on restart depending on Bun version and platform. If yours gets stuck on an old version, flush the cache:
+
+```bash
+# macOS/Linux
+rm -rf ~/.config/opencode/node_modules/razorback
+
+# Windows (PowerShell)
+Remove-Item -Recurse -Force "$env:USERPROFILE\.config\opencode\node_modules\razorback"
+```
+
+Then restart OpenCode.
 
 ## Troubleshooting
 

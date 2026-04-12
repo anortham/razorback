@@ -83,15 +83,36 @@ Create project-specific skills in `.opencode/skills/<name>/SKILL.md` inside your
 
 ## Updating
 
-Razorback updates when you restart opencode. The plugin is re-fetched from the git repository on each launch.
-
-To pin a specific version, append a branch or tag:
+The reliable way to update razorback is to pin to a version tag and bump the pin. Bun keys its install cache by the full package spec including `#ref`, so changing the pin forces a fresh fetch.
 
 ```json
 {
   "plugin": ["razorback@git+https://github.com/anortham/razorback.git#v0.7.2"]
 }
 ```
+
+To update, change `#v0.7.2` to a newer tag (see the [releases page](https://github.com/anortham/razorback/releases)) and restart opencode.
+
+### Unpinned installs
+
+An unpinned install (`razorback@git+https://github.com/anortham/razorback.git` with no `#ref`) *may* refresh on restart, but this depends on Bun version and platform. If your install gets stuck on an old version, remove the cached copy and restart opencode:
+
+**macOS/Linux:**
+```bash
+rm -rf ~/.config/opencode/node_modules/razorback
+```
+
+**Windows (PowerShell):**
+```powershell
+Remove-Item -Recurse -Force "$env:USERPROFILE\.config\opencode\node_modules\razorback"
+```
+
+If the cached copy still persists after that, clear Bun's global install cache as well:
+
+- macOS/Linux: `rm -rf ~/.bun/install/cache`
+- Windows: `Remove-Item -Recurse -Force "$env:LOCALAPPDATA\..\..\..\.bun\install\cache"`
+
+Then restart opencode.
 
 ## How It Works
 
