@@ -13,7 +13,6 @@
 
 import path from 'path';
 import fs from 'fs';
-import os from 'os';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -39,19 +38,6 @@ const extractAndStripFrontmatter = (content) => {
   return { frontmatter, content: body };
 };
 
-// Normalize a path: trim whitespace, expand ~, resolve to absolute
-const normalizePath = (p, homeDir) => {
-  if (!p || typeof p !== 'string') return null;
-  let normalized = p.trim();
-  if (!normalized) return null;
-  if (normalized.startsWith('~/')) {
-    normalized = path.join(homeDir, normalized.slice(2));
-  } else if (normalized === '~') {
-    normalized = homeDir;
-  }
-  return path.resolve(normalized);
-};
-
 const OPENCODE_EXECUTION_MODEL = `## Execution Model
 
 When executing implementation plans:
@@ -73,10 +59,7 @@ const replaceExecutionModel = (body) => {
 };
 
 export const RazorbackPlugin = async ({ client, directory }) => {
-  const homeDir = os.homedir();
   const razorbackSkillsDir = path.resolve(__dirname, '../../skills');
-  const envConfigDir = normalizePath(process.env.OPENCODE_CONFIG_DIR, homeDir);
-  const configDir = envConfigDir || path.join(homeDir, '.config/opencode');
 
   // Helper to generate bootstrap content
   const getBootstrapContent = () => {
