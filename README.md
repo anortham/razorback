@@ -1,8 +1,8 @@
 # Razorback
 
-**Team-first, Julie-powered development workflow for Claude Code.**
+**Julie-powered development workflow for Claude Code and OpenCode.**
 
-Razorback is a Claude Code plugin that diverged from [Superpowers](https://github.com/obra/superpowers). It uses Julie MCP for token-efficient codebase orientation and Agent Teams for parallel plan execution.
+Razorback is a skill set for Claude Code and OpenCode that diverged from [Superpowers](https://github.com/obra/superpowers). It uses Julie MCP for token-efficient codebase orientation, with per-harness execution strategies: Agent Teams on Claude Code, subagent-driven on OpenCode.
 
 ## Why?
 
@@ -13,7 +13,7 @@ AI-assisted development burns tokens on repetitive codebase exploration. Every a
 
 ## Requirements
 
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) or [OpenCode](https://opencode.ai)
 - [Julie MCP Server](https://github.com/anortham/julie) -- must be configured and indexing your workspace
 
 ## Installation
@@ -55,6 +55,16 @@ claude plugin install /path/to/razorback
 claude --plugin-dir /path/to/razorback
 ```
 
+### OpenCode
+
+Tell OpenCode:
+
+```
+Fetch and follow instructions from https://raw.githubusercontent.com/anortham/razorback/refs/heads/main/.opencode/INSTALL.md
+```
+
+**Detailed docs:** [docs/README.opencode.md](docs/README.opencode.md)
+
 ### After Installation
 
 Once the plugin is loaded, Razorback works automatically:
@@ -69,10 +79,11 @@ No configuration needed beyond plugin installation (assuming Julie is already se
 
 The core process: brainstorm, plan, TDD, execute, review, finish.
 
-**Execution model:**
-- **2+ independent tasks:** `team-driven-development` creates an Agent Team with parallel teammates, lead does inline review (spec compliance + code quality), messages teammates for fixes
-- **1 task or sequential:** `executing-plans` runs single-agent batch execution
-- **Ad-hoc parallel work:** `dispatching-parallel-agents` for independent tasks outside plans
+**Execution model (primary path depends on harness):**
+- **Claude Code, 2+ independent tasks:** `team-driven-development` creates an Agent Team with parallel teammates, lead does inline review (spec compliance + code quality), messages teammates for fixes
+- **OpenCode, 2+ independent tasks:** `subagent-driven-development` spawns a fresh subagent per task, lead does inline review (spec compliance + code quality)
+- **1 task or sequential (both harnesses):** `executing-plans` runs single-agent batch execution
+- **Ad-hoc parallel work (both harnesses):** `dispatching-parallel-agents` for independent tasks outside plans
 
 ## Skills
 
@@ -81,7 +92,7 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 | using-razorback | Entry point: skill routing, execution model, Julie toolchain |
 | brainstorming | Requirements exploration, design, approach selection |
 | writing-plans | Implementation plans (full or light) with Julie-verified file paths |
-| **team-driven-development** | **Primary execution: Agent Teams, parallel teammates, inline review** |
+| **team-driven-development** | **Primary execution in Claude Code: Agent Teams, parallel teammates, inline review** |
 | executing-plans | Single-agent execution (fallback for sequential/single-task work) |
 | test-driven-development | Red-green-refactor with Julie-powered test discovery |
 | systematic-debugging | Root cause investigation with Julie-powered tracing |
@@ -92,7 +103,7 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 | dispatching-parallel-agents | Ad-hoc parallel agent dispatch |
 | using-git-worktrees | Isolated workspace setup |
 | writing-skills | Meta-skill for creating/editing skills |
-| ~~subagent-driven-development~~ | Deprecated: replaced by team-driven-development |
+| **subagent-driven-development** | **Primary execution in OpenCode: fresh subagent per task, inline review by lead** |
 
 ## Teammate Prompt Templates
 

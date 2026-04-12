@@ -1,6 +1,6 @@
 # Razorback — Project Instructions
 
-Razorback is a Claude Code plugin (skill set) that diverged from [Superpowers](https://github.com/obra/superpowers). It uses Julie MCP for token-efficient codebase orientation and Agent Teams for parallel plan execution.
+Razorback is a skill set for Claude Code and OpenCode that diverged from [Superpowers](https://github.com/obra/superpowers). It uses Julie MCP for token-efficient codebase orientation, with per-harness execution strategies (Agent Teams on Claude Code, subagent-driven on OpenCode).
 
 ## Project Structure
 
@@ -15,6 +15,11 @@ hooks/run-hook.cmd            — Cross-platform polyglot wrapper (bash/cmd)
 docs/plans/                   — Historical design and implementation plans
 docs/specs/                   — Design specifications
 ```
+
+**Harness split:**
+- Claude Code only: `.claude-plugin/`, `agents/`, `commands/`, `hooks/`
+- OpenCode only: `.opencode/`, `AGENTS.md`, `package.json`
+- Shared by both: `skills/`, `CLAUDE.md`, `docs/`
 
 ## Key Conventions
 
@@ -62,11 +67,17 @@ Use directive language: "Use julie:deep_dive BEFORE modifying any symbol" not "c
 - Skills assume Julie is configured and available
 
 ## Execution Model
-- **Primary:** Agent Teams via `team-driven-development` for plans with 2+ independent tasks
-- **Fallback:** Single-agent via `executing-plans` for sequential/single-task work
-- **Ad-hoc:** `dispatching-parallel-agents` for independent parallel tasks outside plans
-- Lead does inline review (spec compliance + code quality) instead of dispatching reviewer subagents
-- `subagent-driven-development` is deprecated; kept for reference only
+
+**Primary execution path depends on harness:**
+- **Claude Code:** `team-driven-development` (Agent Teams, parallel teammates, inline review)
+- **OpenCode:** `subagent-driven-development` (fresh subagent per task, inline review by lead)
+
+**Shared across both harnesses:**
+- **Sequential/single-task:** `executing-plans` (single agent, batch execution)
+- **Ad-hoc parallel:** `dispatching-parallel-agents` (independent agent dispatch)
+- Lead does inline review (spec compliance + code quality) — no separate reviewer subagents
+
+The opencode bootstrap is injected by `.opencode/plugins/razorback.js` and substitutes the appropriate Execution Model guidance at session start.
 
 ## What Not to Change
 - Process flows (brainstorm → plan → TDD → execute → review → finish)
