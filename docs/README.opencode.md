@@ -1,177 +1,48 @@
 # Razorback for OpenCode
 
-Complete guide for using Razorback with [OpenCode.ai](https://opencode.ai).
+Complete guide for using razorback with [opencode.ai](https://opencode.ai).
+
+For the bare-minimum quick install, see [`.opencode/INSTALL.md`](../.opencode/INSTALL.md). This document is the long-form guide.
 
 ## Prerequisites
 
-- [OpenCode.ai](https://opencode.ai) installed
-- Git installed
-- **Julie MCP server** configured and available (razorback skills require Julie for code intelligence)
+- [opencode.ai](https://opencode.ai) installed
+- **Julie MCP server** configured and available. Razorback skills depend on Julie for code intelligence, with no fallback to generic tools.
 
-## Quick Install
+## Installation
 
-Tell OpenCode:
+Add razorback to the `plugin` array in your `opencode.json` (global at `~/.config/opencode/opencode.json`, or project-level):
 
+```json
+{
+  "plugin": ["razorback@git+https://github.com/anortham/razorback.git"]
+}
 ```
-Clone https://github.com/anortham/razorback to ~/.config/opencode/razorback, then create directory ~/.config/opencode/plugins, then symlink ~/.config/opencode/razorback/.opencode/plugins/razorback.js to ~/.config/opencode/plugins/razorback.js, then symlink ~/.config/opencode/razorback/skills to ~/.config/opencode/skills/razorback, then restart opencode.
-```
 
-## Manual Installation
+Restart opencode. The plugin auto-installs via Bun and registers all skills automatically.
 
-### macOS / Linux
+Verify by asking: "Tell me about razorback."
+
+## Migrating from the old symlink-based install
+
+If you installed razorback in the v0.5.0 era using `git clone` and symlinks, remove the old setup before adding the plugin entry:
 
 ```bash
-# 1. Install Razorback (or update existing)
-if [ -d ~/.config/opencode/razorback ]; then
-  cd ~/.config/opencode/razorback && git pull
-else
-  git clone https://github.com/anortham/razorback.git ~/.config/opencode/razorback
-fi
-
-# 2. Create directories
-mkdir -p ~/.config/opencode/plugins ~/.config/opencode/skills
-
-# 3. Remove old symlinks/directories if they exist
+# Remove old symlinks
 rm -f ~/.config/opencode/plugins/razorback.js
 rm -rf ~/.config/opencode/skills/razorback
 
-# 4. Create symlinks
-ln -s ~/.config/opencode/razorback/.opencode/plugins/razorback.js ~/.config/opencode/plugins/razorback.js
-ln -s ~/.config/opencode/razorback/skills ~/.config/opencode/skills/razorback
-
-# 5. Restart OpenCode
+# Optional: remove the cloned repo
+rm -rf ~/.config/opencode/razorback
 ```
 
-#### Verify Installation
-
-```bash
-ls -l ~/.config/opencode/plugins/razorback.js
-ls -l ~/.config/opencode/skills/razorback
-```
-
-Both should show symlinks pointing to the razorback directory.
-
-### Windows
-
-**Prerequisites:**
-- Git installed
-- Either **Developer Mode** enabled OR **Administrator privileges**
-  - Windows 10: Settings > Update & Security > For developers
-  - Windows 11: Settings > System > For developers
-
-Pick your shell below: [Command Prompt](#command-prompt) | [PowerShell](#powershell) | [Git Bash](#git-bash)
-
-#### Command Prompt
-
-Run as Administrator, or with Developer Mode enabled:
-
-```cmd
-:: 1. Install Razorback
-git clone https://github.com/anortham/razorback.git "%USERPROFILE%\.config\opencode\razorback"
-
-:: 2. Create directories
-mkdir "%USERPROFILE%\.config\opencode\plugins" 2>nul
-mkdir "%USERPROFILE%\.config\opencode\skills" 2>nul
-
-:: 3. Remove existing links (safe for reinstalls)
-del "%USERPROFILE%\.config\opencode\plugins\razorback.js" 2>nul
-rmdir "%USERPROFILE%\.config\opencode\skills\razorback" 2>nul
-
-:: 4. Create plugin symlink (requires Developer Mode or Admin)
-mklink "%USERPROFILE%\.config\opencode\plugins\razorback.js" "%USERPROFILE%\.config\opencode\razorback\.opencode\plugins\razorback.js"
-
-:: 5. Create skills junction (works without special privileges)
-mklink /J "%USERPROFILE%\.config\opencode\skills\razorback" "%USERPROFILE%\.config\opencode\razorback\skills"
-
-:: 6. Restart OpenCode
-```
-
-#### PowerShell
-
-Run as Administrator, or with Developer Mode enabled:
-
-```powershell
-# 1. Install Razorback
-git clone https://github.com/anortham/razorback.git "$env:USERPROFILE\.config\opencode\razorback"
-
-# 2. Create directories
-New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.config\opencode\plugins"
-New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.config\opencode\skills"
-
-# 3. Remove existing links (safe for reinstalls)
-Remove-Item "$env:USERPROFILE\.config\opencode\plugins\razorback.js" -Force -ErrorAction SilentlyContinue
-Remove-Item "$env:USERPROFILE\.config\opencode\skills\razorback" -Force -ErrorAction SilentlyContinue
-
-# 4. Create plugin symlink (requires Developer Mode or Admin)
-New-Item -ItemType SymbolicLink -Path "$env:USERPROFILE\.config\opencode\plugins\razorback.js" -Target "$env:USERPROFILE\.config\opencode\razorback\.opencode\plugins\razorback.js"
-
-# 5. Create skills junction (works without special privileges)
-New-Item -ItemType Junction -Path "$env:USERPROFILE\.config\opencode\skills\razorback" -Target "$env:USERPROFILE\.config\opencode\razorback\skills"
-
-# 6. Restart OpenCode
-```
-
-#### Git Bash
-
-Note: Git Bash's native `ln` command copies files instead of creating symlinks. Use `cmd //c mklink` instead (the `//c` is Git Bash syntax for `/c`).
-
-```bash
-# 1. Install Razorback
-git clone https://github.com/anortham/razorback.git ~/.config/opencode/razorback
-
-# 2. Create directories
-mkdir -p ~/.config/opencode/plugins ~/.config/opencode/skills
-
-# 3. Remove existing links (safe for reinstalls)
-rm -f ~/.config/opencode/plugins/razorback.js 2>/dev/null
-rm -rf ~/.config/opencode/skills/razorback 2>/dev/null
-
-# 4. Create plugin symlink (requires Developer Mode or Admin)
-cmd //c "mklink \"$(cygpath -w ~/.config/opencode/plugins/razorback.js)\" \"$(cygpath -w ~/.config/opencode/razorback/.opencode/plugins/razorback.js)\""
-
-# 5. Create skills junction (works without special privileges)
-cmd //c "mklink /J \"$(cygpath -w ~/.config/opencode/skills/razorback)\" \"$(cygpath -w ~/.config/opencode/razorback/skills)\""
-
-# 6. Restart OpenCode
-```
-
-#### WSL Users
-
-If running OpenCode inside WSL, use the [macOS / Linux](#macos--linux) instructions instead.
-
-#### Verify Installation (Windows)
-
-**Command Prompt:**
-```cmd
-dir /AL "%USERPROFILE%\.config\opencode\plugins"
-dir /AL "%USERPROFILE%\.config\opencode\skills"
-```
-
-**PowerShell:**
-```powershell
-Get-ChildItem "$env:USERPROFILE\.config\opencode\plugins" | Where-Object { $_.LinkType }
-Get-ChildItem "$env:USERPROFILE\.config\opencode\skills" | Where-Object { $_.LinkType }
-```
-
-Look for `<SYMLINK>` or `<JUNCTION>` in the output.
-
-#### Troubleshooting Windows
-
-**"You do not have sufficient privilege" error:**
-- Enable Developer Mode in Windows Settings, OR
-- Right-click your terminal > "Run as Administrator"
-
-**"Cannot create a file when that file already exists":**
-- Run the removal commands (step 3) first, then retry
-
-**Symlinks not working after git clone:**
-- Run `git config --global core.symlinks true` and re-clone
+Also open `opencode.json` and remove any `skills.paths` entry you added for razorback. Then follow the installation step above.
 
 ## Usage
 
 ### Finding Skills
 
-Use OpenCode's native `skill` tool to list all available skills:
+Use opencode's native `skill` tool to list all available skills:
 
 ```
 use skill tool to list skills
@@ -179,97 +50,91 @@ use skill tool to list skills
 
 ### Loading a Skill
 
-Use OpenCode's native `skill` tool to load a specific skill:
-
 ```
 use skill tool to load razorback/brainstorming
 ```
 
+### Personal Skills
+
+Create your own skills in `~/.config/opencode/skills/`:
+
+```bash
+mkdir -p ~/.config/opencode/skills/my-skill
+```
+
+Create `~/.config/opencode/skills/my-skill/SKILL.md`:
+
+```markdown
+---
+name: my-skill
+description: Use when [condition] - [what it does]
+---
+
+# My Skill
+
+[Your skill content here]
+```
+
+### Project Skills
+
+Create project-specific skills in `.opencode/skills/<name>/SKILL.md` inside your project.
+
+**Skill Priority:** Project skills > Personal skills > razorback skills
+
 ## Updating
 
-```bash
-cd ~/.config/opencode/razorback
-git pull
+Razorback updates when you restart opencode. The plugin is re-fetched from the git repository on each launch.
+
+To pin a specific version, append a branch or tag:
+
+```json
+{
+  "plugin": ["razorback@git+https://github.com/anortham/razorback.git#v0.7.0"]
+}
 ```
 
-Restart OpenCode to load the updates.
+## How It Works
 
-## Removal
+The plugin (`.opencode/plugins/razorback.js`) wires two hooks:
 
-### macOS / Linux
+1. **`config` hook** registers razorback's `skills/` directory with opencode so every skill is discoverable natively. No symlinks, no manual paths.
+2. **`experimental.chat.messages.transform` hook** injects the razorback bootstrap (from `skills/using-razorback/SKILL.md`) on the first user message of a conversation. Transforming messages rather than the system prompt avoids token bloat on every turn and sidesteps compatibility issues with models like Qwen.
 
-```bash
-# 1. Remove symlinks
-rm -f ~/.config/opencode/plugins/razorback.js
-rm -rf ~/.config/opencode/skills/razorback
+### Execution model
 
-# 2. Remove razorback repo
-rm -rf ~/.config/opencode/razorback
+Agent Teams aren't available in opencode, so the primary execution path is `subagent-driven-development`: a fresh subagent per task, with the lead doing inline review. Sequential work still uses `executing-plans`, and ad-hoc parallel work uses `dispatching-parallel-agents`.
 
-# 3. Restart OpenCode
-```
+### Tool mapping
 
-### Windows — Command Prompt
+Skills written for Claude Code are adapted on the fly:
 
-```cmd
-:: 1. Remove symlinks/junctions
-del "%USERPROFILE%\.config\opencode\plugins\razorback.js"
-rmdir "%USERPROFILE%\.config\opencode\skills\razorback"
-
-:: 2. Remove razorback repo
-rmdir /S /Q "%USERPROFILE%\.config\opencode\razorback"
-
-:: 3. Restart OpenCode
-```
-
-### Windows — PowerShell
-
-```powershell
-# 1. Remove symlinks/junctions
-Remove-Item "$env:USERPROFILE\.config\opencode\plugins\razorback.js" -Force
-Remove-Item "$env:USERPROFILE\.config\opencode\skills\razorback" -Force
-
-# 2. Remove razorback repo
-Remove-Item "$env:USERPROFILE\.config\opencode\razorback" -Recurse -Force
-
-# 3. Restart OpenCode
-```
-
-### Windows — Git Bash
-
-```bash
-# 1. Remove symlinks/junctions
-rm -f ~/.config/opencode/plugins/razorback.js
-rm -rf ~/.config/opencode/skills/razorback
-
-# 2. Remove razorback repo
-rm -rf ~/.config/opencode/razorback
-
-# 3. Restart OpenCode
-```
+- `TodoWrite` → `todowrite`
+- `Task` with subagents → opencode's `@mention` system
+- `Skill` tool → opencode's native `skill` tool
+- File operations → native opencode tools
 
 ## Troubleshooting
 
 ### Plugin not loading
 
-1. Check plugin exists: `ls ~/.config/opencode/razorback/.opencode/plugins/razorback.js`
-2. Check symlink: `ls -l ~/.config/opencode/plugins/` (macOS/Linux) or `dir /AL %USERPROFILE%\.config\opencode\plugins` (Windows)
-3. Check OpenCode logs: `opencode run "test" --print-logs --log-level DEBUG`
+1. Check opencode logs: `opencode run --print-logs "hello" 2>&1 | grep -i razorback`
+2. Verify the `plugin` entry in your `opencode.json` is spelled correctly and points to the right git URL
+3. Make sure you're on a recent opencode release that supports git-sourced plugins
 
 ### Skills not found
 
-1. Verify skills symlink: `ls -l ~/.config/opencode/skills/razorback` (should point to razorback/skills/)
-2. Use OpenCode's `skill` tool to list available skills
-3. Check skill structure: each skill needs a `SKILL.md` file with valid frontmatter
-
-### Windows: Module not found error
-
-If you see `Cannot find module` errors on Windows:
-- **Cause:** Git Bash `ln -sf` copies files instead of creating symlinks
-- **Fix:** Use `mklink /J` directory junctions instead (see Windows installation steps)
+1. Use the `skill` tool to list available skills. Razorback skills should appear alongside any personal or project skills.
+2. Confirm the plugin is actually loading (see above)
+3. Each skill needs a `SKILL.md` with valid YAML frontmatter (`name` and `description` required)
 
 ### Bootstrap not appearing
 
-1. Verify using-razorback skill exists: `ls ~/.config/opencode/razorback/skills/using-razorback/SKILL.md`
-2. Check OpenCode version supports `experimental.chat.system.transform` hook
-3. Restart OpenCode after plugin changes
+1. Confirm your opencode version supports the `experimental.chat.messages.transform` hook
+2. Restart opencode after changing `opencode.json`
+3. The bootstrap lives in `skills/using-razorback/SKILL.md` inside the fetched plugin. If it's missing there, the plugin install itself failed.
+
+## Getting Help
+
+- Report issues: https://github.com/anortham/razorback/issues
+- Main documentation: https://github.com/anortham/razorback
+- opencode docs: https://opencode.ai/docs/
