@@ -298,7 +298,7 @@ Done.
 ## Integration
 
 **Required workflow skills:**
-- **razorback:using-git-worktrees** — REQUIRED: Set up isolated workspace before starting
+- **razorback:using-git-worktrees** — Set up isolated workspace before starting. Skip only with explicit user consent (small, single-session work where a feature branch is sufficient).
 - **razorback:writing-plans** — Creates the plan this skill executes
 - **razorback:requesting-code-review** — Review criteria the lead applies during inline review
 - **razorback:finishing-a-development-branch** — Complete development after all tasks

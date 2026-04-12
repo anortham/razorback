@@ -133,6 +133,8 @@ go test ./...
 
 **If tests pass:** Report ready.
 
+**If the project has no automated test suite** (content-only repos, pure documentation, skill libraries, config-only projects): skip this step. Note in your report that the baseline is manual-verify-only and list the integration checks a reviewer would run instead (e.g., `node --check`, schema validation, link checks).
+
 ### 5. Report Location
 
 ```
@@ -210,9 +212,12 @@ Ready to implement auth feature
 
 **Called by:**
 - **brainstorming** (Phase 4) - REQUIRED when design is approved and implementation follows
-- **team-driven-development** - REQUIRED before executing any tasks
+- **team-driven-development** - REQUIRED before executing any tasks (Claude Code)
+- **subagent-driven-development** - REQUIRED before executing any tasks (OpenCode)
 - **executing-plans** - REQUIRED before executing any tasks
 - Any skill needing isolated workspace
+
+**Escape hatch:** The "REQUIRED" callers above default to worktree isolation. The user can opt out with explicit consent for small, same-session work where a feature branch on the current workspace is sufficient. Record the consent and proceed — don't silently skip worktree setup.
 
 **Pairs with:**
 - **finishing-a-development-branch** - REQUIRED for cleanup after work complete
