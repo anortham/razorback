@@ -51,11 +51,11 @@ use skill tool to load razorback/brainstorming
 
 ```json
 {
-  "plugin": ["razorback@git+https://github.com/anortham/razorback.git#v0.7.2"]
+  "plugin": ["razorback@git+https://github.com/anortham/razorback.git#<version>"]
 }
 ```
 
-To update, change `#v0.7.2` to a newer tag (see [releases](https://github.com/anortham/razorback/releases)) and restart OpenCode.
+Replace `<version>` with a tag from the [releases page](https://github.com/anortham/razorback/releases) (e.g. `v0.7.2`). To update, change the tag to a newer one and restart OpenCode.
 
 **Unpinned installs** (`razorback@git+…razorback.git` with no `#ref`) may or may not refresh on restart depending on Bun version and platform. If yours gets stuck on an old version, flush the cache:
 

@@ -87,11 +87,11 @@ The reliable way to update razorback is to pin to a version tag and bump the pin
 
 ```json
 {
-  "plugin": ["razorback@git+https://github.com/anortham/razorback.git#v0.7.2"]
+  "plugin": ["razorback@git+https://github.com/anortham/razorback.git#<version>"]
 }
 ```
 
-To update, change `#v0.7.2` to a newer tag (see the [releases page](https://github.com/anortham/razorback/releases)) and restart opencode.
+Replace `<version>` with a tag from the [releases page](https://github.com/anortham/razorback/releases). To update, change the tag to a newer one and restart opencode.
 
 ### Unpinned installs
 
