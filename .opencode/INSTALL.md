@@ -53,7 +53,7 @@ To pin a specific version:
 
 ```json
 {
-  "plugin": ["razorback@git+https://github.com/anortham/razorback.git#v0.7.0"]
+  "plugin": ["razorback@git+https://github.com/anortham/razorback.git#v0.7.1"]
 }
 ```
 

@@ -1,9 +1,9 @@
 {
   "name": "razorback",
-  "version": "0.7.0",
-  "description": "Team-first, Julie-powered development workflow. Now cross-harness.",
-  "private": true,
+  "version": "0.7.1",
+  "description": "Julie-powered development workflow for Claude Code and OpenCode.",
   "type": "module",
+  "main": ".opencode/plugins/razorback.js",
   "author": "anortham",
   "license": "MIT",
   "homepage": "https://github.com/anortham/razorback"

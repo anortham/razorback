@@ -89,7 +89,7 @@ To pin a specific version, append a branch or tag:
 
 ```json
 {
-  "plugin": ["razorback@git+https://github.com/anortham/razorback.git#v0.7.0"]
+  "plugin": ["razorback@git+https://github.com/anortham/razorback.git#v0.7.1"]
 }
 ```
 

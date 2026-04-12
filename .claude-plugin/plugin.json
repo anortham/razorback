@@ -1,7 +1,7 @@
 {
   "name": "razorback",
   "description": "Julie-powered development workflow for Claude Code and OpenCode. Agent Teams on Claude Code, subagent-driven on OpenCode, shared skill set across both.",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "author": {
     "name": "anortham"
   },
