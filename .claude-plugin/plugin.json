@@ -1,7 +1,7 @@
 {
   "name": "razorback",
-  "description": "Team-first, Julie-powered development workflow. Agent Teams for parallel execution, Julie MCP for token-efficient codebase orientation.",
-  "version": "0.6.1",
+  "description": "Julie-powered development workflow for Claude Code and OpenCode. Agent Teams on Claude Code, subagent-driven on OpenCode, shared skill set across both.",
+  "version": "0.7.0",
   "author": {
     "name": "anortham"
   },
