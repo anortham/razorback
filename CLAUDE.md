@@ -1,6 +1,6 @@
 # Razorback — Project Instructions
 
-Razorback is a skill set for Claude Code and OpenCode that diverged from [Superpowers](https://github.com/obra/superpowers). It uses Julie MCP for token-efficient codebase orientation, with per-harness execution strategies (Agent Teams on Claude Code, subagent-driven on OpenCode).
+Razorback is a skill set for Claude Code and OpenCode that diverged from [Superpowers](https://github.com/obra/superpowers). It uses Julie MCP for token-efficient codebase orientation. Plan execution runs through parallel subagent dispatch on both harnesses; Agent Teams are a Claude-Code-only upgrade promoted by the session-start bootstrap.
 
 ## Project Structure
 
@@ -68,16 +68,18 @@ Use directive language: "Use julie:deep_dive BEFORE modifying any symbol" not "c
 
 ## Execution Model
 
-**Primary execution path depends on harness:**
-- **Claude Code:** `team-driven-development` (Agent Teams, parallel teammates, inline review)
-- **OpenCode:** `subagent-driven-development` (fresh subagent per task, inline review by lead)
+**Primary execution path (both harnesses):**
+- `subagent-driven-development` dispatches fresh implementer subagents per task, parallel when tasks are independent, inline review by lead. Skill bodies across razorback cross-reference this as the canonical execution skill.
+
+**Claude Code upgrade:**
+- `team-driven-development` — Agent Teams with persistent named teammates. Fixes go to the teammate who already has context instead of a cold-restart fresh subagent. Promoted as primary on Claude Code via the session-start bootstrap (`hooks/session-start`).
 
 **Shared across both harnesses:**
 - **Sequential/single-task:** `executing-plans` (single agent, batch execution)
-- **Ad-hoc parallel:** `dispatching-parallel-agents` (independent agent dispatch)
+- **Ad-hoc parallel:** `dispatching-parallel-agents` (independent agent dispatch outside plans)
 - Lead does inline review (spec compliance + code quality) — no separate reviewer subagents
 
-The opencode bootstrap is injected by `.opencode/plugins/razorback.js` and substitutes the appropriate Execution Model guidance at session start.
+The opencode bootstrap is injected by `.opencode/plugins/razorback.js` and substitutes the Execution Model section so `subagent-driven-development` is named as the primary on opencode (where Agent Teams don't exist).
 
 ## What Not to Change
 - Process flows (brainstorm → plan → TDD → execute → review → finish)

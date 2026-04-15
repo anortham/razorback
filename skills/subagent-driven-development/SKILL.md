@@ -1,13 +1,17 @@
 ---
 name: subagent-driven-development
-description: Execute an implementation plan by dispatching a fresh subagent per task with inline review by the lead. Primary execution path for opencode (no Agent Teams), and a Claude Code fallback when teams don't fit.
+description: Execute an implementation plan by dispatching fresh subagents (sequentially or in parallel) with inline review by the lead. Primary execution path for opencode, and a Claude Code fallback when Agent Teams don't fit.
 ---
 
 # Subagent-Driven Development
 
-Execute a plan by dispatching a fresh subagent per task, with the lead doing inline review (spec compliance + code quality) after each task. When review finds issues, **resume** the implementer subagent with the fix prompt — never dispatch a fresh fix subagent.
+Execute a plan by dispatching fresh subagents per task, with the lead doing inline review (spec compliance + code quality) after each task. Independent tasks can be dispatched in parallel; tightly coupled tasks run sequentially. For fixes, dispatch a fresh implementer with the fix prompt and prior-task context.
 
-**Core principle:** Fresh subagent per task + resume for fixes + inline review by lead = high quality without wasted ceremony.
+**Core principle:** Fresh subagent per task + inline review by lead + parallel fan-out when tasks are independent = high quality without wasted ceremony.
+
+**Dispatch mechanism:**
+- **Claude Code:** `Agent` tool (one call per subagent; multiple calls in one turn run in parallel).
+- **opencode:** `Task` tool (one call per subagent; multiple calls in one turn run in parallel). The built-in `general` subagent is suitable for most implementer work; `@mention` also works for manual invocation.
 
 ## When to Use
 
@@ -36,8 +40,10 @@ digraph when_to_use {
 - Faster iteration (no human-in-loop between tasks)
 
 **vs. Team-Driven Development (Claude Code only):**
-- Sequential per-task subagents instead of parallel teammates
-- Used when Agent Teams are unavailable (opencode) or when tasks are sequential enough that parallelism doesn't help
+- Fresh subagent per task; team-driven uses persistent named teammates that receive follow-up messages
+- Both can fan out in parallel; the difference is persistence, not parallelism
+- Fixes here dispatch a fresh implementer with the fix prompt plus prior context, rather than resuming a teammate
+- Used on opencode (no Agent Teams) or on Claude Code when teammate persistence isn't worth the ceremony
 
 ## The Process
 
@@ -99,9 +105,20 @@ Use the template at `./implementer-prompt.md`. The spawn prompt MUST include:
 5. **TDD expectations** (from `razorback:test-driven-development`)
 6. **Verification commands** specific to this task
 
-Save the **agent ID** returned by the dispatch — you'll need it to resume the subagent for fixes.
+On Claude Code, save the **agent ID** returned by the dispatch so you can resume the subagent for fixes (preserves its orientation context). On opencode, the Task tool does not expose persistent resume, so fixes go to a fresh subagent with fix context included (see Step 4).
 
 If the subagent asks questions, answer completely before letting it proceed.
+
+### Parallel Dispatch (Independent Tasks)
+
+When the plan has 2+ independent tasks (non-overlapping files, no ordering dependency), dispatch them in parallel:
+
+- **Claude Code:** make multiple `Agent` tool calls in a single turn. They run concurrently and you review each as it reports back.
+- **opencode:** make multiple `Task` tool calls in a single turn (or in the TUI, @mention the `general` subagent concurrently). Child sessions run in parallel; navigate with `session_child_*` keybinds.
+
+Assign file ownership per subagent to prevent collisions. If tasks are tightly coupled (same files, shared state, ordering dependency), dispatch sequentially instead — one subagent at a time, lead reviews, then next.
+
+Reviews still happen inline per-task. Do not batch reviews — a failing task shouldn't block review of the ones that passed.
 
 ## Step 3: Lead Inline Review
 
@@ -138,19 +155,20 @@ Spec compliance checking earns its keep when the plan leaves room for misinterpr
 
 Either way, the review is a single pass by the lead. Never collapse the loop to skip re-reviewing after a fix.
 
-## Step 4: Resume for Fixes, Don't Dispatch Fresh
+## Step 4: Fixes
 
-When review finds issues, **resume the implementer subagent** — do not spawn a new one.
+When review finds issues, route the fix back to an implementer with the reviewer findings.
 
-A fresh subagent spends most of its budget re-orienting (reading files, running Julie queries) before it can make even a small fix. The implementer already has full context. Resuming skips orientation and goes straight to the fix.
+**Claude Code (prefer resume):** Use `Agent(resume: "<agent-id>")` with the prompt from `./fix-prompt.md`. The resumed subagent keeps its orientation context — files read, decisions made, tests written — and goes straight to the fix instead of re-reading the codebase.
 
-**How it works:**
-1. Dispatch returned an **agent ID**. You saved it in Step 2.
-2. Use `Agent(resume: "<agent-id>")` with the prompt from `./fix-prompt.md`, including the reviewer findings.
-3. The resumed subagent picks up with prior context intact — files it read, decisions it made, tests it wrote.
-4. Re-review after the fix. Repeat until approved.
+**opencode (dispatch fresh with context):** The Task tool doesn't expose persistent resume. Dispatch a fresh implementer via the Task tool (or @mention `general`) using `./fix-prompt.md` plus:
+- The original task text
+- A pointer to the commit(s) the prior implementer produced (so the fresh subagent can `git show` or read the files instead of rediscovering them)
+- The reviewer findings
 
-**When to dispatch fresh instead:** Rare. Only when the implementer's context is genuinely stale (another task modified the same files in between, or the fix needs a fundamentally different approach), or when the subagent is unreachable (session error, context limit).
+Either way, re-review after the fix. Repeat until approved (cap: 3 iterations, then escalate).
+
+**When to dispatch fresh on Claude Code:** the subagent is unreachable (session error, context limit), the prior implementer's context is genuinely stale (another task modified the same files), or the fix needs a fundamentally different approach.
 
 ## Step 5: Complete
 
@@ -258,11 +276,11 @@ Done.
 
 **Quality gates:**
 - Inline review catches spec + quality issues in one pass
-- Resume-for-fix preserves the implementer's context
+- On Claude Code, resume-for-fix preserves the implementer's context; on opencode, fix-dispatch includes prior commits as context
 - Re-review loop ensures fixes actually work
 
 **Cost:**
-- Subagent invocations scale with plan complexity (one implementer per task, plus resume rounds)
+- Subagent invocations scale with plan complexity (one implementer per task, plus fix rounds)
 - Lead does more prep (extracting tasks, curating context, reviewing inline)
 - Catches issues early — cheaper than debugging later
 
@@ -272,13 +290,13 @@ Done.
 - Start implementation on main/master branch without explicit user consent
 - Skip inline review (it consistently catches real issues)
 - Proceed to the next task while any review has open issues
-- Dispatch multiple implementer subagents in parallel on overlapping files (conflicts)
+- Dispatch parallel implementer subagents on overlapping files (conflicts)
 - Make the subagent read the plan file (provide the full task text instead)
 - Skip scene-setting context (the subagent needs to know where the task fits)
 - Ignore subagent questions (answer before letting them proceed)
 - Skip the re-review after a fix
 - Dispatch a separate reviewer subagent when the lead can review inline
-- Dispatch a fresh subagent for fixes when resume is possible (wastes tokens re-orienting)
+- On Claude Code, dispatch a fresh subagent for fixes when resume is possible (wastes tokens re-orienting)
 
 **If the subagent asks questions:**
 - Answer clearly and completely
@@ -286,14 +304,10 @@ Done.
 - Don't rush them into implementation
 
 **If review finds issues:**
-- **Resume** the implementer subagent (Agent tool `resume` parameter with the saved agent ID)
-- Provide findings via `./fix-prompt.md`
+- Claude Code: resume the implementer subagent with `./fix-prompt.md` + reviewer findings
+- opencode: dispatch a fresh implementer with `./fix-prompt.md` + reviewer findings + pointer to prior commits
 - Re-review after the fix
 - Repeat until approved (cap: 3 iterations, then escalate)
-
-**If the implementer subagent is unreachable** (session error, context limit):
-- Dispatch a fresh subagent with specific fix instructions + review findings
-- This is the fallback, not the default
 
 ## Integration
 

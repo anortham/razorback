@@ -1,6 +1,6 @@
 ---
 name: executing-plans
-description: Use when you have a written implementation plan to execute in a separate session with review checkpoints, or as single-agent fallback when team-driven-development is not appropriate
+description: Use when you have a written implementation plan to execute in a separate session with review checkpoints, or as single-agent fallback when subagent-driven-development is not appropriate
 ---
 
 # Executing Plans
@@ -9,7 +9,7 @@ description: Use when you have a written implementation plan to execute in a sep
 
 Load plan, review critically, execute all tasks, report when complete.
 
-**When to use this vs. team-driven-development:** Use this skill for single-task plans, tightly sequential work, or separate-session execution. For plans with 2+ independent tasks in the same session, prefer `razorback:team-driven-development` for parallel execution.
+**When to use this vs. subagent-driven-development:** Use this skill for single-task plans, tightly sequential work, or separate-session execution. For plans with 2+ independent tasks in the same session, prefer `razorback:subagent-driven-development` (or `razorback:team-driven-development` on Claude Code) for parallel execution with inline review.
 
 **Announce at start:** "I'm using the executing-plans skill to implement this plan."
 

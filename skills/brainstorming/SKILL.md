@@ -172,20 +172,20 @@ For moderate, well-understood tasks executed in the same session. Skips writing-
 - Acceptance criteria checklist
 - Key decisions and edge cases
 
-**If the task has 2+ independent parts:** Use `razorback:team-driven-development`. The design doc serves as the plan. Create a team with one teammate per independent part, assigning file ownership to prevent conflicts.
+**If the task has 2+ independent parts:** Use `razorback:subagent-driven-development`. The design doc serves as the plan. Dispatch one implementer subagent per independent part in parallel, assigning file ownership to prevent conflicts.
 
-**If the task is a single coherent unit:** Dispatch one implementer using the teammate prompt template from team-driven-development.
+**If the task is a single coherent unit:** Dispatch one implementer using the prompt template from `razorback:subagent-driven-development`.
 
 ```
-Agent tool:
+Agent / Task tool:
   description: "Implement [feature name]"
   prompt: |
-    [Follow team-driven-development/implementer-prompt.md template]
+    [Follow subagent-driven-development/implementer-prompt.md template]
     Task description = the design doc
     Context = conversational agreement
 ```
 
-**Review:** Lead does inline review when implementer reports back (spec compliance + code quality). If issues found, message the teammate directly. See review checklist in team-driven-development skill.
+**Review:** Lead does inline review when the implementer reports back (spec compliance + code quality). If issues found, route the fix per `razorback:subagent-driven-development` (resume on Claude Code, fresh dispatch with fix context on opencode).
 
 **Done:** After review passes, use razorback:finishing-a-development-branch.
 

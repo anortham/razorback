@@ -30,7 +30,7 @@ Write implementation plans scaled to the situation. The right level of detail de
 - TDD expectation stated once, not choreographed per-step — the implementer follows TDD naturally
 - Typically 1/3 the length of a full plan
 
-**How to choose:** If the plan will be executed by a team in this session (team-driven-development), use light. If it's a handoff to another session or developer, use full. When in doubt, ask.
+**How to choose:** If the plan will be executed in this session by dispatched subagents (subagent-driven-development, or team-driven-development on Claude Code), use light. If it's a handoff to another session or developer, use full. When in doubt, ask.
 
 ## Scope Check
 
@@ -175,21 +175,21 @@ After saving the plan, offer execution choice:
 
 **"Plan complete and saved to `docs/plans/<filename>.md`. Two execution options:**
 
-**1. Team-Driven (this session, recommended)** - I create a team with parallel teammates, inline review, fast iteration
+**1. This-session execution (recommended)** - Dispatch implementer subagents with inline review, fast iteration
 
-**2. Single-Agent (separate session)** - Open new session with executing-plans, batch execution with review between batches
+**2. Separate-session execution** - Open a new session with executing-plans, batch execution with review between batches
 
 **Which approach?"**
 
-**If Team-Driven chosen (2+ independent tasks):**
-- **REQUIRED SUB-SKILL:** Use razorback:team-driven-development
+**If this-session execution chosen (2+ independent tasks):**
+- **REQUIRED SUB-SKILL:** Use razorback:subagent-driven-development (on Claude Code, razorback:team-driven-development is an upgrade when persistent teammates are worth the ceremony — see the Execution Model in using-razorback)
 - Stay in this session
-- Parallel teammates + inline review
+- Parallel subagent dispatch + inline review
 
-**If Team-Driven chosen (1 task or sequential):**
+**If this-session execution chosen (1 task or sequential):**
 - Execute directly in this session using razorback:executing-plans
-- No team needed for single-task plans
+- No subagent fan-out needed for single-task plans
 
-**If Single-Agent chosen:**
+**If separate-session execution chosen:**
 - Guide them to open new session in worktree
 - **REQUIRED SUB-SKILL:** New session uses razorback:executing-plans

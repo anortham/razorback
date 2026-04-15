@@ -212,8 +212,8 @@ Ready to implement auth feature
 
 **Called by:**
 - **brainstorming** (Phase 4) - REQUIRED when design is approved and implementation follows
-- **team-driven-development** - REQUIRED before executing any tasks (Claude Code)
-- **subagent-driven-development** - REQUIRED before executing any tasks (OpenCode)
+- **subagent-driven-development** - REQUIRED before executing any tasks
+- **team-driven-development** - REQUIRED before executing any tasks (Claude Code, when used instead of subagent-driven)
 - **executing-plans** - REQUIRED before executing any tasks
 - Any skill needing isolated workspace
 

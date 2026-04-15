@@ -13,7 +13,7 @@ When you have multiple unrelated failures (different test files, different subsy
 
 **Core principle:** Dispatch one agent per independent problem domain. Let them work concurrently.
 
-**For plan execution with 2+ independent tasks, prefer `razorback:team-driven-development` instead.** Teams give you persistent teammates (no cold restart for fixes), direct messaging, and shared task coordination. Use this skill for ad-hoc parallel work outside of plan execution (debugging multiple independent failures, parallel research, etc.).
+**For plan execution with 2+ independent tasks, prefer `razorback:subagent-driven-development` instead** (or `razorback:team-driven-development` on Claude Code when persistent teammates are worth the ceremony). Plan-execution skills wire in inline review, file ownership, and fix routing. Use this skill for ad-hoc parallel work outside of plan execution (debugging multiple independent failures, parallel research, etc.).
 
 ## When to Use
 

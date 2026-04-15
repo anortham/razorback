@@ -9,13 +9,13 @@ Two review modes, depending on context.
 
 **Core principle:** Review early, review often.
 
-## Mode 1: Inline Review (Team-Driven Development)
+## Mode 1: Inline Review (Plan Execution)
 
-When using `razorback:team-driven-development`, the **lead does inline review** after each teammate reports DONE. No separate reviewer agent needed.
+When using `razorback:subagent-driven-development` (or `razorback:team-driven-development` on Claude Code), the **lead does inline review** after each implementer reports DONE. No separate reviewer agent needed.
 
 **The lead checks two things:**
 
-**Spec compliance:** Did the teammate build what was requested? Nothing missing, nothing extra?
+**Spec compliance:** Did the implementer build what was requested? Nothing missing, nothing extra?
 - Use `get_symbols(file_path)` to scan changed files quickly
 - Compare actual code to task requirements line by line
 
@@ -24,11 +24,11 @@ When using `razorback:team-driven-development`, the **lead does inline review** 
 - Use `fast_refs(symbol)` to verify changes don't break dependents
 - Check tests verify behavior, not just that code runs
 
-**If issues found:** Message the teammate directly with findings. They fix and re-report. Review cap: 3 iterations.
+**If issues found:** Route fix back to an implementer (resume on Claude Code with team-driven, fresh dispatch with fix context on opencode or subagent-driven). They fix and re-report. Review cap: 3 iterations.
 
 ## Mode 2: Standalone Review (Ad-Hoc / Pre-Merge)
 
-For work done outside team-driven-development, dispatch the `razorback:code-reviewer` agent.
+For work done outside plan execution, dispatch the `razorback:code-reviewer` agent.
 
 **1. Get git SHAs:**
 ```bash
@@ -56,7 +56,7 @@ Use Agent tool with razorback:code-reviewer type, fill template at `code-reviewe
 ## When to Request Review
 
 **Mandatory:**
-- After each task in team-driven development (inline by lead)
+- After each task during plan execution (inline by lead)
 - After completing major feature (standalone)
 - Before merge to main (standalone)
 
@@ -67,9 +67,9 @@ Use Agent tool with razorback:code-reviewer type, fill template at `code-reviewe
 
 ## Integration with Workflows
 
-**Team-Driven Development:**
-- Lead does inline review (Mode 1) after each teammate reports DONE
-- See team-driven-development skill for full review checklist
+**Plan Execution (subagent-driven or team-driven):**
+- Lead does inline review (Mode 1) after each implementer reports DONE
+- See the execution skill for full review checklist
 
 **Executing Plans:**
 - Review after each batch (3 tasks)

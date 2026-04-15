@@ -193,7 +193,8 @@ git worktree remove <worktree-path>
 ## Integration
 
 **Called by:**
-- **team-driven-development** (Step 5) - After all teammates complete
+- **subagent-driven-development** (Step 5) - After all implementers complete
+- **team-driven-development** (Step 5) - After all teammates complete (Claude Code)
 - **executing-plans** (Step 5) - After all batches complete
 
 **Pairs with:**

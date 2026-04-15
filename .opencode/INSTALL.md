@@ -91,7 +91,7 @@ Razorback skills assume Julie MCP is present. If Julie isn't configured, many sk
 
 When skills reference Claude Code tools:
 - `TodoWrite` → `todowrite`
-- `Task` with subagents → `@mention` syntax
+- `Agent` tool (dispatching subagents) → OpenCode's `Task` tool (same shape). Users can also `@mention` subagents manually from the UI.
 - `Skill` tool → OpenCode's native `skill` tool
 - File operations → your native tools
 
