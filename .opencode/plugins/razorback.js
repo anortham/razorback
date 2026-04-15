@@ -73,6 +73,7 @@ export const RazorbackPlugin = async ({ client, directory }) => {
     const toolMapping = `**Tool Mapping for OpenCode:**
 When skills reference tools, substitute OpenCode equivalents:
 - \`TodoWrite\` → \`todowrite\`
+- \`TaskCreate\`/\`TaskUpdate\` → \`todowrite\`
 - \`Agent\` tool (dispatching subagents) → opencode's \`Task\` tool. The built-in \`general\` subagent is suitable for most implementer work. Multiple \`Task\` calls in one turn run in parallel. Users can also \`@mention\` subagents manually.
 - \`Skill\` tool → opencode's native \`skill\` tool
 - \`Read\`/\`Write\`/\`Edit\`/\`Bash\` → your native tools
