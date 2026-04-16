@@ -34,8 +34,9 @@ if %ERRORLEVEL% equ 0 (
     exit /b %ERRORLEVEL%
 )
 
-REM No bash found - exit silently rather than error
-REM (plugin still works, just without SessionStart context injection)
+REM No bash found - warn on stderr, exit 0 so plugin still loads.
+echo razorback: no bash found on Windows -- SessionStart bootstrap disabled.>&2
+echo Install Git for Windows ^(https://git-scm.com^) to enable.>&2
 exit /b 0
 CMDBLOCK
 
