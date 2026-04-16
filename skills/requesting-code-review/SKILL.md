@@ -38,7 +38,16 @@ HEAD_SHA=$(git rev-parse HEAD)
 
 **2. Dispatch code-reviewer agent:**
 
-Use Agent tool with razorback:code-reviewer type, fill template at `code-reviewer.md`
+| Harness | How to invoke |
+|---------|---------------|
+| Claude Code | `Agent(subagent_type="razorback:code-reviewer", prompt=<filled template>)` |
+| Cursor | Same as Claude Code (plugin agents exposed through the Skill tool's agent discovery) |
+| Copilot CLI | `task(agent_type="razorback:code-reviewer", …)` — plugin agents auto-discovered |
+| Codex | `spawn_agent(agent_type="worker", message=<see two-file note below>)` |
+| OpenCode | `Task` tool with `general` subagent (message built as in the two-file note below) |
+| Gemini CLI | No subagents — lead applies the reviewer checklist inline |
+
+**Two-file note (Codex / OpenCode inline-prompt harnesses):** The reviewer uses two files. `agents/code-reviewer.md` holds the reviewer's system-prompt body (its behavioral spec). `requesting-code-review/code-reviewer.md` is the task template with placeholders (`{WHAT_WAS_IMPLEMENTED}`, `{PLAN_OR_REQUIREMENTS}`, `{BASE_SHA}`, `{HEAD_SHA}`, `{DESCRIPTION}`). On Claude Code / Cursor / Copilot CLI the agent discovery wires these together automatically. On Codex and OpenCode, build the dispatch message by concatenating: (1) `agents/code-reviewer.md` body (strip the frontmatter), then (2) the filled-in `requesting-code-review/code-reviewer.md` template. Send that as the subagent's task message.
 
 **Placeholders:**
 - `{WHAT_WAS_IMPLEMENTED}` - What you just built
