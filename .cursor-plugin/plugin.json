@@ -1,0 +1,23 @@
+{
+  "name": "razorback",
+  "displayName": "Razorback",
+  "description": "Julie-powered development workflow for Claude Code, Codex, and OpenCode. Parallel subagent dispatch on all three harnesses, with Agent Teams as a Claude-Code-only upgrade.",
+  "version": "0.8.0",
+  "author": {
+    "name": "Alan Northam"
+  },
+  "homepage": "https://github.com/anortham/razorback",
+  "repository": "https://github.com/anortham/razorback",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "tdd",
+    "debugging",
+    "julie",
+    "workflows"
+  ],
+  "skills": "./skills/",
+  "agents": "./agents/",
+  "commands": "./commands/",
+  "hooks": "./hooks/hooks-cursor.json"
+}
