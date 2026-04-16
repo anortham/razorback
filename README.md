@@ -1,8 +1,8 @@
 # Razorback
 
-**Julie-powered development workflow for Claude Code, Codex, and OpenCode.**
+**Julie-powered development workflow for Claude Code, Cursor, Codex, OpenCode, Copilot CLI, and Gemini CLI.**
 
-Razorback is a skill set for Claude Code, Codex, and OpenCode that diverged from [Superpowers](https://github.com/obra/superpowers). It uses Julie MCP for token-efficient codebase orientation. Plan execution runs through parallel subagent dispatch on all three harnesses, with Agent Teams as a Claude-Code-only upgrade for persistent named teammates.
+Razorback is a skill set for every major coding-agent harness, diverged from [Superpowers](https://github.com/obra/superpowers) to add Julie MCP for token-efficient codebase orientation. Plan execution runs through parallel subagent dispatch on harnesses that support it, with Agent Teams as a Claude-Code-only upgrade for persistent named teammates.
 
 ## Why?
 
@@ -13,58 +13,44 @@ AI-assisted development burns tokens on repetitive codebase exploration. Every a
 
 ## Requirements
 
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex](https://openai.com/codex/), or [OpenCode](https://opencode.ai)
-- [Julie MCP Server](https://github.com/anortham/julie) -- must be configured and indexing your workspace
+- A supported harness: [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Cursor](https://cursor.sh), [Codex](https://openai.com/codex/), [OpenCode](https://opencode.ai), [Copilot CLI](https://github.com/github/copilot-cli), or [Gemini CLI](https://github.com/google-gemini/gemini-cli)
+- [Julie MCP Server](https://github.com/anortham/julie) — must be configured and indexing your workspace
 - For Codex: enable `multi_agent = true` in `~/.codex/config.toml` so parallel execution skills can dispatch subagents
 
 ## Installation
 
-Razorback is a pure-content plugin (skills, commands, hooks) -- no build step or runtime dependencies required.
+Razorback is a pure-content plugin (skills, commands, hooks) — no build step or runtime dependencies required. Install paths below are all "pull from GitHub"; most harnesses support one-liner installs.
 
-### Option 1: Install from GitHub (Recommended)
+### Claude Code
 
 ```bash
-# Add the Razorback repository as a plugin marketplace
 /plugin marketplace add anortham/razorback
-
-# Install the plugin (user scope, available across all projects)
 /plugin install razorback@razorback
 ```
 
-You can also scope the installation to a specific project:
+Scope to a specific project instead of user-wide:
 
 ```bash
-# Project scope (shared with team via version control)
 /plugin install razorback@razorback --scope project
 ```
 
-### Option 2: Install from a Local Clone
-
-If you prefer to clone the repo yourself (useful for development or contributing):
+Or clone and load locally for development:
 
 ```bash
-# Clone the repository
 git clone https://github.com/anortham/razorback.git
-
-# Install as a Claude Code plugin
-claude plugin install /path/to/razorback
-```
-
-**For development (loads plugin from local directory each time):**
-
-```bash
 claude --plugin-dir /path/to/razorback
 ```
 
-### OpenCode
+### Cursor
 
-Tell OpenCode:
+Cursor has a plugin marketplace, but razorback isn't listed there yet. For now, clone and point Cursor at the local checkout via its plugin-load mechanism:
 
+```bash
+git clone https://github.com/anortham/razorback.git ~/path/to/razorback
+# Then in Cursor: add ~/path/to/razorback to your plugin paths
 ```
-Fetch and follow instructions from https://raw.githubusercontent.com/anortham/razorback/refs/heads/main/.opencode/INSTALL.md
-```
 
-**Detailed docs:** [docs/README.opencode.md](docs/README.opencode.md)
+The plugin manifest at `.cursor-plugin/plugin.json` declares skills, agents, commands, and hooks. Cursor marketplace submission is tracked as a follow-up — it will just be a one-liner when live.
 
 ### Codex
 
@@ -76,25 +62,50 @@ Fetch and follow instructions from https://raw.githubusercontent.com/anortham/ra
 
 Codex uses native skill discovery, so installation is a clone plus a symlink at `~/.agents/skills/razorback`. Parallel execution skills (`subagent-driven-development`, `dispatching-parallel-agents`) require Codex's `multi_agent` feature. Agent Teams are Claude Code only, so `team-driven-development` is not active on Codex.
 
-**Detailed docs:** [docs/README.codex.md](docs/README.codex.md)
+**Detailed docs:** [.codex/INSTALL.md](.codex/INSTALL.md)
+
+### OpenCode
+
+Tell OpenCode:
+
+```
+Fetch and follow instructions from https://raw.githubusercontent.com/anortham/razorback/refs/heads/main/.opencode/INSTALL.md
+```
+
+**Detailed docs:** [.opencode/INSTALL.md](.opencode/INSTALL.md)
+
+### Copilot CLI
+
+```bash
+copilot plugin marketplace add anortham/razorback
+copilot plugin install razorback@razorback
+```
+
+Copilot CLI reads the same `.claude-plugin/marketplace.json` that Claude Code uses. Named plugin agents (like `razorback:code-reviewer`) are auto-discovered.
+
+### Gemini CLI
+
+```bash
+gemini extensions install https://github.com/anortham/razorback
+```
+
+Gemini loads `gemini-extension.json` + `GEMINI.md` at session start, which pulls in the `using-razorback` skill and the Gemini tool mapping. Gemini CLI doesn't support subagents, so `subagent-driven-development` and `dispatching-parallel-agents` fall back to single-session execution via `executing-plans`.
 
 ### After Installation
 
-Once the plugin is loaded, Razorback works automatically:
+Once loaded, razorback works automatically. The bootstrap path varies by harness:
 
-1. **Session starts** -- the `SessionStart` hook (Claude Code), `messages.transform` (OpenCode), or native skill discovery (Codex) surfaces the `using-razorback` skill
-2. **You request work** -- the agent checks for applicable skills before every response
-3. **Skills guide the workflow** -- brainstorming, planning, TDD, execution, review, and verification all route through Julie and the appropriate execution strategy for your harness
+1. **Session starts** — the `SessionStart` hook (Claude Code, Cursor), `messages.transform` (OpenCode), native skill discovery (Codex), the `SessionStart` hook with `additionalContext` (Copilot CLI), or `GEMINI.md` includes (Gemini CLI) surfaces the `using-razorback` skill.
+2. **You request work** — the agent checks for applicable skills before every response.
+3. **Skills guide the workflow** — brainstorming, planning, TDD, execution, review, and verification all route through Julie and the appropriate execution strategy for your harness.
 
 No configuration needed beyond plugin installation (assuming Julie is already set up).
 
 ## Updating
 
-Neither harness auto-pulls new content on restart. You have to opt in to updates.
+No harness auto-pulls new content on restart. You have to opt in to updates.
 
 ### Claude Code
-
-Two ways, depending on how you installed:
 
 **If installed via marketplace (recommended):** enable auto-updates once, then updates pull on each session start.
 
@@ -109,13 +120,25 @@ Two ways, depending on how you installed:
 
 **If installed from a local clone:** `git pull` the repo. Claude Code reloads plugin content on the next session start.
 
+### Cursor
+
+Until razorback lands in the Cursor marketplace, update by `git pull` in the local clone and restarting Cursor.
+
+### Codex
+
+```bash
+cd ~/.codex/razorback && git pull
+```
+
+Skills update instantly through the symlink. Restart Codex if you want the new skill list reflected in discovery.
+
 ### OpenCode
 
 OpenCode installs razorback as a Bun-cached npm/git package. The reliable pattern is pin-and-bump:
 
 ```json
 {
-  "plugin": ["razorback@git+https://github.com/anortham/razorback.git#v0.7.4"]
+  "plugin": ["razorback@git+https://github.com/anortham/razorback.git#<version>"]
 }
 ```
 
@@ -134,23 +157,28 @@ Then restart OpenCode.
 
 See [.opencode/INSTALL.md](.opencode/INSTALL.md) for more detail.
 
-### Codex
+### Copilot CLI
 
 ```bash
-cd ~/.codex/razorback && git pull
+copilot plugin update razorback
 ```
 
-Skills update instantly through the symlink. Restart Codex if you want the new skill list reflected in discovery.
+### Gemini CLI
+
+```bash
+gemini extensions update razorback
+```
 
 ## Workflow
 
 The core process: brainstorm, plan, TDD, execute, review, finish.
 
 **Execution model (primary path depends on harness):**
-- **All harnesses, 2+ independent tasks:** `subagent-driven-development` dispatches fresh implementer subagents (in parallel when tasks are independent), lead does inline review (spec compliance + code quality) per task. Primary path on Codex and OpenCode.
-- **Claude Code upgrade, 2+ independent tasks:** `team-driven-development` creates an Agent Team with persistent named teammates, so fixes go to the teammate who already has context (no cold restart). Promoted as primary on Claude Code via the session-start bootstrap. Not available on Codex or OpenCode.
-- **1 task or sequential (any harness):** `executing-plans` runs single-agent batch execution
-- **Ad-hoc parallel work (any harness):** `dispatching-parallel-agents` for independent tasks outside plans
+- **Claude Code, 2+ independent tasks:** `team-driven-development` creates an Agent Team with persistent named teammates. Fixes go to the teammate who already has context (no cold restart). Promoted as primary on Claude Code via the session-start bootstrap.
+- **Cursor, Codex, OpenCode, Copilot CLI, 2+ independent tasks:** `subagent-driven-development` dispatches fresh implementer subagents (in parallel when tasks are independent), lead does inline review (spec compliance + code quality) per task.
+- **Gemini CLI (no subagent support):** falls back to `executing-plans` for all plans.
+- **1 task or sequential (any harness):** `executing-plans` runs single-agent batch execution.
+- **Ad-hoc parallel work (any harness with subagents):** `dispatching-parallel-agents` for independent tasks outside plans.
 
 ## Skills
 
@@ -160,17 +188,17 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 | brainstorming | Requirements exploration, design, approach selection |
 | writing-plans | Implementation plans (full or light) with Julie-verified file paths |
 | **team-driven-development** | **Claude Code upgrade: Agent Teams, persistent named teammates, inline review** |
-| executing-plans | Single-agent execution (fallback for sequential/single-task work) |
+| executing-plans | Single-agent execution (fallback for sequential/single-task work or no-subagent harnesses) |
 | test-driven-development | Red-green-refactor with Julie-powered test discovery |
 | systematic-debugging | Root cause investigation with Julie-powered tracing |
-| requesting-code-review | Inline review (during plan execution) or standalone review (ad-hoc) |
+| requesting-code-review | Inline review (during plan execution) or standalone review (ad-hoc) with per-harness dispatch |
 | receiving-code-review | Process for acting on review feedback |
 | verification-before-completion | Evidence-before-claims verification |
 | finishing-a-development-branch | Merge/PR/cleanup decision workflow |
 | dispatching-parallel-agents | Ad-hoc parallel agent dispatch |
 | using-git-worktrees | Isolated workspace setup |
 | writing-skills | Meta-skill for creating/editing skills |
-| **subagent-driven-development** | **Primary plan execution (both harnesses): fresh implementer subagents, parallel when independent, inline review by lead** |
+| **subagent-driven-development** | **Primary plan execution (Cursor/Codex/OpenCode/Copilot CLI): fresh implementer subagents, parallel when independent, inline review by lead** |
 
 ## Teammate Prompt Templates
 
@@ -179,6 +207,16 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 | team-driven-development/implementer-prompt.md | Teammate spawn: task assignment, file ownership, Julie directives, status protocol |
 | subagent-driven-development/spec-reviewer-prompt.md | Review guide: spec compliance criteria |
 | subagent-driven-development/code-quality-reviewer-prompt.md | Review guide: code quality criteria |
+
+## Version management
+
+Razorback ships five version-bearing manifests (`package.json`, `.claude-plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `gemini-extension.json`). Keep them in sync with:
+
+```bash
+./scripts/bump-version.sh --check          # detect drift
+./scripts/bump-version.sh --audit          # check + scan for undeclared version references
+./scripts/bump-version.sh <new-version>    # bump all five in one pass
+```
 
 ## License
 
