@@ -54,7 +54,10 @@ Subagent-driven is the primary execution path in opencode. Agent Teams are not a
 // If the section is not found, returns the body unchanged (defensive).
 const replaceExecutionModel = (body) => {
   const re = /^## Execution Model\n[\s\S]*?(?=^## )/m;
-  if (!re.test(body)) return body;
+  if (!re.test(body)) {
+    console.warn('razorback: Execution Model section not found in using-razorback body — OpenCode variant not substituted. Check skill body for header drift.');
+    return body;
+  }
   return body.replace(re, OPENCODE_EXECUTION_MODEL + '\n');
 };
 
@@ -108,15 +111,24 @@ ${toolMapping}
     // Using a user message instead of a system message avoids:
     //   1. Token bloat from system messages repeated every turn
     //   2. Multiple system messages breaking Qwen and other models
+    //
+    // WARNING: this hook key is under the `experimental.` prefix. If OpenCode
+    // stabilizes the API (renames to e.g. `chat.messages.transform`), this
+    // plugin will silently stop injecting the bootstrap until the key below
+    // is updated. Track OpenCode release notes when upgrading.
     'experimental.chat.messages.transform': async (_input, output) => {
-      const bootstrap = getBootstrapContent();
-      if (!bootstrap || !output.messages.length) return;
-      const firstUser = output.messages.find(m => m.info.role === 'user');
-      if (!firstUser || !firstUser.parts.length) return;
-      // Only inject once
-      if (firstUser.parts.some(p => p.type === 'text' && p.text.includes('EXTREMELY_IMPORTANT'))) return;
-      const ref = firstUser.parts[0];
-      firstUser.parts.unshift({ ...ref, type: 'text', text: bootstrap });
+      try {
+        const bootstrap = getBootstrapContent();
+        if (!bootstrap || !output.messages.length) return;
+        const firstUser = output.messages.find(m => m.info.role === 'user');
+        if (!firstUser || !firstUser.parts.length) return;
+        // Only inject once
+        if (firstUser.parts.some(p => p.type === 'text' && p.text.includes('EXTREMELY_IMPORTANT'))) return;
+        const ref = firstUser.parts[0];
+        firstUser.parts.unshift({ ...ref, type: 'text', text: bootstrap });
+      } catch (err) {
+        console.warn('razorback: messages.transform hook failed:', err);
+      }
     }
   };
 };
