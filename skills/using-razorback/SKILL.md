@@ -15,7 +15,18 @@ This is not negotiable. This is not optional. You cannot rationalize your way ou
 
 **In Claude Code:** Use the `Skill` tool. When you invoke a skill, its content is loaded and presented to you—follow it directly. Never use the Read tool on skill files.
 
+**In Codex:** Skills are discovered natively from `~/.agents/skills/`. When a skill applies, follow its SKILL.md content directly. No separate loading tool.
+
+**In OpenCode:** Use the native `skill` tool. Skills auto-register via the razorback plugin.
+
 **In other environments:** Check your platform's documentation for how skills are loaded.
+
+## Platform Adaptation
+
+Skills use Claude Code tool names. On non-Claude-Code platforms, substitute the equivalent:
+
+- **Codex:** see `references/codex-tools.md` (Task→spawn_agent, TodoWrite→update_plan, etc.)
+- **OpenCode:** tool mapping is injected automatically by the razorback plugin bootstrap (Task→opencode's Task tool, TodoWrite→todowrite, etc.)
 
 # Using Skills
 
@@ -76,11 +87,12 @@ These thoughts mean STOP—you're rationalizing:
 
 When executing implementation plans:
 
-- **2+ independent tasks:** Use `razorback:team-driven-development` (Agent Teams, parallel teammates, inline review)
-- **1 task or sequential:** Use `razorback:executing-plans` (single agent, batch execution)
-- **Ad-hoc parallel work:** Use `razorback:dispatching-parallel-agents` (independent agent dispatch)
+- **2+ independent tasks (Claude Code):** Use `razorback:team-driven-development` (Agent Teams, persistent named teammates, inline review)
+- **2+ independent tasks (Codex, OpenCode):** Use `razorback:subagent-driven-development` (fresh subagent per task, inline review by lead)
+- **1 task or sequential (any platform):** Use `razorback:executing-plans` (single agent, batch execution)
+- **Ad-hoc parallel work (any platform):** Use `razorback:dispatching-parallel-agents` (independent agent dispatch)
 
-Team-driven is the primary execution path. Teammates persist for fixes (no cold restart), work in parallel, and get Julie-powered orientation.
+Team-driven is the primary path on Claude Code because persistent teammates skip cold-restart re-orientation on fixes. Agent Teams do not exist on Codex or OpenCode, so those platforms use subagent-driven as primary. Both paths do inline review (spec compliance + code quality) by the lead.
 
 ## Skill Priority
 

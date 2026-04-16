@@ -1,8 +1,8 @@
 # Razorback
 
-**Julie-powered development workflow for Claude Code and OpenCode.**
+**Julie-powered development workflow for Claude Code, Codex, and OpenCode.**
 
-Razorback is a skill set for Claude Code and OpenCode that diverged from [Superpowers](https://github.com/obra/superpowers). It uses Julie MCP for token-efficient codebase orientation. Plan execution runs through parallel subagent dispatch on both harnesses, with Agent Teams as a Claude-Code-only upgrade for persistent named teammates.
+Razorback is a skill set for Claude Code, Codex, and OpenCode that diverged from [Superpowers](https://github.com/obra/superpowers). It uses Julie MCP for token-efficient codebase orientation. Plan execution runs through parallel subagent dispatch on all three harnesses, with Agent Teams as a Claude-Code-only upgrade for persistent named teammates.
 
 ## Why?
 
@@ -13,8 +13,9 @@ AI-assisted development burns tokens on repetitive codebase exploration. Every a
 
 ## Requirements
 
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) or [OpenCode](https://opencode.ai)
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex](https://openai.com/codex/), or [OpenCode](https://opencode.ai)
 - [Julie MCP Server](https://github.com/anortham/julie) -- must be configured and indexing your workspace
+- For Codex: enable `multi_agent = true` in `~/.codex/config.toml` so parallel execution skills can dispatch subagents
 
 ## Installation
 
@@ -65,11 +66,23 @@ Fetch and follow instructions from https://raw.githubusercontent.com/anortham/ra
 
 **Detailed docs:** [docs/README.opencode.md](docs/README.opencode.md)
 
+### Codex
+
+Tell Codex:
+
+```
+Fetch and follow instructions from https://raw.githubusercontent.com/anortham/razorback/refs/heads/main/.codex/INSTALL.md
+```
+
+Codex uses native skill discovery, so installation is a clone plus a symlink at `~/.agents/skills/razorback`. Parallel execution skills (`subagent-driven-development`, `dispatching-parallel-agents`) require Codex's `multi_agent` feature. Agent Teams are Claude Code only, so `team-driven-development` is not active on Codex.
+
+**Detailed docs:** [docs/README.codex.md](docs/README.codex.md)
+
 ### After Installation
 
 Once the plugin is loaded, Razorback works automatically:
 
-1. **Session starts** -- the `SessionStart` hook (Claude Code) or `messages.transform` (OpenCode) fires, injecting the `using-razorback` skill
+1. **Session starts** -- the `SessionStart` hook (Claude Code), `messages.transform` (OpenCode), or native skill discovery (Codex) surfaces the `using-razorback` skill
 2. **You request work** -- the agent checks for applicable skills before every response
 3. **Skills guide the workflow** -- brainstorming, planning, TDD, execution, review, and verification all route through Julie and the appropriate execution strategy for your harness
 
@@ -121,15 +134,23 @@ Then restart OpenCode.
 
 See [.opencode/INSTALL.md](.opencode/INSTALL.md) for more detail.
 
+### Codex
+
+```bash
+cd ~/.codex/razorback && git pull
+```
+
+Skills update instantly through the symlink. Restart Codex if you want the new skill list reflected in discovery.
+
 ## Workflow
 
 The core process: brainstorm, plan, TDD, execute, review, finish.
 
 **Execution model (primary path depends on harness):**
-- **Both harnesses, 2+ independent tasks:** `subagent-driven-development` dispatches fresh implementer subagents (in parallel when tasks are independent), lead does inline review (spec compliance + code quality) per task
-- **Claude Code upgrade, 2+ independent tasks:** `team-driven-development` creates an Agent Team with persistent named teammates, so fixes go to the teammate who already has context (no cold restart). Promoted as primary on Claude Code via the session-start bootstrap.
-- **1 task or sequential (both harnesses):** `executing-plans` runs single-agent batch execution
-- **Ad-hoc parallel work (both harnesses):** `dispatching-parallel-agents` for independent tasks outside plans
+- **All harnesses, 2+ independent tasks:** `subagent-driven-development` dispatches fresh implementer subagents (in parallel when tasks are independent), lead does inline review (spec compliance + code quality) per task. Primary path on Codex and OpenCode.
+- **Claude Code upgrade, 2+ independent tasks:** `team-driven-development` creates an Agent Team with persistent named teammates, so fixes go to the teammate who already has context (no cold restart). Promoted as primary on Claude Code via the session-start bootstrap. Not available on Codex or OpenCode.
+- **1 task or sequential (any harness):** `executing-plans` runs single-agent batch execution
+- **Ad-hoc parallel work (any harness):** `dispatching-parallel-agents` for independent tasks outside plans
 
 ## Skills
 
