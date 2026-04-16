@@ -4,6 +4,8 @@ Testing different documentation variants to find what actually makes agents disc
 
 ## Test Scenarios
 
+> Scenarios below use Claude Code paths (`~/.claude/skills/`) as a concrete example. On other harnesses, substitute the equivalent skills location (e.g., `~/.agents/skills/` for Codex). The variants in the next section are written harness-agnostically.
+
 ### Scenario 1: Time Pressure + Confidence
 ```
 IMPORTANT: This is a real scenario. Choose and act.
@@ -70,7 +72,7 @@ No mention of skills in CLAUDE.md at all.
 ```markdown
 ## Skills Library
 
-You have access to skills at `~/.claude/skills/`. Consider
+You have access to skills in your skills directory. Consider
 checking for relevant skills before working on tasks.
 ```
 
@@ -78,21 +80,21 @@ checking for relevant skills before working on tasks.
 ```markdown
 ## Skills Library
 
-Before working on any task, check `~/.claude/skills/` for
+Before working on any task, check your skills directory for
 relevant skills. You should use skills when they exist.
 
-Browse: `ls ~/.claude/skills/`
-Search: `grep -r "keyword" ~/.claude/skills/`
+Browse: `ls <skills-dir>`
+Search: `grep -r "keyword" <skills-dir>`
 ```
 
 ### Variant C: Claude.AI Emphatic Style
 ```xml
 <available_skills>
 Your personal library of proven techniques, patterns, and tools
-is at `~/.claude/skills/`.
+lives in your skills directory.
 
-Browse categories: `ls ~/.claude/skills/`
-Search: `grep -r "keyword" ~/.claude/skills/ --include="SKILL.md"`
+Browse categories: `ls <skills-dir>`
+Search: `grep -r "keyword" <skills-dir> --include="SKILL.md"`
 
 Instructions: `skills/using-skills`
 </available_skills>
@@ -104,7 +106,7 @@ library contains battle-tested approaches that prevent common mistakes.
 THIS IS EXTREMELY IMPORTANT. BEFORE ANY TASK, CHECK FOR SKILLS!
 
 Process:
-1. Starting work? Check: `ls ~/.claude/skills/[category]/`
+1. Starting work? Check: `ls <skills-dir>/[category]/`
 2. Found a skill? READ IT COMPLETELY before proceeding
 3. Follow the skill's guidance - it prevents known pitfalls
 
@@ -119,8 +121,8 @@ If a skill existed for your task and you didn't use it, you failed.
 Your workflow for every task:
 
 1. **Before starting:** Check for relevant skills
-   - Browse: `ls ~/.claude/skills/`
-   - Search: `grep -r "symptom" ~/.claude/skills/`
+   - Browse: `ls <skills-dir>`
+   - Search: `grep -r "symptom" <skills-dir>`
 
 2. **If skill exists:** Read it completely before proceeding
 
