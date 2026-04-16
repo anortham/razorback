@@ -8,6 +8,8 @@
   ],
   "audit": {
     "exclude": [
+      ".memories",
+      "plans",
       "RELEASE-NOTES.md",
       "node_modules",
       ".git",
