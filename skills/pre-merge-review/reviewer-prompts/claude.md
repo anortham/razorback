@@ -1,16 +1,17 @@
 # Reviewer Prompt: claude
 
-Invocation instructions for running `claude -p` as the pre-merge adversarial reviewer. Background on claude-cli's adversarial-review mode lives in the bundled `razorback:claude-cli` skill. This file is self-contained — both the schema JSON and the adversarial system prompt are inlined below, so no knowledge of the razorback install path is required.
+Invocation instructions for running `claude -p` as the pre-merge adversarial reviewer. Background on claude-cli's adversarial-review mode lives in the bundled `razorback:claude-cli` skill. This file is self-contained; both the schema JSON and the adversarial system prompt are inlined below, so no knowledge of the razorback install path is required.
 
 ## Preconditions
 
 - `claude --version` returns successfully (the CLI is installed).
-- `claude auth status` exits 0 (logged in via Anthropic OAuth or API key). Exit 1 means not logged in — this is **blocker taxonomy #1** (credentials broken). Stop, surface, do not push. See `skills/using-razorback/references/blocker-taxonomy.md`.
+- `claude auth status` exits 0 (logged in via Anthropic OAuth or API key). Exit 1 means not logged in; this is **blocker taxonomy #1** (credentials broken). Stop, surface, do not push. See `skills/using-razorback/references/blocker-taxonomy.md`.
+- Do not add `--bare`. Current Claude help says bare mode skips OAuth and keychain auth reads, so it breaks the common login path.
 - Step 1 of the pre-merge-review flow has already built `$DIFF`, `$FILE_STAT`, `$COMMIT_LOG`, `$PROJECT_DIR`, and (optionally) `$USER_FOCUS`.
 
 ## Build the user prompt
 
-The adversarial system prompt (loaded via `--system-prompt-file`) supplies the operating stance, attack-surface categories, finding bar, calibration, and grounding rules. The user prompt therefore carries only the target-specific context — the same three inputs codex and gemini get:
+The adversarial system prompt (loaded via `--system-prompt-file`) supplies the operating stance, attack-surface categories, finding bar, calibration, and grounding rules. The user prompt therefore carries only the target-specific context; the same three inputs codex and gemini get:
 
 ```bash
 DIFF_AND_CONTEXT="Target: $FILE_STAT (branch <name>: base..HEAD)
@@ -24,11 +25,11 @@ Diff:
 $DIFF"
 ```
 
-If the plan path is short and likely to orient the reviewer, append it ("Plan: docs/plans/…"). Do not paste the full plan — the reviewer is supposed to form an independent take.
+If the plan path is short and likely to orient the reviewer, append it ("Plan: docs/plans/…"). Do not paste the full plan; the reviewer is supposed to form an independent take.
 
 ## Invocation
 
-Claude's `--json-schema` takes a string and `--system-prompt-file` takes a file path. Inline the schema as a string; materialize the adversarial prompt to a temp file:
+Claude's `--json-schema` takes a string and `--system-prompt-file` takes a file path. Inline the schema as a string; materialize the adversarial prompt to a temp file. Do not add `--bare`; current Claude help says bare mode skips OAuth and keychain auth reads.
 
 ```bash
 SCHEMA_JSON='{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","additionalProperties":false,"required":["verdict","summary","findings","next_steps"],"properties":{"verdict":{"type":"string","enum":["approve","needs-attention"]},"summary":{"type":"string","minLength":1},"findings":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["severity","title","body","file","line_start","line_end","confidence","recommendation"],"properties":{"severity":{"type":"string","enum":["critical","high","medium","low"]},"title":{"type":"string","minLength":1},"body":{"type":"string","minLength":1},"file":{"type":"string","minLength":1},"line_start":{"type":"integer","minimum":1},"line_end":{"type":"integer","minimum":1},"confidence":{"type":"number","minimum":0,"maximum":1},"recommendation":{"type":"string"}}}},"next_steps":{"type":"array","items":{"type":"string","minLength":1}}}}'
@@ -90,7 +91,6 @@ REPOSITORY CONTEXT:
 PROMPT_EOF
 
 cd "$PROJECT_DIR" && claude -p \
-  --bare \
   --no-session-persistence \
   --dangerously-skip-permissions \
   --output-format json \
@@ -104,25 +104,25 @@ cd "$PROJECT_DIR" && claude -p \
   2>/dev/null
 ```
 
-All 11 validated flags are present: `-p`, `--bare`, `--no-session-persistence`, `--dangerously-skip-permissions`, `--output-format json`, `--json-schema`, `--tools "Read,Bash"`, `--max-turns 15`, `--max-budget-usd 5.00`, `--model opus`, `--system-prompt-file`.
+The validated baseline flags are: `-p`, `--no-session-persistence`, `--dangerously-skip-permissions`, `--output-format json`, `--json-schema`, `--tools "Read,Bash"`, `--max-turns 15`, `--max-budget-usd 5.00`, `--model opus`, `--system-prompt-file`.
 
 Flag rationale:
 
-- `-p` — non-interactive, print-and-exit (parity with `codex exec`).
-- `--bare` — skip auto-discovery of hooks, skills, plugins, MCP servers, CLAUDE.md. Critical for reviewer isolation: without `--bare` the fresh Claude would inherit project-level context and lose the blind-spot advantage.
-- `--no-session-persistence` — ephemeral session (parity with codex's `--ephemeral`).
-- `--dangerously-skip-permissions` — required for scripted non-interactive use.
-- `--output-format json --json-schema …` — structured review output conforming to the shared schema.
-- `--tools "Read,Bash"` — read-only. The reviewer can read files and run shell commands (grep, git log, diff) but cannot edit. Enforced at the CLI layer, not just by prompt.
-- `--max-turns 15 --max-budget-usd 5.00` — bounded cost/time. Raise only if a run legitimately needs more.
-- `--model opus` — strongest reviewer. The calling agent may also be Opus; the review's value is context isolation, not model superiority.
-- `--system-prompt-file` — loads the adversarial operating stance from the temp file built above. The canonical source for that prompt is `skills/claude-cli/adversarial-prompt.txt` in the razorback plugin; update both in sync.
+- `-p` - non-interactive, print-and-exit (parity with `codex exec`).
+- No `--bare` flag - current Claude help says bare mode skips OAuth and keychain auth reads. A working reviewer beats a broken "pure" invocation.
+- `--no-session-persistence` - ephemeral session (parity with codex's `--ephemeral`).
+- `--dangerously-skip-permissions` - required for scripted non-interactive use.
+- `--output-format json --json-schema …` - structured review output conforming to the shared schema.
+- `--tools "Read,Bash"` - read-only. The reviewer can read files and run shell commands (grep, git log, diff) but cannot edit. Enforced at the CLI layer, not only by prompt.
+- `--max-turns 15 --max-budget-usd 5.00` - bounded cost/time. Raise only if a run legitimately needs more.
+- `--model opus` - strongest reviewer. The calling agent may also be Opus; the review's value is a fresh session and prompt framing, not model superiority.
+- `--system-prompt-file` - loads the adversarial operating stance from the temp file built above. The canonical source for that prompt is `skills/claude-cli/adversarial-prompt.txt` in the razorback plugin; update both in sync.
 
 **Timeout:** at least `600000` ms (10 min). Opus on a large diff can take minutes.
 
 ## Expected output format
 
-Direct JSON conforming to the schema inlined above (same schema as the codex path). **No envelope** — unlike gemini, claude's `--output-format json` returns the model response directly on stdout.
+Direct JSON conforming to the schema inlined above (same schema as the codex path). **No envelope**; unlike gemini, claude's `--output-format json` returns the model response directly on stdout.
 
 ## Parsing
 
@@ -130,7 +130,7 @@ Direct JSON conforming to the schema inlined above (same schema as the codex pat
 jq -e '.findings[]' < claude-output.json
 ```
 
-On parse failure, retry **once** with a stricter prompt instructing claude to return ONLY JSON conforming to the schema (no prose, no prefatory text). If the retry still fails to produce schema-valid output, reviewer unavailability applies — see Error Handling below. Do NOT loop beyond one retry (single pass rule).
+On parse failure, retry **once** with a stricter prompt instructing claude to return ONLY JSON conforming to the schema (no prose, no prefatory text). If the retry still fails to produce schema-valid output, reviewer unavailability applies; see Error Handling below. Do NOT loop beyond one retry (single pass rule).
 
 If a schema-valid partial output exists despite a mid-stream failure (e.g. budget/turn cap trips but `.findings[]` parses), use it and note the truncation in the morning report.
 
@@ -145,9 +145,10 @@ Claude's `--output-format json` does not surface per-request token counts in a s
 Unavailability triggers:
 
 - **Auth failure** (`claude auth status` exits 1) → **blocker taxonomy #1** (credentials broken). Tell the user to run `claude login`.
-- **Rate limit exhausted** (Claude plan's rolling usage limits tripped) → **blocker taxonomy #1** — credentials work but the backing service is unavailable. Suggest retry-after-cooldown or dropping the reviewer-choice to `none` on the next run.
+- **Rate limit exhausted** (Claude plan's rolling usage limits tripped) → **blocker taxonomy #1** - credentials work but the backing service is unavailable. Suggest retry-after-cooldown or dropping the reviewer-choice to `none` on the next run.
 - **Budget cap trips with no schema-valid partial output** (`--max-budget-usd` exhausted before `.findings[]` was produced) → **blocker taxonomy #1**. Raise the cap and re-run, or block.
-- **Turn cap trips with no schema-valid partial output** (`--max-turns` exhausted before final JSON) → **blocker taxonomy #1**. Raise `--max-turns` to 25 and re-run, OR shrink the context, otherwise block.
+- **Turn cap trips with no schema-valid partial output** (`--max-turns` exhausted before final JSON) → **blocker taxonomy #1**. Raise `--max-turns` to 25 and re-run, or shrink the context, otherwise block.
+- **Old `--bare` snippet copied into the command** → **blocker taxonomy #1** until you remove that flag and re-run. Current Claude help says bare mode skips OAuth and keychain auth reads.
 - **Empty stdout** → **blocker taxonomy #1**. Remove `2>/dev/null` and re-run to surface stderr in the blocker note.
 - **Schema violation that persists after one retry with a stricter prompt** → **blocker taxonomy #5** (unresolvable — the reviewer is producing unusable output).
 
@@ -155,4 +156,4 @@ If a schema-valid partial output exists despite the failure (budget or turn cap 
 
 **Not a blocker:**
 
-- **Timeout (Bash-level)** — first raise the Bash tool's timeout and re-run. Splitting the diff breaks cross-file reasoning and is a last resort. Only if generous timeouts also fail does this become a blocker (taxonomy #1 — service unavailable).
+- **Timeout (Bash-level)** - first raise the Bash tool's timeout and re-run. Splitting the diff breaks cross-file reasoning and is a last resort. Only if generous timeouts also fail does this become a blocker (taxonomy #1 - service unavailable).

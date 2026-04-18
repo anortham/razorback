@@ -205,7 +205,7 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 | pre-merge-review | Optional external review (codex / gemini / claude) run before PR — verifies findings, dispatches fixes, emits morning-report block |
 | codex-cli | Invokes `codex exec` (GPT-5.4 xhigh) for second opinions and adversarial review |
 | gemini-cli | Invokes `gemini` (gemini-3-pro with `--yolo`) for second opinions and adversarial review |
-| claude-cli | Invokes `claude -p` in isolated `--bare` mode for second opinions and adversarial review |
+| claude-cli | Invokes `claude -p` for second opinions and adversarial review; omits `--bare` because it breaks OAuth auth |
 
 ## Teammate Prompt Templates
 

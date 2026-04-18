@@ -1,15 +1,17 @@
 ---
 name: claude-cli
-description: Call the Claude Code CLI (`claude -p`) as a fresh, isolated Claude instance for second opinions, code review, and adversarial review. Use this skill whenever the user says "ask claude", "fresh claude review", "second opinion from another claude", "have another claude look at this", "delegate to a fresh claude", or any variation suggesting they want a second Claude instance's perspective. The value is isolated/fresh context (no session state, no project CLAUDE.md pollution, no hook/plugin interference), not a different model.
+description: Call the Claude Code CLI (`claude -p`) as a fresh Claude instance for second opinions, code review, and adversarial review. Use this skill whenever the user says "ask claude", "fresh claude review", "second opinion from another claude", "have another claude look at this", "delegate to a fresh claude", or any variation suggesting they want a second Claude instance's perspective. The value is a fresh session and independent prompt framing, not a different model.
 ---
 
 # Claude CLI Assistant
 
 Use the Claude Code CLI (`claude -p`) to get a second opinion, review code
-changes, or run adversarial security/correctness reviews from a fresh,
-isolated Claude instance. The value is clean-context isolation — no session
-history, no project hooks, no plugin clutter, no CLAUDE.md pollution — not a
+changes, or run adversarial security/correctness reviews from a fresh Claude
+instance. The value is a new session and an independent prompt, not a
 different underlying model.
+
+Do not use `--bare` in this skill. Current `claude -p --help` says bare mode
+skips OAuth and keychain auth reads, so the common Claude login path fails.
 
 ## Defaults
 
@@ -18,23 +20,23 @@ different underlying model.
   and can find things the author instance missed.
 - **Ephemeral**: `--no-session-persistence` so the review leaves no stored
   session behind (parity with codex's `--ephemeral`).
-- **Isolation**: `--bare` skips auto-discovery of hooks, skills, plugins, MCP
-  servers, and CLAUDE.md. This is critical — without `--bare`, the reviewer
-  inherits project-level context that can bias findings or re-introduce the
-  author instance's blind spots.
+- **No `--bare`**: current Claude help says bare mode skips OAuth and
+  keychain auth reads. This skill avoids it so normal Anthropic logins keep
+  working.
 - **Output format**: `--output-format json` for structured returns; combine
   with `--json-schema` for schema-validated adversarial output.
 - **Stderr**: append `2>/dev/null` to suppress banner and status noise.
 - **Working directory**: Claude uses the shell's cwd. There is no equivalent
-  to codex's `-C` flag — `cd` first or run from the project root.
+  to codex's `-C` flag; `cd` first or run from the project root.
 - **Non-interactive permissions**: `--dangerously-skip-permissions` is
   required for scripted use. Pair it with `--tools "Read,Bash"` to enforce
-  read-only behavior — the reviewer can investigate but cannot edit.
+  read-only behavior; the reviewer can investigate but cannot edit.
 - **Timeout**: 300000ms (5 min) for simple queries, 600000ms (10 min) for
   deep reviews. Opus on a large diff can take minutes.
 - **Auth**: Logged in via Anthropic OAuth or API key. Check with
   `claude auth status` (exits 0 logged in, 1 otherwise). If it fails, tell
-  the user to run `claude login` in a terminal.
+  the user to run `claude login` in a terminal. If you copied an older
+  command that includes `--bare`, remove that flag first.
 
 ## Task Routing
 
@@ -47,7 +49,6 @@ piece of code. No file changes, no structured output.
 
 ```bash
 cd /path/to/project && claude -p \
-  --bare \
   --no-session-persistence \
   --dangerously-skip-permissions \
   --tools "Read,Bash" \
@@ -56,7 +57,7 @@ cd /path/to/project && claude -p \
   2>/dev/null
 ```
 
-Drop `--json-schema` and `--max-turns` — a second opinion is free-form text.
+Drop `--json-schema` and `--max-turns`; a second opinion is free-form text.
 The reviewer reads files on its own via the `Read` tool; mention specific
 paths in the prompt if you want it focused.
 
@@ -104,7 +105,7 @@ $DIFF"
 
 **Step 3: Send to Claude**
 
-`--json-schema` takes a JSON string — inline the schema directly (the same
+`--json-schema` takes a JSON string; inline the schema directly (the same
 schema is kept in this skill at `schemas/review-output.schema.json` for
 version control):
 
@@ -112,7 +113,6 @@ version control):
 SCHEMA_JSON='{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","additionalProperties":false,"required":["verdict","summary","findings","next_steps"],"properties":{"verdict":{"type":"string","enum":["approve","needs-attention"]},"summary":{"type":"string","minLength":1},"findings":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["severity","title","body","file","line_start","line_end","confidence","recommendation"],"properties":{"severity":{"type":"string","enum":["critical","high","medium","low"]},"title":{"type":"string","minLength":1},"body":{"type":"string","minLength":1},"file":{"type":"string","minLength":1},"line_start":{"type":"integer","minimum":1},"line_end":{"type":"integer","minimum":1},"confidence":{"type":"number","minimum":0,"maximum":1},"recommendation":{"type":"string"}}}},"next_steps":{"type":"array","items":{"type":"string","minLength":1}}}}'
 
 cd /path/to/project && claude -p \
-  --bare \
   --no-session-persistence \
   --dangerously-skip-permissions \
   --output-format json \
@@ -126,7 +126,7 @@ cd /path/to/project && claude -p \
 ```
 
 Same command shape as adversarial review but without the adversarial system
-prompt — the prompt body itself asks for a standard review.
+prompt; the prompt body itself asks for a standard review.
 
 **After**: Parse the JSON, present findings, add your own assessment.
 Highlight agreements and disagreements. Call out anything the reviewer
@@ -212,7 +212,6 @@ REPOSITORY CONTEXT:
 PROMPT_EOF
 
 cd /path/to/project && claude -p \
-  --bare \
   --no-session-persistence \
   --dangerously-skip-permissions \
   --output-format json \
@@ -226,10 +225,13 @@ cd /path/to/project && claude -p \
   2>/dev/null
 ```
 
-All 11 flags are present: `-p`, `--bare`, `--no-session-persistence`,
+The baseline flags are: `-p`, `--no-session-persistence`,
 `--dangerously-skip-permissions`, `--output-format json`, `--json-schema`,
 `--tools "Read,Bash"`, `--max-turns 15`, `--max-budget-usd 5.00`,
 `--model opus`, `--system-prompt-file`.
+
+No `--bare` flag is used. Current Claude help says bare mode skips OAuth and
+keychain auth reads, so it is a trap for the common login path.
 
 The `--json-schema` flag tells Claude to return JSON matching the review
 schema (verdict, summary, findings with severity/file/line/confidence, next
@@ -310,8 +312,7 @@ grounding rules are identical to codex-cli's template.
 ## Resuming a Session
 
 By default, `--no-session-persistence` means sessions aren't saved. If you
-need follow-up capability, drop that flag (and `--bare`, if you want hooks
-and plugins applied), then resume with `claude -r`:
+need follow-up capability, drop that flag, then resume with `claude -r`:
 
 ```bash
 # Initial task (persistent session)
@@ -323,38 +324,36 @@ claude -r "follow-up prompt" 2>/dev/null
 
 See the Claude Code CLI reference for session-resume details. Use this when
 you need a multi-turn conversation (e.g. iterating on a review or asking
-clarifying questions about findings). Note: resume loses the `--bare`
-isolation guarantee, so only use it for second opinions where CLAUDE.md and
-project context are helpful, not for adversarial review.
+clarifying questions about findings).
 
 ## Cross-Project Usage
 
-Without `--bare`, Claude reads `CLAUDE.md` from the project root (and
-discovers plugins, hooks, skills, MCP servers). With `--bare`, all of that is
-skipped — the reviewer sees only the files you point it at and the prompt
-you give it.
+Claude reads `CLAUDE.md` from the project root and discovers plugins, hooks,
+skills, and MCP servers by default. This skill accepts that tradeoff because
+`--bare` disables OAuth and keychain auth.
 
 There is no `-C`/`--cwd` flag equivalent to codex's working-directory
 override. To review a project other than cwd, `cd` into it first:
 
 ```bash
-cd ~/source/other-project && claude -p --bare --no-session-persistence \
+cd ~/source/other-project && claude -p --no-session-persistence \
   --dangerously-skip-permissions --tools "Read,Bash" --model opus \
   "prompt" 2>/dev/null
 ```
 
-For adversarial review always keep `--bare`. The whole point is a Claude
-that knows nothing about your conventions, so it can't rationalize around
-them.
+Do not use `--bare` for adversarial review either. A working reviewer with a
+fresh prompt beats a broken "pure" invocation.
 
 ## Critical Evaluation
 
 A fresh Claude is a peer, not an authority. The review's value comes from
-**context isolation** — zero session history, no project CLAUDE.md, no
-plugin/hook interference, no inherited assumptions from the current
-conversation — not from the reviewer being a different or smarter model.
-The author instance and the reviewer instance may literally be the same
-Opus build.
+**session freshness** and independent prompt framing, not from the reviewer
+being a different or smarter model. The author instance and the reviewer
+instance may be the same Opus build.
+
+Because this skill does not use `--bare`, the reviewer still sees project
+context such as `CLAUDE.md`, hooks, plugins, and MCP config. Factor that into
+how much independence you assign the review.
 
 - **Trust your own knowledge** when confident. If the reviewer says
   something you know is wrong, say so directly with evidence. Same model
@@ -383,6 +382,9 @@ think it's wrong, and your evidence.
 - **Turn cap hit**: if `--max-turns` is exhausted before the reviewer
   produces schema-valid output, raise the cap (15 → 25) or shrink the
   context.
+- **Old `--bare` recipe**: remove `--bare` and retry. Current Claude help says
+  bare mode skips OAuth and keychain auth, so old snippets fail on normal
+  Claude logins.
 - **Timeout**: Opus on large diffs can take minutes. Set generous Bash
   timeouts (600000ms). If it still times out, split the review into
   smaller chunks.
@@ -396,13 +398,13 @@ think it's wrong, and your evidence.
 
 ## Quick Reference
 
-All invocations use `opus` with `--bare --no-session-persistence` for fresh
-isolated context. The calling agent may also be Opus — the review's value
-is clean context, not a different model.
+All invocations use `opus` with `--no-session-persistence` for a fresh
+ephemeral session. This skill does not use `--bare`; current Claude help says
+that flag skips OAuth and keychain auth.
 
 | Use case | Mode | Command pattern |
 |---|---|---|
-| Second opinion | read-only | `cd dir && claude -p --bare --no-session-persistence --dangerously-skip-permissions --tools "Read,Bash" --model opus "prompt" 2>/dev/null` |
-| Code review | read-only + schema | Add `--output-format json --json-schema "$SCHEMA_JSON" --max-turns 15 --max-budget-usd 5.00` (inline schema as a string — see Code Review section) |
+| Second opinion | read-only | `cd dir && claude -p --no-session-persistence --dangerously-skip-permissions --tools "Read,Bash" --model opus "prompt" 2>/dev/null` |
+| Code review | read-only + schema | Add `--output-format json --json-schema "$SCHEMA_JSON" --max-turns 15 --max-budget-usd 5.00` (inline schema as a string; see Code Review section) |
 | Adversarial review | read-only + schema + system prompt | Add `--system-prompt-file "$PROMPT_FILE"` (temp file materialized from the Adversarial Prompt Template) to the code-review pattern |
 | Resume session | persistent | Drop `--no-session-persistence`, use `claude -r "prompt"` |
