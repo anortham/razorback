@@ -74,17 +74,29 @@ Direct JSON conforming to `~/.claude/skills/codex-cli/schemas/review-output.sche
 jq -e '.findings[]' < claude-output.json
 ```
 
-On parse failure: do NOT retry in a loop (single pass rule). Log the malformed output as a blocker note in the morning report, flag "reviewer output unparseable", and proceed to `finishing-a-development-branch`. The user decides whether to re-request review manually.
+On parse failure, retry **once** with a stricter prompt instructing claude to return ONLY JSON conforming to the schema (no prose, no prefatory text). If the retry still fails to produce schema-valid output, reviewer unavailability applies — see Error Handling below. Do NOT loop beyond one retry (single pass rule).
+
+If a schema-valid partial output exists despite a mid-stream failure (e.g. budget/turn cap trips but `.findings[]` parses), use it and note the truncation in the morning report.
 
 ## Cost / token notes
 
-Claude's `--output-format json` does not surface per-request token counts in a stable field. The morning report's external-review cost line for claude is rendered as "cost not reported by claude-cli" (or omitted), same as codex. If `--max-budget-usd` trips mid-review, the process exits with a partial result — treat that like any other parse failure and proceed.
+Claude's `--output-format json` does not surface per-request token counts in a stable field. The morning report's external-review cost line for claude is rendered as "cost not reported by claude-cli" (or omitted), same as codex.
 
 ## Error handling
 
-- **Auth expired** (`claude auth status` exits 1) → blocker taxonomy #1. Stop, surface, do not push.
-- **Rate limits** — Claude plan has rolling usage limits. If hit, log "reviewer unavailable" and proceed without findings (single pass rule).
-- **Budget cap hit** (`--max-budget-usd` trips) — inspect the partial JSON; if it's schema-valid through `.findings`, use it. Otherwise treat as parse failure.
-- **Turn cap hit** (`--max-turns` exhausted before output completes) — raise to 25 and re-run, OR shrink the context. Do not lower the cap; 15 is already tight.
-- **Schema violation** — inspect the raw output (remove `2>/dev/null`). Usually the reviewer hit the turn cap before emitting final JSON. Raise `--max-turns`.
-- **Empty stdout** — remove `2>/dev/null` and re-run to see stderr.
+**Reviewer unavailability is a blocker when the user chose this reviewer at plan approval.** Stop the run, do NOT push, do NOT create a PR, emit a partial morning report with `Status: Blocked` and the specific failure in `Blockers hit`, and exit.
+
+Unavailability triggers:
+
+- **Auth failure** (`claude auth status` exits 1) → **blocker taxonomy #1** (credentials broken). Tell Murphy to run `claude login`.
+- **Rate limit exhausted** (Claude plan's rolling usage limits tripped) → **blocker taxonomy #1** — credentials work but the backing service is unavailable. Suggest retry-after-cooldown or dropping the reviewer-choice to `none` on the next run.
+- **Budget cap trips with no schema-valid partial output** (`--max-budget-usd` exhausted before `.findings[]` was produced) → **blocker taxonomy #1**. Raise the cap and re-run, or block.
+- **Turn cap trips with no schema-valid partial output** (`--max-turns` exhausted before final JSON) → **blocker taxonomy #1**. Raise `--max-turns` to 25 and re-run, OR shrink the context, otherwise block.
+- **Empty stdout** → **blocker taxonomy #1**. Remove `2>/dev/null` and re-run to surface stderr in the blocker note.
+- **Schema violation that persists after one retry with a stricter prompt** → **blocker taxonomy #5** (unresolvable — the reviewer is producing unusable output).
+
+If a schema-valid partial output exists despite the failure (budget or turn cap trips mid-stream but `.findings[]` parses), use it and note the truncation in the morning report. Otherwise, block.
+
+**Not a blocker:**
+
+- **Timeout (Bash-level)** — first raise the Bash tool's timeout and re-run. Splitting the diff breaks cross-file reasoning and is a last resort. Only if generous timeouts also fail does this become a blocker (taxonomy #1 — service unavailable).

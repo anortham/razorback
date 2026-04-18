@@ -115,7 +115,17 @@ External review cost (gemini): prompt=12345, completion=678 tokens
 
 ## Error handling
 
-- **Auth / unreachable** → blocker taxonomy #1. Stop, surface, do not push.
-- **Rate limits** — free tier is 60 req/min, 1000/day. Gemini auto-retries with backoff internally, but if the single review call 429s, log "reviewer unavailable" in the morning report and proceed without findings (single pass rule).
-- **Timeout** — raise the Bash tool timeout. Splitting the diff breaks cross-file reasoning.
-- **Envelope missing** — if stdout is not valid JSON at all (envelope level), `-o json` failed upstream. Remove `2>/dev/null` and re-run to see the stderr. Common cause: `--yolo` prompting approval that the runtime blocked.
+**Reviewer unavailability is a blocker when the user chose this reviewer at plan approval.** Stop the run, do NOT push, do NOT create a PR, emit a partial morning report with `Status: Blocked` and the specific failure in `Blockers hit`, and exit.
+
+Unavailability triggers:
+
+- **Auth failure** (gemini first-call auth error) → **blocker taxonomy #1** (credentials broken). Tell Murphy to authenticate gemini interactively.
+- **Rate limit exhausted** (free tier 60 req/min, 1000/day; gemini auto-retries with backoff internally, but if the single review call still 429s after that) → **blocker taxonomy #1** — credentials work but the backing service is unavailable. Suggest retry-after-cooldown or switching to a different reviewer choice on the next run.
+- **Empty stdout** → **blocker taxonomy #1**. Remove `2>/dev/null` and re-run to surface stderr in the blocker note.
+- **Envelope missing** (stdout is not valid JSON at the envelope level) → **blocker taxonomy #1**. `-o json` failed upstream. Common cause: `--yolo` prompting approval that the runtime blocked.
+- **Schema violation that persists after the retry AND the markdown fallback fails** (parsing protocol sub-step 4 exhausted all paths) → **blocker taxonomy #5** (unresolvable — the reviewer is producing unusable output). The retry + fallback is gemini's built-in equivalent of codex/claude's "retry once"; once both fail, treat it as terminal.
+- **Reviewer-originated file writes** (gemini disobeys the read-only prompt and edits a file despite `--yolo` being intended only for tool auto-approval) → **blocker taxonomy #2** (destructive action not authorized by the plan). Abort the review, revert the unauthorized change with `git checkout -- <file>`, and block the run. See "Yolo + read-only guarantee" above.
+
+**Not a blocker:**
+
+- **Timeout (Bash-level)** — first raise the Bash tool's timeout and re-run. Splitting the diff breaks cross-file reasoning and is a last resort. Only if generous timeouts also fail does this become a blocker (taxonomy #1 — service unavailable).

@@ -72,7 +72,9 @@ Direct — no envelope. Parse with `jq`:
 jq -e '.findings[]' < codex-output.json
 ```
 
-`jq -e` exits non-zero if `.findings` is missing or malformed. On any parse failure, do NOT retry codex in a loop (single pass rule). Instead: log the malformed output into the morning report as a blocker note, skip the review-findings path, and proceed to `finishing-a-development-branch` with a flagged "reviewer output unparseable" note. The PR still gets created; the user decides whether to re-request review manually.
+`jq -e` exits non-zero if `.findings` is missing or malformed. On parse failure, retry **once** with a stricter prompt instructing codex to return ONLY JSON conforming to the schema (no prose). If the retry still fails to produce schema-valid output, reviewer unavailability applies — see Error Handling below. Do NOT loop beyond one retry (single pass rule).
+
+If a schema-valid partial output exists despite a mid-stream failure (e.g. stdout truncated but `.findings[]` parses), use it and note the truncation in the morning report.
 
 ## Cost / token notes
 
@@ -80,7 +82,17 @@ Codex's JSON output does not include per-request token counts. The morning repor
 
 ## Error handling
 
-- **Auth expired** → blocker taxonomy #1. Stop, surface, do not push.
-- **Rate limits** — ChatGPT plan's rolling 5-hour limits. Single pass, so just log the result; do not retry in a tight loop. If rate-limited before the review completes, flag "reviewer unavailable" in the morning report and proceed.
-- **Timeout** — split the diff only as a last resort; a split diff breaks the reviewer's ability to reason about cross-file interactions. First try raising the Bash tool timeout.
-- **Empty stdout** — remove `2>/dev/null` and re-run to see codex's stderr. Common causes: bad schema path, missing network.
+**Reviewer unavailability is a blocker when the user chose this reviewer at plan approval.** Stop the run, do NOT push, do NOT create a PR, emit a partial morning report with `Status: Blocked` and the specific failure in `Blockers hit`, and exit.
+
+Unavailability triggers:
+
+- **Auth failure** (`codex login status` exits non-zero) → **blocker taxonomy #1** (credentials broken). Tell Murphy to run `codex login`.
+- **Rate limit exhausted** (ChatGPT plan's rolling 5-hour limits tripped) → **blocker taxonomy #1** — credentials work but the backing service is unavailable. Suggest retry-after-cooldown in the blocker note.
+- **Empty stdout** → **blocker taxonomy #1**. Remove `2>/dev/null` and re-run to surface stderr in the blocker note. Common causes: bad schema path, missing network.
+- **Schema violation that persists after one retry with a stricter prompt** → **blocker taxonomy #5** (unresolvable — the reviewer is producing unusable output).
+
+If a schema-valid partial output exists despite the failure, use it and proceed with a truncation note. Otherwise, block.
+
+**Not a blocker:**
+
+- **Timeout** — first raise the Bash tool's timeout parameter and re-run. Splitting the diff breaks the reviewer's ability to reason about cross-file interactions and is a last resort. Only if generous timeouts also fail does this become a blocker (taxonomy #1 — service unavailable).

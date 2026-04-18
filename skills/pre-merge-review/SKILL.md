@@ -189,6 +189,7 @@ The caller (`team-driven-development` Step 5a or `subagent-driven-development` S
 - **Let the reviewer edit code.** Reviewers are read-only: codex and claude pin `--tools "Read,Bash"`; gemini uses `--yolo` only to auto-approve its own Read calls and is instructed by prompt to be read-only. All fixes route through fresh implementer subagents in razorback's own flow.
 - **Silently dismiss findings.** Every dismissal requires a written reason in the morning report so the user can override on PR review. Silent dismissals defeat the whole point of running an external reviewer.
 - **Skip re-running tests after fixes.** Every fix invalidates the prior test run. Re-run the full suite (or a targeted subset that covers the changed files). Never push a branch whose most recent test run did not include the fix commits.
+- **Ship a PR without the reviewer the user requested.** Reviewer unavailability (auth, rate limit, budget/turn cap with no usable partial output, empty stdout, schema violation persisting after one retry) is a **blocker**, not a silent downgrade. Stop the run, do NOT push, do NOT create a PR, emit a partial morning report with `Status: Blocked` and the specific failure in `Blockers hit`, and exit. The user chose this reviewer at plan approval for a reason; quietly skipping the review turns an explicit request into an implicit "never mind".
 
 ## Integration
 
