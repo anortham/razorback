@@ -17,9 +17,10 @@ Load plan, review critically, execute all tasks, report when complete.
 
 ### Step 1: Load and Review Plan
 1. Read plan file
-2. Review critically - identify any questions or concerns about the plan
-3. If concerns: Raise them with your human partner before starting
-4. If no concerns: Create tasks (TaskCreate) and proceed
+2. Review critically: use Julie tools to check that the plan's file paths and symbol references are still valid against current code
+3. If you find a real blocker per `skills/using-razorback/references/blocker-taxonomy.md` (especially #3, plan-contradicting data, or #4, safety-critical ambiguity with no plan answer), stop and report
+4. For any other design-quality questions, decide the plan-consistent answer and note it in your eventual report (file:line + reason)
+5. Create tasks (TaskCreate) and proceed
 
 ### Step 2: Execute Tasks
 
