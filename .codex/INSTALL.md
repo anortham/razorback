@@ -1,11 +1,14 @@
-# Installing Razorback for Codex
+# Installing Razorback for Codex CLI and Desktop
 
-Enable razorback skills in Codex via native skill discovery. Clone and symlink.
+Enable razorback skills in Codex CLI or the Codex desktop app via native skill discovery. Clone and symlink.
 
 ## Prerequisites
 
 - Git
-- [Julie MCP Server](https://github.com/anortham/julie) configured in Codex (razorback assumes Julie is available)
+- [Julie MCP Server](https://github.com/anortham/julie) configured in Codex
+- [Goldfish MCP Server](https://github.com/anortham/goldfish) configured in Codex
+
+Razorback assumes both Julie and Goldfish are available.
 
 ## Installation
 
@@ -32,15 +35,16 @@ Enable razorback skills in Codex via native skill discovery. Clone and symlink.
    multi_agent = true
    ```
 
-4. **Restart Codex** (quit and relaunch the CLI) to discover the skills.
+4. **Restart Codex** (quit and relaunch the CLI or desktop app) to discover the skills.
 
 ## Verify
 
 ```bash
 ls -la ~/.agents/skills/razorback
+codex features list | grep '^multi_agent'
 ```
 
-You should see a symlink (or junction on Windows) pointing to your razorback skills directory.
+You should see a symlink (or junction on Windows) pointing to your razorback skills directory, and `multi_agent` should show as enabled.
 
 ## Updating
 

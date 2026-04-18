@@ -4,10 +4,11 @@ Skills in razorback use Claude Code tool names. When you see these in a skill bo
 
 | Skill references | Codex equivalent |
 |-----------------|------------------|
-| `Task` / `Agent` tool (dispatch subagent) | `spawn_agent` (see [Subagent dispatch](#subagent-dispatch)) |
+| `Task` / `Agent` tool (dispatch subagent) | `spawn_agent` (returns an agent ID; see [Subagent dispatch](#subagent-dispatch)) |
 | Multiple `Task` calls (parallel) | Multiple `spawn_agent` calls |
-| Task returns result | `wait` |
-| Task completes | `close_agent` to free the slot |
+| Task follow-up / resume | `send_input(target=<agent-id>, message=...)` |
+| Task returns result | `wait_agent(targets=[<agent-id>])` |
+| Task completes | `close_agent(target=<agent-id>)` to free the slot |
 | `TodoWrite` / `TaskCreate` / `TaskUpdate` | `update_plan` |
 | `Skill` tool (invoke a skill) | Skills load natively, follow the instructions |
 | `Read`, `Write`, `Edit` (files) | Your native file tools |
@@ -22,7 +23,7 @@ Razorback's parallel execution skills (`subagent-driven-development`, `dispatchi
 multi_agent = true
 ```
 
-This enables `spawn_agent`, `wait`, and `close_agent`.
+This enables `spawn_agent`, `send_input`, `wait_agent`, and `close_agent`.
 
 ### Dispatching implementers
 
@@ -77,6 +78,10 @@ For single-task or sequential work on any platform, use `executing-plans`.
 ## Julie MCP
 
 Razorback assumes Julie MCP is available. The exploration directives in skill bodies (`get_context`, `deep_dive`, `fast_refs`, `get_symbols`) require Julie. Install and configure it before using razorback for real work: https://github.com/anortham/julie
+
+## Goldfish MCP
+
+Razorback also assumes Goldfish MCP is available for checkpoints, recall, and recovery during long autonomous runs. Install and configure it before relying on the autonomous execution flow.
 
 ## Environment detection for worktrees
 

@@ -31,7 +31,7 @@ docs/specs/                         — Design specifications
 |---------|------------------------|---------------------|
 | Claude Code | `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `agents/`, `commands/`, `hooks/hooks.json`, `hooks/session-start`, `hooks/run-hook.cmd` | `SessionStart` hook injects `using-razorback` as `hookSpecificOutput.additionalContext` |
 | Cursor | `.cursor-plugin/plugin.json`, `hooks/hooks-cursor.json` (reuses `hooks/session-start`) | `sessionStart` hook injects `using-razorback` as `additional_context` (snake_case) |
-| Codex | `.codex/INSTALL.md`, `skills/using-razorback/references/codex-tools.md` | Native skill discovery from `~/.agents/skills/razorback/` |
+| Codex (CLI + desktop app) | `.codex/INSTALL.md`, `skills/using-razorback/references/codex-tools.md` | Native skill discovery from `~/.agents/skills/razorback/` |
 | OpenCode | `.opencode/plugins/razorback.js`, `AGENTS.md` symlink, `package.json`, `index.js` | Plugin's `config` hook registers skills path; `experimental.chat.messages.transform` injects bootstrap into first user message |
 | Copilot CLI | `skills/using-razorback/references/copilot-tools.md` (reuses `.claude-plugin/` manifests, `hooks/session-start`) | `SessionStart` hook injects bootstrap as top-level `additionalContext` (SDK standard) |
 | Gemini CLI | `gemini-extension.json`, `GEMINI.md`, `skills/using-razorback/references/gemini-tools.md` | `GEMINI.md` uses `@./` includes to pull `using-razorback/SKILL.md` + `gemini-tools.md` at session start |
@@ -104,7 +104,7 @@ Use directive language: "Use julie:deep_dive BEFORE modifying any symbol" not "c
 **Per-harness bootstrap mechanics:**
 - **Claude Code:** `hooks/session-start` reads `skills/using-razorback/SKILL.md` verbatim and injects it via the SessionStart hook.
 - **Cursor:** same `hooks/session-start` script; platform detection keys on `CURSOR_PLUGIN_ROOT` and emits `additional_context` (snake_case).
-- **Codex:** native skill discovery scans `~/.agents/skills/razorback/` at startup. Users see the raw SKILL.md content; the Execution Model section routes Codex readers to `subagent-driven-development`. Tool-name mapping lives in `skills/using-razorback/references/codex-tools.md`.
+- **Codex (CLI + desktop app):** native skill discovery scans `~/.agents/skills/razorback/` at startup. Users see the raw SKILL.md content; the Execution Model section routes Codex readers to `subagent-driven-development`. Tool-name mapping lives in `skills/using-razorback/references/codex-tools.md`.
 - **OpenCode:** `.opencode/plugins/razorback.js` registers the skills directory and injects the bootstrap on the first user message (via `experimental.chat.messages.transform`), substituting the Execution Model section so `subagent-driven-development` is named as the primary. The plugin guards against regex-replace misses and hook-fire errors with `console.warn`.
 - **Copilot CLI:** same `hooks/session-start` script; platform detection keys on `COPILOT_CLI` and emits top-level `additionalContext` (SDK standard). Plugin agents (like `razorback:code-reviewer`) are auto-discovered from the installed marketplace.
 - **Gemini CLI:** `gemini-extension.json` declares `GEMINI.md` as the context file. `GEMINI.md` uses `@./` includes to pull in `skills/using-razorback/SKILL.md` + `skills/using-razorback/references/gemini-tools.md` at session start. No subagent support means `subagent-driven-development` and `dispatching-parallel-agents` fall back to `executing-plans`.

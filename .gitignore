@@ -2,3 +2,4 @@
 *.swp
 .worktrees/
 .julie/
+.codex/config.toml

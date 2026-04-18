@@ -1,9 +1,11 @@
 ---
 name: team-driven-development
-description: Use when executing implementation plans with 2+ independent tasks. Creates an Agent Team where teammates work in parallel with Julie-powered orientation, lead does inline review, and fixes go to the existing teammate (no cold restart).
+description: Use when executing implementation plans with 2+ independent tasks on Claude Code. Creates an Agent Team where teammates work in parallel with Julie-powered orientation, lead does inline review, and fixes go to the existing teammate (no cold restart).
 ---
 
 # Team-Driven Development
+
+**Claude Code only.** Codex and opencode do not provide Agent Teams. On those harnesses, use `razorback:subagent-driven-development`.
 
 Execute plans by creating an Agent Team. Each teammate owns a set of tasks and files, works in parallel with Julie-powered codebase orientation, and persists for the entire session. The lead monitors progress, does inline review, and messages teammates directly for fixes.
 
@@ -32,9 +34,9 @@ digraph when_to_use {
 - File ownership prevents conflicts
 - Julie-powered orientation in each teammate's prompt
 
-**vs. Subagent-Driven Development (DEPRECATED):**
-- Teammates persist and can be messaged for fixes (subagents required resume or fresh dispatch)
-- True parallelism (subagents were sequential per-task)
+**vs. Subagent-Driven Development (Codex/OpenCode primary path):**
+- Teammates persist and can be messaged for fixes (subagent-driven uses fresh dispatches plus harness-specific follow-up tools)
+- Persistent teammates reduce cold-start cost on follow-up fixes
 - Lead does inline review (no separate reviewer subagents needed)
 - Same Julie-powered orientation, lower total token cost
 

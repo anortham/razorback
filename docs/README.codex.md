@@ -1,6 +1,6 @@
 # Razorback for Codex
 
-Guide for using Razorback with OpenAI Codex via native skill discovery.
+Guide for using Razorback with OpenAI Codex via native skill discovery in the CLI or desktop app.
 
 ## Quick Install
 
@@ -14,9 +14,10 @@ Fetch and follow instructions from https://raw.githubusercontent.com/anortham/ra
 
 ### Prerequisites
 
-- OpenAI Codex CLI
+- OpenAI Codex CLI or Codex desktop app
 - Git
 - [Julie MCP Server](https://github.com/anortham/julie) configured in Codex
+- [Goldfish MCP Server](https://github.com/anortham/goldfish) configured in Codex
 
 ### Steps
 
@@ -37,7 +38,7 @@ Fetch and follow instructions from https://raw.githubusercontent.com/anortham/ra
    multi_agent = true
    ```
 
-4. Restart Codex.
+4. Restart Codex CLI or the desktop app.
 
 ### Windows
 
@@ -50,15 +51,17 @@ cmd /c mklink /J "$env:USERPROFILE\.agents\skills\razorback" "$env:USERPROFILE\.
 
 ## How It Works
 
-Codex has native skill discovery. It scans `~/.agents/skills/` at startup, parses SKILL.md frontmatter, and loads skills on demand. Razorback skills are made visible through a single symlink:
+Codex CLI and the Codex desktop app share native skill discovery. They scan `~/.agents/skills/` at startup, parse SKILL.md frontmatter, and load skills on demand. Razorback skills are made visible through a single symlink:
 
 ```
 ~/.agents/skills/razorback/ → ~/.codex/razorback/skills/
 ```
 
-The `using-razorback` skill is discovered automatically and enforces skill usage discipline. No additional configuration needed.
+The `using-razorback` skill is discovered automatically and enforces skill usage discipline. No additional configuration needed beyond the shared install above.
 
 **Note:** `team-driven-development` is a Claude Code only skill (Agent Teams are not available in Codex). On Codex, plan execution routes through `subagent-driven-development`, which dispatches fresh implementer subagents in parallel when tasks are independent.
+
+**Desktop note:** The same Codex agent lifecycle applies in desktop sessions that expose `spawn_agent`, `send_input`, `wait_agent`, and `close_agent`. The separate `razorback:codex-cli` skill is for launching an external Codex CLI reviewer or delegate, not for the desktop app's built-in tools.
 
 ## Usage
 
@@ -70,6 +73,10 @@ Skills are discovered automatically. Codex activates them when:
 ### Julie MCP
 
 Razorback skills assume Julie is configured. Without it, the exploration directives in skill bodies (`get_context`, `deep_dive`, `fast_refs`, `get_symbols`) will fail. Install Julie before relying on razorback for real work: https://github.com/anortham/julie
+
+### Goldfish MCP
+
+Razorback's long-running autonomous flow also assumes Goldfish is configured for checkpoints, recall, and recovery. Install Goldfish before relying on overnight or resumed runs: https://github.com/anortham/goldfish
 
 ### Personal Skills
 
@@ -121,7 +128,7 @@ Optionally delete the clone: `rm -rf ~/.codex/razorback` (Windows: `Remove-Item 
 
 1. Verify the symlink: `ls -la ~/.agents/skills/razorback`
 2. Check skills exist: `ls ~/.codex/razorback/skills`
-3. Restart Codex. Skills are discovered at startup.
+3. Restart Codex CLI or the desktop app. Skills are discovered at startup.
 
 ### Windows junction issues
 
