@@ -173,13 +173,19 @@ git commit -m "feat: add specific feature"
 
 ## Execution Handoff
 
-After saving the plan, announce: **"Plan saved to `<path>`. Capturing reviewer choice before execution starts."**
+**Step 1, announce plan save and request approval.** After saving, announce:
 
-**Capture the reviewer choice.** If the user's approval message already named a choice (e.g. "approved, run it, pre-merge codex review", "approved, no external review"), skip the question. Otherwise ask once:
+**"Plan saved to `<path>`. Please review it and reply **approved** (with an optional reviewer choice, e.g. 'approved, codex review') or request changes."**
+
+**Step 2, wait for explicit approval.** Do NOT proceed on silence, hedged responses ("looks ok", "maybe", "I guess"), questions, or partial feedback. Only an explicit **"approved"**, **"yes, go"**, **"run it"**, or equivalent unblocks execution. The approval message can fold in the reviewer choice (e.g. "approved, codex review", "approved, no external review").
+
+If the user requests changes, revise the plan, re-run the self-review, re-save, and re-ask for approval. Brainstorming gates the spec; writing-plans gates the plan. This is the last human stop before autonomous execution.
+
+**Step 3, capture the reviewer choice.** If the approval message already named a choice (e.g. "approved, run it, pre-merge codex review", "approved, no external review"), skip the question. Otherwise ask once:
 
 **"External review before PR? (none / codex / gemini / claude)"**
 
-After the answer (or if already given), announce which execution skill will run and invoke it, passing the plan path, the reviewer choice (`none` / `codex` / `gemini` / `claude`), and the project test command if known:
+**Step 4, invoke the execution skill.** After the reviewer choice is in hand, announce which execution skill will run and invoke it, passing the plan path, the reviewer choice (`none` / `codex` / `gemini` / `claude`), and the project test command if known:
 
 - **On Claude Code:** `razorback:team-driven-development`
 - **On non-Claude-Code harnesses with subagents:** `razorback:subagent-driven-development`
