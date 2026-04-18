@@ -42,30 +42,37 @@ After all tasks complete and verified:
 - **REQUIRED SUB-SKILL:** Use razorback:finishing-a-development-branch
 - Follow that skill to verify tests, present options, execute choice
 
-## When to Stop and Ask for Help
+## Blockers
 
-**STOP executing immediately when:**
-- Hit a blocker (missing dependency, test fails, instruction unclear)
-- Plan has critical gaps preventing starting
-- You don't understand an instruction
-- Verification fails repeatedly
+The authoritative taxonomy is `skills/using-razorback/references/blocker-taxonomy.md`. Consult it before stopping.
 
-**Ask for clarification rather than guessing.**
+**Bias rules:**
+- When in doubt, press on and flag. A line in the morning report is cheaper than a false wake-up.
+- Never silently swallow a judgment call. Every non-obvious decision ends up in the report with file:line + reason.
+
+**Real blockers (stop and report):**
+1. Credentials / auth / env broken, with no recovery path in the plan
+2. Destructive action not authorized by the plan
+3. Plan-contradicting data (codebase reality invalidates a load-bearing assumption)
+4. Safety-critical ambiguity (security, data integrity, billing, auth) with no plan answer
+5. Unresolvable test failures (repeated fix attempts do not converge)
+
+Anything else: pick the plan-consistent option, note the choice in your report, continue. Full definitions in the taxonomy.
 
 ## When to Revisit Earlier Steps
 
 **Return to Review (Step 1) when:**
-- Partner updates the plan based on your feedback
+- A teammate flags plan-contradicting state. Re-read the plan and use Julie (`get_context`, `deep_dive`) to check current state. If the plan is still valid, continue. If not, stop per blocker taxonomy #3 (plan-contradicting data).
 - Fundamental approach needs rethinking
 
-**Don't force through blockers** - stop and ask.
+**Don't force through real blockers.** Stop and report per the taxonomy.
 
 ## Remember
 - Review plan critically first
 - Follow plan steps exactly
 - Don't skip verifications
 - Reference skills when plan says to
-- Stop when blocked, don't guess
+- Stop only for real blockers; decide + note otherwise (see blocker taxonomy)
 - Never start implementation on main/master branch without explicit user consent
 
 ## Integration
