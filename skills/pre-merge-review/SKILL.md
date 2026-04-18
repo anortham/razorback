@@ -97,11 +97,11 @@ Optional: if the plan carried a focus area ("focus on the auth boundary", "pay a
 
 Select the prompt file based on the reviewer choice and invoke the matching reviewer-cli skill. Each file contains a complete runnable invocation. All three invocations run the reviewer in adversarial mode with read-only tool access — the reviewer never edits code.
 
-- **codex** → follow [`reviewer-prompts/codex.md`](reviewer-prompts/codex.md). Calls `codex exec --ephemeral --color never --output-schema …` with the shared JSON schema. See `~/.claude/skills/codex-cli/SKILL.md` "Adversarial Review" for the canonical prompt template.
-- **gemini** → follow [`reviewer-prompts/gemini.md`](reviewer-prompts/gemini.md). Calls `gemini -o json -m gemini-3-pro --yolo` with the schema inlined in the prompt body (gemini has no `--json-schema` flag). See `~/.claude/skills/gemini-cli/SKILL.md`.
-- **claude** → follow [`reviewer-prompts/claude.md`](reviewer-prompts/claude.md). Calls `claude -p --bare --no-session-persistence --dangerously-skip-permissions --output-format json --json-schema … --tools "Read,Bash" --max-turns 15 --max-budget-usd 5.00 --model opus --system-prompt-file …`. See `~/.claude/skills/claude-cli/SKILL.md` "Adversarial Review" — that file is the canonical source; `reviewer-prompts/claude.md` quotes it so the user can read it without chasing links.
+- **codex** → follow [`reviewer-prompts/codex.md`](reviewer-prompts/codex.md). Calls `codex exec --ephemeral --color never --output-schema …` with the shared JSON schema. Background on codex's adversarial-review mode lives in the bundled `razorback:codex-cli` skill.
+- **gemini** → follow [`reviewer-prompts/gemini.md`](reviewer-prompts/gemini.md). Calls `gemini -o json -m gemini-3-pro --yolo` with the schema inlined in the prompt body (gemini has no `--json-schema` flag). The reviewer-prompts file is self-contained — the adversarial template, schema, and placeholder-substitution logic are all inlined there. The bundled `razorback:gemini-cli` skill covers general gemini usage but does not have a separate adversarial-review section.
+- **claude** → follow [`reviewer-prompts/claude.md`](reviewer-prompts/claude.md). Calls `claude -p --bare --no-session-persistence --dangerously-skip-permissions --output-format json --json-schema … --tools "Read,Bash" --max-turns 15 --max-budget-usd 5.00 --model opus --system-prompt-file …`. The reviewer-prompts file is self-contained (schema + adversarial system prompt are inlined); `razorback:claude-cli` has the background treatment.
 
-All three target the shared output schema: `~/.claude/skills/codex-cli/schemas/review-output.schema.json` (verdict, summary, findings[severity, title, body, file, line_start, line_end, confidence, recommendation], next_steps).
+All three target the shared output schema defined canonically at `skills/codex-cli/schemas/review-output.schema.json` in the razorback plugin (verdict, summary, findings[severity, title, body, file, line_start, line_end, confidence, recommendation], next_steps). The reviewer-prompts files inline the schema content so invocations need no install-path knowledge.
 
 ## Step 3: Parse findings
 
@@ -208,4 +208,4 @@ The caller (`team-driven-development` Step 5a or `subagent-driven-development` S
 
 - `skills/using-razorback/references/blocker-taxonomy.md` — stop-versus-proceed rules
 - `skills/finishing-a-development-branch/morning-report-template.md` — shape of the summary block emitted in Step 7
-- `~/.claude/skills/codex-cli/schemas/review-output.schema.json` — the shared finding shape all three reviewers target
+- `skills/codex-cli/schemas/review-output.schema.json` (in the razorback plugin) — the shared finding shape all three reviewers target
