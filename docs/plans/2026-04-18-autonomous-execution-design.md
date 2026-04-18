@@ -4,6 +4,8 @@
 **Status:** Approved for plan writing
 **Motivation:** Approved plans should run to completion without interactive gates. Razorback already invests heavily in spec + plan review; once those are approved, the process should execute overnight without waking the user for anything short of a real blocker.
 
+**Hard dependencies:** This design assumes both [Julie MCP](https://github.com/anortham/julie) (code intelligence) and [Goldfish MCP](https://github.com/anortham/goldfish) (persistent memory) are configured and running. Julie is used for all codebase orientation; Goldfish is used for the phase-boundary checkpoints and recovery sequence in §6. Neither has a fallback.
+
 ---
 
 ## 1. Philosophy shift

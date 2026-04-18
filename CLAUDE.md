@@ -84,8 +84,9 @@ Use directive language: "Use julie:deep_dive BEFORE modifying any symbol" not "c
 - SessionStart hook announces "You have razorback."
 
 ## Dependencies
-- Julie MCP server is a **hard requirement** — no fallback to generic tools
-- Skills assume Julie is configured and available
+- Julie MCP server is a **hard requirement** — no fallback to generic tools for codebase exploration
+- Goldfish MCP server is a **hard requirement** — used for persistent memory (checkpoints, briefs, recall) and compaction-durable execution during long autonomous runs
+- Skills assume both Julie and Goldfish are configured and available
 - On Gemini CLI, the no-subagent constraint routes multi-task plans through `executing-plans` automatically
 
 ## Execution Model

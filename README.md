@@ -14,7 +14,8 @@ AI-assisted development burns tokens on repetitive codebase exploration. Every a
 ## Requirements
 
 - A supported harness: [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Cursor](https://cursor.sh), [Codex](https://openai.com/codex/), [OpenCode](https://opencode.ai), [Copilot CLI](https://github.com/github/copilot-cli), or [Gemini CLI](https://github.com/google-gemini/gemini-cli)
-- [Julie MCP Server](https://github.com/anortham/julie) — must be configured and indexing your workspace
+- [Julie MCP Server](https://github.com/anortham/julie) — hard requirement for code intelligence; must be configured and indexing your workspace
+- [Goldfish MCP Server](https://github.com/anortham/goldfish) — hard requirement for persistent memory (checkpoints, briefs, recall); used for compaction-durable execution during long autonomous runs
 - For Codex: enable `multi_agent = true` in `~/.codex/config.toml` so parallel execution skills can dispatch subagents
 
 ## Installation
