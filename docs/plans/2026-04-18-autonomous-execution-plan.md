@@ -176,9 +176,25 @@
 - Expected output format (JSON conforming to the schema)
 
 `reviewer-prompts/gemini.md`:
-- Invocation command using gemini-cli's code-review mode (no JSON schema support — gemini's `-o json` returns different structure)
-- Prompt gemini to return findings in a specific structured-text format: `## Finding N\n- Severity: ...\n- File: path:line\n- Body: ...\n- Recommendation: ...`
-- Parser in `SKILL.md` step 3 handles this text format for the gemini path
+- Gemini has NO `--json-schema` / `--output-schema` flag (verified against `gemini --help` on 2026-04-18). `-o json` wraps the model response in a metadata envelope: `{session_id, response, stats: {models: {...: {tokens: ...}}}}` where `.response` is plain text (often fenced in markdown ```\`\`\`json ... \`\`\````).
+- Invocation command:
+  ```bash
+  cd "$PROJECT_DIR" && gemini -o json -m gemini-3-pro --yolo \
+    "$(cat adversarial-prompt.md)
+
+  Return your response as a JSON object matching this schema:
+  $(cat ~/.claude/skills/codex-cli/schemas/review-output.schema.json)
+
+  Diff to review:
+  $DIFF" 2>/dev/null
+  ```
+- Parsing protocol (documented in the skill, executed by the lead after dispatch):
+  1. Parse envelope with `jq -r '.response'` to extract the model's text
+  2. Strip markdown code fences if present: `sed -E 's/^```(json)?$//; s/```$//'`
+  3. `jq empty` to validate it's parseable JSON
+  4. Validate against the shared schema (same file as codex/claude use). If invalid, retry once with a stricter prompt; if still invalid, fall back to a structured-markdown parser (regex over `## Finding N` blocks with `Severity:`, `File:`, `Body:`, `Recommendation:` fields)
+  5. Normalize to the shared finding shape before handing to the verification step
+- Log `stats.models.*.tokens` from the envelope to the morning report for cost tracking (gemini provides this; codex/claude don't in their JSON output — note the asymmetry in the skill)
 
 `reviewer-prompts/claude.md`:
 - Invocation command using claude-cli's adversarial mode (created in Task 3) with JSON schema output
@@ -200,7 +216,7 @@
 - [ ] All 6 files exist at the paths above
 - [ ] `SKILL.md` has valid frontmatter with `name: pre-merge-review` and a complete description
 - [ ] `SKILL.md` contains a graphviz `digraph` for the 7-step flow
-- [ ] `SKILL.md` explicitly handles the gemini text-parse path (noted as different from codex/claude JSON path)
+- [ ] `SKILL.md` explicitly handles the gemini envelope-unwrap + fallback-parser path (noted as different from codex/claude schema-enforced JSON path)
 - [ ] Three reviewer-prompt files each contain a complete, runnable invocation command
 - [ ] `verification-protocol.md` has concrete examples of each of the 4 classifications
 - [ ] `fix-dispatch-prompt.md` template is scoped to a single finding (no multi-finding batching that could compound errors)
