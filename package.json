@@ -1,6 +1,6 @@
 {
   "name": "razorback",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Julie-powered development workflow for Claude Code, Codex, and OpenCode.",
   "type": "module",
   "main": "./index.js",

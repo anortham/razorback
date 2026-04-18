@@ -7,13 +7,116 @@ description: Use when implementation is complete, all tests pass, and you need t
 
 ## Overview
 
-Guide completion of development work by presenting clear options and handling chosen workflow.
+Guide completion of development work by selecting a mode, then executing the appropriate flow (autonomous push+PR or interactive menu).
 
-**Core principle:** Verify tests -> Present options -> Execute choice -> Clean up.
+**Core principle:** Verify tests -> choose mode (autonomous default) -> execute -> clean up.
 
 **Announce at start:** "I'm using the finishing-a-development-branch skill to complete this work."
 
-## The Process
+## Mode Selection
+
+If the agent was just finishing an autonomous execution run (i.e. this skill is being invoked as the final step of `razorback:executing-plans` / `razorback:team-driven-development` / `razorback:subagent-driven-development`), use **Autonomous Mode**. If the user invoked the skill directly (e.g. "finish this branch"), use **Interactive Mode**. In ambiguous cases, default to Autonomous — run-to-completion is the bias.
+
+## Autonomous Mode
+
+No menu, no prompts. Push the branch, open a PR with the morning-report summary, write the full report to `.memories/`, emit a one-line terminal pointer, exit. Merge is never auto-performed.
+
+### Step 1: Verify tests pass
+
+Run the project's test suite:
+
+```bash
+npm test / cargo test / pytest / go test ./...
+```
+
+If tests fail, this is a blocker taxonomy #5 (unresolvable test failures). Do **not** create a PR. Instead:
+- Render a partial morning report with `Status: Blocked`, the failure summary in the `Tests` section, and the blocker description in `Blockers hit`.
+- Write it to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md`.
+- Emit terminal one-liner: `Blocked. Report: .memories/autonomous-run-YYYY-MM-DD-<slug>.md` and exit.
+
+If tests pass, continue.
+
+### Step 2: Determine base branch and merge-base commit
+
+`git merge-base` returns a commit SHA, not a branch name. Autonomous Mode needs both: the branch name for `gh pr create --base`, and the SHA for diff-range computation. Resolve them as two separate values:
+
+```bash
+# Try main, then master. The one that produces a merge-base is the base branch.
+if BASE_SHA=$(git merge-base HEAD main 2>/dev/null); then
+  BASE_BRANCH=main
+elif BASE_SHA=$(git merge-base HEAD master 2>/dev/null); then
+  BASE_BRANCH=master
+else
+  echo "No main/master ancestor found; cannot determine PR base." >&2
+  # Blocker taxonomy #3 (plan-contradicting data): the branch doesn't descend
+  # from a known base. Emit a Blocked report per the failure protocol below and
+  # exit. Do NOT push.
+fi
+```
+
+Use `$BASE_SHA` for any `base..HEAD` range computation (e.g. `git diff --stat $BASE_SHA..HEAD` in Step 3). Use `$BASE_BRANCH` for `gh pr create --base "$BASE_BRANCH"` in Step 5.
+
+**If both lookups fail** (no `main`, no `master` ancestor), that's a blocker per taxonomy #3. Render a partial morning report with `Status: Blocked`, describe the missing base in `Blockers hit`, write it to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md`, emit the terminal one-liner, and exit. Do **not** push.
+
+### Step 3: Render morning report
+
+Fill the placeholders in `./morning-report-template.md` using the fields the caller accumulated during execution (plan name + path, branch name, phases complete/total, tasks complete/total, duration, judgment calls log, external review outcome, tests summary, blockers, files changed from `git diff --stat $BASE_SHA..HEAD`, next steps).
+
+Produce two renderings:
+- **Full report** — every section filled in, for `.memories/` and for review.
+- **PR summary** — status, What shipped, External review, Blockers, Next steps only. The Judgment calls section is not inlined in the PR description; the PR body points at the `.memories/` file instead (it lands in the PR via Step 6's commit).
+
+### Step 4: Push branch
+
+```bash
+git push -u origin <branch>
+```
+
+If the push is rejected (branch already tracks a different remote, non-fast-forward, network failure), log the exact error in the report's `Blockers hit` section, set `Status: Blocked`, write the partial report to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md`, emit the terminal pointer, and exit. Do not retry with `--force`.
+
+### Step 5: Create PR
+
+```bash
+gh pr create \
+  --base "$BASE_BRANCH" \
+  --title "<plan name or feature name>" \
+  --body "$(rendered_pr_summary)"
+```
+
+If `gh` is not installed or the command fails (auth, network, repo not on origin), log the failure in `Blockers hit`, set `Status: Partial` (the branch was pushed but the PR was not created), write the report to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md`, emit the terminal pointer, and exit.
+
+Capture the PR URL from `gh`'s output.
+
+### Step 6: Write full report + commit
+
+Write the full rendered report to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md`, where `<slug>` is a short kebab-case identifier for the plan (e.g. `autonomous-execution`).
+
+```bash
+git add .memories/autonomous-run-YYYY-MM-DD-<slug>.md
+git commit -m "docs: autonomous run report for <plan name>"
+git push
+```
+
+The extra push makes the `.memories/` file visible in the PR.
+
+### Step 7: Emit terminal pointer
+
+One line, then exit:
+
+```
+Done. PR: <url>. Report: .memories/autonomous-run-YYYY-MM-DD-<slug>.md
+```
+
+### Autonomous Mode rules
+
+- **Never merge.** Stopping at PR creation is the point; merge is a separate human (or agent) action after PR review.
+- **Never show a menu, never ask "which option".** Autonomous means no prompts.
+- **Never fall back to Interactive Mode mid-run.** If a step fails (push rejected, `gh` missing, remote mismatch), emit a partial report with `Status: Blocked` or `Status: Partial` as appropriate and let the user resolve from there.
+- **Always write the report to `.memories/`**, even on blocked/partial outcomes — the report is the user's morning read regardless of outcome.
+
+## Interactive Mode
+
+Used when the user invokes this skill directly ("finish this branch"). Presents the classic 4-option menu.
 
 ### Step 1: Verify Tests
 
@@ -183,19 +286,24 @@ git worktree remove <worktree-path>
 - Merge without verifying tests on result
 - Delete work without confirmation
 - Force-push without explicit request
+- Merge in autonomous mode — merge is always a separate human (or agent) action after PR review
+- Fall back to Interactive Mode mid-autonomous-run — if autonomous mode can't complete (e.g. `gh` not installed), emit a partial report with status `Blocked` and let the user resolve; don't prompt for an option
 
 **Always:**
-- Verify tests before offering options
-- Present exactly 4 options
+- Verify tests before offering options (Interactive) or before pushing (Autonomous)
+- In Interactive Mode, present exactly 4 options
 - Get typed confirmation for Option 4
 - Clean up worktree for Options 1 & 4 only
+- In Autonomous Mode, emit the morning report to all three destinations (PR summary, `.memories/` file, terminal one-liner) regardless of outcome
 
 ## Integration
 
 **Called by:**
-- **subagent-driven-development** (Step 5) - After all implementers complete
-- **team-driven-development** (Step 5) - After all teammates complete (Claude Code)
-- **executing-plans** (Step 5) - After all batches complete
+- `razorback:executing-plans` (Step 5) — Autonomous mode when the execution skill finishes cleanly
+- `razorback:team-driven-development` (Step 5 or 5a+finish) — Autonomous mode
+- `razorback:subagent-driven-development` (Step 5 or 4a+finish) — Autonomous mode
+- Direct user invocation ("finish this branch") — Interactive mode
 
 **Pairs with:**
-- **using-git-worktrees** - Cleans up worktree created by that skill
+- **using-git-worktrees** - Cleans up worktree created by that skill (Interactive Mode, Options 1 & 4)
+- **morning-report-template.md** (this directory) — template rendered by Autonomous Mode Step 3

@@ -12,6 +12,7 @@ Execute a plan by dispatching fresh subagents per task, with the lead doing inli
 **Dispatch mechanism:**
 - **Claude Code:** `Agent` tool (one call per subagent; multiple calls in one turn run in parallel).
 - **opencode:** `Task` tool (one call per subagent; multiple calls in one turn run in parallel). The built-in `general` subagent is suitable for most implementer work; `@mention` also works for manual invocation.
+- **Codex:** `spawn_agent(agent_type="worker", message=<filled prompt>)` (one call per subagent; multiple calls in one turn run in parallel). Keep the returned `session_id` — `send_input(session_id, message)` feeds follow-ups (the closest thing to Claude Code's resume), `wait_agent(session_id)` blocks until the agent finishes, and `close_agent(session_id)` frees the slot. Requires `multi_agent = true` in `~/.codex/config.toml` (see `skills/using-razorback/references/codex-tools.md`).
 
 ## When to Use
 
@@ -105,7 +106,11 @@ Use the template at `./implementer-prompt.md`. The spawn prompt MUST include:
 5. **TDD expectations** (from `razorback:test-driven-development`)
 6. **Verification commands** specific to this task
 
-On Claude Code, save the **agent ID** returned by the dispatch so you can resume the subagent for fixes (preserves its orientation context). On opencode, the Task tool does not expose persistent resume, so fixes go to a fresh subagent with fix context included (see Step 4).
+Per-harness state to keep after dispatch:
+
+- **Claude Code:** save the **agent ID** returned by the dispatch so you can resume the subagent for fixes (preserves its orientation context).
+- **opencode:** the Task tool does not expose persistent resume, so fixes go to a fresh subagent with fix context included (see Step 4).
+- **Codex:** save the **`session_id`** returned by `spawn_agent` so you can `send_input` for follow-ups and `close_agent` when the task is done. `send_input` is Codex's closest analogue to Claude Code's resume — the worker keeps its orientation context between messages.
 
 If the subagent asks questions, answer completely before letting it proceed.
 
@@ -115,6 +120,7 @@ When the plan has 2+ independent tasks (non-overlapping files, no ordering depen
 
 - **Claude Code:** make multiple `Agent` tool calls in a single turn. They run concurrently and you review each as it reports back.
 - **opencode:** make multiple `Task` tool calls in a single turn (or in the TUI, @mention the `general` subagent concurrently). Child sessions run in parallel; navigate with `session_child_*` keybinds.
+- **Codex:** make multiple `spawn_agent` calls in a single turn. Each returns its own `session_id`. Use `wait_agent(session_id)` per agent to join when you need a given implementer's output before proceeding with its review.
 
 Assign file ownership per subagent to prevent collisions. If tasks are tightly coupled (same files, shared state, ordering dependency), dispatch sequentially instead — one subagent at a time, lead reviews, then next.
 
@@ -137,7 +143,16 @@ When the implementer reports completion, the lead does a single inline review co
 - Use `deep_dive(symbol)` on key new/modified symbols to check callers, callees, and types.
 - Use `fast_refs(symbol)` to verify API changes don't break dependents.
 
-**Review cap: 3 iterations max** for a single task. If issues persist, escalate to the user.
+**Review cap: 3 iterations.**
+
+- On Claude Code: 3 resume-the-implementer attempts using `./fix-prompt.md`.
+- On opencode: 3 fresh-dispatch-with-fix-context attempts.
+
+If the 3rd iteration still fails:
+
+1. Dispatch a **fresh implementer with reframed context** using `./fix-prompt.md`'s "Reframed-Context Attempt" section — different framing (different ownership, explicit plan disambiguation, simpler decomposition, or a prior-commit pointer so the fresh agent can read what was tried without rediscovering it).
+2. If the fresh attempt also fails, flag the task in the morning report's "Blockers hit" section and continue with remaining tasks.
+3. Escalate to the user only if the failure matches blocker taxonomy #5 (unresolvable test failures blocking the whole plan).
 
 ### When Lighter Review Is Appropriate
 
@@ -166,9 +181,25 @@ When review finds issues, route the fix back to an implementer with the reviewer
 - A pointer to the commit(s) the prior implementer produced (so the fresh subagent can `git show` or read the files instead of rediscovering them)
 - The reviewer findings
 
-Either way, re-review after the fix. Repeat until approved (cap: 3 iterations, then escalate).
+**Codex (prefer send_input):** Call `send_input(session_id=<stored session_id>, message=<filled fix-prompt.md>)` on the existing worker for iterations 1-3. The worker keeps its orientation context and behaves like a Claude Code resume. For iteration 4 (reframed-context attempt), call `close_agent(session_id)` on the old worker, then `spawn_agent(agent_type="worker", message=<filled fix-prompt.md with the Reframed-Context Attempt section + prior-commit SHAs>)` for a fresh worker. If the stored `session_id` is gone (session restart, compaction), fall back to a fresh `spawn_agent` with the prior-commit pointer, same shape as the opencode branch above.
 
-**When to dispatch fresh on Claude Code:** the subagent is unreachable (session error, context limit), the prior implementer's context is genuinely stale (another task modified the same files), or the fix needs a fundamentally different approach.
+Either way, re-review after the fix. Iteration cap applies: 3 resume / `send_input` / fresh-dispatch attempts, then a 4th attempt with reframed context, then flag-and-continue (see "Review cap" in Step 3).
+
+**When to dispatch fresh on Claude Code (or Codex):** the subagent is unreachable (session error, context limit), the prior implementer's context is genuinely stale (another task modified the same files), or the fix needs a fundamentally different approach.
+
+## Step 4a: Pre-merge external review (if chosen)
+
+If the reviewer choice propagated from `writing-plans` (via the plan-approval message) is `codex`, `gemini`, or `claude`, invoke `razorback:pre-merge-review`, passing:
+
+- plan path
+- reviewer choice
+- project test command
+
+If the choice is `none` (or absent), skip Step 4a.
+
+Pre-merge-review builds the full branch diff, dispatches the chosen reviewer in adversarial read-only mode, classifies findings (real-bug / real-improvement / false-positive / out-of-scope), dispatches fresh implementer subagents for verified fixes, re-runs the test suite, and emits a summary block for the morning report. Single pass — no round-two review.
+
+After `pre-merge-review` returns, proceed to Step 5 (Complete → `razorback:finishing-a-development-branch`).
 
 ## Step 5: Complete
 
@@ -176,6 +207,46 @@ When all tasks are approved and marked complete:
 
 1. **Final verification:** Run the full test suite and check for integration issues across tasks.
 2. **Finish:** Use `razorback:finishing-a-development-branch`.
+
+## Blockers
+
+The authoritative taxonomy is `skills/using-razorback/references/blocker-taxonomy.md`. Consult it before stopping.
+
+**Bias rules:**
+- When in doubt, press on and flag. A line in the morning report is cheaper than a false wake-up.
+- Never silently swallow a judgment call. Every non-obvious decision ends up in the report with file:line + reason.
+
+**Real blockers (stop and report):**
+1. Credentials / auth / env broken, with no recovery path in the plan
+2. Destructive action not authorized by the plan
+3. Plan-contradicting data (codebase reality invalidates a load-bearing assumption)
+4. Safety-critical ambiguity (security, data integrity, billing, auth) with no plan answer
+5. Unresolvable test failures (repeated fix attempts do not converge)
+
+Anything else: pick the plan-consistent option, note the choice in your report, continue. Full definitions in the taxonomy.
+
+## Checkpoints
+
+The lead writes a `goldfish:checkpoint` at four points during the run. This persists phase-level progress and decisions across auto-compaction and session restarts.
+
+1. **Phase boundary** — after each phase of a multi-phase plan: "Phase N of M complete. Decisions: …. Next: Phase N+1."
+2. **Pre-review** — before Step 4a begins (if a reviewer was chosen): captures reviewer choice, diff range, verification strategy.
+3. **Post-review** — after Step 4a completes: captures findings, classifications, fix commits.
+4. **Post-PR** — after `finishing-a-development-branch` creates the PR: final state.
+
+Checkpoint at phase granularity, not per task or per subagent dispatch. Per-task checkpoints are noise; per-phase is enough to recover.
+
+## Recovery
+
+On detecting a resumed run (post-compaction note, mismatch between expected and actual conversation state, or the user says "resume"), the lead follows this fixed orientation sequence before continuing:
+
+1. `goldfish:recall` — retrieve the active brief and recent checkpoints.
+2. Read the plan file.
+3. Check the TaskList for completed / in-progress / pending tasks.
+4. `git log --oneline <base>..HEAD` — verify what is actually committed.
+5. Identify the next incomplete task and resume execution.
+
+This sequence runs only on resumed runs. A fresh run dispatches directly into Step 1 (Extract Tasks from the Plan). Subagent IDs from the prior session cannot be resumed post-compaction — treat any needed fix as a fresh dispatch with prior-commit context.
 
 ## Prompt Templates
 
@@ -296,7 +367,9 @@ Done.
 - Ignore subagent questions (answer before letting them proceed)
 - Skip the re-review after a fix
 - Dispatch a separate reviewer subagent when the lead can review inline
-- On Claude Code, dispatch a fresh subagent for fixes when resume is possible (wastes tokens re-orienting)
+- **On Claude Code, prefer resume for iterations 1-3** (the implementer has full context). Use fresh-dispatch-with-reframed-context for iteration 4 only, after 3 resume attempts failed. The 4th attempt's value is the reframing, not the freshness.
+- **On Codex, prefer `send_input` on the stored `session_id` for iterations 1-3** (same reasoning — the worker keeps its orientation context). Use `close_agent` + fresh `spawn_agent` with reframed context for iteration 4.
+- Never pause for user input between tasks — the plan is approved, run it to completion. Stops are governed by the blocker taxonomy.
 
 **If the subagent asks questions:**
 - Answer clearly and completely
@@ -306,8 +379,9 @@ Done.
 **If review finds issues:**
 - Claude Code: resume the implementer subagent with `./fix-prompt.md` + reviewer findings
 - opencode: dispatch a fresh implementer with `./fix-prompt.md` + reviewer findings + pointer to prior commits
+- Codex: `send_input(session_id, ...)` on the stored worker with `./fix-prompt.md` + reviewer findings for iterations 1-3; `close_agent` + fresh `spawn_agent` with reframed context for iteration 4
 - Re-review after the fix
-- Repeat until approved (cap: 3 iterations, then escalate)
+- Iteration cap: 3 resume / `send_input` / fresh-dispatch attempts → 4th attempt with reframed-context (see `./fix-prompt.md`) → flag the task in the morning report and continue with remaining tasks. Escalate to the user only for blocker taxonomy #5.
 
 ## Integration
 
@@ -323,3 +397,7 @@ Done.
 **Alternative workflows:**
 - **razorback:team-driven-development** — Alternative for Claude Code (Agent Teams instead of sequential subagents)
 - **razorback:executing-plans** — Use for parallel-session or single-agent execution
+
+**Codex-specific:**
+- Requires `multi_agent = true` in `~/.codex/config.toml` (see `skills/using-razorback/references/codex-tools.md`). Without it, `spawn_agent` / `send_input` / `wait_agent` / `close_agent` are not available.
+- **`close_agent(session_id)` MUST be called** when the worker is no longer needed — after a task's review is approved and you're not going to `send_input` again, or after the 4th-iteration flag-and-continue. Codex has a bounded agent-slot pool; leaking slots starves later dispatches in the same run.

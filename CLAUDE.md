@@ -84,8 +84,9 @@ Use directive language: "Use julie:deep_dive BEFORE modifying any symbol" not "c
 - SessionStart hook announces "You have razorback."
 
 ## Dependencies
-- Julie MCP server is a **hard requirement** — no fallback to generic tools
-- Skills assume Julie is configured and available
+- Julie MCP server is a **hard requirement** — no fallback to generic tools for codebase exploration
+- Goldfish MCP server is a **hard requirement** — used for persistent memory (checkpoints, briefs, recall) and compaction-durable execution during long autonomous runs
+- Skills assume both Julie and Goldfish are configured and available
 - On Gemini CLI, the no-subagent constraint routes multi-task plans through `executing-plans` automatically
 
 ## Execution Model
@@ -108,6 +109,10 @@ Use directive language: "Use julie:deep_dive BEFORE modifying any symbol" not "c
 - **Copilot CLI:** same `hooks/session-start` script; platform detection keys on `COPILOT_CLI` and emits top-level `additionalContext` (SDK standard). Plugin agents (like `razorback:code-reviewer`) are auto-discovered from the installed marketplace.
 - **Gemini CLI:** `gemini-extension.json` declares `GEMINI.md` as the context file. `GEMINI.md` uses `@./` includes to pull in `skills/using-razorback/SKILL.md` + `skills/using-razorback/references/gemini-tools.md` at session start. No subagent support means `subagent-driven-development` and `dispatching-parallel-agents` fall back to `executing-plans`.
 
+### Autonomy
+
+Once a plan is approved, razorback's execution skills run to completion without inter-task or inter-phase user confirmation. Stops are governed by the blocker taxonomy at `skills/using-razorback/references/blocker-taxonomy.md` (5 real-blocker categories; everything else is decide-and-note). Optional pre-merge external review via `razorback:pre-merge-review` runs between "tests green" and `razorback:finishing-a-development-branch`; the reviewer is chosen per-plan at approval time (codex, gemini, claude, or none). The final stop is always PR creation; merge is a separate human or agent action after PR review. See `docs/plans/2026-04-18-autonomous-execution-design.md` for the full rationale.
+
 ## Version management
 
 Five manifests carry a version field (`package.json`, `.claude-plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `gemini-extension.json`). Keep them in sync with `./scripts/bump-version.sh`:
@@ -124,4 +129,5 @@ The `.version-bump.json` config drives the script. `.memories/` and `docs/plans/
 - Two-pass inline review (spec compliance + code quality, done by lead, not separate agents)
 - Julie-first exploration (no Glob/Read/Grep chains)
 - Single-repo marketplace layout (both Claude Code and Copilot CLI read `.claude-plugin/marketplace.json` from this repo)
+- Autonomous-by-default execution (blocker-gated, not task-gated) with optional pre-merge external review
 - These conventions are intentionally chosen for token efficiency and quality

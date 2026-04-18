@@ -10,11 +10,13 @@ AI-assisted development burns tokens on repetitive codebase exploration. Every a
 
 - **Julie MCP** routes all exploration through purpose-built code intelligence tools (get_context, deep_dive, fast_refs, get_symbols) that return targeted context in 1-2 calls instead of 5-8
 - **Parallel subagent dispatch with inline review by the lead** keeps the main agent's context clean. Claude Code users get an additional upgrade via Agent Teams: persistent named teammates that receive follow-up messages, so fixes skip cold-restart re-orientation.
+- **Autonomous execution of approved plans** with optional pre-merge external review (codex / gemini / claude) and compaction-durable goldfish checkpoints; runs overnight without waking you for anything short of a real blocker
 
 ## Requirements
 
 - A supported harness: [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Cursor](https://cursor.sh), [Codex](https://openai.com/codex/), [OpenCode](https://opencode.ai), [Copilot CLI](https://github.com/github/copilot-cli), or [Gemini CLI](https://github.com/google-gemini/gemini-cli)
-- [Julie MCP Server](https://github.com/anortham/julie) — must be configured and indexing your workspace
+- [Julie MCP Server](https://github.com/anortham/julie) — hard requirement for code intelligence; must be configured and indexing your workspace
+- [Goldfish MCP Server](https://github.com/anortham/goldfish) — hard requirement for persistent memory (checkpoints, briefs, recall); used for compaction-durable execution during long autonomous runs
 - For Codex: enable `multi_agent = true` in `~/.codex/config.toml` so parallel execution skills can dispatch subagents
 
 ## Installation
@@ -174,6 +176,7 @@ gemini extensions update razorback
 The core process: brainstorm, plan, TDD, execute, review, finish.
 
 **Execution model (primary path depends on harness):**
+- **Autonomous by default:** once a plan is approved, execution runs to completion gated only by real blockers; an optional pre-merge external review (codex / gemini / claude) runs before branch finish. See [autonomous-execution design](docs/plans/2026-04-18-autonomous-execution-design.md) for the rationale.
 - **Claude Code, 2+ independent tasks:** `team-driven-development` creates an Agent Team with persistent named teammates. Fixes go to the teammate who already has context (no cold restart). Promoted as primary on Claude Code via the session-start bootstrap.
 - **Cursor, Codex, OpenCode, Copilot CLI, 2+ independent tasks:** `subagent-driven-development` dispatches fresh implementer subagents (in parallel when tasks are independent), lead does inline review (spec compliance + code quality) per task.
 - **Gemini CLI (no subagent support):** falls back to `executing-plans` for all plans.
