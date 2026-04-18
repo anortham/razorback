@@ -12,6 +12,7 @@ Execute a plan by dispatching fresh subagents per task, with the lead doing inli
 **Dispatch mechanism:**
 - **Claude Code:** `Agent` tool (one call per subagent; multiple calls in one turn run in parallel).
 - **opencode:** `Task` tool (one call per subagent; multiple calls in one turn run in parallel). The built-in `general` subagent is suitable for most implementer work; `@mention` also works for manual invocation.
+- **Codex:** `spawn_agent(agent_type="worker", message=<filled prompt>)` (one call per subagent; multiple calls in one turn run in parallel). Keep the returned `session_id` — `send_input(session_id, message)` feeds follow-ups (the closest thing to Claude Code's resume), `wait_agent(session_id)` blocks until the agent finishes, and `close_agent(session_id)` frees the slot. Requires `multi_agent = true` in `~/.codex/config.toml` (see `skills/using-razorback/references/codex-tools.md`).
 
 ## When to Use
 
@@ -105,7 +106,11 @@ Use the template at `./implementer-prompt.md`. The spawn prompt MUST include:
 5. **TDD expectations** (from `razorback:test-driven-development`)
 6. **Verification commands** specific to this task
 
-On Claude Code, save the **agent ID** returned by the dispatch so you can resume the subagent for fixes (preserves its orientation context). On opencode, the Task tool does not expose persistent resume, so fixes go to a fresh subagent with fix context included (see Step 4).
+Per-harness state to keep after dispatch:
+
+- **Claude Code:** save the **agent ID** returned by the dispatch so you can resume the subagent for fixes (preserves its orientation context).
+- **opencode:** the Task tool does not expose persistent resume, so fixes go to a fresh subagent with fix context included (see Step 4).
+- **Codex:** save the **`session_id`** returned by `spawn_agent` so you can `send_input` for follow-ups and `close_agent` when the task is done. `send_input` is Codex's closest analogue to Claude Code's resume — the worker keeps its orientation context between messages.
 
 If the subagent asks questions, answer completely before letting it proceed.
 
@@ -115,6 +120,7 @@ When the plan has 2+ independent tasks (non-overlapping files, no ordering depen
 
 - **Claude Code:** make multiple `Agent` tool calls in a single turn. They run concurrently and you review each as it reports back.
 - **opencode:** make multiple `Task` tool calls in a single turn (or in the TUI, @mention the `general` subagent concurrently). Child sessions run in parallel; navigate with `session_child_*` keybinds.
+- **Codex:** make multiple `spawn_agent` calls in a single turn. Each returns its own `session_id`. Use `wait_agent(session_id)` per agent to join when you need a given implementer's output before proceeding with its review.
 
 Assign file ownership per subagent to prevent collisions. If tasks are tightly coupled (same files, shared state, ordering dependency), dispatch sequentially instead — one subagent at a time, lead reviews, then next.
 
@@ -175,9 +181,11 @@ When review finds issues, route the fix back to an implementer with the reviewer
 - A pointer to the commit(s) the prior implementer produced (so the fresh subagent can `git show` or read the files instead of rediscovering them)
 - The reviewer findings
 
-Either way, re-review after the fix. Iteration cap applies: 3 resume-or-fresh-dispatch attempts, then a 4th attempt with reframed context, then flag-and-continue (see "Review cap" in Step 3).
+**Codex (prefer send_input):** Call `send_input(session_id=<stored session_id>, message=<filled fix-prompt.md>)` on the existing worker for iterations 1-3. The worker keeps its orientation context and behaves like a Claude Code resume. For iteration 4 (reframed-context attempt), call `close_agent(session_id)` on the old worker, then `spawn_agent(agent_type="worker", message=<filled fix-prompt.md with the Reframed-Context Attempt section + prior-commit SHAs>)` for a fresh worker. If the stored `session_id` is gone (session restart, compaction), fall back to a fresh `spawn_agent` with the prior-commit pointer, same shape as the opencode branch above.
 
-**When to dispatch fresh on Claude Code:** the subagent is unreachable (session error, context limit), the prior implementer's context is genuinely stale (another task modified the same files), or the fix needs a fundamentally different approach.
+Either way, re-review after the fix. Iteration cap applies: 3 resume / `send_input` / fresh-dispatch attempts, then a 4th attempt with reframed context, then flag-and-continue (see "Review cap" in Step 3).
+
+**When to dispatch fresh on Claude Code (or Codex):** the subagent is unreachable (session error, context limit), the prior implementer's context is genuinely stale (another task modified the same files), or the fix needs a fundamentally different approach.
 
 ## Step 4a: Pre-merge external review (if chosen)
 
@@ -360,6 +368,7 @@ Done.
 - Skip the re-review after a fix
 - Dispatch a separate reviewer subagent when the lead can review inline
 - **On Claude Code, prefer resume for iterations 1-3** (the implementer has full context). Use fresh-dispatch-with-reframed-context for iteration 4 only, after 3 resume attempts failed. The 4th attempt's value is the reframing, not the freshness.
+- **On Codex, prefer `send_input` on the stored `session_id` for iterations 1-3** (same reasoning — the worker keeps its orientation context). Use `close_agent` + fresh `spawn_agent` with reframed context for iteration 4.
 - Never pause for user input between tasks — the plan is approved, run it to completion. Stops are governed by the blocker taxonomy.
 
 **If the subagent asks questions:**
@@ -370,8 +379,9 @@ Done.
 **If review finds issues:**
 - Claude Code: resume the implementer subagent with `./fix-prompt.md` + reviewer findings
 - opencode: dispatch a fresh implementer with `./fix-prompt.md` + reviewer findings + pointer to prior commits
+- Codex: `send_input(session_id, ...)` on the stored worker with `./fix-prompt.md` + reviewer findings for iterations 1-3; `close_agent` + fresh `spawn_agent` with reframed context for iteration 4
 - Re-review after the fix
-- Iteration cap: 3 resume-or-fresh-dispatch attempts → 4th attempt with reframed-context (see `./fix-prompt.md`) → flag the task in the morning report and continue with remaining tasks. Escalate to the user only for blocker taxonomy #5.
+- Iteration cap: 3 resume / `send_input` / fresh-dispatch attempts → 4th attempt with reframed-context (see `./fix-prompt.md`) → flag the task in the morning report and continue with remaining tasks. Escalate to the user only for blocker taxonomy #5.
 
 ## Integration
 
@@ -387,3 +397,7 @@ Done.
 **Alternative workflows:**
 - **razorback:team-driven-development** — Alternative for Claude Code (Agent Teams instead of sequential subagents)
 - **razorback:executing-plans** — Use for parallel-session or single-agent execution
+
+**Codex-specific:**
+- Requires `multi_agent = true` in `~/.codex/config.toml` (see `skills/using-razorback/references/codex-tools.md`). Without it, `spawn_agent` / `send_input` / `wait_agent` / `close_agent` are not available.
+- **`close_agent(session_id)` MUST be called** when the worker is no longer needed — after a task's review is approved and you're not going to `send_input` again, or after the 4th-iteration flag-and-continue. Codex has a bounded agent-slot pool; leaking slots starves later dispatches in the same run.
