@@ -25,4 +25,45 @@ Agent tool (resume: "<implementer-agent-id>"):
 
 **Why resume instead of fresh dispatch:** You already have the full context — the files
 you read, the decisions you made, the tests you wrote. A fresh subagent would spend
-most of its token budget just getting back to where you already are.
+most of its token budget just getting back to where you already are. This applies to
+iterations 1-3 of the review loop. For the 4th-iteration reframed-context case, see
+the section below.
+
+## Reframed-Context Attempt (4th iteration)
+
+When the review loop has exhausted 3 resume attempts (Claude Code) or 3
+fresh-dispatch-with-fix-context attempts (opencode) and the task still fails review,
+the 4th attempt is a **fresh subagent with reframed context** — not another resume.
+The prior implementer's chat context is gone; the fresh subagent starts from a clean
+slate with a different framing.
+
+Context available to the fresh subagent:
+
+- **Prior commits (with SHAs)** — for reading (`git show <sha>`, `git log <base>..HEAD`),
+  not as a baseline to extend. The fresh subagent can see what was tried without
+  re-exploring the codebase.
+- **Original task text** — copied from the plan, the same shape as the first dispatch.
+- **All prior review-finding iterations** — rounds 1, 2, 3 of reviewer feedback, so
+  the fresh subagent can see what kept failing.
+- **Reframing note from the lead** — an explicit statement of what to try differently.
+  Without this, fresh-dispatch is just a more expensive resume.
+
+Reframing examples (the lead picks one that fits the failure mode):
+
+- "We're trying a different angle because the prior framing didn't converge — here's
+  what to try differently: [specific redirection]."
+- "Simplify: implement just the core behavior in a single file first; we can
+  refactor after. The prior attempts over-abstracted."
+- "The prior attempts misinterpreted X; the plan's actual intent is Y."
+- "Different decomposition: split the task into sub-steps A, B, C and commit each
+  separately."
+
+The fresh subagent still follows the standard review loop after its attempt:
+implementer reports → lead does inline review → if issues remain, the task is flagged
+in the morning report's "Blockers hit" section and the run continues with remaining
+tasks. Escalate to the user only if the failure matches blocker taxonomy #5
+(unresolvable test failures blocking the whole plan).
+
+The 4th attempt's value is the reframing, not the freshness. If the lead cannot
+articulate a reframe ("try harder" is not a reframe), skip the 4th attempt and go
+straight to flag-and-continue.

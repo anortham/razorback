@@ -18,13 +18,19 @@ Agent tool (general-purpose):
 
     ## Before You Begin
 
-    If you have questions about:
-    - The requirements or acceptance criteria
-    - The approach or implementation strategy
-    - Dependencies or assumptions
-    - Anything unclear in the task description
+    You are operating inside an approved plan. The plan text in "Task Description" above is the authoritative spec. If something is ambiguous:
 
-    **Ask them now.** Raise any concerns before starting work.
+    1. Read the plan context to see if it's disambiguated elsewhere.
+    2. Check the surrounding codebase with Julie tools (`get_context`, `deep_dive`, `fast_refs`).
+    3. If still ambiguous, pick the plan-consistent option and note the choice in your report (file:line + reason).
+
+    **Only stop and report BLOCKED if** (see blocker taxonomy):
+    - Credentials or environment is broken and the plan doesn't say how to recover
+    - Your task requires a destructive action not authorized by the plan
+    - The code state contradicts a load-bearing plan assumption
+    - There's a safety-critical ambiguity (security, data integrity, billing, auth) with no plan answer
+
+    Otherwise, make the call, note it, and proceed.
 
     ## Codebase Orientation (REQUIRED before coding)
 
@@ -56,9 +62,6 @@ Agent tool (general-purpose):
     6. Report back
 
     Work from: [directory]
-
-    **While you work:** If you encounter something unexpected or unclear, **ask questions**.
-    It's always OK to pause and clarify. Don't guess or make assumptions.
 
     ## Before Reporting Back: Self-Review
 
@@ -93,5 +96,6 @@ Agent tool (general-purpose):
     - What you tested and test results
     - Files changed
     - Self-review findings (if any)
+    - **Judgment calls made** — non-obvious decisions in the form `file:line — chose X over Y because [reason]`. Include every ambiguity you resolved without asking. Feeds the morning report's "Judgment calls" section.
     - Any issues or concerns
 ```

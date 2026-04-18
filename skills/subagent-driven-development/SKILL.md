@@ -137,7 +137,16 @@ When the implementer reports completion, the lead does a single inline review co
 - Use `deep_dive(symbol)` on key new/modified symbols to check callers, callees, and types.
 - Use `fast_refs(symbol)` to verify API changes don't break dependents.
 
-**Review cap: 3 iterations max** for a single task. If issues persist, escalate to the user.
+**Review cap: 3 iterations.**
+
+- On Claude Code: 3 resume-the-implementer attempts using `./fix-prompt.md`.
+- On opencode: 3 fresh-dispatch-with-fix-context attempts.
+
+If the 3rd iteration still fails:
+
+1. Dispatch a **fresh implementer with reframed context** using `./fix-prompt.md`'s "Reframed-Context Attempt" section — different framing (different ownership, explicit plan disambiguation, simpler decomposition, or a prior-commit pointer so the fresh agent can read what was tried without rediscovering it).
+2. If the fresh attempt also fails, flag the task in the morning report's "Blockers hit" section and continue with remaining tasks.
+3. Escalate to the user only if the failure matches blocker taxonomy #5 (unresolvable test failures blocking the whole plan).
 
 ### When Lighter Review Is Appropriate
 
@@ -166,9 +175,23 @@ When review finds issues, route the fix back to an implementer with the reviewer
 - A pointer to the commit(s) the prior implementer produced (so the fresh subagent can `git show` or read the files instead of rediscovering them)
 - The reviewer findings
 
-Either way, re-review after the fix. Repeat until approved (cap: 3 iterations, then escalate).
+Either way, re-review after the fix. Iteration cap applies: 3 resume-or-fresh-dispatch attempts, then a 4th attempt with reframed context, then flag-and-continue (see "Review cap" in Step 3).
 
 **When to dispatch fresh on Claude Code:** the subagent is unreachable (session error, context limit), the prior implementer's context is genuinely stale (another task modified the same files), or the fix needs a fundamentally different approach.
+
+## Step 4a: Pre-merge external review (if chosen)
+
+If the reviewer choice propagated from `writing-plans` (via the plan-approval message) is `codex`, `gemini`, or `claude`, invoke `razorback:pre-merge-review`, passing:
+
+- plan path
+- reviewer choice
+- project test command
+
+If the choice is `none` (or absent), skip Step 4a.
+
+Pre-merge-review builds the full branch diff, dispatches the chosen reviewer in adversarial read-only mode, classifies findings (real-bug / real-improvement / false-positive / out-of-scope), dispatches fresh implementer subagents for verified fixes, re-runs the test suite, and emits a summary block for the morning report. Single pass — no round-two review.
+
+After `pre-merge-review` returns, proceed to Step 5 (Complete → `razorback:finishing-a-development-branch`).
 
 ## Step 5: Complete
 
@@ -176,6 +199,46 @@ When all tasks are approved and marked complete:
 
 1. **Final verification:** Run the full test suite and check for integration issues across tasks.
 2. **Finish:** Use `razorback:finishing-a-development-branch`.
+
+## Blockers
+
+The authoritative taxonomy is `skills/using-razorback/references/blocker-taxonomy.md`. Consult it before stopping.
+
+**Bias rules:**
+- When in doubt, press on and flag. A line in the morning report is cheaper than a false wake-up.
+- Never silently swallow a judgment call. Every non-obvious decision ends up in the report with file:line + reason.
+
+**Real blockers (stop and report):**
+1. Credentials / auth / env broken, with no recovery path in the plan
+2. Destructive action not authorized by the plan
+3. Plan-contradicting data (codebase reality invalidates a load-bearing assumption)
+4. Safety-critical ambiguity (security, data integrity, billing, auth) with no plan answer
+5. Unresolvable test failures (repeated fix attempts do not converge)
+
+Anything else: pick the plan-consistent option, note the choice in your report, continue. Full definitions in the taxonomy.
+
+## Checkpoints
+
+The lead writes a `goldfish:checkpoint` at four points during the run. This persists phase-level progress and decisions across auto-compaction and session restarts.
+
+1. **Phase boundary** — after each phase of a multi-phase plan: "Phase N of M complete. Decisions: …. Next: Phase N+1."
+2. **Pre-review** — before Step 4a begins (if a reviewer was chosen): captures reviewer choice, diff range, verification strategy.
+3. **Post-review** — after Step 4a completes: captures findings, classifications, fix commits.
+4. **Post-PR** — after `finishing-a-development-branch` creates the PR: final state.
+
+Checkpoint at phase granularity, not per task or per subagent dispatch. Per-task checkpoints are noise; per-phase is enough to recover.
+
+## Recovery
+
+On detecting a resumed run (post-compaction note, mismatch between expected and actual conversation state, or the user says "resume"), the lead follows this fixed orientation sequence before continuing:
+
+1. `goldfish:recall` — retrieve the active brief and recent checkpoints.
+2. Read the plan file.
+3. Check the TaskList for completed / in-progress / pending tasks.
+4. `git log --oneline <base>..HEAD` — verify what is actually committed.
+5. Identify the next incomplete task and resume execution.
+
+This sequence runs only on resumed runs. A fresh run dispatches directly into Step 1 (Extract Tasks from the Plan). Subagent IDs from the prior session cannot be resumed post-compaction — treat any needed fix as a fresh dispatch with prior-commit context.
 
 ## Prompt Templates
 
@@ -296,7 +359,8 @@ Done.
 - Ignore subagent questions (answer before letting them proceed)
 - Skip the re-review after a fix
 - Dispatch a separate reviewer subagent when the lead can review inline
-- On Claude Code, dispatch a fresh subagent for fixes when resume is possible (wastes tokens re-orienting)
+- **On Claude Code, prefer resume for iterations 1-3** (the implementer has full context). Use fresh-dispatch-with-reframed-context for iteration 4 only, after 3 resume attempts failed. The 4th attempt's value is the reframing, not the freshness.
+- Never pause for user input between tasks — the plan is approved, run it to completion. Stops are governed by the blocker taxonomy.
 
 **If the subagent asks questions:**
 - Answer clearly and completely
@@ -307,7 +371,7 @@ Done.
 - Claude Code: resume the implementer subagent with `./fix-prompt.md` + reviewer findings
 - opencode: dispatch a fresh implementer with `./fix-prompt.md` + reviewer findings + pointer to prior commits
 - Re-review after the fix
-- Repeat until approved (cap: 3 iterations, then escalate)
+- Iteration cap: 3 resume-or-fresh-dispatch attempts → 4th attempt with reframed-context (see `./fix-prompt.md`) → flag the task in the morning report and continue with remaining tasks. Escalate to the user only for blocker taxonomy #5.
 
 ## Integration
 
