@@ -138,7 +138,11 @@ As teammates work, monitor their progress. When a teammate reports completion:
 - Use `deep_dive(symbol)` on key new/modified symbols to check callers/callees/types.
 - Use `fast_refs(symbol)` to verify changes don't break dependents.
 
-**Review cap: 3 iterations max.** If a teammate can't resolve issues in 3 rounds, escalate to the user.
+**Review cap: 3 iterations via SendMessage.** If a teammate can't resolve the issues in 3 rounds:
+
+1. Dispatch a **fresh implementer teammate** (new name) with **reframed context** — different file-ownership framing, explicit plan disambiguation, or a simpler task decomposition.
+2. If the fresh teammate also fails, flag the task in the morning report's "Blockers hit" section with reason and commit state, and **continue with remaining work**.
+3. Escalate to the user only if the failure matches blocker taxonomy #5 (unresolvable test failures blocking the whole plan — not just one task).
 
 ## Step 4: Fix Issues via Message
 
@@ -158,13 +162,28 @@ SendMessage:
 
 **Why messaging beats fresh dispatch:** The teammate already has full context from implementation - files read, decisions made, tests written. A fresh agent would burn tokens just getting back to where the teammate already is. This is the key advantage of teams over subagents.
 
-## Step 5: Complete
+## Step 5: Final verification
 
 After all teammates finish and reviews pass:
 
-1. **Final verification:** Run the full test suite. Check for integration issues between teammates' work.
-2. **Clean up:** `TeamDelete` to shut down the team.
-3. **Finish:** Use `razorback:finishing-a-development-branch`.
+1. Run the full test suite. Check for integration issues between teammates' work.
+2. `TeamDelete` to shut down the team.
+
+## Step 5a: Pre-merge external review (if chosen)
+
+If the reviewer choice (propagated from `writing-plans` via the plan-approval message) is one of `codex`, `gemini`, or `claude`, invoke `razorback:pre-merge-review`, passing:
+
+- plan path
+- reviewer choice
+- project test command (from plan or from the lead's knowledge)
+
+If the reviewer choice is `none` (or absent), skip Step 5a entirely.
+
+After `razorback:pre-merge-review` returns its morning-report summary block, proceed to Step 6.
+
+## Step 6: Finish
+
+Use `razorback:finishing-a-development-branch`.
 
 ## Teammate Status Protocol
 
@@ -269,7 +288,8 @@ token-refresh reports: DONE
 - Skip inline review (it consistently catches real issues)
 - Skip the fix-and-re-review loop (if review found issues, they must be fixed AND re-reviewed)
 - Spawn more than 5 teammates (diminishing returns, coordination overhead)
-- Let blocked teammates spin - unblock them or reassign their work
+- Let blocked teammates spin — unblock them or reassign their work
+- **Pause for user input between tasks or phases.** The plan is approved; run it to completion. Stops are governed by the blocker taxonomy (see Blockers section), not by task boundaries.
 
 **If a teammate asks questions:**
 - Answer via SendMessage clearly and completely
@@ -278,14 +298,65 @@ token-refresh reports: DONE
 
 **If a teammate is stuck or unreachable:**
 - Try messaging first
-- If no response, spawn a new teammate for their remaining tasks
-- This is the fallback, not the default
+- If still stuck after 3 SendMessage rounds, dispatch a fresh teammate with reframed context (see Step 4)
+
+## Blockers
+
+The authoritative taxonomy is `skills/using-razorback/references/blocker-taxonomy.md`. Consult it before stopping.
+
+**Bias rules:**
+- When in doubt, press on and flag. A line in the morning report is cheaper than a false wake-up.
+- Never silently swallow a judgment call. Every non-obvious decision ends up in the report with file:line + reason.
+
+**Real blockers (stop and report):**
+1. Credentials / auth / env broken, with no recovery path in the plan
+2. Destructive action not authorized by the plan
+3. Plan-contradicting data (codebase reality invalidates a load-bearing assumption)
+4. Safety-critical ambiguity (security, data integrity, billing, auth) with no plan answer
+5. Unresolvable test failures (repeated fix attempts do not converge)
+
+Anything else: pick the plan-consistent option, note the choice in the morning report, continue. Full definitions in the taxonomy.
+
+## Checkpoints
+
+The lead writes a `goldfish:checkpoint` at these milestones (not per-task — too noisy):
+
+1. **Each phase boundary** — "Phase N of M complete. Decisions: …. Next: Phase N+1."
+2. **Before external review begins** — captures reviewer choice, diff range (`base..HEAD`), verification method.
+3. **After external review completes** — captures findings, classifications, fixes applied.
+4. **After PR creation** — final state (branch, PR URL, commit SHAs).
+
+Example invocation:
+
+```
+goldfish:checkpoint
+  description: "Phase 2 of 4 complete (pre-merge-review wired). Decisions: review runs after final verification, before finishing. Next: Phase 3 — iteration-cap rollout across executing-plans."
+  highlights:
+    - "Added Step 5a to team-driven-development"
+    - "Blocker taxonomy referenced from all three execution skills"
+  workContext: "autonomous-execution branch"
+```
+
+Checkpoints feed the Recovery sequence below if the run resumes after compaction or session restart.
+
+## Recovery
+
+On a resumed run — triggered by an explicit checkpoint note in context, a mismatch between expected and actual conversation state, or the user saying "resume" — run this fixed 5-step orientation before doing any new work:
+
+1. `goldfish:recall` — load the active brief and recent checkpoints.
+2. Read the plan file to reload the spec.
+3. Check the TaskList for completed / in-progress / pending tasks.
+4. `git log --oneline <base>..HEAD` — verify what's actually committed (ground truth).
+5. Identify the next incomplete task and resume execution.
+
+Ground truth (git log, test results) wins over recalled state if they disagree. Do not start new work before completing the sequence.
 
 ## Integration
 
 **Required workflow skills:**
 - **razorback:using-git-worktrees** - Set up isolated workspace before starting. Skip only with explicit user consent (small, single-session work where a feature branch is sufficient).
 - **razorback:writing-plans** - Creates the plan this skill executes
+- **razorback:pre-merge-review** - Invoked at Step 5a when the plan-approval reviewer choice is codex / gemini / claude. Skipped if the choice is none.
 - **razorback:finishing-a-development-branch** - Complete development after all tasks
 
 **Teammates should follow:**

@@ -30,13 +30,24 @@ Agent tool:
 
     ## Before You Begin
 
-    If you have questions about:
-    - The requirements or acceptance criteria
-    - The approach or implementation strategy
-    - Dependencies or assumptions
-    - Anything unclear in the task description
+    You are operating inside an approved plan. The plan text in "Task Description"
+    above is the authoritative spec. If something is ambiguous:
 
-    **Ask them now** by messaging the lead. Raise concerns before starting work.
+    1. Read the plan context to see if it's disambiguated elsewhere.
+    2. Check the surrounding codebase with Julie tools (`get_context`, `deep_dive`,
+       `fast_refs`).
+    3. If still ambiguous, pick the plan-consistent option and note the choice in
+       your report (file:line + reason).
+
+    **Only stop and message the lead BLOCKED if** (see
+    `skills/using-razorback/references/blocker-taxonomy.md`):
+    - Credentials or environment is broken and the plan doesn't say how to recover
+    - Your task requires a destructive action not authorized by the plan
+    - The code state contradicts a load-bearing plan assumption
+    - There's a safety-critical ambiguity (security, data integrity, billing, auth)
+      with no plan answer
+
+    Otherwise, make the call, note it, and proceed.
 
     ## Codebase Orientation (REQUIRED before coding)
 
@@ -77,8 +88,9 @@ Agent tool:
 
     Work from: [directory]
 
-    **While you work:** If you encounter something unexpected or unclear, message
-    the lead. It's always OK to pause and clarify. Don't guess or make assumptions.
+    **While you work:** If the plan doesn't resolve an ambiguity you hit, follow
+    the decide-and-note rule above. Message the lead only for a real blocker per
+    the taxonomy.
 
     ## Before Reporting: Self-Review
 
@@ -109,6 +121,10 @@ Agent tool:
     - What you tested and test results
     - Files changed
     - Self-review findings (if any)
+    - **Judgment calls made:** list every non-obvious decision as
+      `path/to/file:line — chose X over Y because [reason].` If there were no
+      non-obvious decisions, write "None". (This feeds the morning report's
+      Judgment calls section.)
     - Any concerns (if DONE_WITH_CONCERNS)
     - What you need (if BLOCKED or NEEDS_CONTEXT)
 ```
