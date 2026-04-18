@@ -202,6 +202,10 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 | using-git-worktrees | Isolated workspace setup |
 | writing-skills | Meta-skill for creating/editing skills |
 | **subagent-driven-development** | **Primary plan execution (Cursor/Codex/OpenCode/Copilot CLI): fresh implementer subagents, parallel when independent, inline review by lead** |
+| pre-merge-review | Optional external review (codex / gemini / claude) run before PR — verifies findings, dispatches fixes, emits morning-report block |
+| codex-cli | Invokes `codex exec` (GPT-5.4 xhigh) for second opinions and adversarial review |
+| gemini-cli | Invokes `gemini` (gemini-3-pro with `--yolo`) for second opinions and adversarial review |
+| claude-cli | Invokes `claude -p` in isolated `--bare` mode for second opinions and adversarial review |
 
 ## Teammate Prompt Templates
 
