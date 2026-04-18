@@ -111,7 +111,7 @@ The existing "While you work" line ("It's always OK to pause and clarify") is re
 - **Autonomous mode (default when called at the tail of an execution skill):** push the branch, create a PR with the morning-report summary, and exit. No menu.
 - **Interactive mode (when the user invokes the skill directly, e.g. "finish this branch"):** the 4-option menu still shows. This preserves the skill's utility for ad-hoc cleanup.
 
-Detection: the calling skill passes an invocation-context signal (either via the skill invocation or a convention in the task state). Simplest: a sentence at the top of the skill that says "if you were invoked at the end of `executing-plans` / `team-driven-development` / `subagent-driven-development`, take the PR path without prompting. Otherwise, use the interactive menu."
+**Mode selection rule** (written at the top of the skill): if the agent was just finishing an autonomous execution run (i.e. the skill is being invoked as the final step of `executing-plans` / `team-driven-development` / `subagent-driven-development`), use autonomous mode. If the user invoked the skill directly, use interactive mode. In ambiguous cases, default to autonomous (the run-to-completion bias).
 
 The PR always targets the base branch. Merge is never auto-performed.
 
