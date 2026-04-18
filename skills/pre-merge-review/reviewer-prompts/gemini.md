@@ -55,7 +55,8 @@ guards, unhandled failure paths, and assumptions that stop being true under
 stress. Trace how bad inputs, retries, concurrent actions, or partially
 completed operations move through the code. If the user supplied a focus area,
 weight it heavily, but still report any other material issue you can defend.
-Use Read to inspect files. Do not modify files.
+You may inspect repository files via whatever read-only mechanism your harness
+provides. Do not modify files.
 
 FINDING BAR:
 Report only material findings. No style feedback, naming feedback, low-value
@@ -110,14 +111,30 @@ SCHEMA_JSON=$(cat <<'SCHEMA_EOF'
 SCHEMA_EOF
 )
 
+# Substitute target-specific placeholders into the template. Use bash
+# parameter expansion so the `{{TARGET_LABEL}}` / `{{USER_FOCUS}}` /
+# `{{REVIEW_INPUT}}` tokens are replaced with actual values before the
+# prompt reaches gemini. Without this step gemini receives literal
+# placeholder text and loses focus / commit-log / file-stat context.
+TARGET_LABEL="$FILE_STAT (branch: base..HEAD)"
+REVIEW_INPUT="Files changed:
+$FILE_STAT
+
+Commit log:
+$COMMIT_LOG
+
+Diff:
+$DIFF"
+
+FINAL_PROMPT="${ADVERSARIAL_TEMPLATE//\{\{TARGET_LABEL\}\}/$TARGET_LABEL}"
+FINAL_PROMPT="${FINAL_PROMPT//\{\{USER_FOCUS\}\}/${USER_FOCUS:-none specified}}"
+FINAL_PROMPT="${FINAL_PROMPT//\{\{REVIEW_INPUT\}\}/$REVIEW_INPUT}"
+
 cd "$PROJECT_DIR" && gemini -o json -m gemini-3-pro --yolo \
-  "$ADVERSARIAL_TEMPLATE
+  "$FINAL_PROMPT
 
 Return your response as a JSON object matching this schema:
-$SCHEMA_JSON
-
-Diff to review:
-$DIFF" 2>/dev/null
+$SCHEMA_JSON" 2>/dev/null
 ```
 
 Flag rationale:
@@ -194,7 +211,7 @@ External review cost (gemini): prompt=12345, completion=678 tokens
 
 ## Yolo + read-only guarantee
 
-`--yolo` is required for gemini to auto-approve its own Read tool calls, but the adversarial prompt explicitly instructs gemini to be read-only: "Use Read to inspect files. Do not modify files." If gemini disobeys and writes a file anyway, that is an integrity failure — abort the review, revert the unauthorized change with `git checkout --`, log the incident in the morning report as a flagged concern, and consider switching the reviewer choice to codex or claude for this run. Do not push a branch that contains reviewer-originated writes.
+`--yolo` is required so gemini auto-approves its own tool invocations and does not stall waiting for interactive confirmation — notably including file reads and shell commands. The adversarial prompt instructs gemini to be read-only ("Do not modify files") but that is prompt-level only. If gemini disobeys and writes a file anyway, that is an integrity failure — abort the review, revert the unauthorized change with `git checkout -- <file>`, log the incident in the morning report as a flagged concern, and consider switching the reviewer choice to codex or claude for this run. Do not push a branch that contains reviewer-originated writes.
 
 ## Error handling
 

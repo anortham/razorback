@@ -321,6 +321,6 @@ override with `-m` if there's a concrete reason.
 |---|---|---|
 | Second opinion | read-only | `codex exec --ephemeral --color never -C dir "prompt" 2>/dev/null` |
 | Code review | read-only | Pipe diff: `echo "$PROMPT" \| codex exec --ephemeral --color never -C dir - 2>/dev/null` |
-| Adversarial review | read-only + schema | Add `--output-schema .../review-output.schema.json` |
+| Adversarial review | read-only + schema | Add `--output-schema "$SCHEMA_FILE"` where `$SCHEMA_FILE` is a temp file materialized from the inlined schema (see Adversarial Review section) |
 | Delegate (complex) | full-auto | `codex exec --ephemeral --color never --full-auto -C dir "prompt" 2>/dev/null` |
 | Resume session | persistent | Drop `--ephemeral`, use `codex exec resume --last "prompt"` |
