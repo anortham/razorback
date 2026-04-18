@@ -36,17 +36,31 @@ If tests fail, this is a blocker taxonomy #5 (unresolvable test failures). Do **
 
 If tests pass, continue.
 
-### Step 2: Determine base branch
+### Step 2: Determine base branch and merge-base commit
+
+`git merge-base` returns a commit SHA, not a branch name. Autonomous Mode needs both: the branch name for `gh pr create --base`, and the SHA for diff-range computation. Resolve them as two separate values:
 
 ```bash
-git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null
+# Try main, then master. The one that produces a merge-base is the base branch.
+if BASE_SHA=$(git merge-base HEAD main 2>/dev/null); then
+  BASE_BRANCH=main
+elif BASE_SHA=$(git merge-base HEAD master 2>/dev/null); then
+  BASE_BRANCH=master
+else
+  echo "No main/master ancestor found; cannot determine PR base." >&2
+  # Blocker taxonomy #3 (plan-contradicting data): the branch doesn't descend
+  # from a known base. Emit a Blocked report per the failure protocol below and
+  # exit. Do NOT push.
+fi
 ```
 
-Use the branch that produced a merge-base. This becomes the PR's base.
+Use `$BASE_SHA` for any `base..HEAD` range computation (e.g. `git diff --stat $BASE_SHA..HEAD` in Step 3). Use `$BASE_BRANCH` for `gh pr create --base "$BASE_BRANCH"` in Step 5.
+
+**If both lookups fail** (no `main`, no `master` ancestor), that's a blocker per taxonomy #3. Render a partial morning report with `Status: Blocked`, describe the missing base in `Blockers hit`, write it to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md`, emit the terminal one-liner, and exit. Do **not** push.
 
 ### Step 3: Render morning report
 
-Fill the placeholders in `./morning-report-template.md` using the fields the caller accumulated during execution (plan name + path, branch name, phases complete/total, tasks complete/total, duration, judgment calls log, external review outcome, tests summary, blockers, files changed from `git diff --stat <base>..HEAD`, next steps).
+Fill the placeholders in `./morning-report-template.md` using the fields the caller accumulated during execution (plan name + path, branch name, phases complete/total, tasks complete/total, duration, judgment calls log, external review outcome, tests summary, blockers, files changed from `git diff --stat $BASE_SHA..HEAD`, next steps).
 
 Produce two renderings:
 - **Full report** — every section filled in, for `.memories/` and for review.
@@ -64,7 +78,7 @@ If the push is rejected (branch already tracks a different remote, non-fast-forw
 
 ```bash
 gh pr create \
-  --base <base-branch-from-step-2> \
+  --base "$BASE_BRANCH" \
   --title "<plan name or feature name>" \
   --body "$(rendered_pr_summary)"
 ```
