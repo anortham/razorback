@@ -11,6 +11,8 @@ Load plan, review critically, execute all tasks, report when complete.
 
 **When to use this vs. subagent-driven-development:** Use this skill for single-task plans, tightly sequential work, or separate-session execution. For plans with 2+ independent tasks in the same session, prefer `razorback:subagent-driven-development` (or `razorback:team-driven-development` on Claude Code) for parallel execution with inline review.
 
+**Inputs from `writing-plans`:** plan path, `reviewer_choice` (`none` / `codex` / `gemini` / `claude`, default `none`), and `test_command` (the project's test invocation, if known). These propagate via the plan-approval message and gate Step 3 below.
+
 **Announce at start:** "I'm using the executing-plans skill to implement this plan."
 
 ## The Process
@@ -36,9 +38,21 @@ For each task:
 4. Run verifications as specified
 5. Mark as completed
 
-### Step 3: Complete Development
+### Step 3: Pre-merge external review (if chosen)
 
-After all tasks complete and verified:
+If the `reviewer_choice` propagated from `writing-plans` is one of `codex`, `gemini`, or `claude`, invoke `razorback:pre-merge-review`, passing:
+
+- plan path
+- reviewer choice
+- project test command (the `test_command` input, or the lead's knowledge)
+
+If the reviewer choice is `none` (or absent), skip Step 3 entirely.
+
+After `razorback:pre-merge-review` returns its morning-report summary block, proceed to Step 4.
+
+### Step 4: Complete Development
+
+After all tasks complete and verified (and pre-merge review, if any, has run):
 - Announce: "I'm using the finishing-a-development-branch skill to complete this work."
 - **REQUIRED SUB-SKILL:** Use razorback:finishing-a-development-branch
 - Follow that skill to verify tests, present options, execute choice
@@ -80,5 +94,6 @@ Anything else: pick the plan-consistent option, note the choice in your report, 
 
 **Required workflow skills:**
 - **razorback:using-git-worktrees** - Set up isolated workspace before starting. Skip only with explicit user consent (small, single-session work where a feature branch is sufficient).
-- **razorback:writing-plans** - Creates the plan this skill executes
-- **razorback:finishing-a-development-branch** - Complete development after all tasks
+- **razorback:writing-plans** - Creates the plan this skill executes; propagates `reviewer_choice` and `test_command` as inputs.
+- **razorback:pre-merge-review** - Invoked at Step 3 when `reviewer_choice` is `codex` / `gemini` / `claude`. Skipped if the choice is `none`.
+- **razorback:finishing-a-development-branch** - Complete development after all tasks (and pre-merge review, if any)
