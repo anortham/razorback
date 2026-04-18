@@ -15,6 +15,8 @@ Write implementation plans scaled to the situation. The right level of detail de
 
 **Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
 
+Once the plan is approved, razorback runs to completion; it stops only for real blockers (see `skills/using-razorback/references/blocker-taxonomy.md`).
+
 ## Plan Depth: Full vs. Light
 
 **Full plan** — for async handoffs, complex multi-session work, or unfamiliar domains:
@@ -84,7 +86,7 @@ Light plans use task-level granularity instead: each task is a coherent unit of 
 ```markdown
 # [Feature Name] Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use razorback:executing-plans to implement this plan task-by-task.
+> **For Claude:** REQUIRED SUB-SKILL: Use razorback:team-driven-development (on Claude Code) or razorback:subagent-driven-development (elsewhere) to implement this plan. Fall back to razorback:executing-plans for single-task or tightly-sequential plans.
 
 **Goal:** [One sentence describing what this builds]
 
@@ -171,25 +173,16 @@ git commit -m "feat: add specific feature"
 
 ## Execution Handoff
 
-After saving the plan, offer execution choice:
+After saving the plan, announce: **"Plan saved to `<path>`. Capturing reviewer choice before execution starts."**
 
-**"Plan complete and saved to `docs/plans/<filename>.md`. Two execution options:**
+**Capture the reviewer choice.** If the user's approval message already named a choice (e.g. "approved, run it, pre-merge codex review", "approved, no external review"), skip the question. Otherwise ask once:
 
-**1. This-session execution (recommended)** - Dispatch implementer subagents with inline review, fast iteration
+**"External review before PR? (none / codex / gemini / claude)"**
 
-**2. Separate-session execution** - Open a new session with executing-plans, batch execution with review between batches
+After the answer (or if already given), announce which execution skill will run and invoke it, passing the plan path, the reviewer choice (`none` / `codex` / `gemini` / `claude`), and the project test command if known:
 
-**Which approach?"**
+- **On Claude Code:** `razorback:team-driven-development`
+- **On non-Claude-Code harnesses with subagents:** `razorback:subagent-driven-development`
+- **For single-task or tightly-sequential plans (any harness):** `razorback:executing-plans`
 
-**If this-session execution chosen (2+ independent tasks):**
-- **REQUIRED SUB-SKILL:** Use razorback:subagent-driven-development (on Claude Code, razorback:team-driven-development is an upgrade when persistent teammates are worth the ceremony — see the Execution Model in using-razorback)
-- Stay in this session
-- Parallel subagent dispatch + inline review
-
-**If this-session execution chosen (1 task or sequential):**
-- Execute directly in this session using razorback:executing-plans
-- No subagent fan-out needed for single-task plans
-
-**If separate-session execution chosen:**
-- Guide them to open new session in worktree
-- **REQUIRED SUB-SKILL:** New session uses razorback:executing-plans
+Starting execution. Tell me now if you want a separate-session handoff instead; in that case, guide the user to open a new session in the worktree and use `razorback:executing-plans` there.
