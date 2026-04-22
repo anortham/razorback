@@ -59,7 +59,7 @@ Codex CLI and the Codex desktop app share native skill discovery. They scan `~/.
 
 The `using-razorback` skill is discovered automatically and enforces skill usage discipline. No additional configuration needed beyond the shared install above.
 
-**Note:** `team-driven-development` is a Claude Code only skill (Agent Teams are not available in Codex). On Codex, plan execution routes through `subagent-driven-development`, which dispatches fresh implementer subagents in parallel when tasks are independent.
+**Note:** On Codex, delegated plan execution routes through `subagent-driven-development`, which dispatches fresh implementer subagents in parallel when tasks are independent. If the current session cannot delegate, fall back to `executing-plans`.
 
 **Desktop note:** The same Codex agent lifecycle applies in desktop sessions that expose `spawn_agent`, `send_input`, `wait_agent`, and `close_agent`. The separate `razorback:codex-cli` skill is for launching an external Codex CLI reviewer or delegate, not for the desktop app's built-in tools.
 

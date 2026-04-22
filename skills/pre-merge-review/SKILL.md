@@ -13,7 +13,7 @@ Run a fresh, isolated external reviewer (codex / gemini / claude) against the fu
 
 Invoked by:
 
-- `team-driven-development` Step 5a (between final verification and `finishing-a-development-branch`)
+- `executing-plans` Step 3 (between task execution and `finishing-a-development-branch`)
 - `subagent-driven-development` Step 4a (same position in that flow)
 
 Skip this skill entirely if the reviewer choice is `none`. The choice is fixed at plan approval time (captured by `writing-plans`) and does not change mid-run.
@@ -150,7 +150,7 @@ For each verified fix (real-bug or accepted real-improvement), dispatch a fresh 
 
 Use the template at [`fix-dispatch-prompt.md`](fix-dispatch-prompt.md). File ownership must be stated so parallel fixers do not collide — two subagents editing the same file overwrite each other's work. If findings span disjoint files, you can dispatch in parallel (one message, multiple Agent calls). If they cluster on the same file, either serialize the fixes or batch them into one dispatch.
 
-Why fresh subagents (not the existing team / not messaging an existing teammate)? The review runs after the team has been disbanded or the subagent run has ended. Fresh subagents work at any point in the timeline regardless of team state, and they come with no implementation-phase bias that might rationalize around a finding.
+Why fresh subagents (not reusing existing implementation-phase workers)? The review runs after the main execution phase has ended and worker context may be closed or stale. Fresh subagents work at any point in the timeline, and they come with no implementation-phase bias that might rationalize around a finding.
 
 ## Step 6: Re-run tests
 
@@ -179,7 +179,7 @@ Produce a structured block that slots into the External review section of `skill
 
 If the reviewer was gemini, also capture `stats.models.*.tokens` from the envelope and append a one-line cost note ("gemini used N prompt / M completion tokens"). Codex and claude do not surface per-request token counts — note the absence rather than faking a number.
 
-The caller (`team-driven-development` Step 5a or `subagent-driven-development` Step 4a) takes this block and hands it forward to `finishing-a-development-branch`, which renders it into the PR description (summary form) and the full worktree report.
+The caller (`executing-plans` Step 3 or `subagent-driven-development` Step 4a) takes this block and hands it forward to `finishing-a-development-branch`, which renders it into the PR description (summary form) and the full worktree report.
 
 ## Red flags
 
@@ -195,7 +195,7 @@ The caller (`team-driven-development` Step 5a or `subagent-driven-development` S
 
 **Called by:**
 
-- `team-driven-development` — at Step 5a, between final verification and `finishing-a-development-branch`
+- `executing-plans` — at Step 3, between task execution and `finishing-a-development-branch`
 - `subagent-driven-development` — at Step 4a, same position
 
 **Calls:**

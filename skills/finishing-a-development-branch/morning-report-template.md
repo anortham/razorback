@@ -7,7 +7,7 @@ Rendered into THREE destinations:
 Placeholders use {{double-brace}} syntax.
 -->
 
-# Autonomous Execution Report — {{plan_name}}
+# Autonomous Execution Report - {{plan_name}}
 
 **Status:** {{status}} <!-- Complete | Blocked | Partial -->
 **Plan:** {{plan_path}} <!-- e.g. docs/plans/2026-04-18-autonomous-execution.md -->
@@ -18,7 +18,7 @@ Placeholders use {{double-brace}} syntax.
 **Tasks:** {{tasks_complete}}/{{tasks_total}} complete
 
 ## What shipped
-- {{shipped_item_example}} <!-- one line per phase or major task, e.g. "Phase 1: blocker taxonomy reference added to executing-plans / team-driven-development / subagent-driven-development" -->
+- {{shipped_item_example}} <!-- one line per phase or major task, e.g. "Phase 1: blocker taxonomy reference added to executing-plans / subagent-driven-development" -->
 <!-- repeat for each shipped item -->
 
 ## Judgment calls (non-blocking decisions made)

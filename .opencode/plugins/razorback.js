@@ -6,9 +6,9 @@
  * (not system.transform) to avoid per-turn token bloat and multi-system-message
  * issues with some models (Qwen, etc).
  *
- * The bootstrap's "Execution Model" section is string-replaced with an
- * opencode-specific variant that names subagent-driven-development as primary
- * (Agent Teams are a Claude Code feature not available in opencode).
+ * The plugin injects the shared razorback bootstrap verbatim, then appends
+ * OpenCode-specific tool mapping so the execution model stays consistent
+ * across harnesses.
  */
 
 import path from 'path';
@@ -38,29 +38,6 @@ const extractAndStripFrontmatter = (content) => {
   return { frontmatter, content: body };
 };
 
-const OPENCODE_EXECUTION_MODEL = `## Execution Model
-
-When executing implementation plans:
-
-- **2+ independent tasks:** Use \`razorback:subagent-driven-development\` (fresh subagent per task, inline review by lead)
-- **1 task or sequential:** Use \`razorback:executing-plans\` (single agent, batch execution)
-- **Ad-hoc parallel work:** Use \`razorback:dispatching-parallel-agents\` (independent agent dispatch)
-
-Subagent-driven is the primary execution path in opencode. Agent Teams are not available in opencode — use subagents via @mention. Lead does inline review of each subagent's output (spec compliance + code quality).
-`;
-
-// Replace the "## Execution Model" section with the opencode variant.
-// Matches from "## Execution Model" header up to the next "## " header (exclusive).
-// If the section is not found, returns the body unchanged (defensive).
-const replaceExecutionModel = (body) => {
-  const re = /^## Execution Model\n[\s\S]*?(?=^## )/m;
-  if (!re.test(body)) {
-    console.warn('razorback: Execution Model section not found in using-razorback body — OpenCode variant not substituted. Check skill body for header drift.');
-    return body;
-  }
-  return body.replace(re, OPENCODE_EXECUTION_MODEL + '\n');
-};
-
 export const RazorbackPlugin = async ({ client, directory }) => {
   const razorbackSkillsDir = path.resolve(__dirname, '../../skills');
 
@@ -71,7 +48,6 @@ export const RazorbackPlugin = async ({ client, directory }) => {
 
     const fullContent = fs.readFileSync(skillPath, 'utf8');
     const { content } = extractAndStripFrontmatter(fullContent);
-    const opencodeBody = replaceExecutionModel(content);
 
     const toolMapping = `**Tool Mapping for OpenCode:**
 When skills reference tools, substitute OpenCode equivalents:
@@ -88,7 +64,7 @@ You have razorback.
 
 **IMPORTANT: The using-razorback skill content is included below. It is ALREADY LOADED - you are currently following it. Do NOT use the skill tool to load "using-razorback" again - that would be redundant.**
 
-${opencodeBody}
+${content}
 
 ${toolMapping}
 </EXTREMELY_IMPORTANT>`;

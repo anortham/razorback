@@ -123,14 +123,14 @@ The plugin (`.opencode/plugins/razorback.js`) wires two hooks:
 
 ### Execution model
 
-Agent Teams aren't available in opencode, so the primary execution path is `subagent-driven-development`: a fresh subagent per task, with the lead doing inline review. Sequential work still uses `executing-plans`, and ad-hoc parallel work uses `dispatching-parallel-agents`.
+Delegated plan execution in opencode uses `subagent-driven-development`: a fresh subagent per task, with the lead doing inline review. Sequential work still uses `executing-plans`, and ad-hoc parallel work uses `dispatching-parallel-agents`.
 
 ### Tool mapping
 
 Skills written for Claude Code are adapted on the fly:
 
 - `TodoWrite` → `todowrite`
-- `Task` with subagents → opencode's `@mention` system
+- `Task` with subagents → opencode's `Task` tool (or manual `@mention`)
 - `Skill` tool → opencode's native `skill` tool
 - File operations → native opencode tools
 

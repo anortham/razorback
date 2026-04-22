@@ -2,14 +2,14 @@
 
 **Julie-powered development workflow for Claude Code, Cursor, Codex, OpenCode, Copilot CLI, and Gemini CLI.**
 
-Razorback is a skill set for every major coding-agent harness, diverged from [Superpowers](https://github.com/obra/superpowers) to add Julie MCP for token-efficient codebase orientation. Plan execution runs through parallel subagent dispatch on harnesses that support it, with Agent Teams as a Claude-Code-only upgrade for persistent named teammates.
+Razorback is a skill set for every major coding-agent harness, diverged from [Superpowers](https://github.com/obra/superpowers) to add Julie MCP for token-efficient codebase orientation. Plan execution runs through `subagent-driven-development` on harnesses that support delegation, and `executing-plans` where delegation is unavailable.
 
 ## Why?
 
-AI-assisted development burns tokens on repetitive codebase exploration. Every agent, teammate, and subagent re-discovers the same code through Glob/Grep/Read chains. Razorback solves this two ways:
+AI-assisted development burns tokens on repetitive codebase exploration. Every agent and subagent re-discovers the same code through Glob/Grep/Read chains. Razorback solves this two ways:
 
 - **Julie MCP** routes all exploration through purpose-built code intelligence tools (get_context, deep_dive, fast_refs, get_symbols) that return targeted context in 1-2 calls instead of 5-8
-- **Parallel subagent dispatch with inline review by the lead** keeps the main agent's context clean. Claude Code users get an additional upgrade via Agent Teams: persistent named teammates that receive follow-up messages, so fixes skip cold-restart re-orientation.
+- **Parallel subagent dispatch with inline review by the lead** keeps the main agent's context clean while letting independent tasks move concurrently.
 - **Autonomous execution of approved plans** with optional pre-merge external review (codex / gemini / claude) and compaction-durable goldfish checkpoints; runs overnight without waking you for anything short of a real blocker
 
 ## Requirements
@@ -62,7 +62,7 @@ Tell Codex:
 Fetch and follow instructions from https://raw.githubusercontent.com/anortham/razorback/refs/heads/main/.codex/INSTALL.md
 ```
 
-Codex uses native skill discovery, so installation is a clone plus a symlink at `~/.agents/skills/razorback`. Parallel execution skills (`subagent-driven-development`, `dispatching-parallel-agents`) require Codex's `multi_agent` feature. Agent Teams are Claude Code only, so `team-driven-development` is not active on Codex.
+Codex uses native skill discovery, so installation is a clone plus a symlink at `~/.agents/skills/razorback`. Delegated execution skills (`subagent-driven-development`, `dispatching-parallel-agents`) require Codex's `multi_agent` feature.
 
 **Detailed docs:** [.codex/INSTALL.md](.codex/INSTALL.md)
 
@@ -177,11 +177,10 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 
 **Execution model (primary path depends on harness):**
 - **Autonomous by default:** once a plan is approved, execution runs to completion gated only by real blockers; an optional pre-merge external review (codex / gemini / claude) runs before branch finish. See [autonomous-execution design](docs/plans/2026-04-18-autonomous-execution-design.md) for the rationale.
-- **Claude Code, 2+ independent tasks:** `team-driven-development` creates an Agent Team with persistent named teammates. Fixes go to the teammate who already has context (no cold restart). Promoted as primary on Claude Code via the session-start bootstrap.
-- **Cursor, Codex, OpenCode, Copilot CLI, 2+ independent tasks:** `subagent-driven-development` dispatches fresh implementer subagents (in parallel when tasks are independent), lead does inline review (spec compliance + code quality) per task.
+- **Harnesses with delegation support, 2+ independent tasks:** `subagent-driven-development` dispatches fresh implementer subagents (in parallel when tasks are independent), and the lead does inline review (spec compliance + code quality) per task.
 - **Gemini CLI (no subagent support):** falls back to `executing-plans` for all plans.
-- **1 task or sequential (any harness):** `executing-plans` runs single-agent batch execution.
-- **Ad-hoc parallel work (any harness with subagents):** `dispatching-parallel-agents` for independent tasks outside plans.
+- **1 task, tightly sequential work, or no delegation:** `executing-plans` runs single-agent batch execution.
+- **Ad-hoc parallel work (delegation available):** `dispatching-parallel-agents` for independent tasks outside plans.
 
 ## Skills
 
@@ -190,7 +189,6 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 | using-razorback | Entry point: skill routing, execution model, Julie toolchain |
 | brainstorming | Requirements exploration, design, approach selection |
 | writing-plans | Implementation plans (full or light) with Julie-verified file paths |
-| **team-driven-development** | **Claude Code upgrade: Agent Teams, persistent named teammates, inline review** |
 | executing-plans | Single-agent execution (fallback for sequential/single-task work or no-subagent harnesses) |
 | test-driven-development | Red-green-refactor with Julie-powered test discovery |
 | systematic-debugging | Root cause investigation with Julie-powered tracing |
@@ -201,17 +199,18 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 | dispatching-parallel-agents | Ad-hoc parallel agent dispatch |
 | using-git-worktrees | Isolated workspace setup |
 | writing-skills | Meta-skill for creating/editing skills |
-| **subagent-driven-development** | **Primary plan execution (Cursor/Codex/OpenCode/Copilot CLI): fresh implementer subagents, parallel when independent, inline review by lead** |
+| **subagent-driven-development** | **Primary delegated plan execution: fresh implementer subagents, parallel when independent, inline review by lead** |
 | pre-merge-review | Optional external review (codex / gemini / claude) run before PR — verifies findings, dispatches fixes, emits morning-report block |
 | codex-cli | Invokes `codex exec` (GPT-5.4 xhigh) for second opinions and adversarial review |
 | gemini-cli | Invokes `gemini` (gemini-3-pro with `--yolo`) for second opinions and adversarial review |
 | claude-cli | Invokes `claude -p` for second opinions and adversarial review; omits `--bare` because it breaks OAuth auth |
 
-## Teammate Prompt Templates
+## Prompt Templates
 
 | Template | Purpose |
 |----------|---------|
-| team-driven-development/implementer-prompt.md | Teammate spawn: task assignment, file ownership, Julie directives, status protocol |
+| subagent-driven-development/implementer-prompt.md | Implementer spawn: task assignment, file ownership, Julie directives, status protocol |
+| subagent-driven-development/fix-prompt.md | Fix-round prompt with reviewer findings and reframed-context guidance |
 | subagent-driven-development/spec-reviewer-prompt.md | Review guide: spec compliance criteria |
 | subagent-driven-development/code-quality-reviewer-prompt.md | Review guide: code quality criteria |
 

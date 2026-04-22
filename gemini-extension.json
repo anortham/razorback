@@ -1,6 +1,6 @@
 {
   "name": "razorback",
-  "description": "Julie-powered development workflow for Claude Code, Codex, and OpenCode. Parallel subagent dispatch on all three harnesses, with Agent Teams as a Claude-Code-only upgrade.",
-  "version": "0.10.3",
+  "description": "Julie-powered development workflow with subagent-driven execution where delegation exists, and single-agent execution otherwise.",
+  "version": "0.11.0",
   "contextFileName": "GEMINI.md"
 }

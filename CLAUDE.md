@@ -1,6 +1,6 @@
 # Razorback — Project Instructions
 
-Razorback is a skill set for Claude Code, Cursor, Codex, OpenCode, Copilot CLI, and Gemini CLI that diverged from [Superpowers](https://github.com/obra/superpowers). It uses Julie MCP for token-efficient codebase orientation. Plan execution runs through parallel subagent dispatch on every harness that supports subagents; Agent Teams are a Claude-Code-only upgrade promoted by the session-start bootstrap. Gemini CLI has no subagent support, so multi-task plans fall back to `executing-plans`.
+Razorback is a skill set for Claude Code, Cursor, Codex, OpenCode, Copilot CLI, and Gemini CLI that diverged from [Superpowers](https://github.com/obra/superpowers). It uses Julie MCP for token-efficient codebase orientation. Plan execution routes through `subagent-driven-development` on harnesses that support delegation, and through `executing-plans` otherwise. Gemini CLI has no subagent support, so multi-task plans fall back to `executing-plans`.
 
 ## Project Structure
 
@@ -92,8 +92,7 @@ Use directive language: "Use julie:deep_dive BEFORE modifying any symbol" not "c
 ## Execution Model
 
 **Primary execution path (harness-dependent):**
-- **Claude Code:** `team-driven-development` — Agent Teams with persistent named teammates. Fixes go to the teammate who already has context instead of a cold-restart fresh subagent. Promoted as primary on Claude Code via the session-start bootstrap (`hooks/session-start`).
-- **Cursor, Codex, OpenCode, Copilot CLI:** `subagent-driven-development` dispatches fresh implementer subagents per task, parallel when tasks are independent, inline review by lead.
+- **Claude Code, Cursor, Codex, OpenCode, Copilot CLI:** `subagent-driven-development` dispatches fresh implementer subagents per task, parallel when tasks are independent, inline review by lead.
 - **Gemini CLI:** no subagent support — all plans execute via `executing-plans` (single-session batch).
 
 **Shared across harnesses with subagent support:**
@@ -104,8 +103,8 @@ Use directive language: "Use julie:deep_dive BEFORE modifying any symbol" not "c
 **Per-harness bootstrap mechanics:**
 - **Claude Code:** `hooks/session-start` reads `skills/using-razorback/SKILL.md` verbatim and injects it via the SessionStart hook.
 - **Cursor:** same `hooks/session-start` script; platform detection keys on `CURSOR_PLUGIN_ROOT` and emits `additional_context` (snake_case).
-- **Codex (CLI + desktop app):** native skill discovery scans `~/.agents/skills/razorback/` at startup. Users see the raw SKILL.md content; the Execution Model section routes Codex readers to `subagent-driven-development`. Tool-name mapping lives in `skills/using-razorback/references/codex-tools.md`.
-- **OpenCode:** `.opencode/plugins/razorback.js` registers the skills directory and injects the bootstrap on the first user message (via `experimental.chat.messages.transform`), substituting the Execution Model section so `subagent-driven-development` is named as the primary. The plugin guards against regex-replace misses and hook-fire errors with `console.warn`.
+- **Codex (CLI + desktop app):** native skill discovery scans `~/.agents/skills/razorback/` at startup. Users see the raw SKILL.md content; delegated runs use `subagent-driven-development` when the session can spawn workers, and fall back to `executing-plans` otherwise. Tool-name mapping lives in `skills/using-razorback/references/codex-tools.md`.
+- **OpenCode:** `.opencode/plugins/razorback.js` registers the skills directory and injects the bootstrap on the first user message (via `experimental.chat.messages.transform`). The plugin injects the shared bootstrap verbatim and adds OpenCode tool mapping.
 - **Copilot CLI:** same `hooks/session-start` script; platform detection keys on `COPILOT_CLI` and emits top-level `additionalContext` (SDK standard). Plugin agents (like `razorback:code-reviewer`) are auto-discovered from the installed marketplace.
 - **Gemini CLI:** `gemini-extension.json` declares `GEMINI.md` as the context file. `GEMINI.md` uses `@./` includes to pull in `skills/using-razorback/SKILL.md` + `skills/using-razorback/references/gemini-tools.md` at session start. No subagent support means `subagent-driven-development` and `dispatching-parallel-agents` fall back to `executing-plans`.
 

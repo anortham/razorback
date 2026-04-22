@@ -1,6 +1,6 @@
 # Blocker Taxonomy
 
-Reference for autonomous execution: what counts as a real stop-and-report blocker versus a decide-and-log judgment call. Linked from execution skills (`executing-plans`, `team-driven-development`, `subagent-driven-development`) so the taxonomy stays DRY.
+Reference for autonomous execution: what counts as a real stop-and-report blocker versus a decide-and-log judgment call. Linked from execution skills (`executing-plans`, `subagent-driven-development`) so the taxonomy stays DRY.
 
 ## Real blockers (stop and report)
 

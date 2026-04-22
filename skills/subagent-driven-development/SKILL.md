@@ -1,6 +1,6 @@
 ---
 name: subagent-driven-development
-description: Execute an implementation plan by dispatching fresh subagents (sequentially or in parallel) with inline review by the lead. Primary execution path for Codex and opencode, and a Claude Code fallback when Agent Teams don't fit.
+description: Execute an implementation plan by dispatching fresh subagents (sequentially or in parallel) with inline review by the lead. Primary delegated execution path whenever the harness can launch subagents.
 ---
 
 # Subagent-Driven Development
@@ -40,11 +40,11 @@ digraph when_to_use {
 - Lead does inline review after each task (one pass, no reviewer subagents)
 - Faster iteration (no human-in-loop between tasks)
 
-**vs. Team-Driven Development (Claude Code only):**
-- Fresh subagent per task; team-driven uses persistent named teammates that receive follow-up messages
-- Both can fan out in parallel; the difference is persistence, not parallelism
-- Fixes here dispatch a fresh implementer with the fix prompt plus prior context, rather than resuming a teammate
-- Used on opencode (no Agent Teams) or on Claude Code when teammate persistence isn't worth the ceremony
+**Harness-specific follow-up behavior:**
+- Claude Code can resume an existing implementer for fix rounds
+- Codex can use `send_input` on the stored worker for fix rounds
+- OpenCode uses fresh dispatches with fix context because resume is not available
+- The execution model stays the same across harnesses: dispatch per task, inline review by lead, parallel fan-out only when files do not overlap
 
 ## The Process
 
@@ -105,6 +105,7 @@ Use the template at `./implementer-prompt.md`. The spawn prompt MUST include:
 4. **Julie tool directives** (use `get_context`, `deep_dive` before modifying any symbol, `fast_refs` before changing public APIs, `get_symbols` before reading full files)
 5. **TDD expectations** (from `razorback:test-driven-development`)
 6. **Verification commands** specific to this task
+7. **Julie evidence requirement** (the implementer must report which Julie calls they used and what those calls confirmed)
 
 Per-harness state to keep after dispatch:
 
@@ -135,6 +136,8 @@ When the implementer reports completion, the lead does a single inline review co
 - Did they add anything not requested? Flag extras for removal.
 - Did they misinterpret any requirement?
 - Use `get_symbols(file_path)` to scan changed files without reading them fully.
+- Confirm the report includes the Julie calls used. If the implementer cannot
+  show Julie-first orientation, send it back.
 
 **Code quality:**
 - Is the code clean, tested, and maintainable?
@@ -146,7 +149,8 @@ When the implementer reports completion, the lead does a single inline review co
 **Review cap: 3 iterations.**
 
 - On Claude Code: 3 resume-the-implementer attempts using `./fix-prompt.md`.
-- On opencode: 3 fresh-dispatch-with-fix-context attempts.
+- On Codex: 3 `send_input(...)` follow-ups on the stored worker.
+- On OpenCode: 3 fresh-dispatch-with-fix-context attempts.
 
 If the 3rd iteration still fails:
 
@@ -367,6 +371,7 @@ Done.
 - Ignore subagent questions (answer before letting them proceed)
 - Skip the re-review after a fix
 - Dispatch a separate reviewer subagent when the lead can review inline
+- Approve work from an implementer who cannot show Julie-first orientation
 - **On Claude Code, prefer resume for iterations 1-3** (the implementer has full context). Use fresh-dispatch-with-reframed-context for iteration 4 only, after 3 resume attempts failed. The 4th attempt's value is the reframing, not the freshness.
 - **On Codex, prefer `send_input` on the stored agent ID for iterations 1-3** (same reasoning, the worker keeps its orientation context). Use `close_agent` + fresh `spawn_agent` with reframed context for iteration 4.
 - Never pause for user input between tasks — the plan is approved, run it to completion. Stops are governed by the blocker taxonomy.
@@ -395,8 +400,7 @@ Done.
 - **razorback:test-driven-development** — TDD for each task (embedded in the implementer prompt)
 
 **Alternative workflows:**
-- **razorback:team-driven-development** — Alternative for Claude Code (Agent Teams instead of sequential subagents)
-- **razorback:executing-plans** — Use for parallel-session or single-agent execution
+- **razorback:executing-plans** — Use for parallel-session, single-agent, or no-delegation execution
 
 **Codex-specific:**
 - Requires `multi_agent = true` in `~/.codex/config.toml` (see `skills/using-razorback/references/codex-tools.md`). Without it, `spawn_agent` / `send_input` / `wait_agent` / `close_agent` are not available.

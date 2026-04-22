@@ -27,12 +27,12 @@ This enables `spawn_agent`, `send_input`, `wait_agent`, and `close_agent`.
 
 ### Dispatching implementers
 
-Razorback's teammate/subagent prompts live in the skills themselves:
+Razorback's subagent prompts live in the skills themselves:
 
 - `skills/subagent-driven-development/implementer-prompt.md` (if present) or inline in the skill body
+- `skills/subagent-driven-development/fix-prompt.md`
 - `skills/subagent-driven-development/spec-reviewer-prompt.md`
 - `skills/subagent-driven-development/code-quality-reviewer-prompt.md`
-- `skills/team-driven-development/implementer-prompt.md` (Claude Code only, not usable on Codex)
 
 When a skill says to dispatch a subagent with a prompt:
 
@@ -65,15 +65,14 @@ specified in the instructions above.
 
 ## Execution model on Codex
 
-`team-driven-development` is a Claude Code only skill. Agent Teams with persistent named teammates are not available in Codex. On Codex, the primary execution path is `subagent-driven-development`: dispatch fresh implementer subagents per task, parallel when independent, lead does inline review.
+On Codex, delegated plan execution uses `subagent-driven-development`: dispatch fresh implementer subagents per task, parallel when independent, lead does inline review. If the current Codex harness or session policy does not allow delegation, fall back to `executing-plans`.
 
-| Platform | Primary execution skill |
-|----------|-------------------------|
-| Claude Code | `team-driven-development` |
-| Codex | `subagent-driven-development` |
-| OpenCode | `subagent-driven-development` |
+| Codex session state | Execution skill |
+|--------------------|-----------------|
+| Delegation available | `subagent-driven-development` |
+| Delegation unavailable | `executing-plans` |
 
-For single-task or sequential work on any platform, use `executing-plans`.
+For single-task or tightly sequential work, use `executing-plans` even when delegation is available.
 
 ## Julie MCP
 

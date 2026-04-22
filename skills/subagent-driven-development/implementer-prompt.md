@@ -32,9 +32,11 @@ Agent tool (general-purpose):
 
     Otherwise, make the call, note it, and proceed.
 
-    ## Codebase Orientation (REQUIRED before coding)
+    ## Codebase Orientation (HARD REQUIREMENT)
 
-    Before writing any code, orient yourself using Julie's code intelligence tools:
+    Julie-first orientation is mandatory. Do not start by reading raw files,
+    whole diffs, or grep output. Before writing any code, orient yourself using
+    Julie's code intelligence tools in this order:
 
     1. **Understand the area:** `get_context(query='<area described in task>')`
        Returns token-budgeted context: pivots (full code), neighbors (signatures), file map.
@@ -48,8 +50,12 @@ Agent tool (general-purpose):
     4. **Read targeted code:** `get_symbols(file_path='<file>', target='<function>')`
        See specific symbols instead of reading entire files.
 
-    **Do NOT use Glob → Read → Grep chains for exploration.** Julie tools return
-    targeted, token-efficient context in 1-2 calls instead of 5-8.
+    5. **Only then read raw code if needed:** after the Julie calls above, read
+       the minimum raw code needed for the edit.
+
+    **Do NOT use Glob -> Read -> Grep chains for exploration.** Julie tools return
+    targeted, token-efficient context in 1-2 calls instead of 5-8. If you skip
+    Julie and start with raw-file exploration, you have broken the workflow.
 
     ## Your Job
 
@@ -95,7 +101,8 @@ Agent tool (general-purpose):
     - What you implemented
     - What you tested and test results
     - Files changed
+    - **Julie calls used** - list the `get_context` / `deep_dive` / `fast_refs` / `get_symbols` calls you made and what each one confirmed
     - Self-review findings (if any)
-    - **Judgment calls made** — non-obvious decisions in the form `file:line — chose X over Y because [reason]`. Include every ambiguity you resolved without asking. Feeds the morning report's "Judgment calls" section.
+    - **Judgment calls made** - non-obvious decisions in the form `file:line - chose X over Y because [reason]`. Include every ambiguity you resolved without asking. Feeds the morning report's "Judgment calls" section.
     - Any issues or concerns
 ```

@@ -9,7 +9,7 @@ description: Use when you have a written implementation plan to execute in a sep
 
 Load plan, review critically, execute all tasks, report when complete.
 
-**When to use this vs. subagent-driven-development:** Use this skill for single-task plans, tightly sequential work, or separate-session execution. For plans with 2+ independent tasks in the same session, prefer `razorback:subagent-driven-development` (or `razorback:team-driven-development` on Claude Code) for parallel execution with inline review.
+**When to use this vs. subagent-driven-development:** Use this skill for single-task plans, tightly sequential work, separate-session execution, or any run where delegation is unavailable. For plans with 2+ independent tasks in the same session, prefer `razorback:subagent-driven-development` for parallel execution with inline review.
 
 **Inputs from `writing-plans`:** plan path, `reviewer_choice` (`none` / `codex` / `gemini` / `claude`, default `none`), and `test_command` (the project's test invocation, if known). These propagate via the plan-approval message and gate Step 3 below.
 
@@ -77,7 +77,7 @@ Anything else: pick the plan-consistent option, note the choice in your report, 
 ## When to Revisit Earlier Steps
 
 **Return to Review (Step 1) when:**
-- A teammate flags plan-contradicting state. Re-read the plan and use Julie (`get_context`, `deep_dive`) to check current state. If the plan is still valid, continue. If not, stop per blocker taxonomy #3 (plan-contradicting data).
+- New codebase evidence flags plan-contradicting state. Re-read the plan and use Julie (`get_context`, `deep_dive`) to check current state. If the plan is still valid, continue. If not, stop per blocker taxonomy #3 (plan-contradicting data).
 - Fundamental approach needs rethinking
 
 **Don't force through real blockers.** Stop and report per the taxonomy.

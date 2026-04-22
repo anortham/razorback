@@ -1,8 +1,8 @@
 {
   "name": "razorback",
   "displayName": "Razorback",
-  "description": "Julie-powered development workflow for Claude Code, Codex, and OpenCode. Parallel subagent dispatch on all three harnesses, with Agent Teams as a Claude-Code-only upgrade.",
-  "version": "0.10.3",
+  "description": "Julie-powered development workflow with subagent-driven execution, inline review, and Julie-first codebase orientation.",
+  "version": "0.11.0",
   "author": {
     "name": "Alan Northam"
   },

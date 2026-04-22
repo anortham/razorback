@@ -11,7 +11,7 @@ Two review modes, depending on context.
 
 ## Mode 1: Inline Review (Plan Execution)
 
-When using `razorback:subagent-driven-development` (or `razorback:team-driven-development` on Claude Code), the **lead does inline review** after each implementer reports DONE. No separate reviewer agent needed.
+When using `razorback:subagent-driven-development`, the **lead does inline review** after each implementer reports DONE. No separate reviewer agent needed.
 
 **The lead checks two things:**
 
@@ -23,8 +23,10 @@ When using `razorback:subagent-driven-development` (or `razorback:team-driven-de
 - Use `deep_dive(symbol)` on key modified symbols
 - Use `fast_refs(symbol)` to verify changes don't break dependents
 - Check tests verify behavior, not just that code runs
+- Reject the report if the implementer cannot show Julie-first orientation and
+  the Julie calls they used
 
-**If issues found:** Route fix back to an implementer (resume on Claude Code with team-driven, fresh dispatch with fix context on opencode or subagent-driven). They fix and re-report. Review cap: 3 iterations.
+**If issues found:** Route the fix back to an implementer using the harness-native follow-up path. Resume the existing implementer on Claude Code or Codex when possible, or dispatch a fresh implementer with fix context where resume is unavailable. They fix and re-report. Review cap: 3 iterations.
 
 ## Mode 2: Standalone Review (Ad-Hoc / Pre-Merge)
 
@@ -76,7 +78,7 @@ HEAD_SHA=$(git rev-parse HEAD)
 
 ## Integration with Workflows
 
-**Plan Execution (subagent-driven or team-driven):**
+**Plan Execution (subagent-driven):**
 - Lead does inline review (Mode 1) after each implementer reports DONE
 - See the execution skill for full review checklist
 

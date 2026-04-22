@@ -109,12 +109,11 @@ These thoughts mean STOP—you're rationalizing:
 
 When executing implementation plans:
 
-- **2+ independent tasks (Claude Code):** Use `razorback:team-driven-development` (Agent Teams, persistent named teammates, inline review)
-- **2+ independent tasks (Codex, OpenCode):** Use `razorback:subagent-driven-development` (fresh subagent per task, inline review by lead)
-- **1 task or sequential (any platform):** Use `razorback:executing-plans` (single agent, batch execution)
-- **Ad-hoc parallel work (any platform):** Use `razorback:dispatching-parallel-agents` (independent agent dispatch)
+- **2+ independent tasks (delegation available):** Use `razorback:subagent-driven-development` (fresh subagent per task, inline review by lead)
+- **1 task, tightly sequential work, or no delegation:** Use `razorback:executing-plans` (single agent, batch execution)
+- **Ad-hoc parallel work (delegation available):** Use `razorback:dispatching-parallel-agents` (independent agent dispatch)
 
-Team-driven is the primary path on Claude Code because persistent teammates skip cold-restart re-orientation on fixes. Agent Teams do not exist on Codex or OpenCode, so those platforms use subagent-driven as primary. Both paths do inline review (spec compliance + code quality) by the lead.
+`subagent-driven-development` is the delegated execution path across Claude Code, Cursor, Codex, OpenCode, and Copilot CLI. If the harness lacks subagent support, or the current session cannot delegate, fall back to `executing-plans`. The lead does inline review (spec compliance + code quality) either way.
 
 ## Skill Priority
 

@@ -25,14 +25,14 @@ Once the plan is approved, razorback runs to completion; it stops only for real 
 - Exact commands with expected output
 - Assumes the engineer has zero codebase context and questionable taste
 
-**Light plan** — for same-session execution where teammates implement immediately:
+**Light plan** — for same-session execution where implementers execute immediately:
 - Task-level granularity: what to build, which files, acceptance criteria
 - Exact file paths (always useful) but no complete code snippets
 - Brief approach notes instead of full implementations — the implementer uses Julie tools to read the actual code
 - TDD expectation stated once, not choreographed per-step — the implementer follows TDD naturally
 - Typically 1/3 the length of a full plan
 
-**How to choose:** If the plan will be executed in this session by dispatched subagents (subagent-driven-development, or team-driven-development on Claude Code), use light. If it's a handoff to another session or developer, use full. When in doubt, ask.
+**How to choose:** If the plan will be executed in this session by dispatched subagents via `subagent-driven-development`, use light. If it's a handoff to another session, a no-delegation run, or work for another developer, use full. When in doubt, ask.
 
 ## Scope Check
 
@@ -86,7 +86,7 @@ Light plans use task-level granularity instead: each task is a coherent unit of 
 ```markdown
 # [Feature Name] Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use razorback:team-driven-development (on Claude Code) or razorback:subagent-driven-development (elsewhere) to implement this plan. Fall back to razorback:executing-plans for single-task or tightly-sequential plans.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use razorback:subagent-driven-development when subagent delegation is available. Fall back to razorback:executing-plans for single-task, tightly-sequential, or no-delegation runs.
 
 **Goal:** [One sentence describing what this builds]
 
@@ -187,8 +187,7 @@ If the user requests changes, revise the plan, re-run the self-review, re-save, 
 
 **Step 4, invoke the execution skill.** After the reviewer choice is in hand, announce which execution skill will run and invoke it, passing the plan path, the reviewer choice (`none` / `codex` / `gemini` / `claude`), and the project test command if known:
 
-- **On Claude Code:** `razorback:team-driven-development`
-- **On non-Claude-Code harnesses with subagents:** `razorback:subagent-driven-development`
-- **For single-task or tightly-sequential plans (any harness):** `razorback:executing-plans`
+- **When subagent delegation is available:** `razorback:subagent-driven-development`
+- **For single-task, tightly-sequential, or no-delegation plans:** `razorback:executing-plans`
 
 Starting execution. Tell me now if you want a separate-session handoff instead; in that case, guide the user to open a new session in the worktree and use `razorback:executing-plans` there.

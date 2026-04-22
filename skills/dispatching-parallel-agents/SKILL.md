@@ -13,7 +13,7 @@ When you have multiple unrelated failures (different test files, different subsy
 
 **Core principle:** Dispatch one agent per independent problem domain. Let them work concurrently.
 
-**For plan execution with 2+ independent tasks, prefer `razorback:subagent-driven-development` instead** (or `razorback:team-driven-development` on Claude Code when persistent teammates are worth the ceremony). Plan-execution skills wire in inline review, file ownership, and fix routing. Use this skill for ad-hoc parallel work outside of plan execution (debugging multiple independent failures, parallel research, etc.).
+**For plan execution with 2+ independent tasks, prefer `razorback:subagent-driven-development` instead.** Plan-execution skills wire in inline review, file ownership, and fix routing. Use this skill for ad-hoc parallel work outside of plan execution (debugging multiple independent failures, parallel research, etc.).
 
 ## When to Use
 
@@ -179,4 +179,3 @@ After agents return:
 2. **Check for conflicts** - Did agents edit same code?
 3. **Run full suite** - Verify all fixes work together
 4. **Spot check** - Agents can make systematic errors
-

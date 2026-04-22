@@ -15,7 +15,7 @@ Guide completion of development work by selecting a mode, then executing the app
 
 ## Mode Selection
 
-If the agent was just finishing an autonomous execution run (i.e. this skill is being invoked as the final step of `razorback:executing-plans` / `razorback:team-driven-development` / `razorback:subagent-driven-development`), use **Autonomous Mode**. If the user invoked the skill directly (e.g. "finish this branch"), use **Interactive Mode**. In ambiguous cases, default to Autonomous — run-to-completion is the bias.
+If the agent was just finishing an autonomous execution run (i.e. this skill is being invoked as the final step of `razorback:executing-plans` or `razorback:subagent-driven-development`), use **Autonomous Mode**. If the user invoked the skill directly (e.g. "finish this branch"), use **Interactive Mode**. In ambiguous cases, default to Autonomous - run-to-completion is the bias.
 
 ## Autonomous Mode
 
@@ -300,7 +300,6 @@ git worktree remove <worktree-path>
 
 **Called by:**
 - `razorback:executing-plans` (Step 5) — Autonomous mode when the execution skill finishes cleanly
-- `razorback:team-driven-development` (Step 5 or 5a+finish) — Autonomous mode
 - `razorback:subagent-driven-development` (Step 5 or 4a+finish) — Autonomous mode
 - Direct user invocation ("finish this branch") — Interactive mode
 

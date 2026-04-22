@@ -20,7 +20,29 @@ Agent tool (resume: "<implementer-agent-id>"):
     3. Commit the fixes
     4. Report what you changed
 
-    Keep it focused — fix what the reviewer flagged, don't refactor beyond that.
+    Keep it focused - fix what the reviewer flagged, don't refactor beyond that.
+
+    ## Re-Orientation (REQUIRED before editing)
+
+    Even on a resume, confirm the change with Julie before touching code:
+
+    1. `get_symbols(file_path='<changed file>', target='<symbol or region>')`
+       to re-anchor on the exact edit location.
+    2. `deep_dive(symbol='<modified symbol>')` for the symbol you are changing.
+    3. `fast_refs(symbol='<modified symbol>')` if the fix changes behavior that
+       callers could observe.
+
+    Do not start by skimming raw files. Julie-first still applies during fix
+    rounds.
+
+    ## Report Format
+
+    When done, report:
+    - What you changed
+    - Tests run and results
+    - Commit SHA
+    - **Julie calls used** - list the Julie calls you made during the fix round
+    - Any judgment calls made
 ```
 
 **Why resume instead of fresh dispatch:** You already have the full context — the files
@@ -59,7 +81,7 @@ Reframing examples (the lead picks one that fits the failure mode):
   separately."
 
 The fresh subagent still follows the standard review loop after its attempt:
-implementer reports → lead does inline review → if issues remain, the task is flagged
+implementer reports -> lead does inline review -> if issues remain, the task is flagged
 in the morning report's "Blockers hit" section and the run continues with remaining
 tasks. Escalate to the user only if the failure matches blocker taxonomy #5
 (unresolvable test failures blocking the whole plan).

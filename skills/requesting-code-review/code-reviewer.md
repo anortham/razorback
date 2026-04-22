@@ -32,6 +32,8 @@ You are reviewing code changes for production readiness.
 
 **Do NOT dump the full diff upfront.** Use Julie tools to understand what changed structurally, then read targeted diffs for the areas that matter.
 
+If your review does not cite Julie-assisted investigation, it is incomplete.
+
 ## Review Checklist
 
 **Code Quality:**
