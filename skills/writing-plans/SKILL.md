@@ -15,7 +15,7 @@ Write implementation plans scaled to the situation. The right level of detail de
 
 **Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
 
-Once the plan is approved, razorback runs to completion; it stops only for real blockers (see `skills/using-razorback/references/blocker-taxonomy.md`).
+Once the plan is approved, razorback runs to completion; it stops only for real blockers (see `skills/using-razorback/references/blocker-taxonomy.md`). A blocker is real only when the agent cannot resolve it through reasonable plan-consistent judgment.
 
 ## Plan Depth: Full vs. Light
 

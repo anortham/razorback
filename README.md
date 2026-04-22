@@ -177,7 +177,7 @@ gemini extensions update razorback
 The core process: brainstorm, plan, TDD, execute, review, finish.
 
 **Execution model (primary path depends on harness):**
-- **Autonomous by default:** once a plan is approved, execution runs to completion gated only by real blockers; an optional pre-merge external review (codex / gemini / claude) runs before branch finish. See [autonomous-execution design](docs/plans/2026-04-18-autonomous-execution-design.md) for the rationale.
+- **Autonomous by default:** once a plan is approved, execution runs to completion gated only by real blockers. A blocker is real only when the agent cannot resolve it through reasonable plan-consistent judgment. An optional pre-merge external review (codex / gemini / claude) runs before branch finish. See [autonomous-execution design](docs/plans/2026-04-18-autonomous-execution-design.md) for the rationale.
 - **Harnesses with delegation support, 2+ independent tasks:** `subagent-driven-development` dispatches fresh implementer subagents (in parallel when tasks are independent), and the lead does inline review (spec compliance + code quality) per task.
 - **Gemini CLI (no subagent support):** falls back to `executing-plans` for all plans.
 - **1 task, tightly sequential work, or no delegation:** `executing-plans` runs single-agent batch execution.

@@ -11,7 +11,7 @@
       "name": "razorback",
       "source": "./",
       "description": "Julie-aware development workflow skills. Fork of Superpowers with explicit code intelligence integration.",
-      "version": "0.12.0",
+      "version": "0.12.1",
       "category": "productivity"
     }
   ]

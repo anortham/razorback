@@ -64,6 +64,7 @@ The authoritative taxonomy is `skills/using-razorback/references/blocker-taxonom
 **Bias rules:**
 - When in doubt, press on and flag. A line in the morning report is cheaper than a false wake-up.
 - Never silently swallow a judgment call. Every non-obvious decision ends up in the report with file:line + reason.
+- A blocker is real only when you cannot reason your way to a plan-consistent path forward.
 
 **Real blockers (stop and report):**
 1. Credentials / auth / env broken, with no recovery path in the plan
@@ -72,7 +73,7 @@ The authoritative taxonomy is `skills/using-razorback/references/blocker-taxonom
 4. Safety-critical ambiguity (security, data integrity, billing, auth) with no plan answer
 5. Unresolvable test failures (repeated fix attempts do not converge)
 
-Anything else: pick the plan-consistent option, note the choice in your report, continue. Full definitions in the taxonomy.
+Anything else: pick the plan-consistent option, note the choice in your report, continue. If a reasonable path exists, take it. Full definitions in the taxonomy.
 
 ## When to Revisit Earlier Steps
 
@@ -87,7 +88,7 @@ Anything else: pick the plan-consistent option, note the choice in your report, 
 - Follow plan steps exactly
 - Don't skip verifications
 - Reference skills when plan says to
-- Stop only for real blockers; decide + note otherwise (see blocker taxonomy)
+- Stop only for real blockers; if you can reason through a plan-consistent path, take it and note the choice (see blocker taxonomy)
 - Never start implementation on main/master branch without explicit user consent
 
 ## Integration

@@ -2,6 +2,8 @@
 
 Reference for autonomous execution: what counts as a real stop-and-report blocker versus a decide-and-log judgment call. Linked from execution skills (`executing-plans`, `subagent-driven-development`) so the taxonomy stays DRY.
 
+A blocker is real only when the agent cannot resolve it through reasonable plan-consistent judgment. If a reasonable path exists, take it and log the choice.
+
 ## Real blockers (stop and report)
 
 1. **Credentials / auth / env broken** — a required command fails on environmental grounds (missing token, unreachable service, wrong toolchain version) and the plan doesn't say how to recover.
@@ -18,8 +20,10 @@ Reference for autonomous execution: what counts as a real stop-and-report blocke
 - A failing review iteration — retry with reframed context; if still failing, flag the task and continue with others
 - An adjacent bug on the path — fix if small, flag if not
 - An external reviewer finding the lead judges as false positive — dismiss with reason in the report
+- Any situation where a reasonable plan-consistent path exists once the agent reads the code, checks the plan, and makes the call
 
 ## Bias rules
 
 - **When in doubt, press on and flag.** A line in the morning report is always cheaper than a false wake-up.
 - **Never silently swallow a judgment call.** Every non-obvious decision ends up in the report with file:line + reason.
+- **If you can reason your way through it, it is not a blocker.** Take the best plan-consistent path and keep going.

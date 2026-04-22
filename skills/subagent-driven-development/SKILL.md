@@ -374,7 +374,7 @@ Done.
 - Approve work from an implementer who cannot show Julie-first orientation
 - **On Claude Code, prefer resume for iterations 1-3** (the implementer has full context). Use fresh-dispatch-with-reframed-context for iteration 4 only, after 3 resume attempts failed. The 4th attempt's value is the reframing, not the freshness.
 - **On Codex, prefer `send_input` on the stored agent ID for iterations 1-3** (same reasoning, the worker keeps its orientation context). Use `close_agent` + fresh `spawn_agent` with reframed context for iteration 4.
-- Never pause for user input between tasks — the plan is approved, run it to completion. Stops are governed by the blocker taxonomy.
+- Never pause for user input between tasks - the plan is approved, run it to completion. Stops are governed by the blocker taxonomy. If you can reason through a plan-consistent path, keep moving and log the choice.
 
 **If the subagent asks questions:**
 - Answer clearly and completely
