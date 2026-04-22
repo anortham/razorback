@@ -76,6 +76,8 @@ When modifying skills, follow this pattern for adding tool awareness:
 - `fast_refs(symbol)` before changing public APIs
 - `get_symbols(file_path)` before reading full files
 
+Julie-first applies to the lead and to every dispatched implementer, reviewer, and fix worker, regardless of harness.
+
 Use directive language: "Use julie:deep_dive BEFORE modifying any symbol" not "consider using deep_dive".
 
 ## Naming Rules

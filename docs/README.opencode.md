@@ -124,6 +124,7 @@ The plugin (`.opencode/plugins/razorback.js`) wires two hooks:
 ### Execution model
 
 Delegated plan execution in opencode uses `subagent-driven-development`: a fresh subagent per task, with the lead doing inline review. Sequential work still uses `executing-plans`, and ad-hoc parallel work uses `dispatching-parallel-agents`.
+Julie-first applies to the lead session and every child task session. Implementers, reviewers, and fix workers should orient with Julie before raw file reads.
 
 ### Tool mapping
 

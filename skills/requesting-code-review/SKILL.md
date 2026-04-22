@@ -34,8 +34,10 @@ For work done outside plan execution, dispatch the `razorback:code-reviewer` age
 
 **1. Get git SHAs:**
 ```bash
-BASE_SHA=$(git rev-parse HEAD~1)  # or origin/main
+# Prefer the branch merge base so review covers the whole feature branch.
+BASE_SHA=$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null)
 HEAD_SHA=$(git rev-parse HEAD)
+# If the target branch is neither main nor master, compute BASE_SHA against the correct base explicitly.
 ```
 
 **2. Dispatch code-reviewer agent:**

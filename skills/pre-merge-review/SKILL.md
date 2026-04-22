@@ -1,13 +1,13 @@
 ---
 name: pre-merge-review
-description: Use after all tasks are complete and tests pass, before finishing-a-development-branch, when a pre-merge external reviewer was chosen at plan approval time (codex, gemini, or claude). Builds diff, dispatches the chosen reviewer in adversarial mode, verifies each finding using Julie tools, dispatches fresh implementer subagents for verified fixes, re-runs tests, and emits a summary for the morning report. Single-pass — does not loop external reviews.
+description: Use after all tasks are complete and tests pass, before finishing-a-development-branch, when a pre-merge external reviewer was chosen at plan approval time (codex, gemini, or claude). Builds diff, dispatches the chosen reviewer in adversarial mode, verifies each finding using Julie tools, routes verified fixes through the harness-native implementation flow, re-runs tests, and emits a summary for the morning report. Single-pass, does not loop external reviews.
 ---
 
 # Pre-Merge External Review
 
 ## Overview
 
-Run a fresh, isolated external reviewer (codex / gemini / claude) against the full branch diff after all tasks are done and tests are green, then route verified findings through razorback's own implementer-subagent flow for fixes. The lead verifies every finding against the actual code with Julie, classifies it (real-bug / real-improvement / false-positive / out-of-scope), fixes what's real, dismisses what isn't (with a written reason), and flags what needs human judgment. Single pass — no round-two review after fixes. The output is a summary block that slots into the morning report's External review section, so the user sees exactly what the reviewer said, what the lead did with it, and why.
+Run a fresh, isolated external reviewer (codex / gemini / claude) against the full branch diff after all tasks are done and tests are green, then route verified findings through razorback's own fix flow. The lead verifies every finding against the actual code with Julie, classifies it (real-bug / real-improvement / false-positive / out-of-scope), fixes what's real, dismisses what isn't (with a written reason), and flags what needs human judgment. Single pass, no round-two review after fixes. The output is a summary block that slots into the morning report's External review section, so the user sees exactly what the reviewer said, what the lead did with it, and why.
 
 ## When to invoke
 
@@ -41,7 +41,7 @@ digraph pre_merge_review {
     "Step 4: Lead verifies each finding with Julie" [shape=box];
     "Classify: real-bug / real-improvement / false-positive / out-of-scope" [shape=box];
     "Any verified fixes?" [shape=diamond];
-    "Step 5: Dispatch fresh implementer subagent(s) for verified fixes" [shape=box];
+    "Step 5: Apply verified fixes" [shape=box];
     "Step 6: Re-run full test suite" [shape=box];
     "Tests green?" [shape=diamond];
     "Step 7: Emit summary block for morning report" [shape=box style=filled fillcolor=lightgreen];
@@ -57,8 +57,8 @@ digraph pre_merge_review {
     "Step 4: Lead verifies each finding with Julie" -> "Classify: real-bug / real-improvement / false-positive / out-of-scope";
     "Classify: real-bug / real-improvement / false-positive / out-of-scope" -> "Any verified fixes?";
     "Any verified fixes?" -> "Step 7: Emit summary block for morning report" [label="no (all dismissed/flagged)"];
-    "Any verified fixes?" -> "Step 5: Dispatch fresh implementer subagent(s) for verified fixes" [label="yes"];
-    "Step 5: Dispatch fresh implementer subagent(s) for verified fixes" -> "Step 6: Re-run full test suite";
+    "Any verified fixes?" -> "Step 5: Apply verified fixes" [label="yes"];
+    "Step 5: Apply verified fixes" -> "Step 6: Re-run full test suite";
     "Step 6: Re-run full test suite" -> "Tests green?";
     "Tests green?" -> "Step 7: Emit summary block for morning report" [label="yes"];
     "Tests green?" -> "Blocker per taxonomy (stop + report)" [label="no (after fixes)"];
@@ -144,21 +144,23 @@ Dismissal rule: no finding is dismissed without a written reason that ends up in
 
 Flagging rule: if a finding is real AND the lead cannot determine the right fix without human input (architectural question, priority trade-off, security-boundary call), do **not** fix. Flag it in the morning report's "Flagged for your review" block with a short "why uncertain" note.
 
-## Step 5: Dispatch fresh implementer subagents for verified fixes
+## Step 5: Apply verified fixes
 
-For each verified fix (real-bug or accepted real-improvement), dispatch a fresh `general-purpose` implementer subagent via the Agent tool. One Agent call per finding, or **grouped by file if multiple findings cluster on the same file** — see the edge-case note in [`fix-dispatch-prompt.md`](fix-dispatch-prompt.md).
+Every fix path stays Julie-first. Whoever applies the fix, the lead or a delegated worker, orients with Julie before touching code.
 
-Use the template at [`fix-dispatch-prompt.md`](fix-dispatch-prompt.md). File ownership must be stated so parallel fixers do not collide — two subagents editing the same file overwrite each other's work. If findings span disjoint files, you can dispatch in parallel (one message, multiple Agent calls). If they cluster on the same file, either serialize the fixes or batch them into one dispatch.
+**When delegation is available:** dispatch a fresh implementer worker per finding, or **group by file if multiple findings cluster on the same file**. Use the template at [`fix-dispatch-prompt.md`](fix-dispatch-prompt.md). File ownership must be stated so parallel fixers do not collide. If findings span disjoint files, you can dispatch in parallel. If they cluster on the same file, either serialize the fixes or batch them into one worker dispatch.
 
-Why fresh subagents (not reusing existing implementation-phase workers)? The review runs after the main execution phase has ended and worker context may be closed or stale. Fresh subagents work at any point in the timeline, and they come with no implementation-phase bias that might rationalize around a finding.
+**When delegation is unavailable, Gemini CLI or any no-delegation `executing-plans` run:** the lead applies the verified fixes inline in the current session. Work one finding at a time, or batch same-file findings only. Use the scope boundary and Julie-first checklist in [`fix-dispatch-prompt.md`](fix-dispatch-prompt.md) as the inline checklist. Do not invent a subagent path that the harness cannot run.
+
+Why fresh workers when delegation exists? The review runs after the main execution phase has ended and worker context may be closed or stale. Fresh workers work at any point in the timeline, and they come with no implementation-phase bias that might rationalize around a finding.
 
 ## Step 6: Re-run tests
 
-After all fix subagents report DONE and commit their changes, re-run the full test suite (or the targeted subset that covers the changed files, if the project has a fast-path test selector).
+After all delegated fix workers report DONE and commit their changes, or after the inline fixes are committed on a no-delegation run, re-run the full test suite (or the targeted subset that covers the changed files, if the project has a fast-path test selector).
 
 If tests fail after fixes:
 
-1. If the failure is a straightforward issue introduced by the fix and the implementer missed it, dispatch one more fix subagent with the failure context. One retry, not a loop.
+1. If the failure is a straightforward issue introduced by the fix and the implementer missed it, apply one more focused fix round with the failure context. Dispatch a fresh fix worker when delegation exists, or fix inline on a no-delegation run. One retry, not a loop.
 2. If the retry fails or the failure looks structural, this is **blocker taxonomy #5** (unresolvable test failures) — see `skills/using-razorback/references/blocker-taxonomy.md`. Stop and write the blocker into the morning report. Do not push a red branch.
 
 If tests pass, proceed to Step 7.
@@ -186,7 +188,7 @@ The caller (`executing-plans` Step 3 or `subagent-driven-development` Step 4a) t
 **Never:**
 
 - **Loop external review.** Single pass only. No "review, fix, re-review" cycle. Leftover real findings that the lead cannot fix get flagged for human judgment and the PR proceeds.
-- **Let the reviewer edit code.** Reviewers are read-only: codex and claude pin `--tools "Read,Bash"`; gemini uses `--yolo` only to auto-approve its own Read calls and is instructed by prompt to be read-only. All fixes route through fresh implementer subagents in razorback's own flow.
+- **Let the reviewer edit code.** Reviewers are read-only: codex and claude pin `--tools "Read,Bash"`; gemini uses `--yolo` only to auto-approve its own Read calls and is instructed by prompt to be read-only. Delegated fixes route through fresh implementer workers, and no-delegation runs fix inline under the same Julie-first checklist.
 - **Silently dismiss findings.** Every dismissal requires a written reason in the morning report so the user can override on PR review. Silent dismissals defeat the whole point of running an external reviewer.
 - **Skip re-running tests after fixes.** Every fix invalidates the prior test run. Re-run the full suite (or a targeted subset that covers the changed files). Never push a branch whose most recent test run did not include the fix commits.
 - **Ship a PR without the reviewer the user requested.** Reviewer unavailability (auth, rate limit, budget/turn cap with no usable partial output, empty stdout, schema violation persisting after one retry) is a **blocker**, not a silent downgrade. Stop the run, do NOT push, do NOT create a PR, emit a partial morning report with `Status: Blocked` and the specific failure in `Blockers hit`, and exit. The user chose this reviewer at plan approval for a reason; quietly skipping the review turns an explicit request into an implicit "never mind".

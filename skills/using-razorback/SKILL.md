@@ -154,3 +154,4 @@ Razorback skills assume these MCP servers are available and MUST be used:
 2. Use `get_symbols` before Read to see file structure first.
 3. Use `deep_dive` before modifying any symbol.
 4. Use `fast_refs` before changing any symbol to check impact.
+5. These Julie rules apply to the lead and to every implementer, reviewer, and fix worker you dispatch.

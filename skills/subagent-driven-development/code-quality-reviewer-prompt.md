@@ -22,4 +22,4 @@ Use Julie tools for impact analysis:
 - `fast_refs(symbol)` to verify changes don't break dependents
 - `get_symbols(file_path)` to review file structure without reading entire files
 
-**Code reviewer returns:** Strengths, Issues (Critical/Important/Minor), Assessment
+**Code reviewer returns:** Findings (Critical/Important/Minor), optional Open Questions / Assumptions, Assessment

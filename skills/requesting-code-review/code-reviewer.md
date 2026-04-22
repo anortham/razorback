@@ -15,7 +15,7 @@ You are reviewing code changes for production readiness.
 
 ## Requirements/Plan
 
-{PLAN_REFERENCE}
+{PLAN_OR_REQUIREMENTS}
 
 ## Git Range to Review
 
@@ -75,10 +75,9 @@ If your review does not cite Julie-assisted investigation, it is incomplete.
 
 ## Output Format
 
-### Strengths
-[What's well done? Be specific.]
+### Findings
 
-### Issues
+If there are no material findings, say `No material findings.` and move to Assessment.
 
 #### Critical (Must Fix)
 [Bugs, security issues, data loss risks, broken functionality]
@@ -89,14 +88,14 @@ If your review does not cite Julie-assisted investigation, it is incomplete.
 #### Minor (Nice to Have)
 [Code style, optimization opportunities, documentation improvements]
 
-**For each issue:**
+**For each finding:**
 - File:line reference
 - What's wrong
 - Why it matters
 - How to fix (if not obvious)
 
-### Recommendations
-[Improvements for code quality, architecture, or process]
+### Open Questions / Assumptions
+[Only include this section if you need it.]
 
 ### Assessment
 
@@ -110,7 +109,7 @@ If your review does not cite Julie-assisted investigation, it is incomplete.
 - Categorize by actual severity (not everything is Critical)
 - Be specific (file:line, not vague)
 - Explain WHY issues matter
-- Acknowledge strengths
+- Mention strengths only when they change the assessment
 - Give clear verdict
 
 **DON'T:**
@@ -123,37 +122,30 @@ If your review does not cite Julie-assisted investigation, it is incomplete.
 ## Example Output
 
 ```
-### Strengths
-- Clean database schema with proper migrations (db.ts:15-42)
-- Comprehensive test coverage (18 tests, all edge cases)
-- Good error handling with fallbacks (summarizer.ts:85-92)
-
-### Issues
+### Findings
 
 #### Important
 1. **Missing help text in CLI wrapper**
    - File: index-conversations:1-31
    - Issue: No --help flag, users won't discover --concurrency
+   - Why it matters: CLI behavior is harder to discover and support
    - Fix: Add --help case with usage examples
 
 2. **Date validation missing**
    - File: search.ts:25-27
    - Issue: Invalid dates silently return no results
+   - Why it matters: Users get misleading empty-result behavior
    - Fix: Validate ISO format, throw error with example
 
 #### Minor
 1. **Progress indicators**
    - File: indexer.ts:130
    - Issue: No "X of Y" counter for long operations
-   - Impact: Users don't know how long to wait
-
-### Recommendations
-- Add progress reporting for user experience
-- Consider config file for excluded projects (portability)
+   - Why it matters: Users don't know how long to wait
 
 ### Assessment
 
-**Ready to merge: With fixes**
+**Ready to merge?** With fixes
 
-**Reasoning:** Core implementation is solid with good architecture and tests. Important issues (help text, date validation) are easily fixed and don't affect core functionality.
+**Reasoning:** Core implementation is sound. The remaining issues are scoped and should be fixed before merge.
 ```
