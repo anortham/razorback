@@ -1,6 +1,6 @@
 {
   "name": "razorback",
   "description": "Julie-powered development workflow with subagent-driven execution where delegation exists, and single-agent execution otherwise.",
-  "version": "0.12.1",
+  "version": "0.12.2",
   "contextFileName": "GEMINI.md"
 }
