@@ -25,6 +25,67 @@ GPT-5.4 model.
 - **Auth**: Logged in via ChatGPT OAuth. If auth fails, tell the user to run
   `codex login` in a terminal.
 
+## Review Targeting
+
+For diff-based modes (Code Review, Adversarial Review), pick scope and
+execution mode before invoking Codex.
+
+**Scope** — user-passable arguments, default `--scope auto`:
+
+- `--scope auto`: working-tree if `git status --porcelain` is non-empty, else
+  branch-vs-base
+- `--scope working-tree`: staged + unstaged changes
+- `--scope branch`: current branch vs base ref
+- `--base <ref>`: explicit base for branch scope (default: `main`, fall back
+  to `master`)
+
+Resolve `$DIFF`, `$TARGET`, and `$RANGE` per scope:
+
+```bash
+case "$SCOPE" in
+  branch)
+    BASE="${USER_BASE:-$(git -C "$DIR" merge-base HEAD main 2>/dev/null || git -C "$DIR" merge-base HEAD master 2>/dev/null)}"
+    DIFF=$(git -C "$DIR" diff "$BASE..HEAD" --no-ext-diff)
+    TARGET=$(git -C "$DIR" log --oneline "$BASE..HEAD")
+    RANGE="$BASE..HEAD"
+    ;;
+  working-tree)
+    DIFF=$(git -C "$DIR" diff --cached --no-ext-diff && git -C "$DIR" diff --no-ext-diff)
+    TARGET=$(git -C "$DIR" diff --stat HEAD)
+    RANGE=""
+    ;;
+  auto|*)
+    if [ -n "$(git -C "$DIR" status --porcelain)" ]; then
+      DIFF=$(git -C "$DIR" diff --cached --no-ext-diff && git -C "$DIR" diff --no-ext-diff)
+      TARGET=$(git -C "$DIR" diff --stat HEAD)
+      RANGE=""
+    else
+      BASE="${USER_BASE:-$(git -C "$DIR" merge-base HEAD main 2>/dev/null || git -C "$DIR" merge-base HEAD master 2>/dev/null)}"
+      DIFF=$(git -C "$DIR" diff "$BASE..HEAD" --no-ext-diff)
+      TARGET=$(git -C "$DIR" log --oneline "$BASE..HEAD")
+      RANGE="$BASE..HEAD"
+    fi
+    ;;
+esac
+```
+
+**Execution mode** — peek at diff size first:
+
+```bash
+SHORTSTAT=$(git -C "$DIR" diff --shortstat $RANGE)
+```
+
+Decide:
+
+- **Tiny** (≤ 2 files, < ~200 lines): foreground. Return the result inline.
+- **Anything else, or unclear**: launch with
+  `Bash({command: ..., run_in_background: true})`. Tell the user "Codex review
+  running in the background; xhigh on a large diff typically takes 2-5
+  minutes" and use `Monitor` on the returned shell ID to fetch output later.
+
+`--wait` forces foreground; `--background` forces background. Otherwise apply
+the heuristic and announce the chosen mode in one sentence.
+
 ## Task Routing
 
 Determine the task type from context and select the right mode:
@@ -53,24 +114,11 @@ perspectives.
 
 The user wants a review of current changes. Single pass with 5.4 xhigh.
 
-**Step 1: Collect git context**
+**Step 1: Apply Review Targeting**
 
-```bash
-# Get the review target description
-TARGET=$(git -C /path/to/project diff --stat HEAD 2>/dev/null)
-
-# Build the diff (staged + unstaged)
-DIFF=$(git -C /path/to/project diff --cached --no-ext-diff && git -C /path/to/project diff --no-ext-diff)
-```
-
-If there are no uncommitted changes, fall back to reviewing the current branch
-against its base:
-
-```bash
-BASE=$(git -C /path/to/project merge-base HEAD main 2>/dev/null || git -C /path/to/project merge-base HEAD master 2>/dev/null)
-DIFF=$(git -C /path/to/project diff "$BASE"..HEAD --no-ext-diff)
-TARGET=$(git -C /path/to/project log --oneline "$BASE"..HEAD)
-```
+Resolve `$DIFF`, `$TARGET`, and the foreground/background decision per the
+Review Targeting section above (scope from `--scope`/`--base`, execution mode
+from the sizing heuristic or explicit `--wait`/`--background`).
 
 **Step 2: Build the prompt**
 
@@ -107,7 +155,7 @@ Triggered by "deep review", "adversarial review", or `--adversarial`. Uses a
 structured prompt that tells Codex to actively try to break confidence in the
 change.
 
-**Step 1: Collect context** (same as Code Review above)
+**Step 1: Apply Review Targeting** (same as Code Review)
 
 **Step 2: Build the adversarial prompt** using the template below, substituting
 `{{TARGET_LABEL}}` with the diff stat, `{{USER_FOCUS}}` with any focus text
@@ -320,7 +368,7 @@ override with `-m` if there's a concrete reason.
 | Use case | Mode | Command pattern |
 |---|---|---|
 | Second opinion | read-only | `codex exec --ephemeral --color never -C dir "prompt" 2>/dev/null` |
-| Code review | read-only | Pipe diff: `echo "$PROMPT" \| codex exec --ephemeral --color never -C dir - 2>/dev/null` |
-| Adversarial review | read-only + schema | Add `--output-schema "$SCHEMA_FILE"` where `$SCHEMA_FILE` is a temp file materialized from the inlined schema (see Adversarial Review section) |
+| Code review | read-only | Pipe diff: `echo "$PROMPT" \| codex exec --ephemeral --color never -C dir - 2>/dev/null` (scope/sizing per Review Targeting) |
+| Adversarial review | read-only + schema | Add `--output-schema "$SCHEMA_FILE"` where `$SCHEMA_FILE` is a temp file materialized from the inlined schema (see Adversarial Review section). Scope/sizing per Review Targeting. |
 | Delegate (complex) | full-auto | `codex exec --ephemeral --color never --full-auto -C dir "prompt" 2>/dev/null` |
 | Resume session | persistent | Drop `--ephemeral`, use `codex exec resume --last "prompt"` |

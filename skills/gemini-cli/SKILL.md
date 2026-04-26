@@ -16,6 +16,68 @@ Use the Gemini CLI (`gemini`) to get a second opinion, delegate work, request co
 - **Working directory**: Gemini operates on whatever directory it's launched from — it has no `-C` flag like Codex. If the target code isn't in the current working directory, **always `cd` to the target directory first** using `cd /path/to/project && gemini ...`. Without this, Gemini will waste its entire session trying to find the files.
 - **Forceful prompts**: Gemini sometimes presents plans and asks for confirmation even in yolo mode. Use directive language: "Apply now", "Start immediately", "Do this without asking for confirmation."
 
+## Review Targeting
+
+For Code Review on diff-based work, pick scope and execution mode before
+invoking Gemini.
+
+**Scope** — user-passable arguments, default `--scope auto`:
+
+- `--scope auto`: working-tree if `git status --porcelain` is non-empty, else
+  branch-vs-base
+- `--scope working-tree`: staged + unstaged changes
+- `--scope branch`: current branch vs base ref
+- `--base <ref>`: explicit base for branch scope (default: `main`, fall back
+  to `master`)
+
+Resolve the changed-file list per scope (Gemini reads files via `@./`
+references, not raw diff text):
+
+```bash
+case "$SCOPE" in
+  branch)
+    BASE="${USER_BASE:-$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null)}"
+    FILES=$(git diff --name-only "$BASE..HEAD")
+    RANGE="$BASE..HEAD"
+    ;;
+  working-tree)
+    FILES=$(git diff --name-only HEAD)
+    RANGE=""
+    ;;
+  auto|*)
+    if [ -n "$(git status --porcelain)" ]; then
+      FILES=$(git diff --name-only HEAD)
+      RANGE=""
+    else
+      BASE="${USER_BASE:-$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null)}"
+      FILES=$(git diff --name-only "$BASE..HEAD")
+      RANGE="$BASE..HEAD"
+    fi
+    ;;
+esac
+```
+
+For branch scope, also include `git log --oneline "$BASE..HEAD"` in the
+prompt as commit context.
+
+**Execution mode** — peek at size first:
+
+```bash
+SHORTSTAT=$(git diff --shortstat $RANGE)
+```
+
+Decide:
+
+- **Tiny** (≤ 2 files, < ~200 lines): foreground. Return inline.
+- **Anything else, or unclear**: launch with
+  `Bash({command: ..., run_in_background: true})`. Tell the user "Gemini
+  review running in the background; on a large changeset this typically takes
+  1-3 minutes" and use `Monitor` on the returned shell ID to fetch output
+  later.
+
+`--wait` forces foreground; `--background` forces background. Otherwise apply
+the heuristic and announce the chosen mode in one sentence.
+
 ## Task Routing
 
 Determine the task type from context and select the right mode:
@@ -43,13 +105,33 @@ gemini "Your prompt here. Apply changes now without asking for confirmation." --
 ### Code Review (read-only)
 The user wants Gemini to review code for bugs, style, performance, or correctness.
 
+**Step 1: Apply Review Targeting** (see section above) to resolve `$FILES`,
+`$RANGE`, and the foreground/background decision.
+
+**Step 2: Build `@./` references** from the file list:
+
 ```bash
-gemini "Review the following code for bugs, security issues, and improvements: @./path/to/file" -o text 2>/dev/null
+REFS=$(printf "@./%s " $FILES)
 ```
 
-Note the `@` file reference syntax — Gemini can read files directly this way.
+**Step 3: Send to Gemini.** For working-tree scope:
 
-**After**: Present Gemini's review, then add your own. Highlight agreements and disagreements. Call out anything Gemini missed.
+```bash
+gemini "Review the following changed files for bugs, security issues, and improvements: $REFS" -o text 2>/dev/null
+```
+
+For branch scope, include commit context:
+
+```bash
+COMMITS=$(git log --oneline "$RANGE")
+gemini "Review changes on this branch ($RANGE) for bugs, security issues, and improvements. Commits: $COMMITS. Files: $REFS" -o text 2>/dev/null
+```
+
+Note the `@./` file reference syntax — Gemini reads files directly via these
+refs, so the prompt stays small even when the changeset is large.
+
+**After**: Present Gemini's review, then add your own. Highlight agreements
+and disagreements. Call out anything Gemini missed.
 
 ### Web Research (Google Search)
 Gemini has Google Search built in — use this when the user needs current information (latest versions, API changes, recent releases, docs).
@@ -126,7 +208,7 @@ echo "This is Claude following up. I disagree with [X] because [evidence]. What'
 |---|---|---|
 | Second opinion / analysis | read-only | `gemini "prompt" -o text` |
 | Write code / refactor | yolo | `gemini "prompt. Apply now." --yolo -o text` |
-| Code review | read-only | `gemini "Review @./file for bugs" -o text` |
+| Code review | read-only | `gemini "Review $REFS for bugs" -o text` (scope/sizing per Review Targeting; `$REFS` is `@./` list from changed files) |
 | Web research | search | `gemini "latest X? Use Google Search." -o text` |
 | Architecture analysis | investigator | `gemini "Use codebase_investigator..." -o text` |
 | Quick/simple task | flash | `gemini "prompt" -m gemini-2.5-flash -o text` |

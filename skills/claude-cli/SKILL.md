@@ -38,6 +38,67 @@ skips OAuth and keychain auth reads, so the common Claude login path fails.
   the user to run `claude login` in a terminal. If you copied an older
   command that includes `--bare`, remove that flag first.
 
+## Review Targeting
+
+For diff-based modes (Code Review, Adversarial Review), pick scope and
+execution mode before invoking Claude.
+
+**Scope** — user-passable arguments, default `--scope auto`:
+
+- `--scope auto`: working-tree if `git status --porcelain` is non-empty, else
+  branch-vs-base
+- `--scope working-tree`: staged + unstaged changes
+- `--scope branch`: current branch vs base ref
+- `--base <ref>`: explicit base for branch scope (default: `main`, fall back
+  to `master`)
+
+Resolve `$DIFF`, `$TARGET`, and `$RANGE` per scope:
+
+```bash
+case "$SCOPE" in
+  branch)
+    BASE="${USER_BASE:-$(git -C "$DIR" merge-base HEAD main 2>/dev/null || git -C "$DIR" merge-base HEAD master 2>/dev/null)}"
+    DIFF=$(git -C "$DIR" diff "$BASE..HEAD" --no-ext-diff)
+    TARGET=$(git -C "$DIR" log --oneline "$BASE..HEAD")
+    RANGE="$BASE..HEAD"
+    ;;
+  working-tree)
+    DIFF=$(git -C "$DIR" diff --cached --no-ext-diff && git -C "$DIR" diff --no-ext-diff)
+    TARGET=$(git -C "$DIR" diff --stat HEAD)
+    RANGE=""
+    ;;
+  auto|*)
+    if [ -n "$(git -C "$DIR" status --porcelain)" ]; then
+      DIFF=$(git -C "$DIR" diff --cached --no-ext-diff && git -C "$DIR" diff --no-ext-diff)
+      TARGET=$(git -C "$DIR" diff --stat HEAD)
+      RANGE=""
+    else
+      BASE="${USER_BASE:-$(git -C "$DIR" merge-base HEAD main 2>/dev/null || git -C "$DIR" merge-base HEAD master 2>/dev/null)}"
+      DIFF=$(git -C "$DIR" diff "$BASE..HEAD" --no-ext-diff)
+      TARGET=$(git -C "$DIR" log --oneline "$BASE..HEAD")
+      RANGE="$BASE..HEAD"
+    fi
+    ;;
+esac
+```
+
+**Execution mode** — peek at diff size first:
+
+```bash
+SHORTSTAT=$(git -C "$DIR" diff --shortstat $RANGE)
+```
+
+Decide:
+
+- **Tiny** (≤ 2 files, < ~200 lines): foreground. Return the result inline.
+- **Anything else, or unclear**: launch with
+  `Bash({command: ..., run_in_background: true})`. Tell the user "Claude review
+  running in the background; Opus on a large diff typically takes 2-5
+  minutes" and use `Monitor` on the returned shell ID to fetch output later.
+
+`--wait` forces foreground; `--background` forces background. Otherwise apply
+the heuristic and announce the chosen mode in one sentence.
+
 ## Task Routing
 
 Determine the task type from context and select the right mode:
@@ -70,24 +131,11 @@ gets two perspectives from two fresh starts.
 The user wants a review of current changes. Single pass with Opus, standard
 review prompt (not adversarial framing).
 
-**Step 1: Collect git context**
+**Step 1: Apply Review Targeting**
 
-```bash
-# Get the review target description
-TARGET=$(git -C /path/to/project diff --stat HEAD 2>/dev/null)
-
-# Build the diff (staged + unstaged)
-DIFF=$(git -C /path/to/project diff --cached --no-ext-diff && git -C /path/to/project diff --no-ext-diff)
-```
-
-If there are no uncommitted changes, fall back to reviewing the current
-branch against its base:
-
-```bash
-BASE=$(git -C /path/to/project merge-base HEAD main 2>/dev/null || git -C /path/to/project merge-base HEAD master 2>/dev/null)
-DIFF=$(git -C /path/to/project diff "$BASE"..HEAD --no-ext-diff)
-TARGET=$(git -C /path/to/project log --oneline "$BASE"..HEAD)
-```
+Resolve `$DIFF`, `$TARGET`, and the foreground/background decision per the
+Review Targeting section above (scope from `--scope`/`--base`, execution mode
+from the sizing heuristic or explicit `--wait`/`--background`).
 
 **Step 2: Build the prompt**
 
@@ -138,7 +186,7 @@ Triggered by "deep review", "adversarial review", or `--adversarial`. Uses a
 structured system prompt that tells Claude to actively try to break
 confidence in the change.
 
-**Step 1: Collect context** (same as Code Review above)
+**Step 1: Apply Review Targeting** (same as Code Review)
 
 **Step 2: Build the user prompt** with the diff and any focus text.
 Substitute `{{TARGET_LABEL}}`, `{{USER_FOCUS}}`, and `{{REVIEW_INPUT}}` into
@@ -405,6 +453,6 @@ that flag skips OAuth and keychain auth.
 | Use case | Mode | Command pattern |
 |---|---|---|
 | Second opinion | read-only | `cd dir && claude -p --no-session-persistence --dangerously-skip-permissions --tools "Read,Bash" --model opus "prompt" 2>/dev/null` |
-| Code review | read-only + schema | Add `--output-format json --json-schema "$SCHEMA_JSON" --max-turns 15 --max-budget-usd 5.00` (inline schema as a string; see Code Review section) |
-| Adversarial review | read-only + schema + system prompt | Add `--system-prompt-file "$PROMPT_FILE"` (temp file materialized from the Adversarial Prompt Template) to the code-review pattern |
+| Code review | read-only + schema | Add `--output-format json --json-schema "$SCHEMA_JSON" --max-turns 15 --max-budget-usd 5.00` (inline schema as a string; see Code Review section). Scope/sizing per Review Targeting. |
+| Adversarial review | read-only + schema + system prompt | Add `--system-prompt-file "$PROMPT_FILE"` (temp file materialized from the Adversarial Prompt Template) to the code-review pattern. Scope/sizing per Review Targeting. |
 | Resume session | persistent | Drop `--no-session-persistence`, use `claude -r "prompt"` |
