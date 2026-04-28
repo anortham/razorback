@@ -56,8 +56,11 @@ cat > "$SCHEMA_FILE" <<'SCHEMA_EOF'
 }
 SCHEMA_EOF
 
+CODEX_MODEL="${RAZORBACK_CODEX_REVIEW_MODEL:-}"  # empty = inherit global default
+
 cd "$PROJECT_DIR" && echo "$ADVERSARIAL_PROMPT_WITH_DIFF" | codex exec \
   --ephemeral --color never \
+  ${CODEX_MODEL:+-m "$CODEX_MODEL"} \
   --output-schema "$SCHEMA_FILE" \
   - \
   2>/dev/null
@@ -67,11 +70,12 @@ Flag rationale:
 
 - `--ephemeral` — no persistent session left behind.
 - `--color never` — clean non-interactive output suitable for piping into `jq`.
+- `${CODEX_MODEL:+-m "$CODEX_MODEL"}` — applies the plan's model routing when `RAZORBACK_CODEX_REVIEW_MODEL` is set. When unset, the expansion is empty and codex uses its configured default.
 - `--output-schema` — forces codex to return JSON conforming to the shared review-output schema. The same schema is inlined in `reviewer-prompts/claude.md` and `reviewer-prompts/gemini.md` so all three reviewers target identical shape.
 - `-` — read the prompt from stdin (which is the piped `$ADVERSARIAL_PROMPT_WITH_DIFF`).
 - `2>/dev/null` — drop codex's session banner and transcript noise; the JSON lands on stdout.
 
-**Model:** use the strategy or escalation tier from the plan's Model Routing section. If the Codex CLI cannot select that route, inherit the configured default and note the limitation.
+**Model:** use the strategy or escalation tier from the plan's Model Routing section. The `RAZORBACK_CODEX_REVIEW_MODEL` env var controls the model; when unset, codex inherits its global default. If the Codex CLI cannot select the routed model, note the limitation.
 
 **Timeout:** set the Bash tool's `timeout` to at least `600000` (10 min). Escalation-tier reasoning on a large diff can take minutes.
 

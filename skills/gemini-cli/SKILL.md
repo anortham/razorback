@@ -18,9 +18,13 @@ Use the Gemini CLI (`gemini`) to get a second opinion, delegate work, request co
 - **Working directory**: Gemini operates on whatever directory it's launched from — it has no `-C` flag like Codex. If the target code isn't in the current working directory, **always `cd` to the target directory first** using `cd /path/to/project && gemini ...`. Without this, Gemini will waste its entire session trying to find the files.
 - **Forceful prompts**: Gemini sometimes presents plans and asks for confirmation even in yolo mode. Use directive language: "Apply now", "Start immediately", "Do this without asking for confirmation."
 
-For command snippets below, set `GEMINI_MODEL` from the plan's Model Routing
-section. If no route exists, use a reviewer-grade model for strategy/escalation
-work and a faster model for mechanical work.
+For command snippets below, set `GEMINI_MODEL` before invoking:
+
+```bash
+GEMINI_MODEL="${RAZORBACK_GEMINI_REVIEW_MODEL:-gemini-3-pro}"
+```
+
+Source the value from the plan's Model Routing section, `RAZORBACK.md`, or the env var above. If no route exists, the default (`gemini-3-pro`) applies for strategy/escalation work; use a faster model for mechanical work.
 
 ## Review Targeting
 

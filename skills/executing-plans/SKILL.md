@@ -40,7 +40,11 @@ For each task:
 
 ### Step 3: Pre-merge external review (if chosen)
 
-If the `reviewer_choice` propagated from `writing-plans` is one of `codex`, `gemini`, or `claude`, invoke `razorback:pre-merge-review`, passing:
+If the `reviewer_choice` propagated from `writing-plans` is one of `codex`, `gemini`, or `claude`:
+
+**First**, ensure the verification ledger has a passing `branch-gate` entry for the current HEAD. If it does not, run the branch-gate scope now and record the result. `pre-merge-review` requires this as a precondition.
+
+**Then** invoke `razorback:pre-merge-review`, passing:
 
 - plan path
 - reviewer choice

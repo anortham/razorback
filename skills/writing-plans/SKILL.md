@@ -160,6 +160,12 @@ Read repo-root `RAZORBACK.md` first. If it exists, copy the relevant routing pol
 
 Do not hard-code provider-specific model names in razorback skills. Put those names in `RAZORBACK.md` or the plan's copied routing block.
 
+Harness-specific model selection:
+- **Claude Code:** Agent tool `model` parameter accepts short names only: `opus`, `sonnet`, `haiku`. Translate full model IDs (e.g., `claude-opus-4-7`) to the short form when dispatching.
+- **Codex:** `-m <model>` flag on `codex exec`, or inherit the global default from `~/.codex/config.toml`.
+- **Cursor:** model selection is IDE-level; use `inherit` and note the limitation.
+- **OpenCode / Copilot CLI:** use the harness model parameter if available, otherwise `inherit`.
+
 ## Task Structure
 
 ````markdown

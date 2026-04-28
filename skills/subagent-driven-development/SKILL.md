@@ -112,7 +112,13 @@ Use the template at `./implementer-prompt.md`. The spawn prompt MUST include:
 
 ### Model Routing Contract
 
-Read the plan's Model Routing section before dispatching any worker. Model names are harness-specific mappings; the workflow uses role/risk tiers:
+Read the plan's Model Routing section before dispatching any worker. Model names are harness-specific mappings; the workflow uses role/risk tiers.
+
+Harness-specific dispatch:
+- **Claude Code:** Agent tool `model` parameter accepts `opus`, `sonnet`, `haiku`. Translate full model IDs to the short form.
+- **Codex:** `spawn_agent(agent_type="worker", message=..., model=<mapped model>, reasoning_effort=<mapped effort>)` when the session supports per-agent model selection. For CLI helper invocations (`codex exec`), use `-m <model>`. If neither is available, inherit the global default.
+- **Cursor:** model selection is IDE-level; use `inherit` and note the limitation.
+- **OpenCode / Copilot CLI:** use the harness model parameter if available, otherwise `inherit`.
 
 | Tier | Owner | Use when |
 |------|-------|----------|
@@ -243,7 +249,11 @@ Either way, re-review after the fix. Iteration cap applies: 3 resume / `send_inp
 
 ## Step 4a: Pre-merge external review (if chosen)
 
-If the reviewer choice propagated from `writing-plans` (via the plan-approval message) is `codex`, `gemini`, or `claude`, invoke `razorback:pre-merge-review`, passing:
+If the reviewer choice propagated from `writing-plans` (via the plan-approval message) is `codex`, `gemini`, or `claude`:
+
+**First**, ensure the verification ledger has a passing `branch-gate` entry for the current HEAD. If it does not, run the branch-gate scope now and record the result. `pre-merge-review` requires this as a precondition; do not skip it.
+
+**Then** invoke `razorback:pre-merge-review`, passing:
 
 - plan path
 - reviewer choice

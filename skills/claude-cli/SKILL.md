@@ -38,9 +38,13 @@ skips OAuth and keychain auth reads, so the common Claude login path fails.
   the user to run `claude login` in a terminal. If you copied an older
   command that includes `--bare`, remove that flag first.
 
-For command snippets below, set `CLAUDE_MODEL` from the plan's Model Routing
-section. If no route exists, use the current harness default or the strongest
-available reviewer model.
+For command snippets below, set `CLAUDE_MODEL` before invoking:
+
+```bash
+CLAUDE_MODEL="${RAZORBACK_CLAUDE_REVIEW_MODEL:-opus}"
+```
+
+Source the value from the plan's Model Routing section, `RAZORBACK.md`, or the env var above. If no route exists, the default (`opus`) applies. Claude Code's Agent tool uses short names (`opus`, `sonnet`, `haiku`); the CLI's `--model` flag accepts both short and full model IDs.
 
 ## Review Targeting
 
