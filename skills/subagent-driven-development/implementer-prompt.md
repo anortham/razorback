@@ -62,12 +62,36 @@ Agent tool (general-purpose):
     Once you're clear on requirements:
     1. Implement exactly what the task specifies
     2. Write tests (following TDD if task says to)
-    3. Verify implementation works
+    3. Verify implementation with the assigned worker scope
     4. Commit your work
     5. Self-review (see below)
     6. Report back
 
     Work from: [directory]
+
+    ## Model Routing
+
+    Assigned tier: [implementation / mechanical / strategy / escalation]
+    Harness mapping: [model/reasoning setting or inherit]
+
+    If the harness cannot choose model or reasoning per worker, use inherit and
+    report that limitation. Do not self-upgrade or downgrade. If the task no
+    longer fits the assigned tier, report BLOCKED with the reason.
+
+    ## Verification Scope
+
+    Use the plan's Verification Strategy. The target repo supplies concrete
+    commands; do not invent runner-specific commands.
+
+    Assigned worker scope: [worker-red-green / worker-ceiling command from plan]
+
+    Rules:
+    - Run the lowest-cost repo-defined command that proves the changed behavior.
+    - Do not run affected-change, branch-gate, or expensive-specialist scopes
+      unless this prompt assigns that scope.
+    - If the repo defines worker limits, follow them.
+    - Report the scope label, command, commit SHA, result, and timestamp so the
+      lead can update the verification ledger.
 
     ## Before Reporting Back: Self-Review
 
@@ -99,7 +123,7 @@ Agent tool (general-purpose):
 
     When done, report:
     - What you implemented
-    - What you tested and test results
+    - Verification scope, command, commit SHA, result, and timestamp
     - Files changed
     - **Julie calls used** - list the `get_context` / `deep_dive` / `fast_refs` / `get_symbols` calls you made and what each one confirmed
     - Self-review findings (if any)

@@ -1,6 +1,6 @@
 ---
 name: finishing-a-development-branch
-description: Use when implementation is complete, all tests pass, and you need to decide how to integrate the work
+description: Use when implementation is complete, branch verification passes, and you need to decide how to integrate the work
 ---
 
 # Finishing a Development Branch
@@ -9,7 +9,7 @@ description: Use when implementation is complete, all tests pass, and you need t
 
 Guide completion of development work by selecting a mode, then executing the appropriate flow (autonomous push+PR or interactive menu).
 
-**Core principle:** Verify tests -> choose mode (autonomous default) -> execute -> clean up.
+**Core principle:** Verify the project-defined branch gate -> choose mode (autonomous default) -> execute -> clean up.
 
 **Announce at start:** "I'm using the finishing-a-development-branch skill to complete this work."
 
@@ -21,20 +21,18 @@ If the agent was just finishing an autonomous execution run (i.e. this skill is 
 
 No menu, no prompts. Push the branch, open a PR with the morning-report summary, write the full report to `.memories/`, emit a one-line terminal pointer, exit. Merge is never auto-performed.
 
-### Step 1: Verify tests pass
+### Step 1: Verify branch gate
 
-Run the project's test suite:
+Use the plan's Verification Strategy and verification ledger.
 
-```bash
-npm test / cargo test / pytest / go test ./...
-```
+Run the project-defined `branch-gate` scope before push or PR. If the verification ledger already has a passing `branch-gate` entry for the current HEAD, reuse that evidence instead of rerunning the same command. Add any required `expensive-specialist` scopes when touched areas demand them.
 
-If tests fail, this is a blocker taxonomy #5 (unresolvable test failures). Do **not** create a PR. Instead:
+If required verification fails, this is a blocker taxonomy #5 (unresolvable test failures). Do **not** create a PR. Instead:
 - Render a partial morning report with `Status: Blocked`, the failure summary in the `Tests` section, and the blocker description in `Blockers hit`.
 - Write it to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md`.
 - Emit terminal one-liner: `Blocked. Report: .memories/autonomous-run-YYYY-MM-DD-<slug>.md` and exit.
 
-If tests pass, continue.
+If required verification passes, continue.
 
 ### Step 2: Determine base branch and merge-base commit
 
@@ -118,27 +116,27 @@ Done. PR: <url>. Report: .memories/autonomous-run-YYYY-MM-DD-<slug>.md
 
 Used when the user invokes this skill directly ("finish this branch"). Presents the classic 4-option menu.
 
-### Step 1: Verify Tests
+### Step 1: Verify Branch Gate
 
-**Before presenting options, verify tests pass:**
+**Before presenting options, verify the project-defined branch gate passes or reuse a passing ledger entry for current HEAD:**
 
 ```bash
-# Run project's test suite
-npm test / cargo test / pytest / go test ./...
+# Run the command specified by the plan's branch-gate scope
+<branch-gate command>
 ```
 
-**If tests fail:**
+**If verification fails:**
 ```
-Tests failing (<N> failures). Must fix before completing:
+Branch verification failing (<N> failures). Must fix before completing:
 
 [Show failures]
 
-Cannot proceed with merge/PR until tests pass.
+Cannot proceed with merge/PR until branch verification passes.
 ```
 
 Stop. Don't proceed to Step 2.
 
-**If tests pass:** Continue to Step 2.
+**If verification passes:** Continue to Step 2.
 
 ### Step 2: Determine Base Branch
 
@@ -180,10 +178,10 @@ git pull
 # Merge feature branch
 git merge <feature-branch>
 
-# Verify tests on merged result
-<test command>
+# Verify branch gate on merged result
+<branch-gate command>
 
-# If tests pass
+# If verification passes
 git branch -d <feature-branch>
 ```
 

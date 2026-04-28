@@ -38,11 +38,23 @@ When a skill says to dispatch a subagent with a prompt:
 
 1. Read the prompt file
 2. Fill any template placeholders (task spec, file ownership, Julie directives)
-3. Spawn a `worker` agent with the filled content as the `message`
+3. Apply the plan's model-routing tier when the session supports per-agent selection. If no route is available, inherit the parent model/reasoning and note it.
+4. Spawn a `worker` agent with the filled content as the `message`
 
 ```
 spawn_agent(agent_type="worker", message=<filled prompt>)
 ```
+
+When using Codex Desktop or another Codex harness that exposes model controls, map razorback tiers through the project's `RAZORBACK.md`:
+
+```text
+strategy    -> planning, architecture, lead review
+implementation -> bounded worker tasks from a clear plan
+mechanical  -> docs, fixtures, rote edits
+escalation  -> subtle correctness, security, weak tests, repeated failures
+```
+
+Do not hard-code model names in generic prompts. Use the mapping from the project policy. If the configured route is unsupported by the current Codex session, use `inherit` and report the limitation.
 
 ### Message framing
 

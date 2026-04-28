@@ -15,9 +15,9 @@ skips OAuth and keychain auth reads, so the common Claude login path fails.
 
 ## Defaults
 
-- **Model**: `opus` for everything. The calling Claude may already be Opus; a
-  fresh Opus reviewer still earns its keep because it starts with zero context
-  and can find things the author instance missed.
+- **Model**: use repo-root `RAZORBACK.md` model routing when present. If absent,
+  inherit the current Claude default or use the strongest available reviewer
+  model for adversarial review.
 - **Ephemeral**: `--no-session-persistence` so the review leaves no stored
   session behind (parity with codex's `--ephemeral`).
 - **No `--bare`**: current Claude help says bare mode skips OAuth and
@@ -32,11 +32,15 @@ skips OAuth and keychain auth reads, so the common Claude login path fails.
   required for scripted use. Pair it with `--tools "Read,Bash"` to enforce
   read-only behavior; the reviewer can investigate but cannot edit.
 - **Timeout**: 300000ms (5 min) for simple queries, 600000ms (10 min) for
-  deep reviews. Opus on a large diff can take minutes.
+  deep reviews. Escalation-tier models on large diffs can take minutes.
 - **Auth**: Logged in via Anthropic OAuth or API key. Check with
   `claude auth status` (exits 0 logged in, 1 otherwise). If it fails, tell
   the user to run `claude login` in a terminal. If you copied an older
   command that includes `--bare`, remove that flag first.
+
+For command snippets below, set `CLAUDE_MODEL` from the plan's Model Routing
+section. If no route exists, use the current harness default or the strongest
+available reviewer model.
 
 ## Review Targeting
 
@@ -93,7 +97,7 @@ Decide:
 - **Tiny** (≤ 2 files, < ~200 lines): foreground. Return the result inline.
 - **Anything else, or unclear**: launch with
   `Bash({command: ..., run_in_background: true})`. Tell the user "Claude review
-  running in the background; Opus on a large diff typically takes 2-5
+  running in the background; escalation-tier review on a large diff can take 2-5
   minutes" and use `Monitor` on the returned shell ID to fetch output later.
 
 `--wait` forces foreground; `--background` forces background. Otherwise apply
@@ -113,7 +117,7 @@ cd /path/to/project && claude -p \
   --no-session-persistence \
   --dangerously-skip-permissions \
   --tools "Read,Bash" \
-  --model opus \
+  --model "$CLAUDE_MODEL" \
   "Your prompt here" \
   2>/dev/null
 ```
@@ -168,7 +172,7 @@ cd /path/to/project && claude -p \
   --tools "Read,Bash" \
   --max-turns 15 \
   --max-budget-usd 5.00 \
-  --model opus \
+  --model "$CLAUDE_MODEL" \
   "$PROMPT" \
   2>/dev/null
 ```
@@ -267,7 +271,7 @@ cd /path/to/project && claude -p \
   --tools "Read,Bash" \
   --max-turns 15 \
   --max-budget-usd 5.00 \
-  --model opus \
+  --model "$CLAUDE_MODEL" \
   --system-prompt-file "$PROMPT_FILE" \
   "$DIFF_AND_CONTEXT" \
   2>/dev/null
@@ -276,7 +280,7 @@ cd /path/to/project && claude -p \
 The baseline flags are: `-p`, `--no-session-persistence`,
 `--dangerously-skip-permissions`, `--output-format json`, `--json-schema`,
 `--tools "Read,Bash"`, `--max-turns 15`, `--max-budget-usd 5.00`,
-`--model opus`, `--system-prompt-file`.
+`--model "$CLAUDE_MODEL"`, `--system-prompt-file`.
 
 No `--bare` flag is used. Current Claude help says bare mode skips OAuth and
 keychain auth reads, so it is a trap for the common login path.
@@ -364,7 +368,7 @@ need follow-up capability, drop that flag, then resume with `claude -r`:
 
 ```bash
 # Initial task (persistent session)
-cd /path && claude -p --dangerously-skip-permissions --model opus "prompt" 2>/dev/null
+cd /path && claude -p --dangerously-skip-permissions --model "$CLAUDE_MODEL" "prompt" 2>/dev/null
 
 # Resume the last session
 claude -r "follow-up prompt" 2>/dev/null
@@ -385,7 +389,7 @@ override. To review a project other than cwd, `cd` into it first:
 
 ```bash
 cd ~/source/other-project && claude -p --no-session-persistence \
-  --dangerously-skip-permissions --tools "Read,Bash" --model opus \
+  --dangerously-skip-permissions --tools "Read,Bash" --model "$CLAUDE_MODEL" \
   "prompt" 2>/dev/null
 ```
 
@@ -424,7 +428,7 @@ think it's wrong, and your evidence.
   `claude login` in a terminal.
 - **Rate limits**: the Claude plan has rolling usage limits. If you hit
   them, tell the user and suggest trying again later, using a smaller prompt,
-  or dropping to `--model sonnet` temporarily.
+  or switching to the project policy's lower-cost tier temporarily.
 - **Budget cap hit**: if `--max-budget-usd` trips mid-review the process
   exits with a partial result. Either raise the cap or narrow the diff.
 - **Turn cap hit**: if `--max-turns` is exhausted before the reviewer
@@ -433,7 +437,7 @@ think it's wrong, and your evidence.
 - **Old `--bare` recipe**: remove `--bare` and retry. Current Claude help says
   bare mode skips OAuth and keychain auth, so old snippets fail on normal
   Claude logins.
-- **Timeout**: Opus on large diffs can take minutes. Set generous Bash
+- **Timeout**: escalation-tier models on large diffs can take minutes. Set generous Bash
   timeouts (600000ms). If it still times out, split the review into
   smaller chunks.
 - **Empty output**: if stdout is empty, check stderr (remove `2>/dev/null`
@@ -446,13 +450,14 @@ think it's wrong, and your evidence.
 
 ## Quick Reference
 
-All invocations use `opus` with `--no-session-persistence` for a fresh
-ephemeral session. This skill does not use `--bare`; current Claude help says
-that flag skips OAuth and keychain auth.
+Use the model tier from repo-root `RAZORBACK.md` when present. If no policy
+exists, inherit the current Claude default or use the strongest available
+reviewer model for adversarial review. This skill does not use `--bare`;
+current Claude help says that flag skips OAuth and keychain auth.
 
 | Use case | Mode | Command pattern |
 |---|---|---|
-| Second opinion | read-only | `cd dir && claude -p --no-session-persistence --dangerously-skip-permissions --tools "Read,Bash" --model opus "prompt" 2>/dev/null` |
+| Second opinion | read-only | `cd dir && claude -p --no-session-persistence --dangerously-skip-permissions --tools "Read,Bash" --model "$CLAUDE_MODEL" "prompt" 2>/dev/null` |
 | Code review | read-only + schema | Add `--output-format json --json-schema "$SCHEMA_JSON" --max-turns 15 --max-budget-usd 5.00` (inline schema as a string; see Code Review section). Scope/sizing per Review Targeting. |
 | Adversarial review | read-only + schema + system prompt | Add `--system-prompt-file "$PROMPT_FILE"` (temp file materialized from the Adversarial Prompt Template) to the code-review pattern. Scope/sizing per Review Targeting. |
 | Resume session | persistent | Drop `--no-session-persistence`, use `claude -r "prompt"` |

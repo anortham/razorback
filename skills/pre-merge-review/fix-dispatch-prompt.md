@@ -32,6 +32,15 @@ Fresh implementer dispatch (delegation available):
     src/review/parse.ts wires gemini's envelope-unwrap parser into the findings
     normalization step."]
 
+    ## Model Routing
+
+    Assigned tier: [implementation / mechanical / strategy / escalation]
+    Harness mapping: [model/reasoning setting or inherit]
+
+    If the finding exposes hidden invariants, weak tests, public API risk, or
+    repeated failure, use the strategy/escalation tier. If the harness cannot
+    choose model or reasoning per worker, use inherit and report that limitation.
+
     ## Scope boundary (critical)
 
     Fix ONLY this finding. Do not refactor. Do not expand scope. Do not "improve
@@ -67,14 +76,14 @@ Fresh implementer dispatch (delegation available):
     2. Add or update tests that would have caught the defect (if the finding
        describes a real-bug). For real-improvement findings where a test is not
        meaningful, skip this — quality changes don't always have test coverage.
-    3. Run the test suite (or the targeted subset that covers the changed file):
+    3. Run the assigned verification scope from the plan:
 
        ```
-       [project-specific test command — the lead should fill this in before
-       dispatching, based on the project's test runner]
+       [scope label and concrete command from the plan's Verification Strategy]
        ```
 
-       All tests must pass before you commit.
+       The assigned scope must pass before you commit. Do not run broader scopes
+       unless the lead assigned them.
 
     4. Commit with message prefix `fix(review): ` followed by the finding's short
        title. Example: `fix(review): preserve error cause in parseReviewOutput`.
@@ -88,7 +97,7 @@ Fresh implementer dispatch (delegation available):
 
     - What you changed (file:line references)
     - Commit SHA (first 7 chars)
-    - Test result (passing / failing - if failing, the failure summary)
+    - Verification scope, command, commit SHA, result, and timestamp
     - **Julie calls used** - list the Julie calls you made before editing
     - Any observations that belong in the morning report's judgment-calls log
       (e.g. "chose to preserve original stack via cause rather than rethrowing

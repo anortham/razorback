@@ -14,6 +14,8 @@ Execute a plan by dispatching fresh subagents per task, with the lead doing inli
 - **opencode:** `Task` tool (one call per subagent; multiple calls in one turn run in parallel). The built-in `general` subagent is suitable for most implementer work; `@mention` also works for manual invocation.
 - **Codex:** `spawn_agent(agent_type="worker", message=<filled prompt>)` (one call per subagent; multiple calls in one turn run in parallel). Keep the returned agent ID, `send_input(target=<agent-id>, message=...)` feeds follow-ups (the closest thing to Claude Code's resume), `wait_agent(targets=[<agent-id>])` blocks until the agent finishes, and `close_agent(target=<agent-id>)` frees the slot. Requires `multi_agent = true` in `~/.codex/config.toml` (see `skills/using-razorback/references/codex-tools.md`).
 
+If the harness supports per-agent model or reasoning selection, apply the plan's Model Routing tier when dispatching. If it does not, use `inherit` and note that in the task report.
+
 ## When to Use
 
 ```dot
@@ -104,8 +106,56 @@ Use the template at `./implementer-prompt.md`. The spawn prompt MUST include:
 3. **File ownership** (which files this task may modify)
 4. **Julie tool directives** (use `get_context`, `deep_dive` before modifying any symbol, `fast_refs` before changing public APIs, `get_symbols` before reading full files)
 5. **TDD expectations** (from `razorback:test-driven-development`)
-6. **Verification commands** specific to this task
-7. **Julie evidence requirement** (the implementer must report which Julie calls they used and what those calls confirmed)
+6. **Verification scope** specific to this task, using commands from the plan's verification strategy
+7. **Model routing tier** assigned to this task (`implementation`, `mechanical`, `strategy`, or `escalation`)
+8. **Julie evidence requirement** (the implementer must report which Julie calls they used and what those calls confirmed)
+
+### Model Routing Contract
+
+Read the plan's Model Routing section before dispatching any worker. Model names are harness-specific mappings; the workflow uses role/risk tiers:
+
+| Tier | Owner | Use when |
+|------|-------|----------|
+| `strategy` | Lead | Planning, architecture, decomposition, inline review, finding triage |
+| `implementation` | Worker | Bounded tasks from a clear plan with narrow ownership and tests |
+| `mechanical` | Worker | Docs, fixtures, rote edits, formatting, manifests |
+| `escalation` | Lead or worker | Security, subtle correctness, high blast radius, weak tests, repeated failures |
+
+Implementation-tier workers are allowed only when all are true:
+- The task has clear acceptance criteria.
+- File ownership is narrow and non-overlapping.
+- The expected change is local.
+- The relevant behavior has a narrow verification scope.
+- The task does not depend on hidden shared invariants.
+
+Do not use implementation-tier workers unattended for shared lifecycle behavior, concurrency, public API contracts with many callers, weak tests, or findings involving subtle correctness. Use strategy/escalation tier, or split strategy-tier investigation from implementation-tier edits.
+
+Escalate after two failed worker attempts, one failure involving hidden invariants, or any plan-contradicting code discovery.
+
+### Verification Scope Contract
+
+Razorback is language-agnostic. The target repo supplies concrete commands through its docs and the plan's Verification Strategy.
+
+Use these scope labels in worker prompts and reports:
+
+| Scope | Owner | When |
+|-------|-------|------|
+| `worker-red-green` | Implementer | Prove the new or changed behavior during TDD with the lowest-cost repo-defined command |
+| `worker-ceiling` | Implementer | Maximum scope a worker may run without lead assignment |
+| `affected-change` | Lead | Check touched files, changed subsystem, or repo-defined affected area after a coherent batch |
+| `branch-gate` | Lead | Broad confidence before handoff, push, or PR |
+| `expensive-specialist` | Lead | Slow domain gates only when touched areas or failures require them |
+
+Workers do not run `affected-change`, `branch-gate`, or `expensive-specialist` scopes unless the lead assigns that scope in the dispatch prompt. This prevents N workers from each running the same broad gate.
+
+Maintain a verification ledger during execution:
+
+```markdown
+| Scope | Command | Commit | Result | Time |
+|-------|---------|--------|--------|------|
+```
+
+If the same HEAD already has a passing ledger entry for the required scope, reuse that evidence instead of rerunning the same expensive command. If HEAD changed, the affected scopes are stale.
 
 Per-harness state to keep after dispatch:
 
@@ -197,11 +247,13 @@ If the reviewer choice propagated from `writing-plans` (via the plan-approval me
 
 - plan path
 - reviewer choice
-- project test command
+- verification strategy
+- verification ledger
+- model routing
 
 If the choice is `none` (or absent), skip Step 4a.
 
-Pre-merge-review builds the full branch diff, dispatches the chosen reviewer in adversarial read-only mode, classifies findings (real-bug / real-improvement / false-positive / out-of-scope), dispatches fresh implementer subagents for verified fixes, re-runs the test suite, and emits a summary block for the morning report. Single pass — no round-two review.
+Pre-merge-review builds the full branch diff, dispatches the chosen reviewer in adversarial read-only mode, classifies findings (real-bug / real-improvement / false-positive / out-of-scope), dispatches fresh implementer subagents for verified fixes, runs the required verification scope for the resulting HEAD, and emits a summary block for the morning report. Single pass; no round-two review.
 
 After `pre-merge-review` returns, proceed to Step 5 (Complete → `razorback:finishing-a-development-branch`).
 
@@ -209,7 +261,7 @@ After `pre-merge-review` returns, proceed to Step 5 (Complete → `razorback:fin
 
 When all tasks are approved and marked complete:
 
-1. **Final verification:** Run the full test suite and check for integration issues across tasks.
+1. **Final verification:** Run the plan's `branch-gate` scope, or reuse a passing verification-ledger entry for the same HEAD and scope. Add any `expensive-specialist` scopes required by touched areas.
 2. **Finish:** Use `razorback:finishing-a-development-branch`.
 
 ## Blockers
@@ -297,7 +349,7 @@ Implementer: "Got it. Implementing now..."
 Implementer: [No questions, proceeds]
 Implementer reports:
   - Added verify/repair modes
-  - 8/8 tests passing
+  - Worker-scope verification passing
   - Committed (SHA def456)
   Status: DONE
 
@@ -323,8 +375,8 @@ Implementer (resumed): Progress reporting added, --json removed,
 --- ...remaining tasks follow the same pattern... ---
 
 [After all tasks complete]
-[Lead final verification: full test suite, integration check]
-[All green]
+[Lead final verification: branch-gate scope, plus any required specialist scopes]
+[Verification ledger updated]
 [Use razorback:finishing-a-development-branch]
 
 Done.

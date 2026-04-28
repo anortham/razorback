@@ -19,6 +19,7 @@ AI-assisted development burns tokens on repetitive codebase exploration. Every a
 - [Julie MCP Server](https://github.com/anortham/julie) — hard requirement for code intelligence; must be configured and indexing your workspace
 - [Goldfish MCP Server](https://github.com/anortham/goldfish) — hard requirement for persistent memory (checkpoints, briefs, recall); used for compaction-durable execution during long autonomous runs
 - For Codex: enable `multi_agent = true` in `~/.codex/config.toml` so parallel execution skills can dispatch subagents
+- Optional but recommended: repo-root `RAZORBACK.md` for project-specific razorback policy, such as model routing and verification tiers
 
 ## Installation
 
@@ -104,6 +105,39 @@ Once loaded, razorback works automatically. The bootstrap path varies by harness
 
 No configuration needed beyond plugin installation (assuming Julie is already set up).
 
+## Project Policy
+
+Razorback checks repo-root `RAZORBACK.md` before planning, dispatching workers,
+or choosing verification/model tiers. Use it as the shared source of truth when
+you move between Claude Code, Codex, OpenCode, Copilot CLI, and Gemini CLI.
+
+`RAZORBACK.md` is for razorback-specific policy:
+
+- model routing tiers and harness-specific mappings
+- worker eligibility and escalation triggers
+- verification scopes and broad-gate rules
+- project-specific constraints that should apply across harnesses
+
+Harness docs such as `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md` can point to
+`RAZORBACK.md`, but should not duplicate those policies.
+
+Minimal model-routing shape:
+
+```markdown
+## Model Routing
+
+| Tier | Use for | Codex | Claude | OpenCode |
+|---|---|---|---|---|
+| Strategy | Planning, architecture, lead review | <model/effort> | <model> | <model> |
+| Implementation | Bounded worker tasks from a clear plan | <model/effort> | <model> | <model> |
+| Mechanical | Docs, fixtures, rote edits | <model/effort> | <model> | <model> |
+| Escalation | Security, subtle correctness, weak tests, repeated failures | <model/effort> | <model> | <model> |
+```
+
+If `RAZORBACK.md` is absent, razorback uses explicit harness docs if present,
+then asks once when model routing matters. If the harness cannot choose models
+per agent, workers use `inherit` and report that limitation.
+
 ## Updating
 
 No harness auto-pulls new content on restart. You have to opt in to updates.
@@ -183,6 +217,13 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 - **1 task, tightly sequential work, or no delegation:** `executing-plans` runs single-agent batch execution.
 - **Ad-hoc parallel work (delegation available):** `dispatching-parallel-agents` for independent tasks outside plans.
 
+**Verification and model routing:**
+- Plans define language-agnostic verification scopes: worker red/green, worker ceiling, affected-change, branch gate, and expensive specialist gates.
+- Concrete commands come from the target repo, not from razorback.
+- Plans define model-routing tiers: strategy, implementation, mechanical, and escalation.
+- Lower-cost workers are used only for boxed-in lanes with clear acceptance criteria, narrow ownership, and meaningful verification.
+- The lead owns decomposition, integration review, escalation, and final branch verification.
+
 ## Skills
 
 | Skill | Purpose |
@@ -202,8 +243,8 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 | writing-skills | Meta-skill for creating/editing skills |
 | **subagent-driven-development** | **Primary delegated plan execution: fresh implementer subagents, parallel when independent, inline review by lead** |
 | pre-merge-review | Optional external review (codex / gemini / claude) run before PR — verifies findings, dispatches fixes, emits morning-report block |
-| codex-cli | Invokes `codex exec` (GPT-5.4 xhigh) for second opinions and adversarial review |
-| gemini-cli | Invokes `gemini` (gemini-3-pro with `--yolo`) for second opinions and adversarial review |
+| codex-cli | Invokes `codex exec` for second opinions and adversarial review, using `RAZORBACK.md` routing when present |
+| gemini-cli | Invokes `gemini` for second opinions and adversarial review, using `RAZORBACK.md` routing when present |
 | claude-cli | Invokes `claude -p` for second opinions and adversarial review; omits `--bare` because it breaks OAuth auth |
 
 ## Prompt Templates

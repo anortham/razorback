@@ -53,7 +53,7 @@ If your review does not cite Julie-assisted investigation, it is incomplete.
 - Tests actually test logic (not mocks)?
 - Edge cases covered?
 - Integration tests where needed?
-- All tests passing?
+- Required verification scopes passing?
 
 **Requirements:**
 - All plan requirements met?

@@ -16,7 +16,7 @@ Agent tool (resume: "<implementer-agent-id>"):
     ## What to Do
 
     1. Fix each issue listed above
-    2. Run tests to verify nothing broke
+    2. Run the assigned verification scope from the plan
     3. Commit the fixes
     4. Report what you changed
 
@@ -39,8 +39,7 @@ Agent tool (resume: "<implementer-agent-id>"):
 
     When done, report:
     - What you changed
-    - Tests run and results
-    - Commit SHA
+    - Verification scope, command, commit SHA, result, and timestamp
     - **Julie calls used** - list the Julie calls you made during the fix round
     - Any judgment calls made
 ```

@@ -193,7 +193,7 @@ You MUST complete each phase before proceeding to the next.
 
 3. **Verify Fix**
    - Test passes now?
-   - No other tests broken?
+   - Required affected scope still green?
    - Issue actually resolved?
 
 4. **If Fix Doesn't Work**

@@ -100,46 +100,31 @@ cd "$path"
 
 ### 3. Run Project Setup
 
-Auto-detect and run appropriate setup:
+Run the project-documented setup command. Prefer repo docs, existing scripts, CI metadata, or manifest-declared commands. If the repo has no setup guidance, use ecosystem detection as a fallback and record the choice.
 
 ```bash
-# Node.js
-if [ -f package.json ]; then npm install; fi
-
-# Rust
-if [ -f Cargo.toml ]; then cargo build; fi
-
-# Python
-if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-if [ -f pyproject.toml ]; then poetry install; fi
-
-# Go
-if [ -f go.mod ]; then go mod download; fi
+<project-defined setup command>
 ```
 
 ### 4. Verify Clean Baseline
 
-Run tests to ensure worktree starts clean:
+Run the project-defined baseline or smoke verification scope to ensure the worktree starts clean. Use the target repo's docs as the source of truth.
 
 ```bash
-# Examples - use project-appropriate command
-npm test
-cargo test
-pytest
-go test ./...
+<project-defined baseline or smoke command>
 ```
 
-**If tests fail:** Report failures, ask whether to proceed or investigate.
+**If baseline verification fails:** Report failures, ask whether to proceed or investigate.
 
-**If tests pass:** Report ready.
+**If baseline verification passes:** Report ready.
 
-**If the project has no automated test suite** (content-only repos, pure documentation, skill libraries, config-only projects): skip this step. Note in your report that the baseline is manual-verify-only and list the integration checks a reviewer would run instead (e.g., `node --check`, schema validation, link checks).
+**If the project has no automated test suite** (content-only repos, pure documentation, skill libraries, config-only projects): skip this step. Note in your report that the baseline is manual-verify-only and list the integration checks a reviewer would run instead (schema validation, link checks, manifest validation).
 
 ### 5. Report Location
 
 ```
 Worktree ready at <full-path>
-Tests passing (<N> tests, 0 failures)
+Baseline verification passing (<N> checks, 0 failures)
 Ready to implement <feature-name>
 ```
 
@@ -185,11 +170,11 @@ You: I'm using the using-git-worktrees skill to set up an isolated workspace.
 [Check .worktrees/ - exists]
 [Verify ignored - git check-ignore confirms .worktrees/ is ignored]
 [Create worktree: git worktree add .worktrees/auth -b feature/auth]
-[Run npm install]
-[Run npm test - 47 passing]
+[Run project-defined setup command]
+[Run project-defined baseline verification - 47 passing]
 
 Worktree ready at /Users/jesse/myproject/.worktrees/auth
-Tests passing (47 tests, 0 failures)
+Baseline verification passing (47 checks, 0 failures)
 Ready to implement auth feature
 ```
 

@@ -9,12 +9,18 @@ Use the Gemini CLI (`gemini`) to get a second opinion, delegate work, request co
 
 ## Defaults
 
-- **Model**: `gemini-3-pro` (use `-m gemini-2.5-flash` for quick/simple tasks)
+- **Model**: use repo-root `RAZORBACK.md` model routing when present. If absent,
+  use a reviewer-grade model for strategy/escalation work and a faster model
+  for mechanical work.
 - **Output**: `-o text` for human-readable (use `-o json` when you need stats or structured parsing)
 - **Always append**: `2>/dev/null` to suppress stderr noise (auth messages, debug info) and get clean stdout only
 - **Timeout**: Always set the Bash tool's `timeout` parameter — minimum 300000ms (5 min) for simple queries, 600000ms (10 min) for delegation/refactoring tasks. Gemini also has a native `--timeout <ms>` flag you can pair with this for belt-and-suspenders.
 - **Working directory**: Gemini operates on whatever directory it's launched from — it has no `-C` flag like Codex. If the target code isn't in the current working directory, **always `cd` to the target directory first** using `cd /path/to/project && gemini ...`. Without this, Gemini will waste its entire session trying to find the files.
 - **Forceful prompts**: Gemini sometimes presents plans and asks for confirmation even in yolo mode. Use directive language: "Apply now", "Start immediately", "Do this without asking for confirmation."
+
+For command snippets below, set `GEMINI_MODEL` from the plan's Model Routing
+section. If no route exists, use a reviewer-grade model for strategy/escalation
+work and a faster model for mechanical work.
 
 ## Review Targeting
 
@@ -151,11 +157,12 @@ gemini "Use codebase_investigator to analyze this project's architecture. Focus 
 
 **After**: Present the analysis. Add your own observations, especially about patterns Gemini may have missed.
 
-### Quick Tasks (Flash model)
-For simple tasks where speed matters more than depth:
+### Quick Tasks
+For simple tasks where speed matters more than depth, use the mechanical tier
+from `RAZORBACK.md` when available:
 
 ```bash
-gemini "Your prompt" -m gemini-2.5-flash -o text 2>/dev/null
+gemini "Your prompt" -m "$GEMINI_MODEL" -o text 2>/dev/null
 ```
 
 ## Resuming a Session
@@ -197,7 +204,7 @@ echo "This is Claude following up. I disagree with [X] because [evidence]. What'
 
 ## Error Handling
 
-- **Rate limits**: Free tier is 60 req/min, 1000/day. Gemini auto-retries with backoff. If you hit limits, switch to `-m gemini-2.5-flash` for lower-priority tasks or wait.
+- **Rate limits**: Free tier is 60 req/min, 1000/day. Gemini auto-retries with backoff. If you hit limits, switch to the project policy's lower-cost tier for lower-priority tasks or wait.
 - **Command failures**: Check with `gemini --version` to verify auth. Use `--debug` for verbose error info.
 - **Sandbox mode**: If the task needs isolation, add `--sandbox`. Ask the user before using risky modes.
 - If output contains warnings or partial results, summarize and ask the user what to do.
@@ -211,5 +218,5 @@ echo "This is Claude following up. I disagree with [X] because [evidence]. What'
 | Code review | read-only | `gemini "Review $REFS for bugs" -o text` (scope/sizing per Review Targeting; `$REFS` is `@./` list from changed files) |
 | Web research | search | `gemini "latest X? Use Google Search." -o text` |
 | Architecture analysis | investigator | `gemini "Use codebase_investigator..." -o text` |
-| Quick/simple task | flash | `gemini "prompt" -m gemini-2.5-flash -o text` |
+| Quick/simple task | mechanical tier | `gemini "prompt" -m "$GEMINI_MODEL" -o text` |
 | Resume session | inherited | `echo "prompt" \| gemini -r latest -o text` |

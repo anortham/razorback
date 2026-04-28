@@ -22,7 +22,7 @@ Once the plan is approved, razorback runs to completion; it stops only for real 
 **Full plan** — for async handoffs, complex multi-session work, or unfamiliar domains:
 - Complete code snippets in every task
 - Step-by-step TDD choreography (write test → verify fail → implement → verify pass → commit)
-- Exact commands with expected output
+- Exact verification scopes with commands supplied from the target repo's docs
 - Assumes the engineer has zero codebase context and questionable taste
 
 **Light plan** — for same-session execution where implementers execute immediately:
@@ -30,6 +30,7 @@ Once the plan is approved, razorback runs to completion; it stops only for real 
 - Exact file paths (always useful) but no complete code snippets
 - Brief approach notes instead of full implementations — the implementer uses Julie tools to read the actual code
 - TDD expectation stated once, not choreographed per-step — the implementer follows TDD naturally
+- Verification strategy stated once: worker scope, affected-change scope, branch gate, and expensive-tier triggers
 - Typically 1/3 the length of a full plan
 
 **How to choose:** If the plan will be executed in this session by dispatched subagents via `subagent-driven-development`, use light. If it's a handoff to another session, a no-delegation run, or work for another developer, use full. When in doubt, ask.
@@ -97,6 +98,68 @@ Light plans use task-level granularity instead: each task is a coherent unit of 
 ---
 ```
 
+## Verification Strategy
+
+Every plan MUST include a language-agnostic verification strategy. Razorback owns the scope boundaries; the target repo owns the commands.
+
+```markdown
+## Verification Strategy
+
+**Project source of truth:** [AGENTS.md / CLAUDE.md / docs path / CI config / manifest metadata that defines verification tiers]
+
+**Worker red/green scope:** [Lowest-cost verification that proves the new or changed behavior. Use the repo's documented command.]
+
+**Worker ceiling:** [Maximum scope workers may run on their own. Workers do not run broader regression gates unless the lead assigns that scope.]
+
+**Lead affected-change scope:** [Project-defined affected-area or changed-files gate. Run after a coherent batch, not after every edit.]
+
+**Branch gate:** [Project-defined broad confidence gate before handoff, push, or PR.]
+
+**Escalation triggers:** [Changed areas or failure modes that require broader tiers.]
+
+**Verification ledger:** Record command, scope label, commit SHA, result, and timestamp. If the same HEAD already has a passing ledger entry for the required scope, reuse that evidence instead of rerunning the same expensive gate.
+```
+
+If the repo has no documented hierarchy, define one in the plan using neutral scope labels:
+- **worker:** narrowest behavior proof
+- **affected-change:** changed files or touched subsystem
+- **branch:** broad pre-handoff confidence
+- **expensive:** slow specialist gates, run only when touched areas require them
+
+Do not bake language, framework, or test-runner commands into razorback skills. Put concrete commands in the plan from the target repo's docs.
+
+## Model Routing
+
+Every plan that will dispatch workers MUST include a language-agnostic model-routing section. Razorback owns the role/risk policy; the target repo maps tiers to harness-specific model names.
+
+Read repo-root `RAZORBACK.md` first. If it exists, copy the relevant routing policy into the plan. If it is absent, use explicit harness docs if present. If no policy exists and the run needs delegation, ask once for routing.
+
+```markdown
+## Model Routing
+
+**Project source of truth:** [RAZORBACK.md / harness docs / user choice]
+
+**Strategy tier:** [planning, architecture, decomposition, lead review, finding triage]
+- Harness mapping: [model/reasoning setting or inherit]
+
+**Implementation tier:** [bounded worker tasks from a clear plan]
+- Harness mapping: [model/reasoning setting or inherit]
+
+**Mechanical tier:** [docs, fixtures, rote edits, formatting, manifests]
+- Harness mapping: [model/reasoning setting or inherit]
+
+**Escalation tier:** [security, subtle correctness, high blast radius, weak tests, repeated failures]
+- Harness mapping: [model/reasoning setting or inherit]
+
+**Worker eligibility:** [conditions that allow implementation-tier workers]
+
+**Escalation triggers:** [conditions that require strategy/escalation tier]
+
+**Unsupported harness behavior:** If the harness cannot choose models per agent, use `inherit`, note it in the plan, and continue.
+```
+
+Do not hard-code provider-specific model names in razorback skills. Put those names in `RAZORBACK.md` or the plan's copied routing block.
+
 ## Task Structure
 
 ````markdown
@@ -117,7 +180,7 @@ def test_specific_behavior():
 
 **Step 2: Run test to verify it fails**
 
-Run: `pytest tests/path/test.py::test_name -v`
+Run: `<project-defined worker red/green command for this behavior>`
 Expected: FAIL with "function not defined"
 
 **Step 3: Write minimal implementation**
@@ -129,7 +192,7 @@ def function(input):
 
 **Step 4: Run test to verify it passes**
 
-Run: `pytest tests/path/test.py::test_name -v`
+Run: `<project-defined worker red/green command for this behavior>`
 Expected: PASS
 
 **Step 5: Commit**
@@ -157,7 +220,7 @@ git commit -m "feat: add specific feature"
 **Acceptance criteria:**
 - [ ] [Specific, testable requirement]
 - [ ] [Another requirement]
-- [ ] Tests pass, committed
+- [ ] Worker-scope verification passes, committed
 ````
 
 ## Remember
@@ -169,7 +232,7 @@ git commit -m "feat: add specific feature"
 
 **Full plans only:**
 - Complete code in plan (not "add validation")
-- Exact commands with expected output
+- Exact project-defined verification commands with expected output
 
 ## Execution Handoff
 
@@ -185,7 +248,7 @@ If the user requests changes, revise the plan, re-run the self-review, re-save, 
 
 **"External review before PR? (none / codex / gemini / claude)"**
 
-**Step 4, invoke the execution skill.** After the reviewer choice is in hand, announce which execution skill will run and invoke it, passing the plan path, the reviewer choice (`none` / `codex` / `gemini` / `claude`), and the project test command if known:
+**Step 4, invoke the execution skill.** After the reviewer choice is in hand, announce which execution skill will run and invoke it, passing the plan path, the reviewer choice (`none` / `codex` / `gemini` / `claude`), verification strategy, and model routing:
 
 - **When subagent delegation is available:** `razorback:subagent-driven-development`
 - **For single-task, tightly-sequential, or no-delegation plans:** `razorback:executing-plans`

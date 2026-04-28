@@ -130,7 +130,9 @@ FINAL_PROMPT="${ADVERSARIAL_TEMPLATE//\{\{TARGET_LABEL\}\}/$TARGET_LABEL}"
 FINAL_PROMPT="${FINAL_PROMPT//\{\{USER_FOCUS\}\}/${USER_FOCUS:-none specified}}"
 FINAL_PROMPT="${FINAL_PROMPT//\{\{REVIEW_INPUT\}\}/$REVIEW_INPUT}"
 
-cd "$PROJECT_DIR" && gemini -o json -m gemini-3-pro --yolo \
+GEMINI_MODEL="${RAZORBACK_GEMINI_REVIEW_MODEL:-gemini-3-pro}"
+
+cd "$PROJECT_DIR" && gemini -o json -m "$GEMINI_MODEL" --yolo \
   "$FINAL_PROMPT
 
 Return your response as a JSON object matching this schema:
@@ -140,12 +142,12 @@ $SCHEMA_JSON" 2>/dev/null
 Flag rationale:
 
 - `-o json` — wraps the model response in the envelope described above. Without this, the model output lands as raw text on stdout with no metadata. We want the envelope so we can extract `stats.models.*.tokens` for cost tracking.
-- `-m gemini-3-pro` — strongest reviewer-grade model. `gemini-2.5-flash` is too shallow for adversarial review.
+- `-m "$GEMINI_MODEL"` - strategy or escalation tier from the plan's Model Routing section. Do not use mechanical-tier models for adversarial review.
 - `--yolo` — **required** so gemini auto-approves its own `Read` tool calls. Without it, gemini stalls waiting for interactive approval. We still instruct gemini by prompt to be read-only (no file writes). `--yolo` widens gemini's auto-approval for tools, not its file-write authorization; the read-only behavior is enforced by prompt.
 - No `--json-schema` / `--output-schema` — the flag does not exist. The schema is inlined into the prompt.
 - `2>/dev/null` — drops gemini's auth messages and debug info from stderr.
 
-**Timeout:** at least `600000` ms (10 min). Gemini 3 Pro on a large diff can take minutes.
+**Timeout:** at least `600000` ms (10 min). Escalation-tier models on a large diff can take minutes.
 
 ## Parsing protocol (5 sub-steps — the lead executes this)
 

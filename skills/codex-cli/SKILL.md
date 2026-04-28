@@ -6,22 +6,22 @@ description: Call OpenAI's Codex CLI for second opinions, code review, adversari
 # Codex Assistant
 
 Use the Codex CLI (`codex exec`) to get a second opinion, review code changes,
-run adversarial security/correctness reviews, or delegate tasks to OpenAI's
-GPT-5.4 model.
+run adversarial security/correctness reviews, or delegate tasks to OpenAI
+models through the project's razorback routing policy.
 
 ## Defaults
 
-- **Model**: `gpt-5.4` for everything. Don't bother routing to smaller/faster
-  models — on a flat-rate plan, 5.4 xhigh is the right answer for every task
-  type. Only override with `-m` if there's a concrete reason (e.g., a specific
-  multimodal-only capability).
-- **Reasoning**: `xhigh` effort (configured globally)
+- **Model**: use repo-root `RAZORBACK.md` model routing when present. If absent,
+  inherit the current Codex default.
+- **Reasoning**: use the tier mapped by `RAZORBACK.md`. Reserve the escalation
+  tier for subtle correctness, security, weak tests, high blast radius, or
+  repeated failures.
 - **Always use**: `--ephemeral --color never` for clean non-interactive output
 - **Always append**: `2>/dev/null` to suppress stderr noise (session banner, transcript)
 - **Working directory**: `-C /path/to/project` sets the root. Defaults to cwd.
 - **Timeout**: 300000ms (5 min) for simple queries, 600000ms (10 min) for
-  deep reviews or delegation work. xhigh reasoning on large diffs can take
-  several minutes — err on the side of generous timeouts.
+  deep reviews or delegation work. Escalation-tier reasoning on large diffs can
+  take several minutes; use generous timeouts.
 - **Auth**: Logged in via ChatGPT OAuth. If auth fails, tell the user to run
   `codex login` in a terminal.
 
@@ -80,7 +80,7 @@ Decide:
 - **Tiny** (≤ 2 files, < ~200 lines): foreground. Return the result inline.
 - **Anything else, or unclear**: launch with
   `Bash({command: ..., run_in_background: true})`. Tell the user "Codex review
-  running in the background; xhigh on a large diff typically takes 2-5
+  running in the background; escalation-tier review on a large diff can take
   minutes" and use `Monitor` on the returned shell ID to fetch output later.
 
 `--wait` forces foreground; `--background` forces background. Otherwise apply
@@ -112,7 +112,8 @@ perspectives.
 
 ### Code Review
 
-The user wants a review of current changes. Single pass with 5.4 xhigh.
+The user wants a review of current changes. Use the strategy tier from
+`RAZORBACK.md`, or inherit the current Codex default if no policy exists.
 
 **Step 1: Apply Review Targeting**
 
@@ -351,7 +352,7 @@ think it's wrong, and your evidence.
   `codex login` in a terminal.
 - **Rate limits**: ChatGPT plan has rolling 5-hour limits. If you hit them,
   tell the user and suggest trying again later or using a simpler prompt.
-- **Timeout**: xhigh reasoning on large diffs can take minutes. Set generous
+- **Timeout**: escalation-tier reasoning on large diffs can take minutes. Set generous
   Bash timeouts (600000ms). If it still times out, try splitting the review
   into smaller chunks.
 - **Empty output**: If stdout is empty, check stderr (remove `2>/dev/null`
@@ -362,8 +363,9 @@ think it's wrong, and your evidence.
 
 ## Quick Reference
 
-All invocations use `gpt-5.4` with xhigh reasoning (the global default). Only
-override with `-m` if there's a concrete reason.
+Use the model/reasoning tier from repo-root `RAZORBACK.md` when present. If no
+policy exists, inherit the current Codex default. Only override with `-m` when
+the project policy or user request gives a concrete route.
 
 | Use case | Mode | Command pattern |
 |---|---|---|

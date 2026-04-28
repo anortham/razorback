@@ -52,7 +52,7 @@ digraph tdd_cycle {
     red [label="RED\nWrite failing test", shape=box, style=filled, fillcolor="#ffcccc"];
     verify_red [label="Verify fails\ncorrectly", shape=diamond];
     green [label="GREEN\nMinimal code", shape=box, style=filled, fillcolor="#ccffcc"];
-    verify_green [label="Verify passes\nAll green", shape=diamond];
+    verify_green [label="Verify passes\nRelevant scope green", shape=diamond];
     refactor [label="REFACTOR\nClean up", shape=box, style=filled, fillcolor="#ccccff"];
     next [label="Next", shape=ellipse];
 
@@ -123,9 +123,7 @@ Vague name, tests mock not code
 
 **MANDATORY. Never skip.**
 
-```bash
-npm test path/to/test.test.ts
-```
+Run the project-defined worker-scope command for this behavior.
 
 Confirm:
 - Test fails (not errors)
@@ -178,18 +176,16 @@ Don't add features, refactor other code, or "improve" beyond the test.
 
 **MANDATORY.**
 
-```bash
-npm test path/to/test.test.ts
-```
+Run the same project-defined worker-scope command.
 
 Confirm:
 - Test passes
-- Other tests still pass
+- The relevant worker scope stays green
 - Output pristine (no errors, warnings)
 
 **Test fails?** Fix code, not test.
 
-**Other tests fail?** Fix now.
+**Required scope fails?** Fix now.
 
 ### REFACTOR - Clean Up
 
@@ -310,7 +306,7 @@ test('rejects empty email', async () => {
 
 **Verify RED**
 ```bash
-$ npm test
+$ <project-defined worker-scope command>
 FAIL: expected 'Email required', got undefined
 ```
 
@@ -326,7 +322,7 @@ function submitForm(data: FormData) {
 
 **Verify GREEN**
 ```bash
-$ npm test
+$ <project-defined worker-scope command>
 PASS
 ```
 
@@ -341,7 +337,7 @@ Before marking work complete:
 - [ ] Watched each test fail before implementing
 - [ ] Each test failed for expected reason (feature missing, not typo)
 - [ ] Wrote minimal code to pass each test
-- [ ] All tests pass
+- [ ] Required verification scopes pass
 - [ ] Output pristine (no errors, warnings)
 - [ ] Tests use real code (mocks only if unavoidable)
 - [ ] Edge cases and errors covered

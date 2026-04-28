@@ -1,13 +1,13 @@
 ---
 name: pre-merge-review
-description: Use after all tasks are complete and tests pass, before finishing-a-development-branch, when a pre-merge external reviewer was chosen at plan approval time (codex, gemini, or claude). Builds diff, dispatches the chosen reviewer in adversarial mode, verifies each finding using Julie tools, routes verified fixes through the harness-native implementation flow, re-runs tests, and emits a summary for the morning report. Single-pass, does not loop external reviews.
+description: Use after all tasks are complete and branch verification passes, before finishing-a-development-branch, when a pre-merge external reviewer was chosen at plan approval time (codex, gemini, or claude).
 ---
 
 # Pre-Merge External Review
 
 ## Overview
 
-Run a fresh, isolated external reviewer (codex / gemini / claude) against the full branch diff after all tasks are done and tests are green, then route verified findings through razorback's own fix flow. The lead verifies every finding against the actual code with Julie, classifies it (real-bug / real-improvement / false-positive / out-of-scope), fixes what's real, dismisses what isn't (with a written reason), and flags what needs human judgment. Single pass, no round-two review after fixes. The output is a summary block that slots into the morning report's External review section, so the user sees exactly what the reviewer said, what the lead did with it, and why.
+Run a fresh, isolated external reviewer (codex / gemini / claude) against the full branch diff after all tasks are done and the plan's branch-gate verification scope is green, then route verified findings through razorback's own fix flow. The lead verifies every finding against the code with Julie, classifies it (real-bug / real-improvement / false-positive / out-of-scope), fixes what's real, dismisses what isn't (with a written reason), and flags what needs human judgment. Single pass, no round-two review after fixes. The output is a summary block that slots into the morning report's External review section, so the user sees exactly what the reviewer said, what the lead did with it, and why.
 
 ## When to invoke
 
@@ -21,9 +21,10 @@ Skip this skill entirely if the reviewer choice is `none`. The choice is fixed a
 **Pre-conditions:**
 
 - All plan tasks are complete
-- The full test suite passes
+- The verification ledger has a passing `branch-gate` entry for current HEAD, or the caller can run that scope before review
 - The branch is NOT yet pushed (no PR yet)
 - A reviewer was chosen: one of `codex`, `gemini`, `claude`
+- The plan's model routing identifies the strategy/escalation tier for external review and fix workers
 
 If any pre-condition is not met, abort and surface the gap to the caller. Do not review a partial branch or pre-push a branch on your own.
 
@@ -42,8 +43,8 @@ digraph pre_merge_review {
     "Classify: real-bug / real-improvement / false-positive / out-of-scope" [shape=box];
     "Any verified fixes?" [shape=diamond];
     "Step 5: Apply verified fixes" [shape=box];
-    "Step 6: Re-run full test suite" [shape=box];
-    "Tests green?" [shape=diamond];
+    "Step 6: Run required verification scope" [shape=box];
+    "Verification green?" [shape=diamond];
     "Step 7: Emit summary block for morning report" [shape=box style=filled fillcolor=lightgreen];
     "Return to caller (proceed to finishing-a-development-branch)" [shape=box style=filled fillcolor=lightgreen];
     "Blocker per taxonomy (stop + report)" [shape=box style=filled fillcolor=lightpink];
@@ -58,10 +59,10 @@ digraph pre_merge_review {
     "Classify: real-bug / real-improvement / false-positive / out-of-scope" -> "Any verified fixes?";
     "Any verified fixes?" -> "Step 7: Emit summary block for morning report" [label="no (all dismissed/flagged)"];
     "Any verified fixes?" -> "Step 5: Apply verified fixes" [label="yes"];
-    "Step 5: Apply verified fixes" -> "Step 6: Re-run full test suite";
-    "Step 6: Re-run full test suite" -> "Tests green?";
-    "Tests green?" -> "Step 7: Emit summary block for morning report" [label="yes"];
-    "Tests green?" -> "Blocker per taxonomy (stop + report)" [label="no (after fixes)"];
+    "Step 5: Apply verified fixes" -> "Step 6: Run required verification scope";
+    "Step 6: Run required verification scope" -> "Verification green?";
+    "Verification green?" -> "Step 7: Emit summary block for morning report" [label="yes"];
+    "Verification green?" -> "Blocker per taxonomy (stop + report)" [label="no (after fixes)"];
     "Step 7: Emit summary block for morning report" -> "Return to caller (proceed to finishing-a-development-branch)";
 }
 ```
@@ -92,6 +93,8 @@ PLAN_PATH="docs/plans/<YYYY-MM-DD>-<feature>.md"   # filled from the in-session 
 Pass all four to the chosen reviewer: `$DIFF`, `$FILE_STAT`, `$COMMIT_LOG`, `$PLAN_PATH`. The reviewer prompts at `reviewer-prompts/*.md` document how to wire them into each CLI's invocation.
 
 Optional: if the plan carried a focus area ("focus on the auth boundary", "pay attention to schema migrations"), include it in the prompt. Do not invent a focus the user did not ask for.
+
+Apply the plan's Model Routing section when invoking the external reviewer if the reviewer CLI supports model selection. External review should use the strategy or escalation tier, never a mechanical or implementation tier.
 
 ## Step 2: Dispatch the chosen reviewer
 
@@ -148,22 +151,22 @@ Flagging rule: if a finding is real AND the lead cannot determine the right fix 
 
 Every fix path stays Julie-first. Whoever applies the fix, the lead or a delegated worker, orients with Julie before touching code.
 
-**When delegation is available:** dispatch a fresh implementer worker per finding, or **group by file if multiple findings cluster on the same file**. Use the template at [`fix-dispatch-prompt.md`](fix-dispatch-prompt.md). File ownership must be stated so parallel fixers do not collide. If findings span disjoint files, you can dispatch in parallel. If they cluster on the same file, either serialize the fixes or batch them into one worker dispatch.
+**When delegation is available:** dispatch a fresh implementer worker per finding, or **group by file if multiple findings cluster on the same file**. Use the template at [`fix-dispatch-prompt.md`](fix-dispatch-prompt.md). File ownership and model tier must be stated so parallel fixers do not collide or run below the finding's risk level. If findings span disjoint files, you can dispatch in parallel. If they cluster on the same file, either serialize the fixes or batch them into one worker dispatch.
 
 **When delegation is unavailable, Gemini CLI or any no-delegation `executing-plans` run:** the lead applies the verified fixes inline in the current session. Work one finding at a time, or batch same-file findings only. Use the scope boundary and Julie-first checklist in [`fix-dispatch-prompt.md`](fix-dispatch-prompt.md) as the inline checklist. Do not invent a subagent path that the harness cannot run.
 
 Why fresh workers when delegation exists? The review runs after the main execution phase has ended and worker context may be closed or stale. Fresh workers work at any point in the timeline, and they come with no implementation-phase bias that might rationalize around a finding.
 
-## Step 6: Re-run tests
+## Step 6: Run required verification
 
-After all delegated fix workers report DONE and commit their changes, or after the inline fixes are committed on a no-delegation run, re-run the full test suite (or the targeted subset that covers the changed files, if the project has a fast-path test selector).
+After all delegated fix workers report DONE and commit their changes, or after the inline fixes are committed on a no-delegation run, run the smallest project-defined verification scope that covers the fixes. If the fixes change branch-level behavior or invalidate the prior branch-gate ledger entry, run the branch-gate scope again. If the same HEAD already has a passing ledger entry for the required scope, reuse that evidence.
 
-If tests fail after fixes:
+If verification fails after fixes:
 
 1. If the failure is a straightforward issue introduced by the fix and the implementer missed it, apply one more focused fix round with the failure context. Dispatch a fresh fix worker when delegation exists, or fix inline on a no-delegation run. One retry, not a loop.
 2. If the retry fails or the failure looks structural, this is **blocker taxonomy #5** (unresolvable test failures) — see `skills/using-razorback/references/blocker-taxonomy.md`. Stop and write the blocker into the morning report. Do not push a red branch.
 
-If tests pass, proceed to Step 7.
+If verification passes, proceed to Step 7.
 
 ## Step 7: Emit summary for morning report
 
@@ -190,7 +193,7 @@ The caller (`executing-plans` Step 3 or `subagent-driven-development` Step 4a) t
 - **Loop external review.** Single pass only. No "review, fix, re-review" cycle. Leftover real findings that the lead cannot fix get flagged for human judgment and the PR proceeds.
 - **Let the reviewer edit code.** Reviewers are read-only: codex and claude pin `--tools "Read,Bash"`; gemini uses `--yolo` only to auto-approve its own Read calls and is instructed by prompt to be read-only. Delegated fixes route through fresh implementer workers, and no-delegation runs fix inline under the same Julie-first checklist.
 - **Silently dismiss findings.** Every dismissal requires a written reason in the morning report so the user can override on PR review. Silent dismissals defeat the whole point of running an external reviewer.
-- **Skip re-running tests after fixes.** Every fix invalidates the prior test run. Re-run the full suite (or a targeted subset that covers the changed files). Never push a branch whose most recent test run did not include the fix commits.
+- **Skip verification after fixes.** Every fix invalidates prior affected scopes. Run the required project-defined verification scope, or reuse a ledger entry only when it covers the current HEAD and required scope. Never push a branch whose most recent verification does not include the fix commits.
 - **Ship a PR without the reviewer the user requested.** Reviewer unavailability (auth, rate limit, budget/turn cap with no usable partial output, empty stdout, schema violation persisting after one retry) is a **blocker**, not a silent downgrade. Stop the run, do NOT push, do NOT create a PR, emit a partial morning report with `Status: Blocked` and the specific failure in `Blockers hit`, and exit. The user chose this reviewer at plan approval for a reason; quietly skipping the review turns an explicit request into an implicit "never mind".
 
 ## Integration

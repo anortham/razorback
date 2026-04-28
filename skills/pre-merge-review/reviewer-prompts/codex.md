@@ -71,9 +71,9 @@ Flag rationale:
 - `-` — read the prompt from stdin (which is the piped `$ADVERSARIAL_PROMPT_WITH_DIFF`).
 - `2>/dev/null` — drop codex's session banner and transcript noise; the JSON lands on stdout.
 
-**Model:** defaults to `gpt-5.4` with xhigh reasoning. Do not override with `-m` unless you have a concrete reason — xhigh on 5.4 is the right setting for adversarial review.
+**Model:** use the strategy or escalation tier from the plan's Model Routing section. If the Codex CLI cannot select that route, inherit the configured default and note the limitation.
 
-**Timeout:** set the Bash tool's `timeout` to at least `600000` (10 min). xhigh reasoning on a large diff can take minutes.
+**Timeout:** set the Bash tool's `timeout` to at least `600000` (10 min). Escalation-tier reasoning on a large diff can take minutes.
 
 ## Expected output format
 

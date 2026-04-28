@@ -63,6 +63,7 @@ Each agent gets:
 - **Specific scope:** One test file or subsystem
 - **Clear goal:** Make these tests pass
 - **Constraints:** Don't change other code
+- **Model tier:** use the project model-routing policy when the harness supports per-agent model selection
 - **Expected output:** Summary of what you found and fixed
 - **Tool guidance (include in every agent prompt):**
   - `get_context(query='<problem area>')` — orient on the subsystem independently
@@ -86,8 +87,10 @@ Task("Fix tool-approval-race-conditions.test.ts failures")
 When agents return:
 - Read each summary
 - Verify fixes don't conflict
-- Run full test suite
+- Run the project-defined integration or branch verification scope
 - Integrate all changes
+
+Use lower-cost implementation/mechanical tiers only for boxed-in lanes. If a lane has hidden invariants, shared lifecycle behavior, weak tests, or repeated failures, move it to the strategy/escalation tier or keep it in the lead session.
 
 ## Agent Prompt Structure
 
@@ -161,7 +164,7 @@ Agent 3 → Fix tool-approval-race-conditions.test.ts
 - Agent 2: Fixed event structure bug (threadId in wrong place)
 - Agent 3: Added wait for async tool execution to complete
 
-**Integration:** All fixes independent, no conflicts, full suite green
+**Integration:** All fixes independent, no conflicts, project-defined integration verification green
 
 **Time saved:** 3 problems solved in parallel vs sequentially
 
@@ -177,5 +180,5 @@ Agent 3 → Fix tool-approval-race-conditions.test.ts
 After agents return:
 1. **Review each summary** - Understand what changed
 2. **Check for conflicts** - Did agents edit same code?
-3. **Run full suite** - Verify all fixes work together
+3. **Run the required project-defined scope** - Verify all fixes work together
 4. **Spot check** - Agents can make systematic errors

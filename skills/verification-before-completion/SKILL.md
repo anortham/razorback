@@ -19,15 +19,15 @@ Claiming work is complete without verification is dishonesty, not efficiency.
 NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
 ```
 
-If you haven't run the verification command in this message, you cannot claim it passes.
+If you have neither run the verification command in this message nor cited a ledger entry for current HEAD and required scope, you cannot claim it passes.
 
 ## The Gate Function
 
 ```
 BEFORE claiming any status or expressing satisfaction:
 
-1. IDENTIFY: What command proves this claim?
-2. RUN: Execute the FULL command (fresh, complete)
+1. IDENTIFY: What verification scope proves this claim?
+2. RUN: Execute the project-defined command for that scope, or cite a verification-ledger entry that covers current HEAD and required scope
 3. READ: Full output, check exit code, count failures
 4. VERIFY: Does output confirm the claim?
    - If NO: State actual status with evidence
@@ -41,10 +41,10 @@ Skip any step = lying, not verifying
 
 | Claim | Requires | Not Sufficient |
 |-------|----------|----------------|
-| Tests pass | Test command output: 0 failures | Previous run, "should pass" |
+| Tests pass | Test command output or ledger entry for current HEAD and required scope: 0 failures | Stale run, wrong scope, "should pass" |
 | Linter clean | Linter output: 0 errors | Partial check, extrapolation |
 | Build succeeds | Build command: exit 0 | Linter passing, logs look good |
-| Bug fixed | Test original symptom: passes | Code changed, assumed fixed |
+| Bug fixed | Original symptom passes at worker scope | Code changed, assumed fixed |
 | Regression test works | Red-green cycle verified | Test passes once |
 | Agent completed | VCS diff shows changes | Agent reports "success" |
 | Requirements met | Line-by-line checklist | Tests passing |
@@ -83,7 +83,7 @@ Skip any step = lying, not verifying
 
 **Tests:**
 ```
-✅ [Run test command] [See: 34/34 pass] "All tests pass"
+✅ [Run project-defined command for required scope] [See: 34/34 pass] "Required verification passes"
 ❌ "Should pass now" / "Looks correct"
 ```
 

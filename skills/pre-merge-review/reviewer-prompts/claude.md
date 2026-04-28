@@ -90,6 +90,8 @@ REPOSITORY CONTEXT:
 {{REVIEW_INPUT}}
 PROMPT_EOF
 
+CLAUDE_MODEL="${RAZORBACK_CLAUDE_REVIEW_MODEL:-opus}"
+
 cd "$PROJECT_DIR" && claude -p \
   --no-session-persistence \
   --dangerously-skip-permissions \
@@ -98,13 +100,13 @@ cd "$PROJECT_DIR" && claude -p \
   --tools "Read,Bash" \
   --max-turns 15 \
   --max-budget-usd 5.00 \
-  --model opus \
+  --model "$CLAUDE_MODEL" \
   --system-prompt-file "$PROMPT_FILE" \
   "$DIFF_AND_CONTEXT" \
   2>/dev/null
 ```
 
-The validated baseline flags are: `-p`, `--no-session-persistence`, `--dangerously-skip-permissions`, `--output-format json`, `--json-schema`, `--tools "Read,Bash"`, `--max-turns 15`, `--max-budget-usd 5.00`, `--model opus`, `--system-prompt-file`.
+The validated baseline flags are: `-p`, `--no-session-persistence`, `--dangerously-skip-permissions`, `--output-format json`, `--json-schema`, `--tools "Read,Bash"`, `--max-turns 15`, `--max-budget-usd 5.00`, `--model "$CLAUDE_MODEL"`, `--system-prompt-file`.
 
 Flag rationale:
 
@@ -115,10 +117,10 @@ Flag rationale:
 - `--output-format json --json-schema …` - structured review output conforming to the shared schema.
 - `--tools "Read,Bash"` - read-only. The reviewer can read files and run shell commands (grep, git log, diff) but cannot edit. Enforced at the CLI layer, not only by prompt.
 - `--max-turns 15 --max-budget-usd 5.00` - bounded cost/time. Raise only if a run legitimately needs more.
-- `--model opus` - strongest reviewer. The calling agent may also be Opus; the review's value is a fresh session and prompt framing, not model superiority.
+- `--model "$CLAUDE_MODEL"` - strategy or escalation tier from the plan's Model Routing section. The review's value is a fresh session and prompt framing, not model superiority.
 - `--system-prompt-file` - loads the adversarial operating stance from the temp file built above. The canonical source for that prompt is `skills/claude-cli/adversarial-prompt.txt` in the razorback plugin; update both in sync.
 
-**Timeout:** at least `600000` ms (10 min). Opus on a large diff can take minutes.
+**Timeout:** at least `600000` ms (10 min). Escalation-tier models on a large diff can take minutes.
 
 ## Expected output format
 
