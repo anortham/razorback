@@ -162,7 +162,10 @@ Do not hard-code provider-specific model names in razorback skills. Put those na
 
 Harness-specific model selection:
 - **Claude Code:** Agent tool `model` parameter accepts short names only: `opus`, `sonnet`, `haiku`. Translate full model IDs (e.g., `claude-opus-4-7`) to the short form when dispatching.
-- **Codex:** `-m <model>` flag on `codex exec`, or inherit the global default from `~/.codex/config.toml`.
+- **Codex:** `spawn_agent(model=..., reasoning_effort=...)` for delegated workers
+  when the session supports per-agent selection; `-m <model>` on `codex exec`
+  for CLI reviewer runs; otherwise inherit the global default from
+  `~/.codex/config.toml` and note the limitation.
 - **Cursor:** model selection is IDE-level; use `inherit` and note the limitation.
 - **OpenCode / Copilot CLI:** use the harness model parameter if available, otherwise `inherit`.
 

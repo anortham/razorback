@@ -56,6 +56,19 @@ escalation  -> subtle correctness, security, weak tests, repeated failures
 
 Do not hard-code model names in generic prompts. Use the mapping from the project policy. If the configured route is unsupported by the current Codex session, use `inherit` and report the limitation.
 
+In Codex, a project `RAZORBACK.md` model-routing block counts as a clear
+task-specific reason to set `spawn_agent(model=..., reasoning_effort=...)` when
+the current session supports per-agent model selection. Do not leave `model`
+unset when a supported route exists. Inherit only when the route itself says
+`inherit`, no route exists, or the harness cannot select the mapped model or
+reasoning effort.
+
+Use mechanical or implementation tiers only for boxed-in lanes. Test-audit work
+can use a lower-cost tier when it is checklist-driven coverage enumeration. Keep
+it on strategy or escalation tier when it requires judgment about weak tests,
+hidden invariants, scoring semantics, shared workspace behavior, or correctness
+risk.
+
 ### Message framing
 
 The `message` parameter is user-level input, not a system prompt. Structure it for instruction adherence:
