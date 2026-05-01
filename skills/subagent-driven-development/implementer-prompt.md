@@ -63,7 +63,7 @@ Agent tool (general-purpose):
     1. Implement exactly what the task specifies
     2. Write tests (following TDD if task says to)
     3. Verify implementation with the assigned worker scope
-    4. Commit your work
+    4. Commit your work only after assigned verification passes
     5. Self-review (see below)
     6. Report back
 
@@ -71,7 +71,7 @@ Agent tool (general-purpose):
 
     ## Model Routing
 
-    Assigned tier: [implementation / mechanical / strategy / escalation]
+    Assigned tier: [implementation / mechanical / strategy / gate-review / escalation]
     Harness mapping: [model/reasoning setting or inherit]
 
     If the harness cannot choose model or reasoning per worker, use inherit and
@@ -87,11 +87,18 @@ Agent tool (general-purpose):
 
     Rules:
     - Run the lowest-cost repo-defined command that proves the changed behavior.
-    - Do not run affected-change, branch-gate, or expensive-specialist scopes
-      unless this prompt assigns that scope.
+    - State the invariant each assigned test, replay, metric, or acceptance gate
+      proves.
+    - For replay or metric evidence, identify which metrics are hard gates and
+      which are report-only.
+    - If assigned verification fails, stop and report BLOCKED unless the plan
+      explicitly says to update that gate. Do not commit failing verification.
+    - Do not own affected-change, branch-gate, or expensive-specialist scopes.
+      If this prompt asks you to run a broad command for diagnostics, label it
+      diagnostic output, not acceptance evidence.
     - If the repo defines worker limits, follow them.
-    - Report the scope label, command, commit SHA, result, and timestamp so the
-      lead can update the verification ledger.
+    - Report the invariant, scope label, command, commit SHA, result, and
+      timestamp so the lead can update the verification ledger.
 
     ## Before Reporting Back: Self-Review
 
@@ -123,7 +130,8 @@ Agent tool (general-purpose):
 
     When done, report:
     - What you implemented
-    - Verification scope, command, commit SHA, result, and timestamp
+    - Verification invariant, scope, command, commit SHA, result, and timestamp
+    - Hard-gate metrics and report-only metrics, when replay or metric evidence is involved
     - Files changed
     - **Julie calls used** - list the `get_context` / `deep_dive` / `fast_refs` / `get_symbols` calls you made and what each one confirmed
     - Self-review findings (if any)

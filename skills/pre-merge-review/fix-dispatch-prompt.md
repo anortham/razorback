@@ -34,7 +34,7 @@ Fresh implementer dispatch (delegation available):
 
     ## Model Routing
 
-    Assigned tier: [implementation / mechanical / strategy / escalation]
+    Assigned tier: [implementation / mechanical / strategy / gate-review / escalation]
     Harness mapping: [model/reasoning setting or inherit]
 
     If the finding exposes hidden invariants, weak tests, public API risk, or
@@ -45,7 +45,7 @@ Fresh implementer dispatch (delegation available):
 
     Fix ONLY this finding. Do not refactor. Do not expand scope. Do not "improve
     nearby code." If the fix reveals an unrelated issue, note it in your report
-    and stop — do not attempt to address it.
+    and stop; do not attempt to address it.
 
     If the fix requires a structural change the finding doesn't spell out (e.g.
     extracting a helper, changing a function signature that has other callers),

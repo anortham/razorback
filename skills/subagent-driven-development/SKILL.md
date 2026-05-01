@@ -107,8 +107,9 @@ Use the template at `./implementer-prompt.md`. The spawn prompt MUST include:
 4. **Julie tool directives** (use `get_context`, `deep_dive` before modifying any symbol, `fast_refs` before changing public APIs, `get_symbols` before reading full files)
 5. **TDD expectations** (from `razorback:test-driven-development`)
 6. **Verification scope** specific to this task, using commands from the plan's verification strategy
-7. **Model routing tier** assigned to this task (`implementation`, `mechanical`, `strategy`, or `escalation`)
+7. **Model routing tier** assigned to this task (`implementation`, `mechanical`, `strategy`, `gate-review`, or `escalation`)
 8. **Julie evidence requirement** (the implementer must report which Julie calls they used and what those calls confirmed)
+9. **Gate invariant requirement** (the implementer must state what each assigned test, replay, metric, or acceptance gate proves)
 
 ### Model Routing Contract
 
@@ -124,8 +125,14 @@ Harness-specific dispatch:
 |------|-------|----------|
 | `strategy` | Lead | Planning, architecture, decomposition, inline review, finding triage |
 | `implementation` | Worker | Bounded tasks from a clear plan with narrow ownership and tests |
-| `mechanical` | Worker | Docs, fixtures, rote edits, formatting, manifests |
-| `escalation` | Lead or worker | Security, subtle correctness, high blast radius, weak tests, repeated failures |
+| `mechanical` | Worker | Docs, fixtures, rote edits, formatting, manifests with no gate ownership |
+| `gate-review` | Lead or reviewer | Plan plus failing test, replay, metric, or diff triage to decide whether the gate or implementation is wrong |
+| `escalation` | Lead or worker | Security, subtle correctness, high blast radius, weak tests, gate interpretation, repeated failures |
+
+Mechanical-tier workers must not own failing tests, replay evidence, metrics, or
+acceptance gates. A docs or fixture task stays mechanical only when it records
+already-decided evidence. If the task must decide what the evidence means, use
+gate-review, strategy, or escalation tier.
 
 Implementation-tier workers are allowed only when all are true:
 - The task has clear acceptance criteria.
@@ -133,10 +140,11 @@ Implementation-tier workers are allowed only when all are true:
 - The expected change is local.
 - The relevant behavior has a narrow verification scope.
 - The task does not depend on hidden shared invariants.
+- The task does not require interpreting replay, metric, or acceptance-gate semantics.
 
-Do not use implementation-tier workers unattended for shared lifecycle behavior, concurrency, public API contracts with many callers, weak tests, or findings involving subtle correctness. Use strategy/escalation tier, or split strategy-tier investigation from implementation-tier edits.
+Do not use implementation-tier workers unattended for shared lifecycle behavior, concurrency, public API contracts with many callers, weak tests, replay or metric interpretation, or findings involving subtle correctness. Use strategy/escalation tier, or split strategy-tier investigation from implementation-tier edits.
 
-Escalate after two failed worker attempts, one failure involving hidden invariants, or any plan-contradicting code discovery.
+Escalate after two failed worker attempts, one failure involving hidden invariants, assigned verification failure not covered by the plan, or any plan-contradicting code discovery.
 
 ### Verification Scope Contract
 
@@ -152,13 +160,24 @@ Use these scope labels in worker prompts and reports:
 | `branch-gate` | Lead | Broad confidence before handoff, push, or PR |
 | `expensive-specialist` | Lead | Slow domain gates only when touched areas or failures require them |
 
-Workers do not run `affected-change`, `branch-gate`, or `expensive-specialist` scopes unless the lead assigns that scope in the dispatch prompt. This prevents N workers from each running the same broad gate.
+Workers do not own `affected-change`, `branch-gate`, or `expensive-specialist`
+scopes. The lead owns those gates and the ledger entries for them. If the lead
+asks a worker to run a broad command for diagnostic output, the worker must
+label it diagnostic, not acceptance evidence.
+
+Workers stop and report when assigned verification fails unless the plan
+explicitly says to update that gate. A failing assigned gate is not acceptance
+evidence.
+
+For each assigned gate, the worker report must state the invariant the gate
+proves. For replay or metric evidence, it must also identify hard-gate metrics
+and report-only metrics.
 
 Maintain a verification ledger during execution:
 
 ```markdown
-| Scope | Command | Commit | Result | Time |
-|-------|---------|--------|--------|------|
+| Scope | Invariant | Command | Commit | Result | Time |
+|-------|-----------|---------|--------|--------|------|
 ```
 
 If the same HEAD already has a passing ledger entry for the required scope, reuse that evidence instead of rerunning the same expensive command. If HEAD changed, the affected scopes are stale.

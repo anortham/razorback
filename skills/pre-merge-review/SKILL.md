@@ -96,6 +96,12 @@ Optional: if the plan carried a focus area ("focus on the auth boundary", "pay a
 
 Apply the plan's Model Routing section when invoking the external reviewer if the reviewer CLI supports model selection. External review should use the strategy or escalation tier, never a mechanical or implementation tier.
 
+Gate-interpretation review is a separate lane from pre-merge review. When the
+question is "is this failing test, replay, or metric wrong, or is the
+implementation wrong?", use the plan's gate-review or escalation route before
+claiming verification evidence. Do not route that decision to a mechanical
+worker.
+
 ## Step 2: Dispatch the chosen reviewer
 
 Select the prompt file based on the reviewer choice and invoke the matching reviewer-cli skill. Each file contains a complete runnable invocation. All three invocations run the reviewer in adversarial mode with read-only tool access — the reviewer never edits code.

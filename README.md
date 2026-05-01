@@ -116,6 +116,7 @@ you move between Claude Code, Codex, OpenCode, Copilot CLI, and Gemini CLI.
 - model routing tiers and harness-specific mappings
 - worker eligibility and escalation triggers
 - verification scopes and broad-gate rules
+- gate ownership, including which evidence is a hard gate versus report-only
 - project-specific constraints that should apply across harnesses
 
 Harness docs such as `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md` can point to
@@ -130,9 +131,13 @@ Minimal model-routing shape:
 |---|---|---|---|---|
 | Strategy | Planning, architecture, lead review | <model/effort> | <model> | <model> |
 | Implementation | Bounded worker tasks from a clear plan | <model/effort> | <model> | <model> |
-| Mechanical | Docs, fixtures, rote edits | <model/effort> | <model> | <model> |
-| Escalation | Security, subtle correctness, weak tests, repeated failures | <model/effort> | <model> | <model> |
+| Mechanical | Docs, fixtures, rote edits with no gate ownership | <model/effort> | <model> | <model> |
+| Gate review | Plan + failing gate + diff triage | <model/effort> | <model> | <model> |
+| Escalation | Security, subtle correctness, weak tests, gate interpretation, repeated failures | <model/effort> | <model> | <model> |
 ```
+
+Mechanical workers should not own failing tests, replay evidence, metrics, or
+acceptance gates. Split docs-only updates from evidence interpretation.
 
 If `RAZORBACK.md` is absent, razorback uses explicit harness docs if present,
 then asks once when model routing matters. If the harness cannot choose models

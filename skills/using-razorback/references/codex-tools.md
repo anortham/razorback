@@ -50,8 +50,9 @@ When using Codex Desktop or another Codex harness that exposes model controls, m
 ```text
 strategy    -> planning, architecture, lead review
 implementation -> bounded worker tasks from a clear plan
-mechanical  -> docs, fixtures, rote edits
-escalation  -> subtle correctness, security, weak tests, repeated failures
+mechanical  -> docs, fixtures, rote edits with no gate ownership
+gate-review -> plan + failing gate + diff triage
+escalation  -> subtle correctness, security, weak tests, gate interpretation, repeated failures
 ```
 
 Do not hard-code model names in generic prompts. Use the mapping from the project policy. If the configured route is unsupported by the current Codex session, use `inherit` and report the limitation.
@@ -63,11 +64,18 @@ unset when a supported route exists. Inherit only when the route itself says
 `inherit`, no route exists, or the harness cannot select the mapped model or
 reasoning effort.
 
-Use mechanical or implementation tiers only for boxed-in lanes. Test-audit work
-can use a lower-cost tier when it is checklist-driven coverage enumeration. Keep
-it on strategy or escalation tier when it requires judgment about weak tests,
-hidden invariants, scoring semantics, shared workspace behavior, or correctness
-risk.
+Use mechanical or implementation tiers only for boxed-in lanes. Mechanical
+workers cannot own failing tests, replay evidence, metrics, or acceptance gates.
+Test-audit work can use a lower-cost tier when it is checklist-driven coverage
+enumeration and owns no failing gate. Keep it on strategy, escalation, or the
+project's gate-review route when it requires judgment about weak tests, hidden
+invariants, scoring semantics, shared workspace behavior, replay evidence,
+metric semantics, or correctness risk.
+
+For Codex gate-review lanes, prefer the project route for a reviewer that reads
+the plan, failing test or replay, and diff, then decides whether the test or
+implementation is wrong. In repos following the current Razorback policy, that
+route is `gpt-5.3-codex` at high reasoning.
 
 ### Message framing
 

@@ -109,15 +109,21 @@ Every plan MUST include a language-agnostic verification strategy. Razorback own
 
 **Worker red/green scope:** [Lowest-cost verification that proves the new or changed behavior. Use the repo's documented command.]
 
-**Worker ceiling:** [Maximum scope workers may run on their own. Workers do not run broader regression gates unless the lead assigns that scope.]
+**Worker ceiling:** [Maximum scope workers may run on their own. Workers do not own broader regression gates. If the lead asks for broad diagnostic output, the lead still owns acceptance for that scope.]
+
+**Worker gate invariant:** [For each assigned worker gate, state the behavior or evidence invariant the gate proves.]
 
 **Lead affected-change scope:** [Project-defined affected-area or changed-files gate. Run after a coherent batch, not after every edit.]
 
 **Branch gate:** [Project-defined broad confidence gate before handoff, push, or PR.]
 
+**Replay/metric evidence:** [For replay, metric, or acceptance evidence, state which assertions or metrics are hard gates and which are report-only.]
+
 **Escalation triggers:** [Changed areas or failure modes that require broader tiers.]
 
-**Verification ledger:** Record command, scope label, commit SHA, result, and timestamp. If the same HEAD already has a passing ledger entry for the required scope, reuse that evidence instead of rerunning the same expensive gate.
+**Assigned verification failure:** Workers stop and report when assigned verification fails, unless this plan explicitly says to update that gate.
+
+**Verification ledger:** Record invariant, command, scope label, commit SHA, result, and timestamp. For replay or metric evidence, also record hard-gate metrics and report-only metrics. If the same HEAD already has a passing ledger entry for the required scope, reuse that evidence instead of rerunning the same expensive gate.
 ```
 
 If the repo has no documented hierarchy, define one in the plan using neutral scope labels:
@@ -145,15 +151,20 @@ Read repo-root `RAZORBACK.md` first. If it exists, copy the relevant routing pol
 **Implementation tier:** [bounded worker tasks from a clear plan]
 - Harness mapping: [model/reasoning setting or inherit]
 
-**Mechanical tier:** [docs, fixtures, rote edits, formatting, manifests]
+**Mechanical tier:** [docs, fixtures, rote edits, formatting, manifests with no test, replay, metric, or acceptance-gate ownership]
 - Harness mapping: [model/reasoning setting or inherit]
 
-**Escalation tier:** [security, subtle correctness, high blast radius, weak tests, repeated failures]
+**Gate-interpretation reviewer:** [reviewer tier for reading the plan, failing test or replay, and diff to decide whether the test or implementation is wrong]
+- Harness mapping: [model/reasoning setting or inherit]
+
+**Escalation tier:** [security, subtle correctness, high blast radius, weak tests, repeated failures, gate interpretation]
 - Harness mapping: [model/reasoning setting or inherit]
 
 **Worker eligibility:** [conditions that allow implementation-tier workers]
 
 **Escalation triggers:** [conditions that require strategy/escalation tier]
+
+**Mechanical exclusion:** Mechanical workers cannot own failing tests, replay evidence, metrics, or acceptance gates. Split docs-only updates from evidence interpretation.
 
 **Unsupported harness behavior:** If the harness cannot choose models per agent, use `inherit`, note it in the plan, and continue.
 ```
