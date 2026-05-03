@@ -258,19 +258,17 @@ git commit -m "feat: add specific feature"
 
 **Step 1, announce plan save and request approval.** After saving, announce:
 
-**"Plan saved to `<path>`. Please review it and reply **approved** (with an optional reviewer choice, e.g. 'approved, codex review') or request changes."**
+**"Plan saved to `<path>`. Please review it and reply **approved** (with optional reviewer choice, e.g. 'approved, codex review'; omit reviewer choice for no external review) or request changes."**
 
 **Step 2, wait for explicit approval.** Do NOT proceed on silence, hedged responses ("looks ok", "maybe", "I guess"), questions, or partial feedback. Only an explicit **"approved"**, **"yes, go"**, **"run it"**, or equivalent unblocks execution. The approval message can fold in the reviewer choice (e.g. "approved, codex review", "approved, no external review").
 
 If the user requests changes, revise the plan, re-run the self-review, re-save, and re-ask for approval. Brainstorming gates the spec; writing-plans gates the plan. This is the last human stop before autonomous execution.
 
-**Step 3, capture the reviewer choice.** If the approval message already named a choice (e.g. "approved, run it, pre-merge codex review", "approved, no external review"), skip the question. Otherwise ask once:
+**Step 3, capture the reviewer choice without prompting.** The default reviewer choice is `none`. If the approval message already named a choice (e.g. "approved, run it, pre-merge codex review", "approved, no external review") or the saved spec explicitly requested a reviewer, set `reviewer_choice` to `codex`, `gemini`, or `claude` as requested. Do not ask a separate reviewer-choice question after approval.
 
-**"External review before PR? (none / codex / gemini / claude)"**
-
-**Step 4, invoke the execution skill.** After the reviewer choice is in hand, announce which execution skill will run and invoke it, passing the plan path, the reviewer choice (`none` / `codex` / `gemini` / `claude`), verification strategy, and model routing:
+**Step 4, invoke the execution skill immediately.** After approval, announce which execution skill will run and invoke it, passing the plan path, the reviewer choice (`none` / `codex` / `gemini` / `claude`), verification strategy, and model routing:
 
 - **When subagent delegation is available:** `razorback:subagent-driven-development`
 - **For single-task, tightly-sequential, or no-delegation plans:** `razorback:executing-plans`
 
-Starting execution. Tell me now if you want a separate-session handoff instead; in that case, guide the user to open a new session in the worktree and use `razorback:executing-plans` there.
+Starting execution after approval is the default. If the user requested a separate-session handoff before approval, guide them to open a new session in the worktree and use `razorback:executing-plans` there.

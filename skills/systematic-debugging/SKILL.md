@@ -171,8 +171,9 @@ You MUST complete each phase before proceeding to the next.
 4. **When You Don't Know**
    - Say "I don't understand X"
    - Don't pretend to know
-   - Ask for help
-   - Research more
+   - Research more with Julie, targeted docs, and the smallest relevant verification command
+   - In an approved autonomous run, stop only if the uncertainty matches the blocker taxonomy
+   - Outside an approved run, ask one specific question if the research path is exhausted
 
 ### Phase 4: Implementation
 
@@ -215,7 +216,10 @@ You MUST complete each phase before proceeding to the next.
    - Are we "sticking with it through sheer inertia"?
    - Should we refactor architecture vs. continue fixing symptoms?
 
-   **Discuss with your human partner before attempting more fixes**
+   In an approved autonomous run, route this through the blocker taxonomy:
+   if a plan-consistent architecture fix exists, take it and log the decision;
+   if the plan is contradicted or tests are unresolvable, stop as a real blocker.
+   Outside an approved run, discuss the architecture before attempting more fixes.
 
    This is NOT a failed hypothesis - this is a wrong architecture.
 

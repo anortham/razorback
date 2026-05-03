@@ -34,36 +34,36 @@ The anti-rationalization check: can you articulate the agreed design in concrete
 
 ## Anti-Pattern: "This Is Too Simple To Need A Design"
 
-Every project goes through this process. A todo list, a single-function utility, a config change — all of them. "Simple" projects are where unexamined assumptions cause the most wasted work. The design can be short (a few sentences for truly simple projects), but you MUST present it and get approval. Note: the fast path above still produces a design — it just doesn't force re-discovery of things already agreed.
+Every project goes through this process. A todo list, a single-function utility, a config change: all of them. "Simple" projects are where unexamined assumptions cause the most wasted work. The design can be short for truly simple projects, but you MUST present it and get approval. Note: the fast path above still produces a design; it just doesn't force re-discovery of things already agreed.
 
 ## Checklist
 
 **Lightweight** (design agreed, moderate task, same-session):
 1. **Explore project context** — use `julie:get_context` to orient, check recent commits
-2. **Summarize agreed design with acceptance criteria** — present for user confirmation
-3. **Write design doc** — save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit. Include acceptance criteria checklist — this is the implementer's spec.
-4. **Spec self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below)
-5. **User reviews written spec** — ask user to review the spec file before proceeding
-6. **Dispatch implementer directly** — see "Lightweight Implementation" section below
+2. **Summarize agreed design with acceptance criteria** - present for user confirmation
+3. **Write design doc** - save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit. Include acceptance criteria checklist; this is the implementer's spec.
+4. **Spec self-review** - quick inline check for placeholders, contradictions, ambiguity, scope (see below)
+5. **User reviews written spec** - ask user to review the spec file before proceeding
+6. **Dispatch implementer directly** - see "Lightweight Implementation" section below
 
 **Fast path** (design agreed, large or multi-session task):
 1. **Explore project context** — use `julie:get_context` to orient, check recent commits
-2. **Summarize agreed design** — present concrete summary for user confirmation
-3. **Write design doc** — save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit
-4. **Spec self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below)
-5. **User reviews written spec** — ask user to review the spec file before proceeding
-6. **Transition to implementation** — invoke writing-plans skill
+2. **Summarize agreed design** - present concrete summary for user confirmation
+3. **Write design doc** - save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit
+4. **Spec self-review** - quick inline check for placeholders, contradictions, ambiguity, scope (see below)
+5. **User reviews written spec** - ask user to review the spec file before proceeding
+6. **Transition to implementation** - invoke writing-plans skill
 
 **Full process** (requirements unclear or multiple approaches):
 1. **Explore project context** — use `julie:get_context` to orient on the relevant codebase area, check recent commits
-2. **Offer visual companion** (if topic will involve visual questions) — this is its own message, not combined with a clarifying question. See the Visual Companion section below.
-3. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
-4. **Propose 2-3 approaches** — with trade-offs and your recommendation
-5. **Present design** — in sections scaled to their complexity, get user approval after each section
-6. **Write design doc** — save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit
-7. **Spec self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below)
-8. **User reviews written spec** — ask user to review the spec file before proceeding
-9. **Transition to implementation** — invoke writing-plans skill to create implementation plan
+2. **Offer visual companion** (if topic will involve visual questions) - this is its own message, not combined with a clarifying question. See the Visual Companion section below.
+3. **Ask clarifying questions** - one at a time, understand purpose/constraints/success criteria
+4. **Propose 2-3 approaches** - with trade-offs and your recommendation
+5. **Present design** - in sections scaled to their complexity, get user approval after each section
+6. **Write design doc** - save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit
+7. **Spec self-review** - quick inline check for placeholders, contradictions, ambiguity, scope (see below)
+8. **User reviews written spec** - ask user to review the spec file before proceeding
+9. **Transition to implementation** - invoke writing-plans skill to create implementation plan
 
 ## Process Flow
 

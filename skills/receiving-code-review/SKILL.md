@@ -79,10 +79,13 @@ IF suggestion seems wrong:
   Push back with technical reasoning
 
 IF can't easily verify:
-  Say so: "I can't verify this without [X]. Should I [investigate/ask/proceed]?"
+  Investigate with Julie and the smallest relevant verification command.
+  If still not verifiable during an approved autonomous run, classify it as flagged-for-review in the report and continue unless it matches the blocker taxonomy.
+  If this is an interactive review outside an approved run, ask one specific clarifying question.
 
 IF conflicts with your human partner's prior decisions:
-  Stop and discuss with your human partner first
+  In an approved autonomous run, keep the prior decision, flag the conflict in the report, and continue unless it matches the blocker taxonomy.
+  Outside an approved run, ask one specific question before overriding the prior decision.
 ```
 
 **your human partner's rule:** "External feedback - be skeptical, but check carefully"
@@ -173,7 +176,7 @@ State the correction factually and move on.
 | Assuming reviewer is right | Check if breaks things |
 | Avoiding pushback | Technical correctness > comfort |
 | Partial implementation | Clarify all items first |
-| Can't verify, proceed anyway | State limitation, ask for direction |
+| Can't verify, proceed anyway | Investigate, then classify under blocker taxonomy or flag for review |
 
 ## Real Examples
 

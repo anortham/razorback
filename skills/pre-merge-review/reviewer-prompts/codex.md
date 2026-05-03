@@ -13,7 +13,7 @@ Invocation instructions for running `codex` as the pre-merge adversarial reviewe
 Use the adversarial prompt template shown at the bottom of this file (the canonical source of this prompt is `skills/codex-cli/SKILL.md` "Adversarial Prompt Template" in the razorback plugin). Substitute:
 
 - `{{TARGET_LABEL}}` ← `$FILE_STAT` plus a short description, e.g. `"branch <name>: N files changed, base..HEAD"`.
-- `{{USER_FOCUS}}` ← `$USER_FOCUS` if set at plan approval, otherwise `"none specified"`.
+- `{{USER_FOCUS}}` ← `$USER_FOCUS` if set during execution handoff, otherwise `"none specified"`.
 - `{{REVIEW_INPUT}}` ← `$FILE_STAT`, `$COMMIT_LOG`, and `$DIFF`, concatenated under labelled headings.
 
 The template instructs codex to default to skepticism, prioritize high-impact attack surfaces (auth, data loss, race conditions, schema drift, observability gaps), emit only material findings, and return JSON matching the shared schema.
@@ -121,7 +121,7 @@ Codex's JSON output does not include per-request token counts. The morning repor
 
 ## Error handling
 
-**Reviewer unavailability is a blocker when the user chose this reviewer at plan approval.** Stop the run, do NOT push, do NOT create a PR, emit a partial morning report with `Status: Blocked` and the specific failure in `Blockers hit`, and exit.
+**Reviewer unavailability is a blocker when the user chose this reviewer for the run.** Stop the run, do NOT push, do NOT create a PR, emit a partial morning report with `Status: Blocked` and the specific failure in `Blockers hit`, and exit.
 
 Unavailability triggers:
 

@@ -21,7 +21,7 @@ Write the test first. Watch it fail. Write minimal code to pass.
 - Refactoring
 - Behavior changes
 
-**Exceptions (ask your human partner):**
+**Planned exceptions (must be explicit in the user request or plan, and logged):**
 - Throwaway prototypes
 - Generated code
 - Configuration files
@@ -348,7 +348,7 @@ Can't check all boxes? You skipped TDD. Start over.
 
 | Problem | Solution |
 |---------|----------|
-| Don't know how to test | Write wished-for API. Write assertion first. Ask your human partner. |
+| Don't know how to test | Inspect nearby tests with Julie. Write wished-for API. Write the assertion first. If still unclear in an approved autonomous run, pick the smallest plan-consistent test shape, log it, and stop only for blocker-taxonomy ambiguity. |
 | Test too complicated | Design too complicated. Simplify interface. |
 | Must mock everything | Code too coupled. Use dependency injection. |
 | Test setup huge | Extract helpers. Still complex? Simplify design. |

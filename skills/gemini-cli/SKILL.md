@@ -210,8 +210,8 @@ echo "This is Claude following up. I disagree with [X] because [evidence]. What'
 
 - **Rate limits**: Free tier is 60 req/min, 1000/day. Gemini auto-retries with backoff. If you hit limits, switch to the project policy's lower-cost tier for lower-priority tasks or wait.
 - **Command failures**: Check with `gemini --version` to verify auth. Use `--debug` for verbose error info.
-- **Sandbox mode**: If the task needs isolation, add `--sandbox`. Ask the user before using risky modes.
-- If output contains warnings or partial results, summarize and ask the user what to do.
+- **Sandbox mode**: If the task needs isolation, add `--sandbox`. Use risky modes only when the user request or plan explicitly authorizes them; otherwise treat the risky mode as blocker taxonomy #2.
+- If output contains warnings or partial results during an approved run, classify the result under the plan and blocker taxonomy. Use usable partial output with a logged limitation, retry once when the failure is tool-shaped, or stop only for a real blocker. For ad-hoc Gemini use outside an approved run, summarize the limitation and ask one specific question.
 
 ## Quick Reference
 

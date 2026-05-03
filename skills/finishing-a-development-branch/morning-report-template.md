@@ -29,7 +29,7 @@ Placeholders use {{double-brace}} syntax.
 -->
 
 ## External review ({{reviewer}}, adversarial)
-<!-- reviewer is one of: codex | gemini | claude | none. If "none", replace this whole section with: "External review: none (not requested at approval time)." -->
+<!-- reviewer is one of: codex | gemini | claude | none. If "none", replace this whole section with: "External review: none (not requested for this run)." -->
 
 - **Findings:** {{findings_total}}
 - **Verified real, fixed:** {{findings_fixed_count}} (commits: {{fix_commit_shas}})

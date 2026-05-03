@@ -268,7 +268,7 @@ Either way, re-review after the fix. Iteration cap applies: 3 resume / `send_inp
 
 ## Step 4a: Pre-merge external review (if chosen)
 
-If the reviewer choice propagated from `writing-plans` (via the plan-approval message) is `codex`, `gemini`, or `claude`:
+If the reviewer choice propagated from `writing-plans` (via the execution handoff) is `codex`, `gemini`, or `claude`:
 
 **First**, ensure the verification ledger has a passing `branch-gate` entry for the current HEAD. If it does not, run the branch-gate scope now and record the result. `pre-merge-review` requires this as a precondition; do not skip it.
 

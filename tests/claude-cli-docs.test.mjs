@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = '/Users/murphy/source/razorback';
+const expectedRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
+const root = expectedRoot;
 
 function read(relativePath) {
   return readFileSync(join(root, relativePath), 'utf8');
@@ -12,6 +14,10 @@ function read(relativePath) {
 function commandBlockHasBare(text) {
   return /```bash[\s\S]*?claude -p[\s\S]*?\n\s*--bare \\/.test(text);
 }
+
+test('documentation tests read from the checked-out repository', () => {
+  assert.equal(root, expectedRoot);
+});
 
 test('claude-cli skill says bare mode is not used', () => {
   const skill = read('skills/claude-cli/SKILL.md');

@@ -11,7 +11,7 @@ Load plan, review critically, execute all tasks, report when complete.
 
 **When to use this vs. subagent-driven-development:** Use this skill for single-task plans, tightly sequential work, separate-session execution, or any run where delegation is unavailable. For plans with 2+ independent tasks in the same session, prefer `razorback:subagent-driven-development` for parallel execution with inline review.
 
-**Inputs from `writing-plans`:** plan path, `reviewer_choice` (`none` / `codex` / `gemini` / `claude`, default `none`), verification strategy, and model routing. These propagate via the plan-approval message and gate Step 3 below.
+**Inputs from `writing-plans`:** plan path, `reviewer_choice` (`none` / `codex` / `gemini` / `claude`, default `none`), verification strategy, and model routing. These propagate via the execution handoff and gate Step 3 below.
 
 **Announce at start:** "I'm using the executing-plans skill to implement this plan."
 
@@ -61,7 +61,7 @@ After `razorback:pre-merge-review` returns its morning-report summary block, pro
 After all tasks complete and verified (and pre-merge review, if any, has run):
 - Announce: "I'm using the finishing-a-development-branch skill to complete this work."
 - **REQUIRED SUB-SKILL:** Use razorback:finishing-a-development-branch
-- Follow that skill to verify the branch gate, present options, execute choice
+- Follow that skill in Autonomous Mode to verify the branch gate, push, create the PR, write the report, and stop before merge
 
 ## Blockers
 

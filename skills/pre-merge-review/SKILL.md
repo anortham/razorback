@@ -1,6 +1,6 @@
 ---
 name: pre-merge-review
-description: Use after all tasks are complete and branch verification passes, before finishing-a-development-branch, when a pre-merge external reviewer was chosen at plan approval time (codex, gemini, or claude).
+description: Use after all tasks are complete and branch verification passes, before finishing-a-development-branch, when a pre-merge external reviewer was chosen for the run (codex, gemini, or claude).
 ---
 
 # Pre-Merge External Review
@@ -16,7 +16,7 @@ Invoked by:
 - `executing-plans` Step 3 (between task execution and `finishing-a-development-branch`)
 - `subagent-driven-development` Step 4a (same position in that flow)
 
-Skip this skill entirely if the reviewer choice is `none`. The choice is fixed at plan approval time (captured by `writing-plans`) and does not change mid-run.
+Skip this skill entirely if the reviewer choice is `none`. The choice is fixed by `writing-plans` during execution handoff and does not change mid-run.
 
 **Pre-conditions:**
 
@@ -200,7 +200,7 @@ The caller (`executing-plans` Step 3 or `subagent-driven-development` Step 4a) t
 - **Let the reviewer edit code.** Reviewers are read-only: codex and claude pin `--tools "Read,Bash"`; gemini uses `--yolo` only to auto-approve its own Read calls and is instructed by prompt to be read-only. Delegated fixes route through fresh implementer workers, and no-delegation runs fix inline under the same Julie-first checklist.
 - **Silently dismiss findings.** Every dismissal requires a written reason in the morning report so the user can override on PR review. Silent dismissals defeat the whole point of running an external reviewer.
 - **Skip verification after fixes.** Every fix invalidates prior affected scopes. Run the required project-defined verification scope, or reuse a ledger entry only when it covers the current HEAD and required scope. Never push a branch whose most recent verification does not include the fix commits.
-- **Ship a PR without the reviewer the user requested.** Reviewer unavailability (auth, rate limit, budget/turn cap with no usable partial output, empty stdout, schema violation persisting after one retry) is a **blocker**, not a silent downgrade. Stop the run, do NOT push, do NOT create a PR, emit a partial morning report with `Status: Blocked` and the specific failure in `Blockers hit`, and exit. The user chose this reviewer at plan approval for a reason; quietly skipping the review turns an explicit request into an implicit "never mind".
+- **Ship a PR without the reviewer the user requested.** Reviewer unavailability (auth, rate limit, budget/turn cap with no usable partial output, empty stdout, schema violation persisting after one retry) is a **blocker**, not a silent downgrade. Stop the run, do NOT push, do NOT create a PR, emit a partial morning report with `Status: Blocked` and the specific failure in `Blockers hit`, and exit. The user chose this reviewer for the run; quietly skipping the review turns an explicit request into an implicit "never mind".
 
 ## Integration
 

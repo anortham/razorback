@@ -35,18 +35,12 @@ grep -i "worktree.*director" CLAUDE.md 2>/dev/null
 
 **If preference specified:** Use it without asking.
 
-### 3. Ask User
+### 3. Use Deterministic Default
 
-If no directory exists and no CLAUDE.md preference:
-
-```
-No worktree directory found. Where should I create worktrees?
-
-1. .worktrees/ (project-local, hidden)
-2. ~/.config/razorback/worktrees/<project-name>/ (global location)
-
-Which would you prefer?
-```
+If no directory exists and no CLAUDE.md preference: Default to `.worktrees/`.
+Create it if needed, verify it is ignored, and proceed. The user can still
+override the location explicitly in their request, but the workflow does not
+stop to ask for a directory preference.
 
 ## Safety Verification
 
@@ -114,7 +108,7 @@ Run the project-defined baseline or smoke verification scope to ensure the workt
 <project-defined baseline or smoke command>
 ```
 
-**If baseline verification fails:** Report failures, ask whether to proceed or investigate.
+**If baseline verification fails:** Treat it as a real blocker unless the plan explicitly says to work from a failing baseline. Report the failure with the command and short output summary. Do not proceed on a broken baseline by default.
 
 **If baseline verification passes:** Report ready.
 
@@ -135,9 +129,9 @@ Ready to implement <feature-name>
 | `.worktrees/` exists | Use it (verify ignored) |
 | `worktrees/` exists | Use it (verify ignored) |
 | Both exist | Use `.worktrees/` |
-| Neither exists | Check CLAUDE.md → Ask user |
+| Neither exists | Check CLAUDE.md, then default to `.worktrees/` |
 | Directory not ignored | Add to .gitignore + commit |
-| Tests fail during baseline | Report failures + ask |
+| Tests fail during baseline | Report blocker; do not proceed unless plan allows it |
 | No package.json/Cargo.toml | Skip dependency install |
 
 ## Common Mistakes
@@ -150,12 +144,12 @@ Ready to implement <feature-name>
 ### Assuming directory location
 
 - **Problem:** Creates inconsistency, violates project conventions
-- **Fix:** Follow priority: existing > CLAUDE.md > ask
+- **Fix:** Follow priority: existing > CLAUDE.md > `.worktrees/`
 
 ### Proceeding with failing tests
 
 - **Problem:** Can't distinguish new bugs from pre-existing issues
-- **Fix:** Report failures, get explicit permission to proceed
+- **Fix:** Report the baseline as blocked unless the plan explicitly allows a failing baseline
 
 ### Hardcoding setup commands
 
@@ -183,12 +177,12 @@ Ready to implement auth feature
 **Never:**
 - Create worktree without verifying it's ignored (project-local)
 - Skip baseline test verification
-- Proceed with failing tests without asking
+- Proceed with failing tests unless the plan explicitly allows that baseline
 - Assume directory location when ambiguous
 - Skip CLAUDE.md check
 
 **Always:**
-- Follow directory priority: existing > CLAUDE.md > ask
+- Follow directory priority: existing > CLAUDE.md > `.worktrees/`
 - Verify directory is ignored for project-local
 - Auto-detect and run project setup
 - Verify clean test baseline
