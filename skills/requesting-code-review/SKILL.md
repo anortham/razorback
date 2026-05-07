@@ -25,6 +25,9 @@ When using `razorback:subagent-driven-development`, the **lead does inline revie
 - Check tests verify behavior, not just that code runs
 - Reject the report if the implementer cannot show Julie-first orientation and
   the Julie calls they used
+- Compare the diff against the approved architecture, not just the symptom
+- If the same structural issue keeps recurring, route it through
+  `architecture-quality` Candidate Mode instead of looping more patches
 
 **If issues found:** Route the fix back to an implementer using the harness-native follow-up path. Resume the existing implementer on Claude Code or Codex when possible, or dispatch a fresh implementer with fix context where resume is unavailable. They fix and re-report. Review cap: 3 iterations.
 
@@ -91,6 +94,9 @@ HEAD_SHA=$(git rev-parse HEAD)
 **Ad-Hoc Development:**
 - Standalone review before merge
 - Standalone review when stuck
+- When repeated findings keep surfacing the same structural issue, stop the
+  patch loop, invoke `architecture-quality` Candidate Mode, and review against
+  the approved architecture before asking for another change
 
 ## Red Flags
 

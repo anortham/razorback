@@ -94,6 +94,7 @@ The lead must:
 - inspect tests for meaningful assertions
 - run affected-change verification after batches
 - keep branch-gate and expensive-specialist verification lead-owned
+- enforce architecture-quality decisions and reject worker-local redesigns
 - do final integration review on the strategy tier
 
 ## Escalation Triggers

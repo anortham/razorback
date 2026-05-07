@@ -88,6 +88,8 @@ IF conflicts with your human partner's prior decisions:
   Outside an approved run, ask one specific question before overriding the prior decision.
 ```
 
+External architecture feedback is evaluated through `architecture-quality` before implementation.
+
 **your human partner's rule:** "External feedback - be skeptical, but check carefully"
 
 ## YAGNI Check for "Professional" Features

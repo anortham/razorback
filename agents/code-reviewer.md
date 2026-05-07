@@ -31,10 +31,10 @@ When reviewing completed work, you will:
    - Use `julie:get_symbols(file_path)` to review file structure before reading full content
 
 3. **Architecture and Design Review**:
-   - Ensure the implementation follows SOLID principles and established architectural patterns
-   - Check for proper separation of concerns and loose coupling
-   - Verify that the code integrates well with existing systems
-   - Assess scalability and extensibility considerations
+   - Check the caller-facing interface and test surface, not just internal helpers
+   - Look for architecture drift, repeated findings, pass-through modules, and speculative seams
+   - Verify the code fits the approved module/interface shape and preserves existing boundaries
+   - Assess scalability considerations, performance implications, and security concerns
 
 4. **Documentation and Standards**:
    - Verify that code includes appropriate comments and documentation
