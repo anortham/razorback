@@ -41,6 +41,17 @@ or
 
 Use `No Architecture Impact` when the work is mechanical or behavior-local. Otherwise Gate Mode must explain the module/interface shape, why the change stays local or does not, what tests prove it through the caller-facing interface, and which shortcuts were rejected.
 
+## Review Checklist
+
+These six questions are the canonical compact checklist. They are duplicated verbatim at every architecture-quality enforcement point (worker self-review, lead inline review, standalone reviewer prompt). Edit them here first; the drift test in `tests/architecture-quality-checklist.test.mjs` then fails everywhere else until the copies are updated to match.
+
+- Does this keep complexity local?
+- Is the caller-facing interface smaller than the behavior it unlocks?
+- Are tests written through the same interface callers use?
+- Did new seams earn their keep?
+- Did this avoid speculative extensibility?
+- Did it fix the structural cause, not only the symptom?
+
 ## Candidate Mode
 
 Use Candidate Mode when structural friction is real and a concrete refactor candidate deserves review.

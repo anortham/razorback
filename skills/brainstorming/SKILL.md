@@ -90,8 +90,7 @@ digraph brainstorming {
     "Design already agreed?" -> "Explore project context" [label="yes"];
     "Design already agreed?" -> "Explore project context" [label="no (full process)"];
 
-    "Explore project context" -> "Run architecture-quality gate\n(or note No Architecture Impact)" [label="agreed"];
-    "Run architecture-quality gate\n(or note No Architecture Impact)" -> "Summarize agreed design";
+    "Explore project context" -> "Summarize agreed design" [label="agreed"];
     "Explore project context" -> "Visual questions ahead?" [label="unclear"];
     "Visual questions ahead?" -> "Offer Visual Companion\n(own message, no other content)" [label="yes"];
     "Visual questions ahead?" -> "Ask clarifying questions" [label="no"];
