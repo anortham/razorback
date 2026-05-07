@@ -235,6 +235,7 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 |-------|---------|
 | using-razorback | Entry point: skill routing, execution model, Julie toolchain |
 | brainstorming | Requirements exploration, design, approach selection |
+| architecture-quality | Architecture and interface quality checks for planning, review, and test surface decisions |
 | writing-plans | Implementation plans (full or light) with Julie-verified file paths |
 | executing-plans | Single-agent execution (fallback for sequential/single-task work or no-subagent harnesses) |
 | test-driven-development | Red-green-refactor with Julie-powered test discovery |

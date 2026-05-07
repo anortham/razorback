@@ -47,7 +47,9 @@ Skip any step = lying, not verifying
 | Bug fixed | Original symptom passes at worker scope | Code changed, assumed fixed |
 | Regression test works | Red-green cycle verified | Test passes once |
 | Agent completed | VCS diff shows changes | Agent reports "success" |
-| Requirements met | Line-by-line checklist | Tests passing |
+| Requirements met | Line-by-line checklist against the plan or spec | Tests passing alone |
+| Architecture decision followed | Approved architecture visible in the diff, ADR note, or verified implementation | "Looks aligned", verbal recall |
+| Review finding fixed | Fresh verification at the affected scope shows the specific reviewer finding no longer reproduces | Code changed, assumed fixed |
 
 ## Tool-Assisted Verification
 

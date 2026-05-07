@@ -43,8 +43,13 @@ If your review does not cite Julie-assisted investigation, it is incomplete.
 - DRY principle followed?
 - Edge cases handled?
 
-**Architecture:**
-- Sound design decisions?
+**Architecture / Interface:**
+- Does this keep complexity local?
+- Is the caller-facing interface smaller than the behavior it unlocks?
+- Are tests written through the same interface callers use?
+- Did new seams earn their keep?
+- Did this avoid speculative extensibility?
+- Did it fix the structural cause, not only the symptom?
 - Scalability considerations?
 - Performance implications?
 - Security concerns?

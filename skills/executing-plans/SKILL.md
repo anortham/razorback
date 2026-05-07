@@ -13,6 +13,8 @@ Load plan, review critically, execute all tasks, report when complete.
 
 **Inputs from `writing-plans`:** plan path, `reviewer_choice` (`none` / `codex` / `gemini` / `claude`, default `none`), verification strategy, and model routing. These propagate via the execution handoff and gate Step 3 below.
 
+**Architecture Quality:** The plan's `architecture-quality` output is authoritative. Preserve the approved architecture, do not redesign locally, and report a plan mismatch if code reality contradicts it.
+
 **Announce at start:** "I'm using the executing-plans skill to implement this plan."
 
 ## The Process
@@ -37,6 +39,7 @@ For each task:
 3. Follow each step exactly (plan has bite-sized steps)
 4. Run verifications as specified
 5. Mark as completed
+6. Candidate Mode during autonomous execution: record non-required refactor candidates in the report or ADR offer, not in the current work. Only fold in refactors required for correctness, testability, or avoiding a brittle patch without a new user prompt.
 
 ### Step 3: Pre-merge external review (if chosen)
 

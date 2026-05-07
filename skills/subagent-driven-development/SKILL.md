@@ -110,6 +110,7 @@ Use the template at `./implementer-prompt.md`. The spawn prompt MUST include:
 7. **Model routing tier** assigned to this task (`implementation`, `mechanical`, `strategy`, `gate-review`, or `escalation`)
 8. **Julie evidence requirement** (the implementer must report which Julie calls they used and what those calls confirmed)
 9. **Gate invariant requirement** (the implementer must state what each assigned test, replay, metric, or acceptance gate proves)
+10. **architecture-quality context** (the approved architecture, any `No Architecture Impact` note, and the plan mismatch rule)
 
 ### Model Routing Contract
 
@@ -213,6 +214,15 @@ When the implementer reports completion, the lead does a single inline review co
 - Use `get_symbols(file_path)` to scan changed files without reading them fully.
 - Confirm the report includes the Julie calls used. If the implementer cannot
   show Julie-first orientation, send it back.
+
+**architecture-quality review:**
+- Did the worker preserve the approved architecture shape, or did it report a plan mismatch when code reality disagreed?
+- Does this keep complexity local?
+- Is the caller-facing interface smaller than the behavior it unlocks?
+- Are tests written through the same interface callers use?
+- Did new seams earn their keep?
+- Did this avoid speculative extensibility?
+- Did it fix the structural cause, not only the symptom?
 
 **Code quality:**
 - Is the code clean, tested, and maintainable?
