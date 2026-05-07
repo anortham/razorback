@@ -95,8 +95,16 @@ Light plans use task-level granularity instead: each task is a coherent unit of 
 
 **Tech Stack:** [Key technologies/libraries]
 
+**Architecture Quality:** [Approved module/interface shape, architecture risk, or `No Architecture Impact` for mechanical plans]
+
 ---
 ```
+
+## Architecture Quality
+
+Non-mechanical plans MUST include an `Architecture Quality` section that records the approved module/interface shape and the main architecture risk. Mechanical plans may use a `No Architecture Impact` note instead.
+
+If code reality contradicts the approved shape, the worker reports a plan mismatch rather than redesigning locally.
 
 ## Verification Strategy
 

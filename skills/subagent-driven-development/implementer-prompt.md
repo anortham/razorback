@@ -57,6 +57,20 @@ Agent tool (general-purpose):
     targeted, token-efficient context in 1-2 calls instead of 5-8. If you skip
     Julie and start with raw-file exploration, you have broken the workflow.
 
+    ## Architecture Quality
+
+    The approved module/interface shape in the plan is part of the spec.
+
+    - Preserve the approved module/interface shape.
+    - Do not redesign locally just because a different shape looks cleaner.
+    - If code reality contradicts the approved shape, report a plan mismatch instead of silently changing direction.
+    - Does this keep complexity local?
+    - Is the caller-facing interface smaller than the behavior it unlocks?
+    - Are tests written through the same interface callers use?
+    - Did new seams earn their keep?
+    - Did this avoid speculative extensibility?
+    - Did it fix the structural cause, not only the symptom?
+
     ## Your Job
 
     Once you're clear on requirements:

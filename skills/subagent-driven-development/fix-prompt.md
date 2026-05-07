@@ -16,9 +16,11 @@ Agent tool (resume: "<implementer-agent-id>"):
     ## What to Do
 
     1. Fix each issue listed above
-    2. Run the assigned verification scope from the plan
-    3. Commit the fixes
-    4. Report what you changed
+    2. Fix the structural cause, not only the symptom
+    3. Do not weaken tests or introduce speculative seams
+    4. Run the assigned verification scope from the plan
+    5. Commit the fixes
+    6. Report what you changed
 
     Keep it focused - fix what the reviewer flagged, don't refactor beyond that.
 
