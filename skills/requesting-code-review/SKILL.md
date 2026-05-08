@@ -52,9 +52,9 @@ HEAD_SHA=$(git rev-parse HEAD)
 | Copilot CLI | `task(agent_type="razorback:code-reviewer", …)` — plugin agents auto-discovered |
 | Codex | `spawn_agent(agent_type="worker", message=<see two-file note below>)` |
 | OpenCode | `Task` tool with `general` subagent (message built as in the two-file note below) |
-| Gemini CLI | No subagents — lead applies the reviewer checklist inline |
+| Gemini CLI | `invoke_agent(agent_name="generalist", prompt=<see two-file note below>)` — same concatenation pattern as Codex / OpenCode. Drop a custom `.gemini/agents/code-reviewer.md` into the target repo if you want a named reviewer agent instead. |
 
-**Two-file note (Codex / OpenCode inline-prompt harnesses):** The reviewer uses two files. `agents/code-reviewer.md` holds the reviewer's system-prompt body (its behavioral spec). `requesting-code-review/code-reviewer.md` is the task template with placeholders (`{WHAT_WAS_IMPLEMENTED}`, `{PLAN_OR_REQUIREMENTS}`, `{BASE_SHA}`, `{HEAD_SHA}`, `{DESCRIPTION}`). On Claude Code / Cursor / Copilot CLI the agent discovery wires these together automatically. On Codex and OpenCode, build the dispatch message by concatenating: (1) `agents/code-reviewer.md` body (strip the frontmatter), then (2) the filled-in `requesting-code-review/code-reviewer.md` template. Send that as the subagent's task message.
+**Two-file note (Codex / OpenCode / Gemini CLI inline-prompt harnesses):** The reviewer uses two files. `agents/code-reviewer.md` holds the reviewer's system-prompt body (its behavioral spec). `requesting-code-review/code-reviewer.md` is the task template with placeholders (`{WHAT_WAS_IMPLEMENTED}`, `{PLAN_OR_REQUIREMENTS}`, `{BASE_SHA}`, `{HEAD_SHA}`, `{DESCRIPTION}`). On Claude Code / Cursor / Copilot CLI the agent discovery wires these together automatically. On Codex, OpenCode, and Gemini CLI, build the dispatch message by concatenating: (1) `agents/code-reviewer.md` body (strip the frontmatter), then (2) the filled-in `requesting-code-review/code-reviewer.md` template. Send that as the subagent's task message (Codex `spawn_agent` `message`, OpenCode `Task` prompt, or Gemini `invoke_agent` `prompt`).
 
 **Placeholders:**
 - `{WHAT_WAS_IMPLEMENTED}` - What you just built

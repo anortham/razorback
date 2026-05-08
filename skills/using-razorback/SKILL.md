@@ -58,7 +58,7 @@ Skills use Claude Code tool names. On non-Claude-Code platforms, substitute the 
 
 - **Codex:** see `references/codex-tools.md` (Task→spawn_agent, TodoWrite→update_plan, etc.)
 - **Copilot CLI:** see `references/copilot-tools.md` (Read→view, Edit→edit, Task→task, etc.)
-- **Gemini CLI:** see `references/gemini-tools.md` — loaded automatically via `GEMINI.md` (Read→read_file, Edit→replace, no subagents, etc.)
+- **Gemini CLI:** see `references/gemini-tools.md` — loaded automatically via `GEMINI.md` (Read→read_file, Edit→replace, Task→`invoke_agent` with `generalist`, etc.)
 - **OpenCode:** tool mapping is injected automatically by the razorback plugin bootstrap (Task→opencode's Task tool, TodoWrite→todowrite, etc.)
 
 # Using Skills
@@ -124,7 +124,7 @@ When executing implementation plans:
 - **1 task, tightly sequential work, or no delegation:** Use `razorback:executing-plans` (single agent, batch execution)
 - **Ad-hoc parallel work (delegation available):** Use `razorback:dispatching-parallel-agents` (independent agent dispatch)
 
-`subagent-driven-development` is the delegated execution path across Claude Code, Cursor, Codex, OpenCode, and Copilot CLI. If the harness lacks subagent support, or the current session cannot delegate, fall back to `executing-plans`. The lead does inline review (spec compliance + code quality) either way.
+`subagent-driven-development` is the delegated execution path across Claude Code, Cursor, Codex, OpenCode, Copilot CLI, and Gemini CLI. If the current session cannot delegate (e.g., already running as a subagent — Gemini blocks recursion), fall back to `executing-plans`. The lead does inline review (spec compliance + code quality) either way.
 
 ## Skill Priority
 

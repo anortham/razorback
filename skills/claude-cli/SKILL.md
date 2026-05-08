@@ -18,11 +18,11 @@ skips OAuth and keychain auth reads, so the common Claude login path fails.
 - **Model**: use repo-root `RAZORBACK.md` model routing when present. If absent,
   inherit the current Claude default or use the strongest available reviewer
   model for adversarial review.
+- **Reasoning effort**: `--effort <level>` accepts `low | medium | high | xhigh | max`. Map razorback's tiers to it (mechanical→low, implementation→medium, strategy→high, escalation→xhigh, escalation-deep→max). If `RAZORBACK.md` doesn't specify, omit the flag and let the model default.
+- **Fallback model**: `--fallback-model <model>` auto-falls-back when the primary is overloaded (works only with `--print`). Fits razorback's autonomous-by-default flow — a review shouldn't hard-fail on capacity. Use the project policy's lower-cost reviewer tier as the fallback.
 - **Ephemeral**: `--no-session-persistence` so the review leaves no stored
   session behind (parity with codex's `--ephemeral`).
-- **No `--bare`**: current Claude help says bare mode skips OAuth and
-  keychain auth reads. This skill avoids it so normal Anthropic logins keep
-  working.
+- **No `--bare`**: bare mode reads auth strictly from `ANTHROPIC_API_KEY` or `apiKeyHelper` (not OAuth or keychain). The common razorback caller has OAuth, so this skill avoids `--bare` to keep normal logins working. If you have a guaranteed `ANTHROPIC_API_KEY` env in CI, `--bare` is fine.
 - **Output format**: `--output-format json` for structured returns; combine
   with `--json-schema` for schema-validated adversarial output.
 - **Stderr**: append `2>/dev/null` to suppress banner and status noise.
@@ -36,15 +36,16 @@ skips OAuth and keychain auth reads, so the common Claude login path fails.
 - **Auth**: Logged in via Anthropic OAuth or API key. Check with
   `claude auth status` (exits 0 logged in, 1 otherwise). If it fails, tell
   the user to run `claude login` in a terminal. If you copied an older
-  command that includes `--bare`, remove that flag first.
+  command that includes `--bare`, remove that flag first (unless you have a guaranteed `ANTHROPIC_API_KEY`).
 
-For command snippets below, set `CLAUDE_MODEL` before invoking:
+For command snippets below, set `CLAUDE_MODEL` and (optionally) `CLAUDE_EFFORT` before invoking:
 
 ```bash
 CLAUDE_MODEL="${RAZORBACK_CLAUDE_REVIEW_MODEL:-opus}"
+CLAUDE_EFFORT="${RAZORBACK_CLAUDE_REVIEW_EFFORT:-high}"  # low | medium | high | xhigh | max
 ```
 
-Source the value from the plan's Model Routing section, `RAZORBACK.md`, or the env var above. If no route exists, the default (`opus`) applies. Claude Code's Agent tool uses short names (`opus`, `sonnet`, `haiku`); the CLI's `--model` flag accepts both short and full model IDs.
+Source the values from the plan's Model Routing section, `RAZORBACK.md`, or the env vars above. If no route exists, `opus` + `high` is a reasonable adversarial-review default. Claude Code's Agent tool uses short names (`opus`, `sonnet`, `haiku`); the CLI's `--model` flag accepts both short and full model IDs. Add `--effort "$CLAUDE_EFFORT"` to any review command when the project policy specifies a tier; omit it to inherit the model default.
 
 ## Review Targeting
 
@@ -122,6 +123,7 @@ cd /path/to/project && claude -p \
   --dangerously-skip-permissions \
   --tools "Read,Bash" \
   --model "$CLAUDE_MODEL" \
+  ${CLAUDE_EFFORT:+--effort "$CLAUDE_EFFORT"} \
   "Your prompt here" \
   2>/dev/null
 ```
@@ -177,6 +179,8 @@ cd /path/to/project && claude -p \
   --max-turns 15 \
   --max-budget-usd 5.00 \
   --model "$CLAUDE_MODEL" \
+  ${CLAUDE_EFFORT:+--effort "$CLAUDE_EFFORT"} \
+  ${CLAUDE_FALLBACK_MODEL:+--fallback-model "$CLAUDE_FALLBACK_MODEL"} \
   "$PROMPT" \
   2>/dev/null
 ```
@@ -276,6 +280,8 @@ cd /path/to/project && claude -p \
   --max-turns 15 \
   --max-budget-usd 5.00 \
   --model "$CLAUDE_MODEL" \
+  ${CLAUDE_EFFORT:+--effort "$CLAUDE_EFFORT"} \
+  ${CLAUDE_FALLBACK_MODEL:+--fallback-model "$CLAUDE_FALLBACK_MODEL"} \
   --system-prompt-file "$PROMPT_FILE" \
   "$DIFF_AND_CONTEXT" \
   2>/dev/null
@@ -284,7 +290,7 @@ cd /path/to/project && claude -p \
 The baseline flags are: `-p`, `--no-session-persistence`,
 `--dangerously-skip-permissions`, `--output-format json`, `--json-schema`,
 `--tools "Read,Bash"`, `--max-turns 15`, `--max-budget-usd 5.00`,
-`--model "$CLAUDE_MODEL"`, `--system-prompt-file`.
+`--model "$CLAUDE_MODEL"`, `--system-prompt-file`. Add `--effort "$CLAUDE_EFFORT"` when policy specifies a tier, and `--fallback-model "$CLAUDE_FALLBACK_MODEL"` for autonomous runs that should survive an overload.
 
 No `--bare` flag is used. Current Claude help says bare mode skips OAuth and
 keychain auth reads, so it is a trap for the common login path.
@@ -386,7 +392,7 @@ clarifying questions about findings).
 
 Claude reads `CLAUDE.md` from the project root and discovers plugins, hooks,
 skills, and MCP servers by default. This skill accepts that tradeoff because
-`--bare` disables OAuth and keychain auth.
+`--bare` disables OAuth and keychain auth (CI runs with a guaranteed `ANTHROPIC_API_KEY` can use `--bare` safely).
 
 There is no `-C`/`--cwd` flag equivalent to codex's working-directory
 override. To review a project other than cwd, `cd` into it first:
@@ -397,8 +403,9 @@ cd ~/source/other-project && claude -p --no-session-persistence \
   "prompt" 2>/dev/null
 ```
 
-Do not use `--bare` for adversarial review either. A working reviewer with a
-fresh prompt beats a broken "pure" invocation.
+**Self-review with razorback skills loaded:** if you want the reviewer to apply razorback's Julie-first review checklist itself, add `--plugin-dir <path-to-razorback>` so the reviewer session loads the same skills your main session uses. Without it, the reviewer sees only the project's `CLAUDE.md`.
+
+Do not use `--bare` for adversarial review unless you have a guaranteed `ANTHROPIC_API_KEY`. A working reviewer with a fresh prompt beats a broken "pure" invocation.
 
 ## Critical Evaluation
 
@@ -454,10 +461,9 @@ think it's wrong, and your evidence.
 
 ## Quick Reference
 
-Use the model tier from repo-root `RAZORBACK.md` when present. If no policy
+Use the model and effort tier from repo-root `RAZORBACK.md` when present. If no policy
 exists, inherit the current Claude default or use the strongest available
-reviewer model for adversarial review. This skill does not use `--bare`;
-current Claude help says that flag skips OAuth and keychain auth.
+reviewer model for adversarial review. This skill avoids `--bare` for OAuth/keychain users; CI with `ANTHROPIC_API_KEY` can use it.
 
 | Use case | Mode | Command pattern |
 |---|---|---|
@@ -465,3 +471,6 @@ current Claude help says that flag skips OAuth and keychain auth.
 | Code review | read-only + schema | Add `--output-format json --json-schema "$SCHEMA_JSON" --max-turns 15 --max-budget-usd 5.00` (inline schema as a string; see Code Review section). Scope/sizing per Review Targeting. |
 | Adversarial review | read-only + schema + system prompt | Add `--system-prompt-file "$PROMPT_FILE"` (temp file materialized from the Adversarial Prompt Template) to the code-review pattern. Scope/sizing per Review Targeting. |
 | Resume session | persistent | Drop `--no-session-persistence`, use `claude -r "prompt"` |
+| Apply policy tier | any | Add `--effort "$CLAUDE_EFFORT"` (low/medium/high/xhigh/max) when `RAZORBACK.md` specifies a reasoning tier |
+| Survive overload | autonomous | Add `--fallback-model "$CLAUDE_FALLBACK_MODEL"` so the run doesn't hard-fail on capacity |
+| Self-review with razorback skills | any | Add `--plugin-dir <path-to-razorback>` so the reviewer loads the same skill set |

@@ -93,7 +93,7 @@ Copilot CLI reads the same `.claude-plugin/marketplace.json` that Claude Code us
 gemini extensions install https://github.com/anortham/razorback
 ```
 
-Gemini loads `gemini-extension.json` + `GEMINI.md` at session start, which pulls in the `using-razorback` skill and the Gemini tool mapping. Gemini CLI doesn't support subagents, so `subagent-driven-development` and `dispatching-parallel-agents` fall back to single-session execution via `executing-plans`.
+Gemini loads `gemini-extension.json` + `GEMINI.md` at session start, which pulls in the `using-razorback` skill and the Gemini tool mapping. Subagent dispatch goes through Gemini's `invoke_agent` tool with the built-in `generalist` agent (parallel by default), so `subagent-driven-development` and `dispatching-parallel-agents` work the same way they do on the other harnesses.
 
 ### After Installation
 
@@ -217,9 +217,8 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 
 **Execution model (primary path depends on harness):**
 - **Autonomous by default:** once a plan is approved, execution runs to completion gated only by real blockers. A blocker is real only when the agent cannot resolve it through reasonable plan-consistent judgment. An optional pre-merge external review (codex / gemini / claude) runs before branch finish. See [autonomous-execution design](docs/plans/2026-04-18-autonomous-execution-design.md) for the rationale.
-- **Harnesses with delegation support, 2+ independent tasks:** `subagent-driven-development` dispatches fresh implementer subagents (in parallel when tasks are independent), and the lead does inline review (spec compliance + code quality) per task.
-- **Gemini CLI (no subagent support):** falls back to `executing-plans` for all plans.
-- **1 task, tightly sequential work, or no delegation:** `executing-plans` runs single-agent batch execution.
+- **2+ independent tasks (any harness):** `subagent-driven-development` dispatches fresh implementer subagents (in parallel when tasks are independent), and the lead does inline review (spec compliance + code quality) per task. On Gemini CLI, dispatch goes through `invoke_agent(agent_name="generalist", …)`.
+- **1 task, tightly sequential work, or no delegation available:** `executing-plans` runs single-agent batch execution.
 - **Ad-hoc parallel work (delegation available):** `dispatching-parallel-agents` for independent tasks outside plans.
 
 **Verification and model routing:**

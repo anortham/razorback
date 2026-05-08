@@ -16,14 +16,17 @@ models through the project's razorback routing policy.
 - **Reasoning**: use the tier mapped by `RAZORBACK.md`. Reserve the escalation
   tier for subtle correctness, security, weak tests, high blast radius, or
   repeated failures.
+- **Sandbox mode**: `-s, --sandbox <MODE>` accepts `read-only | workspace-write | danger-full-access`. Use `read-only` for review (the reviewer can investigate but cannot edit). `--full-auto` is a shorthand for `--sandbox workspace-write` plus on-request approvals — keep using it for delegate flows. Pair with `--dangerously-bypass-approvals-and-sandbox` only when the user explicitly asks and the environment is externally sandboxed.
 - **Always use**: `--ephemeral --color never` for clean non-interactive output
 - **Always append**: `2>/dev/null` to suppress stderr noise (session banner, transcript)
 - **Working directory**: `-C /path/to/project` sets the root. Defaults to cwd.
+- **Output capture**: `-o, --output-last-message <FILE>` writes the agent's final message to a file. Use this for adversarial review when you need the JSON cleanly without stderr/banner contamination — point a temp file at it and read the file afterwards.
 - **Timeout**: 300000ms (5 min) for simple queries, 600000ms (10 min) for
   deep reviews or delegation work. Escalation-tier reasoning on large diffs can
   take several minutes; use generous timeouts.
 - **Auth**: Logged in via ChatGPT OAuth. If auth fails, tell the user to run
   `codex login` in a terminal.
+- **Profiles**: `-p, --profile <NAME>` selects a `~/.codex/config.toml` profile. If the user's policy defines a "review" profile (specific model + reasoning + sandbox), pass it instead of repeating those flags inline. Niche; only relevant when the user actually maintains profiles.
 
 ## Review Targeting
 
@@ -115,6 +118,20 @@ perspectives.
 The user wants a review of current changes. Use the strategy tier from
 `RAZORBACK.md`, or inherit the current Codex default if no policy exists.
 
+**Native alternative — `codex exec review`:** Codex ships a built-in scoped review subcommand: `codex exec review --uncommitted` (working tree), `codex exec review --base <branch>` (branch vs base), or `codex exec review --commit <sha>`. It auto-detects scope and accepts a custom prompt via `[PROMPT]` or stdin. It does **not** support `--output-schema`, so use the regular `codex exec` path below for adversarial / schema-validated review. Use `codex exec review` when the user wants a quick codex-flavored second opinion and doesn't need cross-reviewer prompt parity.
+
+```bash
+# Quick scoped review of uncommitted changes
+codex exec review --uncommitted --ephemeral --color never \
+  -C /path/to/project \
+  -o /tmp/review.txt \
+  "Focus on error handling and concurrency safety." \
+  2>/dev/null
+cat /tmp/review.txt
+```
+
+For the unified-prompt path (consistent with claude-cli / gemini-cli reviewers), continue with the steps below.
+
 **Step 1: Apply Review Targeting**
 
 Resolve `$DIFF`, `$TARGET`, and the foreground/background decision per the
@@ -203,16 +220,19 @@ cat > "$SCHEMA_FILE" <<'SCHEMA_EOF'
 }
 SCHEMA_EOF
 
+RESULT_FILE=$(mktemp) && trap 'rm -f "$RESULT_FILE"' EXIT
 echo "$ADVERSARIAL_PROMPT" | codex exec --ephemeral --color never \
   -C /path/to/project \
   --output-schema "$SCHEMA_FILE" \
+  -o "$RESULT_FILE" \
   - \
   2>/dev/null
+cat "$RESULT_FILE"  # Clean JSON, no banner/transcript noise
 ```
 
 The `--output-schema` flag tells Codex to return JSON matching the review
 schema (verdict, summary, findings with severity/file/line/confidence, next
-steps).
+steps). `-o` writes the agent's final message to a file so the JSON arrives uncontaminated by status output.
 
 **After**: Parse the JSON output. Present findings grouped by severity
 (critical first). For each finding, show the file, lines, and recommendation.
@@ -328,6 +348,17 @@ To review a project other than cwd:
 codex exec --ephemeral --color never -C ~/source/other-project "prompt" 2>/dev/null
 ```
 
+**Truly fresh reviewer (no project context bias):** if the reviewing instance should *not* inherit AGENTS.md or `.rules` from the project being reviewed (e.g., adversarial review where project conventions might rationalize the change), add `--ignore-user-config` and `--ignore-rules`:
+
+```bash
+codex exec --ephemeral --color never \
+  -C ~/source/other-project \
+  --ignore-user-config --ignore-rules \
+  "prompt" 2>/dev/null
+```
+
+Auth still uses `CODEX_HOME` even with `--ignore-user-config`, so login isn't affected.
+
 ## Critical Evaluation
 
 Codex is a peer, not an authority. It runs on OpenAI's models with their own
@@ -370,7 +401,10 @@ the project policy or user request gives a concrete route.
 | Use case | Mode | Command pattern |
 |---|---|---|
 | Second opinion | read-only | `codex exec --ephemeral --color never -C dir "prompt" 2>/dev/null` |
-| Code review | read-only | Pipe diff: `echo "$PROMPT" \| codex exec --ephemeral --color never -C dir - 2>/dev/null` (scope/sizing per Review Targeting) |
+| Code review (unified prompt) | read-only | Pipe diff: `echo "$PROMPT" \| codex exec --ephemeral --color never -C dir - 2>/dev/null` (scope/sizing per Review Targeting) |
+| Code review (codex-native scope) | read-only | `codex exec review --uncommitted -C dir -o /tmp/review.txt "focus" 2>/dev/null` (or `--base <branch>` / `--commit <sha>`). No `--output-schema` support. |
 | Adversarial review | read-only + schema | Add `--output-schema "$SCHEMA_FILE"` where `$SCHEMA_FILE` is a temp file materialized from the inlined schema (see Adversarial Review section). Scope/sizing per Review Targeting. |
-| Delegate (complex) | full-auto | `codex exec --ephemeral --color never --full-auto -C dir "prompt" 2>/dev/null` |
+| Delegate (complex) | workspace-write | `codex exec --ephemeral --color never --full-auto -C dir "prompt" 2>/dev/null` (or explicitly `-s workspace-write`) |
+| Truly fresh reviewer | read-only + isolated | Add `--ignore-user-config --ignore-rules` to skip project AGENTS.md and execpolicy `.rules` |
+| Clean output capture | any | Add `-o <file>` to write the agent's last message to a file instead of mixing it with stderr/banner output |
 | Resume session | persistent | Drop `--ephemeral`, use `codex exec resume --last "prompt"` |

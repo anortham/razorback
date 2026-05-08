@@ -1,6 +1,6 @@
 # Razorback — Project Instructions
 
-Razorback is a skill set for Claude Code, Cursor, Codex, OpenCode, Copilot CLI, and Gemini CLI that diverged from [Superpowers](https://github.com/obra/superpowers). It uses Julie MCP for token-efficient codebase orientation. Plan execution routes through `subagent-driven-development` on harnesses that support delegation, and through `executing-plans` otherwise. Gemini CLI has no subagent support, so multi-task plans fall back to `executing-plans`.
+Razorback is a skill set for Claude Code, Cursor, Codex, OpenCode, Copilot CLI, and Gemini CLI that diverged from [Superpowers](https://github.com/obra/superpowers). It uses Julie MCP for token-efficient codebase orientation. Plan execution routes through `subagent-driven-development` on harnesses that support delegation, and through `executing-plans` otherwise.
 
 ## Project Structure
 
@@ -52,7 +52,7 @@ docs/specs/                         — Design specifications
 - Live in `agents/<agent-name>.md`
 - YAML frontmatter: `name`, `description`, `model` fields
 - Body is the system prompt for the agent
-- Discoverable as named plugin agents on Claude Code, Cursor, Copilot CLI. On Codex / OpenCode, agents are dispatched via inline-prompt concatenation (see `skills/requesting-code-review/SKILL.md` Mode 2 for the pattern). Gemini CLI has no subagents; agent checklists are applied inline by the lead.
+- Discoverable as named plugin agents on Claude Code, Cursor, Copilot CLI. On Codex / OpenCode / Gemini CLI, agents are dispatched via inline-prompt concatenation (see `skills/requesting-code-review/SKILL.md` Mode 2 for the pattern); on Gemini the dispatch tool is `invoke_agent(agent_name="generalist", prompt=…)`.
 
 ### Commands
 - Live in `commands/<command-name>.md`
@@ -89,15 +89,12 @@ Use directive language: "Use julie:deep_dive BEFORE modifying any symbol" not "c
 - Julie MCP server is a **hard requirement** — no fallback to generic tools for codebase exploration
 - Goldfish MCP server is a **hard requirement** — used for persistent memory (checkpoints, briefs, recall) and compaction-durable execution during long autonomous runs
 - Skills assume both Julie and Goldfish are configured and available
-- On Gemini CLI, the no-subagent constraint routes multi-task plans through `executing-plans` automatically
 
 ## Execution Model
 
-**Primary execution path (harness-dependent):**
-- **Claude Code, Cursor, Codex, OpenCode, Copilot CLI:** `subagent-driven-development` dispatches fresh implementer subagents per task, parallel when tasks are independent, inline review by lead.
-- **Gemini CLI:** no subagent support — all plans execute via `executing-plans` (single-session batch).
+**Primary execution path:** All six harnesses (Claude Code, Cursor, Codex, OpenCode, Copilot CLI, Gemini CLI) support `subagent-driven-development`. The lead dispatches fresh implementer subagents per task, parallel when tasks are independent, inline review by lead. Gemini CLI uses `invoke_agent(agent_name="generalist", …)` (parallel by default).
 
-**Shared across harnesses with subagent support:**
+**Shared across all harnesses:**
 - **Sequential/single-task:** `executing-plans` (single agent, batch execution)
 - **Ad-hoc parallel:** `dispatching-parallel-agents` (independent agent dispatch outside plans)
 - Lead does inline review (spec compliance + code quality) — no separate reviewer subagents
@@ -108,7 +105,7 @@ Use directive language: "Use julie:deep_dive BEFORE modifying any symbol" not "c
 - **Codex (CLI + desktop app):** native skill discovery scans `~/.agents/skills/razorback/` at startup. Users see the raw SKILL.md content; delegated runs use `subagent-driven-development` when the session can spawn workers, and fall back to `executing-plans` otherwise. Tool-name mapping lives in `skills/using-razorback/references/codex-tools.md`.
 - **OpenCode:** `.opencode/plugins/razorback.js` registers the skills directory and injects the bootstrap on the first user message (via `experimental.chat.messages.transform`). The plugin injects the shared bootstrap verbatim and adds OpenCode tool mapping.
 - **Copilot CLI:** same `hooks/session-start` script; platform detection keys on `COPILOT_CLI` and emits top-level `additionalContext` (SDK standard). Plugin agents (like `razorback:code-reviewer`) are auto-discovered from the installed marketplace.
-- **Gemini CLI:** `gemini-extension.json` declares `GEMINI.md` as the context file. `GEMINI.md` uses `@./` includes to pull in `skills/using-razorback/SKILL.md` + `skills/using-razorback/references/gemini-tools.md` at session start. No subagent support means `subagent-driven-development` and `dispatching-parallel-agents` fall back to `executing-plans`.
+- **Gemini CLI:** `gemini-extension.json` declares `GEMINI.md` as the context file. `GEMINI.md` uses `@./` includes to pull in `skills/using-razorback/SKILL.md` + `skills/using-razorback/references/gemini-tools.md` at session start. Subagent dispatch uses Gemini's `invoke_agent` tool with the built-in `generalist` agent (parallel by default; `wait_for_previous: true` to serialize). Subagents cannot recursively dispatch other subagents — fine for razorback because review is inline by the lead.
 
 ### Autonomy
 

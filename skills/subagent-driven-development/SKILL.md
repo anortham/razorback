@@ -13,6 +13,7 @@ Execute a plan by dispatching fresh subagents per task, with the lead doing inli
 - **Claude Code:** `Agent` tool (one call per subagent; multiple calls in one turn run in parallel).
 - **opencode:** `Task` tool (one call per subagent; multiple calls in one turn run in parallel). The built-in `general` subagent is suitable for most implementer work; `@mention` also works for manual invocation.
 - **Codex:** `spawn_agent(agent_type="worker", message=<filled prompt>)` (one call per subagent; multiple calls in one turn run in parallel). Keep the returned agent ID, `send_input(target=<agent-id>, message=...)` feeds follow-ups (the closest thing to Claude Code's resume), `wait_agent(targets=[<agent-id>])` blocks until the agent finishes, and `close_agent(target=<agent-id>)` frees the slot. Requires `multi_agent = true` in `~/.codex/config.toml` (see `skills/using-razorback/references/codex-tools.md`).
+- **Gemini CLI:** `invoke_agent(agent_name="generalist", prompt=<filled prompt>)` (parallel by default; set `wait_for_previous: true` only when you need a call serialized behind earlier ones). Resume is not available — route fix rounds via a fresh `invoke_agent` call with the fix prompt and prior-task context. Subagents cannot recursively dispatch other subagents, so all worker dispatch happens from the lead session.
 
 If the harness supports per-agent model or reasoning selection, apply the plan's Model Routing tier when dispatching. If it does not, use `inherit` and note that in the task report.
 
@@ -45,7 +46,7 @@ digraph when_to_use {
 **Harness-specific follow-up behavior:**
 - Claude Code can resume an existing implementer for fix rounds
 - Codex can use `send_input` on the stored worker for fix rounds
-- OpenCode uses fresh dispatches with fix context because resume is not available
+- OpenCode and Gemini CLI use fresh dispatches with fix context because resume is not available
 - The execution model stays the same across harnesses: dispatch per task, inline review by lead, parallel fan-out only when files do not overlap
 
 ## The Process
