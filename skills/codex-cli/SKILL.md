@@ -21,9 +21,11 @@ models through the project's razorback routing policy.
 - **Always append**: `2>/dev/null` to suppress stderr noise (session banner, transcript)
 - **Working directory**: `-C /path/to/project` sets the root. Defaults to cwd.
 - **Output capture**: `-o, --output-last-message <FILE>` writes the agent's final message to a file. Use this for adversarial review when you need the JSON cleanly without stderr/banner contamination — point a temp file at it and read the file afterwards.
-- **Timeout**: 300000ms (5 min) for simple queries, 600000ms (10 min) for
-  deep reviews or delegation work. Escalation-tier reasoning on large diffs can
-  take several minutes; use generous timeouts.
+- **Timeout**: 600000ms (10 min) for simple queries, 1200000ms (20 min) for
+  deep reviews or delegation work, 1800000ms (30 min) for escalation-tier
+  reasoning on large diffs. Err generous — a single timeout wastes more time
+  (and tokens) than a longer wait, especially when Codex is itself calling out
+  to another model. Don't default below 10 min.
 - **Auth**: Logged in via ChatGPT OAuth. If auth fails, tell the user to run
   `codex login` in a terminal.
 - **Profiles**: `-p, --profile <NAME>` selects a `~/.codex/config.toml` profile. If the user's policy defines a "review" profile (specific model + reasoning + sandbox), pass it instead of repeating those flags inline. Niche; only relevant when the user actually maintains profiles.
@@ -383,9 +385,10 @@ think it's wrong, and your evidence.
   `codex login` in a terminal.
 - **Rate limits**: ChatGPT plan has rolling 5-hour limits. If you hit them,
   tell the user and suggest trying again later or using a simpler prompt.
-- **Timeout**: escalation-tier reasoning on large diffs can take minutes. Set generous
-  Bash timeouts (600000ms). If it still times out, try splitting the review
-  into smaller chunks.
+- **Timeout**: escalation-tier reasoning on large diffs can take 10-20+ minutes,
+  longer when Codex delegates to another model. Set generous Bash timeouts
+  (1800000ms / 30 min for escalation-tier). If it still times out, split the
+  review into smaller chunks rather than retrying with the same timeout.
 - **Empty output**: If stdout is empty, check stderr (remove `2>/dev/null`
   temporarily) for error messages.
 - **No git repo**: Add `--skip-git-repo-check` for non-repo directories.

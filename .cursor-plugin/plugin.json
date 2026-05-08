@@ -2,7 +2,7 @@
   "name": "razorback",
   "displayName": "Razorback",
   "description": "Julie-powered development workflow with subagent-driven execution, inline review, and Julie-first codebase orientation.",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "author": {
     "name": "Alan Northam"
   },

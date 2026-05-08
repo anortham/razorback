@@ -14,7 +14,7 @@ Use the Gemini CLI (`gemini`) to get a second opinion, delegate work, request co
   for mechanical work.
 - **Output**: `-o text` for human-readable (use `-o json` when you need stats or structured parsing)
 - **Always append**: `2>/dev/null` to suppress stderr noise (auth messages, debug info) and get clean stdout only
-- **Timeout**: Always set the Bash tool's `timeout` parameter — minimum 300000ms (5 min) for simple queries, 600000ms (10 min) for delegation/refactoring tasks. Gemini also has a native `--timeout <ms>` flag you can pair with this for belt-and-suspenders.
+- **Timeout**: Always set the Bash tool's `timeout` parameter — minimum 600000ms (10 min) for simple queries, 1200000ms (20 min) for delegation/refactoring tasks, 1800000ms (30 min) when Gemini is doing deep analysis or itself calling out to another model. Err generous — a single timeout wastes more time and tokens than a longer wait. Gemini also has a native `--timeout <ms>` flag you can pair with this for belt-and-suspenders.
 - **Working directory**: Gemini operates on whatever directory it's launched from — it has no `-C` flag like Codex. If the target code isn't in the current working directory, **always `cd` to the target directory first** using `cd /path/to/project && gemini ...`. Without this, Gemini will waste its entire session trying to find the files.
 - **Forceful prompts**: Gemini sometimes presents plans and asks for confirmation even in yolo mode. Use directive language: "Apply now", "Start immediately", "Do this without asking for confirmation."
 

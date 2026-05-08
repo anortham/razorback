@@ -31,8 +31,11 @@ skips OAuth and keychain auth reads, so the common Claude login path fails.
 - **Non-interactive permissions**: `--dangerously-skip-permissions` is
   required for scripted use. Pair it with `--tools "Read,Bash"` to enforce
   read-only behavior; the reviewer can investigate but cannot edit.
-- **Timeout**: 300000ms (5 min) for simple queries, 600000ms (10 min) for
-  deep reviews. Escalation-tier models on large diffs can take minutes.
+- **Timeout**: 600000ms (10 min) for simple queries, 1200000ms (20 min) for
+  deep reviews, 1800000ms (30 min) for escalation-tier models on large diffs.
+  Err generous — a single timeout wastes more time (and tokens) than a longer
+  wait, especially when this Claude is itself delegating to another model.
+  Don't default below 10 min.
 - **Auth**: Logged in via Anthropic OAuth or API key. Check with
   `claude auth status` (exits 0 logged in, 1 otherwise). If it fails, tell
   the user to run `claude login` in a terminal. If you copied an older
@@ -448,9 +451,11 @@ think it's wrong, and your evidence.
 - **Old `--bare` recipe**: remove `--bare` and retry. Current Claude help says
   bare mode skips OAuth and keychain auth, so old snippets fail on normal
   Claude logins.
-- **Timeout**: escalation-tier models on large diffs can take minutes. Set generous Bash
-  timeouts (600000ms). If it still times out, split the review into
-  smaller chunks.
+- **Timeout**: escalation-tier models on large diffs can take 10-20+ minutes,
+  longer when this Claude delegates to another model. Set generous Bash
+  timeouts (1800000ms / 30 min for escalation-tier). If it still times out,
+  split the review into smaller chunks rather than retrying with the same
+  timeout.
 - **Empty output**: if stdout is empty, check stderr (remove `2>/dev/null`
   temporarily) for error messages.
 - **Claude not installed**: check with `claude --version`. Install via
