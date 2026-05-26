@@ -13,6 +13,48 @@ different underlying model.
 Do not use `--bare` in this skill. Current `claude -p --help` says bare mode
 skips OAuth and keychain auth reads, so the common Claude login path fails.
 
+## Pre-flight Checklist
+
+Before invoking `claude -p`, run this readiness check. Tell the user what's
+active — knowing the subscription tier and auth method explains rate limits
+and plan-specific behavior without having to ask:
+
+```bash
+# Binary + version
+which claude && claude --version
+
+# Auth status — JSON output with key fields
+claude auth status | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+print(f'Auth: {d.get(\"loggedIn\")} via {d.get(\"authMethod\")}')
+print(f'Email: {d.get(\"email\")}')
+print(f'Plan: {d.get(\"subscriptionType\", \"unknown\")}')
+print(f'Org: {d.get(\"orgName\")}')
+"
+```
+
+`claude auth status` output fields:
+- **`loggedIn`**: bool — if false, tell user to run `claude login`
+- **`authMethod`**: `"claude.ai"` (OAuth) or `"api_key"` — confirms auth path
+- **`subscriptionType`**: `"pro"`, `"max"`, `"team"`, or `"enterprise"`. Use this
+  to set user expectations about rate limits and budget before heavy invocations.
+  Not present under API key auth.
+- **`email`**: which account
+- **`orgId`** / **`orgName`**: org context
+
+**Usage limits check**: Before heavy invocations, check remaining weekly limits.
+There is no reliable non-interactive `claude usage` command — it can hang ~10s+
+with no output. The `/usage` slash command works in interactive sessions. Best
+source: the usage page at `claude.ai/settings` (web UI).
+
+If the command exits non-zero or produces no JSON, the user is not logged in.
+Tell them to run `claude login` in a terminal.
+
+**Billing context**: See `references/programmatic-billing.md` for the
+interactive vs. programmatic billing split. Post-June 15, `claude -p`
+draws from a separate Agent SDK credit pool, not the general subscription.
+
 ## Defaults
 
 - **Model**: use repo-root `RAZORBACK.md` model routing when present. If absent,
@@ -31,15 +73,24 @@ skips OAuth and keychain auth reads, so the common Claude login path fails.
 - **Non-interactive permissions**: `--dangerously-skip-permissions` is
   required for scripted use. Pair it with `--tools "Read,Bash"` to enforce
   read-only behavior; the reviewer can investigate but cannot edit.
+- **`--max-budget-usd` behavior depends on auth**: On OAuth-authenticated
+  Max/Pro subscriptions, this flag limits only *potential API overage* charges
+  (when the user has enabled extra-usage billing). It does NOT limit
+  subscription-token consumption. On API-key auth, it limits total spend.
+  For OAuth users without extra-usage billing enabled, the flag is
+  effectively a no-op — set it but don't rely on it for budget control on
+  subscription plans.
 - **Timeout**: 600000ms (10 min) for simple queries, 1200000ms (20 min) for
   deep reviews, 1800000ms (30 min) for escalation-tier models on large diffs.
   Err generous — a single timeout wastes more time (and tokens) than a longer
   wait, especially when this Claude is itself delegating to another model.
   Don't default below 10 min.
-- **Auth**: Logged in via Anthropic OAuth or API key. Check with
-  `claude auth status` (exits 0 logged in, 1 otherwise). If it fails, tell
-  the user to run `claude login` in a terminal. If you copied an older
-  command that includes `--bare`, remove that flag first (unless you have a guaranteed `ANTHROPIC_API_KEY`).
+- **Auth**: Logged in via Anthropic OAuth or API key. Run the Pre-flight
+  Checklist above. `claude auth status` exits 0 logged in, 1 otherwise, and
+  returns JSON with subscription type, auth method, email, and org. If auth
+  fails, tell the user to run `claude login` in a terminal. If you copied an
+  older command that includes `--bare`, remove that flag first (unless you
+  have a guaranteed `ANTHROPIC_API_KEY`).
 
 For command snippets below, set `CLAUDE_MODEL` and (optionally) `CLAUDE_EFFORT` before invoking:
 
@@ -448,6 +499,10 @@ think it's wrong, and your evidence.
 - **Turn cap hit**: if `--max-turns` is exhausted before the reviewer
   produces schema-valid output, raise the cap (15 → 25) or shrink the
   context.
+- **`claude usage` hangs**: The `claude usage` command can time out (~10s+) with
+  no output, especially on first call or after auth refresh. Do not rely on it
+  for pre-flight checks. Use the web UI at `claude.ai/settings` or the `/usage`
+  slash command in an interactive session instead.
 - **Old `--bare` recipe**: remove `--bare` and retry. Current Claude help says
   bare mode skips OAuth and keychain auth, so old snippets fail on normal
   Claude logins.
@@ -469,6 +524,8 @@ think it's wrong, and your evidence.
 Use the model and effort tier from repo-root `RAZORBACK.md` when present. If no policy
 exists, inherit the current Claude default or use the strongest available
 reviewer model for adversarial review. This skill avoids `--bare` for OAuth/keychain users; CI with `ANTHROPIC_API_KEY` can use it.
+
+See `references/command-parity.md` before assuming a command exists in both Claude and Codex.
 
 | Use case | Mode | Command pattern |
 |---|---|---|

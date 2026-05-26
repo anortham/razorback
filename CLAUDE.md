@@ -71,6 +71,7 @@ docs/specs/                         — Design specifications
 When modifying skills, follow this pattern for adding tool awareness:
 
 **Julie** — Add at exploration/investigation points:
+- `fast_search(query, backend?)` for text, symbol, file/path, or concept discovery. Omit `backend` for normal search with labeled semantic fallback on identifier-like unscoped zero hits when embeddings are ready. Use explicit `lexical` for pure lexical/file/path search and comparisons; use `semantic` or `hybrid` only for concept-to-symbol discovery.
 - `get_context(query)` for initial codebase orientation
 - `deep_dive(symbol)` before modifying any symbol
 - `fast_refs(symbol)` before changing public APIs

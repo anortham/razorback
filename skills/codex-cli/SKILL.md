@@ -394,6 +394,7 @@ think it's wrong, and your evidence.
 - **No git repo**: Add `--skip-git-repo-check` for non-repo directories.
 - **Codex not installed**: Check with `codex --version`. Install via
   `npm install -g @openai/codex` if missing.
+- **ACP transport unsupported**: Codex CLI does NOT support the `--acp` protocol flag. If a `delegate_task` call with `acp_command: "codex"` fails with `unexpected argument '--acp'`, remove the `acp_command` parameter entirely — it will fall back to the default Hermes subagent transport instead.
 
 ## Quick Reference
 
@@ -401,11 +402,14 @@ Use the model/reasoning tier from repo-root `RAZORBACK.md` when present. If no
 policy exists, inherit the current Codex default. Only override with `-m` when
 the project policy or user request gives a concrete route.
 
+See `references/follow-goals.md` for the verified `/goal` surface and setup note.
+
 | Use case | Mode | Command pattern |
 |---|---|---|
 | Second opinion | read-only | `codex exec --ephemeral --color never -C dir "prompt" 2>/dev/null` |
 | Code review (unified prompt) | read-only | Pipe diff: `echo "$PROMPT" \| codex exec --ephemeral --color never -C dir - 2>/dev/null` (scope/sizing per Review Targeting) |
 | Code review (codex-native scope) | read-only | `codex exec review --uncommitted -C dir -o /tmp/review.txt "focus" 2>/dev/null` (or `--base <branch>` / `--commit <sha>`). No `--output-schema` support. |
+| Goal tracking | experimental | `/goal` sets or views a long-running objective; requires `features.goals` |
 | Adversarial review | read-only + schema | Add `--output-schema "$SCHEMA_FILE"` where `$SCHEMA_FILE` is a temp file materialized from the inlined schema (see Adversarial Review section). Scope/sizing per Review Targeting. |
 | Delegate (complex) | workspace-write | `codex exec --ephemeral --color never --full-auto -C dir "prompt" 2>/dev/null` (or explicitly `-s workspace-write`) |
 | Truly fresh reviewer | read-only + isolated | Add `--ignore-user-config --ignore-rules` to skip project AGENTS.md and execpolicy `.rules` |

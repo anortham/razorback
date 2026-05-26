@@ -73,7 +73,7 @@ Skills are discovered automatically. Codex activates them when:
 
 ### Julie MCP
 
-Razorback skills assume Julie is configured. Without it, the exploration directives in skill bodies (`get_context`, `deep_dive`, `fast_refs`, `get_symbols`) will fail. Install Julie before relying on razorback for real work: https://github.com/anortham/julie
+Razorback skills assume Julie is configured. Without it, the exploration directives in skill bodies (`fast_search`, `get_context`, `deep_dive`, `fast_refs`, `get_symbols`) will fail. Use default `fast_search` for normal search with labeled semantic fallback on identifier-like unscoped zero hits when embeddings are ready. Use explicit `backend="lexical"` for pure lexical/file/path search and comparisons, and `backend="semantic"` or `"hybrid"` for concept-to-symbol discovery. Install Julie before relying on razorback for real work: https://github.com/anortham/julie
 
 ### Goldfish MCP
 
