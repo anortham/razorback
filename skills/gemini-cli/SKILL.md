@@ -14,7 +14,8 @@ Use the Gemini CLI (`gemini`) to get a second opinion, delegate work, request co
   for mechanical work.
 - **Output**: `-o text` for human-readable (use `-o json` when you need stats or structured parsing)
 - **Always append**: `2>/dev/null` to suppress stderr noise (auth messages, debug info) and get clean stdout only
-- **Timeout**: Always set the Bash tool's `timeout` parameter — minimum 600000ms (10 min) for simple queries, 1200000ms (20 min) for delegation/refactoring tasks, 1800000ms (30 min) when Gemini is doing deep analysis or itself calling out to another model. Err generous — a single timeout wastes more time and tokens than a longer wait. Gemini also has a native `--timeout <ms>` flag you can pair with this for belt-and-suspenders.
+- **Non-interactive mode**: always pass the prompt via `-p, --prompt "…"`. Gemini's positional `[query..]` runs in interactive mode by default and relies on TTY auto-detection to switch to headless — that detection is unreliable when invoked from harness tools, especially on Windows. `-p` is the documented headless-mode flag and removes the ambiguity.
+- **Timeout**: Always set the Bash tool's `timeout` parameter — minimum 600000ms (10 min) for simple queries, 1200000ms (20 min) for delegation/refactoring tasks, 1800000ms (30 min) when Gemini is doing deep analysis or itself calling out to another model. Err generous — a single timeout wastes more time and tokens than a longer wait. (Gemini 0.43 has no native `--timeout` flag — rely on the Bash tool's `timeout`.)
 - **Working directory**: Gemini operates on whatever directory it's launched from — it has no `-C` flag like Codex. If the target code isn't in the current working directory, **always `cd` to the target directory first** using `cd /path/to/project && gemini ...`. Without this, Gemini will waste its entire session trying to find the files.
 - **Forceful prompts**: Gemini sometimes presents plans and asks for confirmation even in yolo mode. Use directive language: "Apply now", "Start immediately", "Do this without asking for confirmation."
 
@@ -96,10 +97,10 @@ Determine the task type from context and select the right mode:
 The user wants Gemini's take on an approach, design decision, or piece of code. No file changes needed.
 
 ```bash
-gemini "Your prompt here" -o text 2>/dev/null
+gemini -p "Your prompt here" -o text 2>/dev/null
 ```
 
-No `--yolo` needed — Gemini won't try to use tools for pure analysis unless you ask it to.
+No `--yolo` needed — Gemini won't try to use tools for pure analysis unless you ask it to. Always pass the prompt via `-p` for non-interactive mode.
 
 **After**: Show Gemini's response, then add your own analysis. Where you agree, say so. Where you disagree, explain why with evidence. The user gets two perspectives.
 
@@ -107,7 +108,7 @@ No `--yolo` needed — Gemini won't try to use tools for pure analysis unless yo
 The user wants Gemini to actually do something — write code, refactor, generate files. Gemini needs tool approval.
 
 ```bash
-gemini "Your prompt here. Apply changes now without asking for confirmation." --yolo -o text 2>/dev/null
+gemini -p "Your prompt here. Apply changes now without asking for confirmation." --yolo -o text 2>/dev/null
 ```
 
 **After**: Summarize what Gemini changed. Run `git diff --stat` to show the scope, then review the changes yourself. Flag anything wrong or improvable.
@@ -127,14 +128,14 @@ REFS=$(printf "@./%s " $FILES)
 **Step 3: Send to Gemini.** For working-tree scope:
 
 ```bash
-gemini "Review the following changed files for bugs, security issues, and improvements: $REFS" -o text 2>/dev/null
+gemini -p "Review the following changed files for bugs, security issues, and improvements: $REFS" -o text 2>/dev/null
 ```
 
 For branch scope, include commit context:
 
 ```bash
 COMMITS=$(git log --oneline "$RANGE")
-gemini "Review changes on this branch ($RANGE) for bugs, security issues, and improvements. Commits: $COMMITS. Files: $REFS" -o text 2>/dev/null
+gemini -p "Review changes on this branch ($RANGE) for bugs, security issues, and improvements. Commits: $COMMITS. Files: $REFS" -o text 2>/dev/null
 ```
 
 Note the `@./` file reference syntax — Gemini reads files directly via these
@@ -147,7 +148,7 @@ and disagreements. Call out anything Gemini missed.
 Gemini has Google Search built in — use this when the user needs current information (latest versions, API changes, recent releases, docs).
 
 ```bash
-gemini "What are the latest changes to [library/API]? Use Google Search for current information." -o text 2>/dev/null
+gemini -p "What are the latest changes to [library/API]? Use Google Search for current information." -o text 2>/dev/null
 ```
 
 **After**: Present the findings. Cross-reference with your own knowledge and flag anything that seems outdated or wrong.
@@ -156,7 +157,7 @@ gemini "What are the latest changes to [library/API]? Use Google Search for curr
 Gemini has a `codebase_investigator` tool for deep architectural analysis.
 
 ```bash
-gemini "Use codebase_investigator to analyze this project's architecture. Focus on [specific aspect]." -o text 2>/dev/null
+gemini -p "Use codebase_investigator to analyze this project's architecture. Focus on [specific aspect]." -o text 2>/dev/null
 ```
 
 **After**: Present the analysis. Add your own observations, especially about patterns Gemini may have missed.
@@ -166,7 +167,7 @@ For simple tasks where speed matters more than depth, use the mechanical tier
 from `RAZORBACK.md` when available:
 
 ```bash
-gemini "Your prompt" -m "$GEMINI_MODEL" -o text 2>/dev/null
+gemini -p "Your prompt" -m "$GEMINI_MODEL" -o text 2>/dev/null
 ```
 
 ## Resuming a Session
@@ -217,10 +218,10 @@ echo "This is Claude following up. I disagree with [X] because [evidence]. What'
 
 | Use case | Mode | Command pattern |
 |---|---|---|
-| Second opinion / analysis | read-only | `gemini "prompt" -o text` |
-| Write code / refactor | yolo | `gemini "prompt. Apply now." --yolo -o text` |
-| Code review | read-only | `gemini "Review $REFS for bugs" -o text` (scope/sizing per Review Targeting; `$REFS` is `@./` list from changed files) |
-| Web research | search | `gemini "latest X? Use Google Search." -o text` |
-| Architecture analysis | investigator | `gemini "Use codebase_investigator..." -o text` |
-| Quick/simple task | mechanical tier | `gemini "prompt" -m "$GEMINI_MODEL" -o text` |
+| Second opinion / analysis | read-only | `gemini -p "prompt" -o text` |
+| Write code / refactor | yolo | `gemini -p "prompt. Apply now." --yolo -o text` |
+| Code review | read-only | `gemini -p "Review $REFS for bugs" -o text` (scope/sizing per Review Targeting; `$REFS` is `@./` list from changed files) |
+| Web research | search | `gemini -p "latest X? Use Google Search." -o text` |
+| Architecture analysis | investigator | `gemini -p "Use codebase_investigator..." -o text` |
+| Quick/simple task | mechanical tier | `gemini -p "prompt" -m "$GEMINI_MODEL" -o text` |
 | Resume session | inherited | `echo "prompt" \| gemini -r latest -o text` |

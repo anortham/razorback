@@ -16,9 +16,10 @@ models through the project's razorback routing policy.
 - **Reasoning**: use the tier mapped by `RAZORBACK.md`. Reserve the escalation
   tier for subtle correctness, security, weak tests, high blast radius, or
   repeated failures.
-- **Sandbox mode**: `-s, --sandbox <MODE>` accepts `read-only | workspace-write | danger-full-access`. Use `read-only` for review (the reviewer can investigate but cannot edit). `--full-auto` is a shorthand for `--sandbox workspace-write` plus on-request approvals — keep using it for delegate flows. Pair with `--dangerously-bypass-approvals-and-sandbox` only when the user explicitly asks and the environment is externally sandboxed.
+- **Sandbox mode**: `-s, --sandbox <MODE>` accepts `read-only | workspace-write | danger-full-access`. Use `read-only` for review (the reviewer can investigate but cannot edit). For delegate flows use `--sandbox workspace-write` plus `-a never` (the old `--full-auto` shorthand is deprecated as of codex 0.134; it still runs but emits a warning). Pair with `--dangerously-bypass-approvals-and-sandbox` only when the user explicitly asks and the environment is externally sandboxed.
 - **Always use**: `--ephemeral --color never` for clean non-interactive output
 - **Always append**: `2>/dev/null` to suppress stderr noise (session banner, transcript)
+- **Always redirect stdin**: append `< /dev/null` to every invocation that doesn't pipe a prompt. `codex exec` reads stdin even when a prompt is passed as an argument (it prints "Reading additional input from stdin..." and waits for EOF). On macOS/Linux bash this is harmless because the shell closes stdin, but on Windows (Git Bash / Claude Code Bash tool) stdin can stay open and codex blocks forever with no output — this is the cause of the 30+ minute Windows hang. Use `< /dev/null` on bash; on Windows native cmd/PowerShell use `< NUL`.
 - **Working directory**: `-C /path/to/project` sets the root. Defaults to cwd.
 - **Output capture**: `-o, --output-last-message <FILE>` writes the agent's final message to a file. Use this for adversarial review when you need the JSON cleanly without stderr/banner contamination — point a temp file at it and read the file afterwards.
 - **Timeout**: 600000ms (10 min) for simple queries, 1200000ms (20 min) for
@@ -104,7 +105,7 @@ No file changes needed.
 codex exec --ephemeral --color never \
   -C /path/to/project \
   "Your prompt here" \
-  2>/dev/null
+  < /dev/null 2>/dev/null
 ```
 
 Codex runs in the project directory and can read files on its own. If you need
@@ -128,7 +129,7 @@ codex exec review --uncommitted --ephemeral --color never \
   -C /path/to/project \
   -o /tmp/review.txt \
   "Focus on error handling and concurrency safety." \
-  2>/dev/null
+  < /dev/null 2>/dev/null
 cat /tmp/review.txt
 ```
 
@@ -247,14 +248,17 @@ The user wants Codex to actually do something: write code, refactor, fix a
 bug. Codex needs tool access.
 
 ```bash
-codex exec --ephemeral --color never --full-auto \
+codex exec --ephemeral --color never \
+  --sandbox workspace-write -a never \
   -C /path/to/project \
   "Your task instructions here. Apply changes directly." \
-  2>/dev/null
+  < /dev/null 2>/dev/null
 ```
 
-`--full-auto` gives Codex sandbox write access and on-request approval mode.
-It can read files, write files, and run commands within the project directory.
+`--sandbox workspace-write -a never` gives Codex write access inside the
+workspace and tells it not to ask for approval mid-run (the replacement for
+the deprecated `--full-auto` shorthand). It can read files, write files, and
+run commands within the project directory.
 
 **After**: Summarize what Codex changed. Run `git diff --stat` in the project
 to show the scope, then review the changes yourself. Flag anything wrong or
@@ -329,10 +333,10 @@ capability, drop the `--ephemeral` flag:
 
 ```bash
 # Initial task (persistent session)
-codex exec --color never -C /path "prompt" 2>/dev/null
+codex exec --color never -C /path "prompt" < /dev/null 2>/dev/null
 
 # Resume the last session
-codex exec resume --last "follow-up prompt" 2>/dev/null
+codex exec resume --last "follow-up prompt" < /dev/null 2>/dev/null
 ```
 
 Use this when you need a multi-turn conversation with Codex (e.g., iterating
@@ -347,7 +351,7 @@ AGENTS.md, Codex will follow it automatically. Maximum 32KB of project docs.
 To review a project other than cwd:
 
 ```bash
-codex exec --ephemeral --color never -C ~/source/other-project "prompt" 2>/dev/null
+codex exec --ephemeral --color never -C ~/source/other-project "prompt" < /dev/null 2>/dev/null
 ```
 
 **Truly fresh reviewer (no project context bias):** if the reviewing instance should *not* inherit AGENTS.md or `.rules` from the project being reviewed (e.g., adversarial review where project conventions might rationalize the change), add `--ignore-user-config` and `--ignore-rules`:
@@ -356,7 +360,7 @@ codex exec --ephemeral --color never -C ~/source/other-project "prompt" 2>/dev/n
 codex exec --ephemeral --color never \
   -C ~/source/other-project \
   --ignore-user-config --ignore-rules \
-  "prompt" 2>/dev/null
+  "prompt" < /dev/null 2>/dev/null
 ```
 
 Auth still uses `CODEX_HOME` even with `--ignore-user-config`, so login isn't affected.
@@ -395,6 +399,8 @@ think it's wrong, and your evidence.
 - **Codex not installed**: Check with `codex --version`. Install via
   `npm install -g @openai/codex` if missing.
 - **ACP transport unsupported**: Codex CLI does NOT support the `--acp` protocol flag. If a `delegate_task` call with `acp_command: "codex"` fails with `unexpected argument '--acp'`, remove the `acp_command` parameter entirely — it will fall back to the default Hermes subagent transport instead.
+- **Windows hang (no output for many minutes)**: `codex exec` reads stdin even when a prompt argument is supplied. On Windows (Git Bash via Claude Code's Bash tool, PowerShell, cmd.exe) stdin can stay open with no producer, so codex blocks on stdin EOF forever and never starts the model run. Always add `< /dev/null` (bash) or `< NUL` (cmd/PowerShell) to non-piped invocations. If you've already triggered the hang, kill the process — it will not recover.
+- **`--full-auto` deprecation warning**: codex 0.134+ prints `warning: --full-auto is deprecated; use --sandbox workspace-write instead`. Replace `--full-auto` with `--sandbox workspace-write -a never` (or `--sandbox workspace-write` alone if you want the default approval policy).
 
 ## Quick Reference
 
@@ -404,14 +410,16 @@ the project policy or user request gives a concrete route.
 
 See `references/follow-goals.md` for the verified `/goal` surface and setup note.
 
+All non-piped patterns must include `< /dev/null` (bash) or `< NUL` (Windows cmd/PowerShell) to prevent codex from blocking on stdin EOF — see the Defaults section.
+
 | Use case | Mode | Command pattern |
 |---|---|---|
-| Second opinion | read-only | `codex exec --ephemeral --color never -C dir "prompt" 2>/dev/null` |
+| Second opinion | read-only | `codex exec --ephemeral --color never -C dir "prompt" < /dev/null 2>/dev/null` |
 | Code review (unified prompt) | read-only | Pipe diff: `echo "$PROMPT" \| codex exec --ephemeral --color never -C dir - 2>/dev/null` (scope/sizing per Review Targeting) |
-| Code review (codex-native scope) | read-only | `codex exec review --uncommitted -C dir -o /tmp/review.txt "focus" 2>/dev/null` (or `--base <branch>` / `--commit <sha>`). No `--output-schema` support. |
+| Code review (codex-native scope) | read-only | `codex exec review --uncommitted -C dir -o /tmp/review.txt "focus" < /dev/null 2>/dev/null` (or `--base <branch>` / `--commit <sha>`). No `--output-schema` support. |
 | Goal tracking | experimental | `/goal` sets or views a long-running objective; requires `features.goals` |
 | Adversarial review | read-only + schema | Add `--output-schema "$SCHEMA_FILE"` where `$SCHEMA_FILE` is a temp file materialized from the inlined schema (see Adversarial Review section). Scope/sizing per Review Targeting. |
-| Delegate (complex) | workspace-write | `codex exec --ephemeral --color never --full-auto -C dir "prompt" 2>/dev/null` (or explicitly `-s workspace-write`) |
+| Delegate (complex) | workspace-write | `codex exec --ephemeral --color never --sandbox workspace-write -a never -C dir "prompt" < /dev/null 2>/dev/null` (replaces the deprecated `--full-auto`) |
 | Truly fresh reviewer | read-only + isolated | Add `--ignore-user-config --ignore-rules` to skip project AGENTS.md and execpolicy `.rules` |
 | Clean output capture | any | Add `-o <file>` to write the agent's last message to a file instead of mixing it with stderr/banner output |
-| Resume session | persistent | Drop `--ephemeral`, use `codex exec resume --last "prompt"` |
+| Resume session | persistent | Drop `--ephemeral`, use `codex exec resume --last "prompt" < /dev/null 2>/dev/null` |
