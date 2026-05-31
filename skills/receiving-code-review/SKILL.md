@@ -72,14 +72,14 @@ BEFORE implementing:
   3. Check: Reason for current implementation?
   4. Check: Works on all platforms/versions?
   5. Check: Does reviewer understand full context?
-  6. Check: Use `deep_dive(symbol)` to understand full context of the code being discussed
-  7. Check: Use `fast_refs(symbol)` to verify suggested changes won't break callers
+  6. Check: Inspect the symbol to understand full context of the code being discussed (julie `deep_dive` / miller `inspect depth=full`)
+  7. Check: Find references to verify suggested changes won't break callers (julie `fast_refs` / miller `trace`)
 
 IF suggestion seems wrong:
   Push back with technical reasoning
 
 IF can't easily verify:
-  Investigate with Julie and the smallest relevant verification command.
+  Investigate with your code-intelligence MCP and the smallest relevant verification command.
   If still not verifiable during an approved autonomous run, classify it as flagged-for-review in the report and continue unless it matches the blocker taxonomy.
   If this is an interactive review outside an approved run, ask one specific clarifying question.
 
@@ -96,7 +96,7 @@ External architecture feedback is evaluated through `architecture-quality` befor
 
 ```
 IF reviewer suggests "implementing properly":
-  fast_refs(symbol) to check actual usage across codebase
+  Find references (julie `fast_refs` / miller `trace`) to check actual usage across codebase
 
   IF unused: "This endpoint isn't called. Remove it (YAGNI)?"
   IF used: Then implement properly

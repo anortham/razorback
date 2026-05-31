@@ -23,7 +23,7 @@ Fresh implementer dispatch (delegation available):
 
     ## Symbol target
 
-    [Name the symbol or code region this finding touches. Include one short note if the public API impact matters. Do not paste raw `julie:deep_dive` or `julie:fast_refs` output here. The person applying the fix will re-orient with Julie before editing.]
+    [Name the symbol or code region this finding touches. Include one short note if the public API impact matters. Do not paste raw inspect/find-references output here. The person applying the fix will re-orient with the code-intelligence MCP before editing.]
 
     ## Plan context
 
@@ -55,20 +55,24 @@ Fresh implementer dispatch (delegation available):
 
     ## Orientation (REQUIRED before coding)
 
-    Julie-first orientation is mandatory here too. Even though the lead has
-    provided symbol context above, confirm it yourself with Julie before
+    Code-intelligence-MCP-first orientation is mandatory here too. Even though
+    the lead has provided symbol context above, confirm it yourself with your
+    code-intelligence MCP (julie or miller — use whichever is installed) before
     editing:
 
-    1. `julie:get_symbols(file_path='<file>', target='<function or region>')` -
-       see the exact structure of what you're about to change.
-    2. `julie:deep_dive(symbol='<symbol>')` - re-check the symbol's callers,
-       callees, and surrounding semantics before changing it.
-    3. `julie:fast_refs(symbol='<symbol>')` - re-check impact if your fix changes
-       behavior visible to callers.
+    1. **List the file's symbols** to see the exact structure of what you're
+       about to change (julie `get_symbols(file_path='<file>')` / miller
+       `inspect(target='<file>')`).
+    2. **Inspect the symbol** to re-check its callers, callees, and surrounding
+       semantics before changing it (julie `deep_dive(symbol='<symbol>')` /
+       miller `inspect(target='<symbol>', depth=full)`).
+    3. **Find references** to re-check impact if your fix changes behavior
+       visible to callers (julie `fast_refs(symbol='<symbol>')` / miller
+       `trace(target='<symbol>')`).
 
     Do NOT use Glob -> Read -> Grep chains for exploration, and do not start by
-    opening raw files or raw diffs. Julie tools return targeted, token-efficient
-    context.
+    opening raw files or raw diffs. The code-intelligence MCP returns targeted,
+    token-efficient context.
 
     ## Your job
 
@@ -98,7 +102,7 @@ Fresh implementer dispatch (delegation available):
     - What you changed (file:line references)
     - Commit SHA (first 7 chars)
     - Verification scope, command, commit SHA, result, and timestamp
-    - **Julie calls used** - list the Julie calls you made before editing
+    - **Code-intelligence MCP calls used** - list the orient / inspect / find-references calls you made before editing
     - Any observations that belong in the morning report's judgment-calls log
       (e.g. "chose to preserve original stack via cause rather than rethrowing
       raw err because cause is supported by the project's Node version")

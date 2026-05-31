@@ -28,7 +28,7 @@ Once the plan is approved, razorback runs to completion; it stops only for real 
 **Light plan** — for same-session execution where implementers execute immediately:
 - Task-level granularity: what to build, which files, acceptance criteria
 - Exact file paths (always useful) but no complete code snippets
-- Brief approach notes instead of full implementations — the implementer uses Julie tools to read the actual code
+- Brief approach notes instead of full implementations — the implementer uses the code-intelligence MCP to read the actual code
 - TDD expectation stated once, not choreographed per-step — the implementer follows TDD naturally
 - Verification strategy stated once: worker scope, affected-change scope, branch gate, and expensive-tier triggers
 - Typically 1/3 the length of a full plan
@@ -62,12 +62,12 @@ Every step must contain the actual content an engineer needs. These are **plan f
 
 You cannot write accurate file paths, line ranges, or implementation steps without understanding the code. Before writing any task:
 
-1. **Orient on the area:** `get_context(query='<feature area>')` — returns token-budgeted context with pivots and neighbors
-2. **Understand key symbols:** `deep_dive(symbol='<symbol to modify>')` — shows callers, callees, types, children
-3. **Find exact locations:** `get_symbols(file_path='<file>')` — get file structure with line numbers for `Modify:` references
-4. **Assess impact:** `fast_refs(symbol='<public API>')` — find all callers before planning changes
+1. **Orient on the area:** julie `get_context` / miller `context` — returns token-budgeted context with pivots and neighbors
+2. **Inspect key symbols:** julie `deep_dive` / miller `inspect depth=full` — shows callers, callees, types, children
+3. **Find exact locations:** list a file's symbols (julie `get_symbols` / miller `inspect`) — get file structure with line numbers for `Modify:` references
+4. **Assess impact:** find references (julie `fast_refs` / miller `trace`) — find all callers before planning changes
 
-**Do NOT guess file paths or line numbers.** Use Julie tools to discover them. Plans with wrong paths waste implementer time on dead ends.
+**Do NOT guess file paths or line numbers.** Use your code-intelligence MCP to discover them. Plans with wrong paths waste implementer time on dead ends.
 
 ## Bite-Sized Task Granularity (Full Plans)
 

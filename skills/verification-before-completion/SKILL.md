@@ -53,9 +53,9 @@ Skip any step = lying, not verifying
 
 ## Tool-Assisted Verification
 
-**Use Julie to verify code changes:**
-- `fast_refs(symbol)` on all modified/new symbols — verify nothing is broken
-- `deep_dive(symbol)` on changed public APIs — confirm callers still work
+**Use your code-intelligence MCP (julie or miller) to verify code changes:**
+- **Find references** to all modified/new symbols — verify nothing is broken (julie `fast_refs` / miller `trace`)
+- **Inspect** changed public APIs — confirm callers still work (julie `deep_dive` / miller `inspect depth=full`)
 
 ## Red Flags - STOP
 

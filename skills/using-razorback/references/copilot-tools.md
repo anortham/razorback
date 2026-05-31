@@ -51,6 +51,6 @@ Copilot CLI supports persistent async shell sessions, which have no direct Claud
 | `fetch_copilot_cli_documentation` | Look up Copilot CLI documentation |
 | GitHub MCP tools (`github-mcp-server-*`) | Native GitHub API access (issues, PRs, code search) |
 
-## Julie on Copilot CLI
+## Code-intelligence MCP on Copilot CLI
 
-Julie MCP works via Copilot CLI's MCP support. Razorback's Julie directives (`get_context`, `deep_dive`, `fast_refs`, `get_symbols`) apply unchanged — Julie tool names don't vary by harness.
+A code-intelligence MCP server (julie or miller) works via Copilot CLI's MCP support. Razorback's exploration directives (orient, search, inspect, find references) apply unchanged — MCP tool names don't vary by harness, only by which server is installed (julie: `get_context`/`fast_search`/`get_symbols`/`deep_dive`/`fast_refs`; miller: `context`/`search`/`inspect`/`trace`/`impact`). See the capability mapping in `using-razorback`'s "Your Toolchain" section.

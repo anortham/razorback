@@ -16,7 +16,7 @@ Fetch and follow instructions from https://raw.githubusercontent.com/anortham/ra
 
 - OpenAI Codex CLI or Codex desktop app
 - Git
-- [Julie MCP Server](https://github.com/anortham/julie) configured in Codex
+- A code-intelligence MCP server configured in Codex — [julie](https://github.com/anortham/julie) (current), or miller (its .NET successor) once released
 - [Goldfish MCP Server](https://github.com/anortham/goldfish) configured in Codex
 
 ### Steps
@@ -60,7 +60,7 @@ Codex CLI and the Codex desktop app share native skill discovery. They scan `~/.
 The `using-razorback` skill is discovered automatically and enforces skill usage discipline. No additional configuration needed beyond the shared install above.
 
 **Note:** On Codex, delegated plan execution routes through `subagent-driven-development`, which dispatches fresh implementer subagents in parallel when tasks are independent. If the current session cannot delegate, fall back to `executing-plans`.
-Julie-first applies to the lead session and every spawned worker. Implementers, reviewers, and fix workers should orient with Julie before raw file reads.
+Code-intelligence-MCP-first applies to the lead session and every spawned worker. Implementers, reviewers, and fix workers should orient with the code-intelligence MCP before raw file reads.
 
 **Desktop note:** The same Codex agent lifecycle applies in desktop sessions that expose `spawn_agent`, `send_input`, `wait_agent`, and `close_agent`. The separate `razorback:codex-cli` skill is for launching an external Codex CLI reviewer or delegate, not for the desktop app's built-in tools.
 
@@ -71,9 +71,9 @@ Skills are discovered automatically. Codex activates them when:
 - The task matches a skill's description
 - The `using-razorback` skill directs Codex to use one
 
-### Julie MCP
+### Code-intelligence MCP (julie or miller)
 
-Razorback skills assume Julie is configured. Without it, the exploration directives in skill bodies (`fast_search`, `get_context`, `deep_dive`, `fast_refs`, `get_symbols`) will fail. Use default `fast_search` for normal search with labeled semantic fallback on identifier-like unscoped zero hits when embeddings are ready. Use explicit `backend="lexical"` for pure lexical/file/path search and comparisons, and `backend="semantic"` or `"hybrid"` for concept-to-symbol discovery. Install Julie before relying on razorback for real work: https://github.com/anortham/julie
+Razorback skills assume a code-intelligence MCP is configured. Without it, the exploration directives in skill bodies (search, orient, inspect, find references, list symbols) will fail. The two servers expose the same capabilities under different tool names — julie: `fast_search`/`get_context`/`deep_dive`/`fast_refs`/`get_symbols`; miller: `search`/`context`/`inspect`/`trace`. For julie, use default `fast_search` for normal search with labeled semantic fallback on identifier-like unscoped zero hits when embeddings are ready; use explicit `backend="lexical"` for pure lexical/file/path search and comparisons, and `backend="semantic"` or `"hybrid"` for concept-to-symbol discovery. Install one before relying on razorback for real work: https://github.com/anortham/julie (miller, the .NET successor, once released).
 
 ### Goldfish MCP
 

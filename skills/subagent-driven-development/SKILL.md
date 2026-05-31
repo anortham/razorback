@@ -93,10 +93,10 @@ digraph process {
 
 Read the plan file once. Extract every task with its full text and surrounding context. Create tracking tasks via `TaskCreate` so progress is visible.
 
-Before dispatching, orient yourself on the codebase with Julie:
-- `get_context(query)` for initial orientation around the areas the plan touches
-- `get_symbols(file_path)` on files the plan will modify, so you can spot later drift during review
-- Do NOT chain Glob/Grep/Read for orientation — Julie is the required entry point
+Before dispatching, orient yourself on the codebase with your code-intelligence MCP (julie or miller — whichever is installed):
+- **Orient** around the areas the plan touches (julie `get_context` / miller `context`)
+- **List a file's symbols** on files the plan will modify, so you can spot later drift during review (julie `get_symbols` / miller `inspect`)
+- Do NOT chain Glob/Grep/Read for orientation — the code-intelligence MCP is the required entry point
 
 ## Step 2: Dispatch Implementer Subagent
 
@@ -105,11 +105,11 @@ Use the template at `./implementer-prompt.md`. The spawn prompt MUST include:
 1. **Task text** copied from the plan (don't make the subagent read the plan file)
 2. **Scene-setting context** (how this task fits the larger plan)
 3. **File ownership** (which files this task may modify)
-4. **Julie tool directives** (use `get_context`, `deep_dive` before modifying any symbol, `fast_refs` before changing public APIs, `get_symbols` before reading full files)
+4. **Code-intelligence MCP directives** (orient, inspect before modifying any symbol, find references before changing public APIs, list a file's symbols before reading full files)
 5. **TDD expectations** (from `razorback:test-driven-development`)
 6. **Verification scope** specific to this task, using commands from the plan's verification strategy
 7. **Model routing tier** assigned to this task (`implementation`, `mechanical`, `strategy`, `gate-review`, or `escalation`)
-8. **Julie evidence requirement** (the implementer must report which Julie calls they used and what those calls confirmed)
+8. **Code-intelligence MCP evidence requirement** (the implementer must report which MCP calls they used and what those calls confirmed)
 9. **Gate invariant requirement** (the implementer must state what each assigned test, replay, metric, or acceptance gate proves)
 10. **architecture-quality context** (the approved architecture, any `No Architecture Impact` note, and the plan mismatch rule)
 
@@ -212,9 +212,9 @@ When the implementer reports completion, the lead does a single inline review co
 - Did the implementer build everything requested?
 - Did they add anything not requested? Flag extras for removal.
 - Did they misinterpret any requirement?
-- Use `get_symbols(file_path)` to scan changed files without reading them fully.
-- Confirm the report includes the Julie calls used. If the implementer cannot
-  show Julie-first orientation, send it back.
+- **List a file's symbols** to scan changed files without reading them fully (julie `get_symbols` / miller `inspect`).
+- Confirm the report includes the code-intelligence MCP calls used. If the implementer cannot
+  show MCP-first orientation, send it back.
 
 **architecture-quality review:**
 - Did the worker preserve the approved architecture shape, or did it report a plan mismatch when code reality disagreed?
@@ -229,8 +229,8 @@ When the implementer reports completion, the lead does a single inline review co
 - Is the code clean, tested, and maintainable?
 - Do tests assert on meaningful values (not just "code ran without crashing")?
 - Code smells: duplication, tight coupling, unclear names, missing error paths?
-- Use `deep_dive(symbol)` on key new/modified symbols to check callers, callees, and types.
-- Use `fast_refs(symbol)` to verify API changes don't break dependents.
+- **Inspect** key new/modified symbols to check callers, callees, and types (julie `deep_dive` / miller `inspect depth=full`).
+- **Find references** to verify API changes don't break dependents (julie `fast_refs` / miller `trace`).
 
 **Review cap: 3 iterations.**
 
@@ -356,13 +356,13 @@ This sequence runs only on resumed runs. A fresh run dispatches directly into St
 You: I'm using Subagent-Driven Development to execute this plan.
 
 [Read plan file once: docs/plans/feature-plan.md]
-[get_context("hook installation recovery") for orientation]
+[orient on "hook installation recovery"]
 [Extract all 5 tasks with full text and context]
 [TaskCreate for each task]
 
 --- Task 1: Hook installation script ---
 
-[Dispatch implementer subagent with full task text + context + Julie directives]
+[Dispatch implementer subagent with full task text + context + code-intelligence MCP directives]
 [Save agent ID: impl-a1b2]
 
 Implementer (impl-a1b2): "Before I begin — should the hook be installed at user or system level?"
@@ -377,8 +377,8 @@ Implementer: "Got it. Implementing now..."
   Status: DONE
 
 [Lead inline review]
-[get_symbols on install-hook.ts to scan structure]
-[deep_dive on installHook() to check flow]
+[list symbols in install-hook.ts to scan structure]
+[inspect installHook() to check flow]
 [Spec check: all requirements met, nothing extra]
 [Quality check: clean, well-tested, no smells]
 [Approved — TaskUpdate task 1 completed]
@@ -394,8 +394,8 @@ Implementer reports:
   Status: DONE
 
 [Lead inline review]
-[get_symbols on recovery.ts]
-[deep_dive on verifyMode(), repairMode()]
+[list symbols in recovery.ts]
+[inspect verifyMode(), repairMode()]
 [Spec check: MISSING — progress reporting ("report every 100 items")]
 [Spec check: EXTRA — --json flag not requested]
 [Quality check: magic number 100 hard-coded]
@@ -438,7 +438,7 @@ Done.
 - Lead curates exactly what context each subagent needs
 - No file reading overhead inside the subagent (lead provides full text)
 - Real blockers surface before work begins; ordinary ambiguity follows decide-and-note
-- Julie tools replace Glob/Grep/Read chains (2-3 calls vs 5-8 for orientation)
+- The code-intelligence MCP replaces Glob/Grep/Read chains (2-3 calls vs 5-8 for orientation)
 - Inline review by lead avoids spawning reviewer subagents (lower total token cost)
 
 **Quality gates:**
@@ -463,7 +463,7 @@ Done.
 - Ignore subagent questions (answer before letting them proceed)
 - Skip the re-review after a fix
 - Dispatch a separate reviewer subagent when the lead can review inline
-- Approve work from an implementer who cannot show Julie-first orientation
+- Approve work from an implementer who cannot show code-intelligence-MCP-first orientation
 - **On Claude Code, prefer resume for iterations 1-3** (the implementer has full context). Use fresh-dispatch-with-reframed-context for iteration 4 only, after 3 resume attempts failed. The 4th attempt's value is the reframing, not the freshness.
 - **On Codex, prefer `send_input` on the stored agent ID for iterations 1-3** (same reasoning, the worker keeps its orientation context). Use `close_agent` + fresh `spawn_agent` with reframed context for iteration 4.
 - Never pause for user input between tasks - the plan is approved, run it to completion. Stops are governed by the blocker taxonomy. If you can reason through a plan-consistent path, keep moving and log the choice.

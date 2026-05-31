@@ -1,22 +1,22 @@
 # Razorback
 
-**Julie-powered development workflow for Claude Code, Cursor, Codex, OpenCode, Copilot CLI, and Gemini CLI.**
+**Code-intelligence-powered development workflow for Claude Code, Cursor, Codex, OpenCode, Copilot CLI, and Gemini CLI.**
 
-Razorback is a skill set for every major coding-agent harness, diverged from [Superpowers](https://github.com/obra/superpowers) to add Julie MCP for token-efficient codebase orientation. Plan execution runs through `subagent-driven-development` on harnesses that support delegation, and `executing-plans` where delegation is unavailable.
+Razorback is a skill set for every major coding-agent harness, diverged from [Superpowers](https://github.com/obra/superpowers) to add a code-intelligence MCP (julie or miller) for token-efficient codebase orientation. Plan execution runs through `subagent-driven-development` on harnesses that support delegation, and `executing-plans` where delegation is unavailable.
 
 ## Why?
 
 AI-assisted development burns tokens on repetitive codebase exploration. Every agent and subagent re-discovers the same code through Glob/Grep/Read chains. Razorback solves this two ways:
 
-- **Julie MCP** routes all exploration through purpose-built code intelligence tools (fast_search, get_context, deep_dive, fast_refs, get_symbols) that return targeted context in 1-2 calls instead of 5-8. `fast_search` supports default lexical search with labeled semantic fallback on identifier-like unscoped zero hits when embeddings are ready; use explicit `backend="lexical"` for pure lexical/file/path search and comparisons, and `backend="semantic"` or `"hybrid"` for concept-to-symbol discovery.
-- **Julie-first applies to every worker**: the lead, implementers, reviewers, and fix workers all orient with Julie before raw file reads.
+- **A code-intelligence MCP (julie or miller)** routes all exploration through purpose-built tools — search, orient, inspect, find-references, list-symbols — that return targeted context in 1-2 calls instead of 5-8. (julie exposes `fast_search`/`get_context`/`deep_dive`/`fast_refs`/`get_symbols`; miller consolidates the same capabilities as `search`/`context`/`inspect`/`trace`. julie's `fast_search` supports default lexical search with labeled semantic fallback on identifier-like unscoped zero hits when embeddings are ready; use explicit `backend="lexical"` for pure lexical/file/path search and comparisons, and `backend="semantic"` or `"hybrid"` for concept-to-symbol discovery.)
+- **Code-intelligence-MCP-first applies to every worker**: the lead, implementers, reviewers, and fix workers all orient with the MCP before raw file reads.
 - **Parallel subagent dispatch with inline review by the lead** keeps the main agent's context clean while letting independent tasks move concurrently.
 - **Autonomous execution of approved plans** with optional pre-merge external review (codex / gemini / claude) and compaction-durable goldfish checkpoints; runs overnight without waking you for anything short of a real blocker
 
 ## Requirements
 
 - A supported harness: [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Cursor](https://cursor.sh), [Codex](https://openai.com/codex/), [OpenCode](https://opencode.ai), [Copilot CLI](https://github.com/github/copilot-cli), or [Gemini CLI](https://github.com/google-gemini/gemini-cli)
-- [Julie MCP Server](https://github.com/anortham/julie) — hard requirement for code intelligence; must be configured and indexing your workspace
+- A code-intelligence MCP server — hard requirement for code intelligence; must be configured and indexing your workspace. Use [julie](https://github.com/anortham/julie) (current), or miller (its .NET successor) once released
 - [Goldfish MCP Server](https://github.com/anortham/goldfish) — hard requirement for persistent memory (checkpoints, briefs, recall); used for compaction-durable execution during long autonomous runs
 - For Codex: enable `multi_agent = true` in `~/.codex/config.toml` so parallel execution skills can dispatch subagents
 - Optional but recommended: repo-root `RAZORBACK.md` for project-specific razorback policy, such as model routing and verification tiers
@@ -101,9 +101,9 @@ Once loaded, razorback works automatically. The bootstrap path varies by harness
 
 1. **Session starts** — the `SessionStart` hook (Claude Code, Cursor), `messages.transform` (OpenCode), native skill discovery (Codex), the `SessionStart` hook with `additionalContext` (Copilot CLI), or `GEMINI.md` includes (Gemini CLI) surfaces the `using-razorback` skill.
 2. **You request work** — the agent checks for applicable skills before every response.
-3. **Skills guide the workflow** — brainstorming, planning, TDD, execution, review, and verification all route through Julie and the appropriate execution strategy for your harness.
+3. **Skills guide the workflow** — brainstorming, planning, TDD, execution, review, and verification all route through your code-intelligence MCP and the appropriate execution strategy for your harness.
 
-No configuration needed beyond plugin installation (assuming Julie is already set up).
+No configuration needed beyond plugin installation (assuming your code-intelligence MCP is already set up).
 
 ## Project Policy
 
@@ -232,13 +232,13 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 
 | Skill | Purpose |
 |-------|---------|
-| using-razorback | Entry point: skill routing, execution model, Julie toolchain |
+| using-razorback | Entry point: skill routing, execution model, code-intelligence MCP toolchain |
 | brainstorming | Requirements exploration, design, approach selection |
 | architecture-quality | Architecture and interface quality checks for planning, review, and test surface decisions |
-| writing-plans | Implementation plans (full or light) with Julie-verified file paths |
+| writing-plans | Implementation plans (full or light) with MCP-verified file paths |
 | executing-plans | Single-agent execution (fallback for sequential/single-task work or no-subagent harnesses) |
-| test-driven-development | Red-green-refactor with Julie-powered test discovery |
-| systematic-debugging | Root cause investigation with Julie-powered tracing |
+| test-driven-development | Red-green-refactor with MCP-powered test discovery |
+| systematic-debugging | Root cause investigation with MCP-powered tracing |
 | requesting-code-review | Inline review (during plan execution) or standalone review (ad-hoc) with per-harness dispatch |
 | receiving-code-review | Process for acting on review feedback |
 | verification-before-completion | Evidence-before-claims verification |
@@ -256,7 +256,7 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 
 | Template | Purpose |
 |----------|---------|
-| subagent-driven-development/implementer-prompt.md | Implementer spawn: task assignment, file ownership, Julie directives, status protocol |
+| subagent-driven-development/implementer-prompt.md | Implementer spawn: task assignment, file ownership, code-intelligence MCP directives, status protocol |
 | subagent-driven-development/fix-prompt.md | Fix-round prompt with reviewer findings and reframed-context guidance |
 | subagent-driven-development/spec-reviewer-prompt.md | Review guide: spec compliance criteria |
 | subagent-driven-development/code-quality-reviewer-prompt.md | Review guide: code quality criteria |

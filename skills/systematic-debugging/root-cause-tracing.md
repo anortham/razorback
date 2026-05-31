@@ -44,9 +44,9 @@ await execFileAsync('git', ['init'], { cwd: projectDir });
 
 ### 3. Ask: What Called This?
 
-**Use `deep_dive(symbol='<function>')` first** — it shows callers, callees, and type flow automatically, replacing manual tracing in most cases.
+**Inspect the symbol first** (julie `deep_dive(symbol='<function>')` / miller `inspect(target='<function>', depth=full)`) — it shows callers, callees, and type flow automatically, replacing manual tracing in most cases.
 
-If `deep_dive` reveals the chain, skip to step 5 (find original trigger). If the chain is too dynamic or indirect for static analysis, trace manually:
+If that reveals the chain, skip to step 5 (find original trigger). If the chain is too dynamic or indirect for static analysis, trace manually:
 
 ```typescript
 WorktreeManager.createSessionWorktree(projectDir, sessionId)

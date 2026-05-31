@@ -1,6 +1,6 @@
 # Razorback — Project Instructions
 
-Razorback is a skill set for Claude Code, Cursor, Codex, OpenCode, Copilot CLI, and Gemini CLI that diverged from [Superpowers](https://github.com/obra/superpowers). It uses Julie MCP for token-efficient codebase orientation. Plan execution routes through `subagent-driven-development` on harnesses that support delegation, and through `executing-plans` otherwise.
+Razorback is a skill set for Claude Code, Cursor, Codex, OpenCode, Copilot CLI, and Gemini CLI that diverged from [Superpowers](https://github.com/obra/superpowers). It uses a code-intelligence MCP (julie or miller) for token-efficient codebase orientation. Plan execution routes through `subagent-driven-development` on harnesses that support delegation, and through `executing-plans` otherwise.
 
 ## Project Structure
 
@@ -66,20 +66,25 @@ docs/specs/                         — Design specifications
 - `run-hook.cmd` is a polyglot that works as both a cmd.exe batch file and bash script. On Windows without Git Bash, it emits a stderr warning and exits 0 (plugin still loads, bootstrap disabled).
 - `hooks/session-start` detects the harness from `CURSOR_PLUGIN_ROOT` / `CLAUDE_PLUGIN_ROOT` / `COPILOT_CLI` env vars and emits the JSON shape that harness expects.
 
-## Julie Integration Pattern
+## Code-intelligence MCP Integration Pattern
 
-When modifying skills, follow this pattern for adding tool awareness:
+Razorback works with an interchangeable code-intelligence MCP server — **julie** (Rust + tree-sitter, current) or **miller** (.NET, its successor). Skills reference it by **capability**, not by hardcoded tool name; the authoritative capability → tool mapping lives in `skills/using-razorback/SKILL.md` ("Your Toolchain").
 
-**Julie** — Add at exploration/investigation points:
-- `fast_search(query, backend?)` for text, symbol, file/path, or concept discovery. Omit `backend` for normal search with labeled semantic fallback on identifier-like unscoped zero hits when embeddings are ready. Use explicit `lexical` for pure lexical/file/path search and comparisons; use `semantic` or `hybrid` only for concept-to-symbol discovery.
-- `get_context(query)` for initial codebase orientation
-- `deep_dive(symbol)` before modifying any symbol
-- `fast_refs(symbol)` before changing public APIs
-- `get_symbols(file_path)` before reading full files
+When modifying skills, add tool awareness at exploration/investigation points by capability:
 
-Julie-first applies to the lead and to every dispatched implementer, reviewer, and fix worker, regardless of harness.
+| Capability | julie tool | miller tool |
+|---|---|---|
+| Search code (text, symbol, file/path, or concept) | `fast_search(query, backend?)` | `search(query, mode?)` |
+| Orient on the codebase | `get_context(query)` | `context(query)` |
+| Inspect a symbol before modifying it | `deep_dive(symbol)` | `inspect(target, depth=full)` |
+| Find references before changing a public API | `fast_refs(symbol)` | `trace(target)` |
+| List a file's symbols before reading it | `get_symbols(file_path)` | `inspect(target)` |
 
-Use directive language: "Use julie:deep_dive BEFORE modifying any symbol" not "consider using deep_dive".
+(julie's `fast_search` backend: omit `backend` for normal search with labeled semantic fallback on identifier-like unscoped zero hits when embeddings are ready; explicit `lexical` for pure lexical/file/path search and comparisons; `semantic` or `hybrid` only for concept-to-symbol discovery. miller's `search` is lexical-first with a `mode=auto|text|symbol|file` selector.)
+
+Code-intelligence-MCP-first applies to the lead and to every dispatched implementer, reviewer, and fix worker, regardless of harness.
+
+Use directive, capability-first language in lead-facing skills: "inspect a symbol BEFORE modifying it" (the central table maps it to the installed server). In **subagent-facing prompt files** (implementer/fix/reviewer prompts), name both servers inline — e.g. "inspect the symbol (julie `deep_dive` / miller `inspect depth=full`)" — because dispatched subagents do not receive the using-razorback toolchain table.
 
 ## Naming Rules
 - All skill cross-references use `razorback:` prefix, never `superpowers:`
@@ -87,9 +92,9 @@ Use directive language: "Use julie:deep_dive BEFORE modifying any symbol" not "c
 - SessionStart hook announces "You have razorback."
 
 ## Dependencies
-- Julie MCP server is a **hard requirement** — no fallback to generic tools for codebase exploration
+- A code-intelligence MCP server (julie or miller) is a **hard requirement** — no fallback to generic tools for codebase exploration
 - Goldfish MCP server is a **hard requirement** — used for persistent memory (checkpoints, briefs, recall) and compaction-durable execution during long autonomous runs
-- Skills assume both Julie and Goldfish are configured and available
+- Skills assume both a code-intelligence MCP (julie or miller) and Goldfish are configured and available
 
 ## Execution Model
 
@@ -126,7 +131,7 @@ The `.version-bump.json` config drives the script. `.memories/` and `docs/plans/
 - Process flows (brainstorm → plan → TDD → execute → review → finish)
 - Anti-rationalization tables in skills
 - Two-pass inline review (spec compliance + code quality, done by lead, not separate agents)
-- Julie-first exploration (no Glob/Read/Grep chains)
+- Code-intelligence-MCP-first exploration (no Glob/Read/Grep chains)
 - Single-repo marketplace layout (both Claude Code and Copilot CLI read `.claude-plugin/marketplace.json` from this repo)
 - Autonomous-by-default execution (blocker-gated, not task-gated) with optional pre-merge external review
 - These conventions are intentionally chosen for token efficiency and quality

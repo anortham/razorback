@@ -7,7 +7,7 @@ For the bare-minimum quick install, see [`.opencode/INSTALL.md`](../.opencode/IN
 ## Prerequisites
 
 - [opencode.ai](https://opencode.ai) installed
-- **Julie MCP server** configured and available. Razorback skills depend on Julie for code intelligence, with no fallback to generic tools.
+- **A code-intelligence MCP server** (julie or miller) configured and available. Razorback skills depend on it for code intelligence, with no fallback to generic tools. Use [julie](https://github.com/anortham/julie) today, or miller (its .NET successor) once released.
 
 ## Installation
 
@@ -124,7 +124,7 @@ The plugin (`.opencode/plugins/razorback.js`) wires two hooks:
 ### Execution model
 
 Delegated plan execution in opencode uses `subagent-driven-development`: a fresh subagent per task, with the lead doing inline review. Sequential work still uses `executing-plans`, and ad-hoc parallel work uses `dispatching-parallel-agents`.
-Julie-first applies to the lead session and every child task session. Implementers, reviewers, and fix workers should orient with Julie before raw file reads.
+Code-intelligence-MCP-first applies to the lead session and every child task session. Implementers, reviewers, and fix workers should orient with the code-intelligence MCP before raw file reads.
 
 ### Tool mapping
 

@@ -81,6 +81,6 @@ These tools are available in Gemini CLI but have no Claude Code equivalent:
 | `tracker_create_task` | Rich task management (create, update, list, visualize) |
 | `enter_plan_mode` / `exit_plan_mode` | Switch to read-only research mode before making changes |
 
-## Julie on Gemini CLI
+## Code-intelligence MCP on Gemini CLI
 
-Julie MCP is supported on Gemini CLI via its MCP client. Razorback's Julie directives (`get_context`, `deep_dive`, `fast_refs`, `get_symbols`) apply unchanged — the exploration directives in skill bodies work as written.
+A code-intelligence MCP server (julie or miller) is supported on Gemini CLI via its MCP client. Razorback's exploration directives (orient, search, inspect, find references) apply unchanged — they work by capability, not by raw file reading. Tool names depend on which server is installed (julie: `get_context`/`fast_search`/`get_symbols`/`deep_dive`/`fast_refs`; miller: `context`/`search`/`inspect`/`trace`/`impact`). See the capability mapping in `using-razorback`'s "Your Toolchain" section.

@@ -39,7 +39,7 @@ Every project goes through this process. A todo list, a single-function utility,
 ## Checklist
 
 **Lightweight** (design agreed, moderate task, same-session):
-1. **Explore project context** — use `julie:get_context` to orient, check recent commits
+1. **Explore project context** — use your code-intelligence MCP to orient, check recent commits
 2. **Summarize agreed design with acceptance criteria** - present for user confirmation
 3. **Write design doc** - save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit. Include acceptance criteria checklist; this is the implementer's spec.
 4. **Spec self-review** - quick inline check for placeholders, contradictions, ambiguity, scope (see below)
@@ -47,7 +47,7 @@ Every project goes through this process. A todo list, a single-function utility,
 6. **Dispatch implementer directly** - see "Lightweight Implementation" section below
 
 **Fast path** (design agreed, large or multi-session task):
-1. **Explore project context** — use `julie:get_context` to orient, check recent commits
+1. **Explore project context** — use your code-intelligence MCP to orient, check recent commits
 2. **Summarize agreed design** - present concrete summary for user confirmation
 3. **Write design doc** - save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit
 4. **Spec self-review** - quick inline check for placeholders, contradictions, ambiguity, scope (see below)
@@ -55,7 +55,7 @@ Every project goes through this process. A todo list, a single-function utility,
 6. **Transition to implementation** - invoke writing-plans skill
 
 **Full process** (requirements unclear or multiple approaches):
-1. **Explore project context** — use `julie:get_context` to orient on the relevant codebase area, check recent commits
+1. **Explore project context** — use your code-intelligence MCP to orient on the relevant codebase area, check recent commits
 2. **Offer visual companion** (if topic will involve visual questions) - this is its own message, not combined with a clarifying question. See the Visual Companion section below.
 3. **Ask clarifying questions** - one at a time, understand purpose/constraints/success criteria
 4. **Propose 2-3 approaches** - with trade-offs and your recommendation
@@ -117,8 +117,8 @@ digraph brainstorming {
 ## The Process
 
 **Understanding the idea:**
-- Orient with Julie tools first: `get_context(query='<feature area>')` for token-budgeted codebase context, `get_symbols(file_path)` to understand file structure, `deep_dive(symbol)` for key symbols you'll be discussing. Do NOT fall back to Glob → Read → Grep chains.
-- For non-trivial work, run `razorback:architecture-quality` after Julie orientation and once requirements are clear enough to assess structure, before presenting the design. If the task has no architecture impact, record `No Architecture Impact` and continue.
+- Orient with your code-intelligence MCP (julie or miller) first: orient for token-budgeted codebase context, list a file's symbols to understand structure, and inspect key symbols you'll be discussing. Do NOT fall back to Glob → Read → Grep chains.
+- For non-trivial work, run `razorback:architecture-quality` after that orientation and once requirements are clear enough to assess structure, before presenting the design. If the task has no architecture impact, record `No Architecture Impact` and continue.
 - Check recent commits: `git log --oneline -10`
 - Ask questions one at a time to refine the idea
 - Prefer multiple choice questions when possible, but open-ended is fine too
@@ -172,7 +172,7 @@ For moderate, well-understood tasks executed in the same session. Skips writing-
 
 **The design doc IS the plan.** Make sure it includes:
 - What to build and why
-- Which files to create/modify (exact paths from Julie tools)
+- Which files to create/modify (exact paths from your code-intelligence MCP)
 - Acceptance criteria checklist
 - Key decisions and edge cases
 

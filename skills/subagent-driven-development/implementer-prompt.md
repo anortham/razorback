@@ -21,7 +21,7 @@ Agent tool (general-purpose):
     You are operating inside an approved plan. The plan text in "Task Description" above is the authoritative spec. If something is ambiguous:
 
     1. Read the plan context to see if it's disambiguated elsewhere.
-    2. Check the surrounding codebase with Julie tools (`get_context`, `deep_dive`, `fast_refs`).
+    2. Check the surrounding codebase with your code-intelligence MCP (orient, inspect a symbol, find references).
     3. If still ambiguous, pick the plan-consistent option and note the choice in your report (file:line + reason).
 
     **Only stop and report BLOCKED if** (see blocker taxonomy):
@@ -34,28 +34,33 @@ Agent tool (general-purpose):
 
     ## Codebase Orientation (HARD REQUIREMENT)
 
-    Julie-first orientation is mandatory. Do not start by reading raw files,
-    whole diffs, or grep output. Before writing any code, orient yourself using
-    Julie's code intelligence tools in this order:
+    Code-intelligence-MCP-first orientation is mandatory. Do not start by reading
+    raw files, whole diffs, or grep output. Before writing any code, orient
+    yourself with your code-intelligence MCP (julie or miller — use whichever is
+    installed) in this order:
 
-    1. **Understand the area:** `get_context(query='<area described in task>')`
-       Returns token-budgeted context: pivots (full code), neighbors (signatures), file map.
+    1. **Understand the area:** orient with a token-budgeted bundle
+       (julie `get_context(query='<area>')` / miller `context(query='<area>')`).
+       Returns pivots (full code), neighbors (signatures), file map.
 
-    2. **Understand symbols you'll modify:** `deep_dive(symbol='<symbol name>')`
+    2. **Understand symbols you'll modify:** inspect the symbol
+       (julie `deep_dive(symbol='<name>')` / miller `inspect(target='<name>', depth=full)`).
        Shows callers, callees, children, types — everything you need to make safe changes.
 
-    3. **Check impact:** `fast_refs(symbol='<symbol name>')`
+    3. **Check impact:** find references
+       (julie `fast_refs(symbol='<name>')` / miller `trace(target='<name>')`).
        See all references before changing anything. Required — do not skip.
 
-    4. **Read targeted code:** `get_symbols(file_path='<file>', target='<function>')`
+    4. **Read targeted code:** list a file's symbols
+       (julie `get_symbols(file_path='<file>')` / miller `inspect(target='<file>')`).
        See specific symbols instead of reading entire files.
 
-    5. **Only then read raw code if needed:** after the Julie calls above, read
+    5. **Only then read raw code if needed:** after the MCP calls above, read
        the minimum raw code needed for the edit.
 
-    **Do NOT use Glob -> Read -> Grep chains for exploration.** Julie tools return
-    targeted, token-efficient context in 1-2 calls instead of 5-8. If you skip
-    Julie and start with raw-file exploration, you have broken the workflow.
+    **Do NOT use Glob -> Read -> Grep chains for exploration.** The code-intelligence
+    MCP returns targeted, token-efficient context in 1-2 calls instead of 5-8. If you
+    skip it and start with raw-file exploration, you have broken the workflow.
 
     ## Architecture Quality
 
@@ -147,7 +152,7 @@ Agent tool (general-purpose):
     - Verification invariant, scope, command, commit SHA, result, and timestamp
     - Hard-gate metrics and report-only metrics, when replay or metric evidence is involved
     - Files changed
-    - **Julie calls used** - list the `get_context` / `deep_dive` / `fast_refs` / `get_symbols` calls you made and what each one confirmed
+    - **Code-intelligence MCP calls used** - list the orient / inspect / find-references / list-symbols calls you made (julie or miller) and what each one confirmed
     - Self-review findings (if any)
     - **Judgment calls made** - non-obvious decisions in the form `file:line - chose X over Y because [reason]`. Include every ambiguity you resolved without asking. Feeds the morning report's "Judgment calls" section.
     - Any issues or concerns

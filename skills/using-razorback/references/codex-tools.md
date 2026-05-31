@@ -37,7 +37,7 @@ Razorback's subagent prompts live in the skills themselves:
 When a skill says to dispatch a subagent with a prompt:
 
 1. Read the prompt file
-2. Fill any template placeholders (task spec, file ownership, Julie directives)
+2. Fill any template placeholders (task spec, file ownership, code-intelligence MCP directives)
 3. Apply the plan's model-routing tier when the session supports per-agent selection. If no route is available, inherit the parent model/reasoning and note it.
 4. Spawn a `worker` agent with the filled content as the `message`
 
@@ -107,9 +107,14 @@ On Codex, delegated plan execution uses `subagent-driven-development`: dispatch 
 
 For single-task or tightly sequential work, use `executing-plans` even when delegation is available.
 
-## Julie MCP
+## Code-intelligence MCP (julie or miller)
 
-Razorback assumes Julie MCP is available. The exploration directives in skill bodies (`get_context`, `deep_dive`, `fast_refs`, `get_symbols`) require Julie. Install and configure it before using razorback for real work: https://github.com/anortham/julie
+Razorback assumes a code-intelligence MCP server is available. The exploration directives in skill bodies (orient, search, inspect, find references) require it. Two interchangeable servers implement the same capabilities — use whichever is installed:
+
+- **julie** (Rust + tree-sitter, current): tools `get_context`, `fast_search`, `get_symbols`, `deep_dive`, `fast_refs`. Install: https://github.com/anortham/julie
+- **miller** (.NET, successor): tools `context`, `search`, `inspect`, `trace`, `impact`. Same capabilities, consolidated names.
+
+See the capability → tool mapping table in `using-razorback`'s "Your Toolchain" section. Install and configure one before using razorback for real work.
 
 ## Goldfish MCP
 

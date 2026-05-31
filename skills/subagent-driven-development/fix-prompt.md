@@ -26,23 +26,25 @@ Agent tool (resume: "<implementer-agent-id>"):
 
     ## Re-Orientation (REQUIRED before editing)
 
-    Even on a resume, confirm the change with Julie before touching code:
+    Even on a resume, confirm the change with your code-intelligence MCP (julie
+    or miller — use whichever is installed) before touching code:
 
-    1. `get_symbols(file_path='<changed file>', target='<symbol or region>')`
-       to re-anchor on the exact edit location.
-    2. `deep_dive(symbol='<modified symbol>')` for the symbol you are changing.
-    3. `fast_refs(symbol='<modified symbol>')` if the fix changes behavior that
-       callers could observe.
+    1. List the file's symbols to re-anchor on the exact edit location
+       (julie `get_symbols(file_path='<file>')` / miller `inspect(target='<file>')`).
+    2. Inspect the symbol you are changing
+       (julie `deep_dive(symbol='<symbol>')` / miller `inspect(target='<symbol>', depth=full)`).
+    3. Find references if the fix changes behavior callers could observe
+       (julie `fast_refs(symbol='<symbol>')` / miller `trace(target='<symbol>')`).
 
-    Do not start by skimming raw files. Julie-first still applies during fix
-    rounds.
+    Do not start by skimming raw files. Code-intelligence-MCP-first still applies
+    during fix rounds.
 
     ## Report Format
 
     When done, report:
     - What you changed
     - Verification scope, command, commit SHA, result, and timestamp
-    - **Julie calls used** - list the Julie calls you made during the fix round
+    - **Code-intelligence MCP calls used** - list the orient / inspect / find-references calls you made during the fix round
     - Any judgment calls made
 ```
 

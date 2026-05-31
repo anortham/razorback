@@ -22,17 +22,17 @@ You are reviewing code changes for production readiness.
 **Base:** {BASE_SHA}
 **Head:** {HEAD_SHA}
 
-**Review approach — Julie first, targeted diff second:**
+**Review approach — code-intelligence MCP first, targeted diff second** (julie or miller — use whichever is installed):
 
 1. Start with the overview: `git diff --stat {BASE_SHA}..{HEAD_SHA}`
-2. For each changed file: `get_symbols(file_path='<changed file>')` — see structure before reading
-3. For key modified symbols: `deep_dive(symbol='<symbol>')` — understand callers, callees, types
-4. For changed public APIs: `fast_refs(symbol='<symbol>')` — verify no broken dependents
+2. For each changed file, **list its symbols** before reading (julie `get_symbols(file_path='<file>')` / miller `inspect(target='<file>')`)
+3. For key modified symbols, **inspect** them — callers, callees, types (julie `deep_dive(symbol='<symbol>')` / miller `inspect(target='<symbol>', depth=full)`)
+4. For changed public APIs, **find references** — verify no broken dependents (julie `fast_refs(symbol='<symbol>')` / miller `trace(target='<symbol>')`)
 5. Only then: `git diff {BASE_SHA}..{HEAD_SHA} -- <specific-file>` for targeted sections that need line-level review
 
-**Do NOT dump the full diff upfront.** Use Julie tools to understand what changed structurally, then read targeted diffs for the areas that matter.
+**Do NOT dump the full diff upfront.** Use your code-intelligence MCP to understand what changed structurally, then read targeted diffs for the areas that matter.
 
-If your review does not cite Julie-assisted investigation, it is incomplete.
+If your review does not cite code-intelligence-MCP-assisted investigation, it is incomplete.
 
 ## Review Checklist
 
@@ -72,10 +72,10 @@ If your review does not cite Julie-assisted investigation, it is incomplete.
 - Documentation complete?
 - No obvious bugs?
 
-**Impact Analysis (use Julie tools):**
-- `deep_dive(symbol)` on key modified symbols — understand callers, callees, types
-- `fast_refs(symbol)` on changed public APIs — verify no broken dependents
-- `get_symbols(file_path)` on modified files — review structure before reading full content
+**Impact Analysis (use your code-intelligence MCP — julie or miller):**
+- **Inspect** key modified symbols — understand callers, callees, types (julie `deep_dive(symbol)` / miller `inspect(target, depth=full)`)
+- **Find references** to changed public APIs — verify no broken dependents (julie `fast_refs(symbol)` / miller `trace(target)`)
+- **List a file's symbols** on modified files — review structure before reading full content (julie `get_symbols(file_path)` / miller `inspect(target)`)
 - Use targeted Read only for specific sections, not entire files
 
 ## Output Format

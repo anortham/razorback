@@ -1,8 +1,8 @@
 {
   "name": "razorback",
   "displayName": "Razorback",
-  "description": "Julie-powered development workflow with subagent-driven execution, inline review, and Julie-first codebase orientation.",
-  "version": "0.14.1",
+  "description": "Code-intelligence-powered development workflow with subagent-driven execution, inline review, and MCP-first codebase orientation (julie or miller).",
+  "version": "0.15.0",
   "author": {
     "name": "Alan Northam"
   },
@@ -14,6 +14,7 @@
     "tdd",
     "debugging",
     "julie",
+    "miller",
     "workflows"
   ],
   "skills": "./skills/",

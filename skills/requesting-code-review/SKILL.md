@@ -16,15 +16,15 @@ When using `razorback:subagent-driven-development`, the **lead does inline revie
 **The lead checks two things:**
 
 **Spec compliance:** Did the implementer build what was requested? Nothing missing, nothing extra?
-- Use `get_symbols(file_path)` to scan changed files quickly
+- **List a file's symbols** to scan changed files quickly (julie `get_symbols` / miller `inspect`)
 - Compare actual code to task requirements line by line
 
 **Code quality:** Is the code clean, tested, and maintainable?
-- Use `deep_dive(symbol)` on key modified symbols
-- Use `fast_refs(symbol)` to verify changes don't break dependents
+- **Inspect** key modified symbols (julie `deep_dive` / miller `inspect depth=full`)
+- **Find references** to verify changes don't break dependents (julie `fast_refs` / miller `trace`)
 - Check tests verify behavior, not just that code runs
-- Reject the report if the implementer cannot show Julie-first orientation and
-  the Julie calls they used
+- Reject the report if the implementer cannot show code-intelligence-MCP-first orientation and
+  the MCP calls they used
 - Compare the diff against the approved architecture, not just the symptom
 - If the same structural issue keeps recurring, route it through
   `architecture-quality` Candidate Mode instead of looping more patches
