@@ -75,7 +75,7 @@ metric semantics, or correctness risk.
 For Codex gate-review lanes, prefer the project route for a reviewer that reads
 the plan, failing test or replay, and diff, then decides whether the test or
 implementation is wrong. In repos following the current Razorback policy, that
-route is `gpt-5.3-codex` at high reasoning.
+route is `gpt-5.4` at high reasoning.
 
 ### Message framing
 

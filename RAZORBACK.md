@@ -16,9 +16,9 @@ radius.
 | Strategy | Planning, architecture, decomposition, lead review, finding triage | gpt-5.5 medium/high | Opus or Sonnet, based on risk | Strongest available reasoning model |
 | Implementation | Bounded worker tasks from a clear plan | gpt-5.4-mini xhigh | Sonnet or Haiku for boxed-in edits | Fast implementation model |
 | Mechanical | Docs, fixtures, rote edits, formatting, manifests with no gate ownership | gpt-5.4-mini low/medium | Haiku or Sonnet low-cost equivalent | Fastest reliable model |
-| Coupled implementation | Bounded but cross-file work with some coupling | gpt-5.4-mini xhigh; escalate to gpt-5.3-codex high/xhigh when tool-heavy debugging is likely | Sonnet high or Opus | Stronger implementation model |
-| Gate review | Plan plus failing test, replay, metric, or diff triage | gpt-5.3-codex high | Opus or Sonnet high | Strong review model |
-| Escalation | Code review, gate interpretation, subtle correctness, high-blast-radius refactors, weak tests, repeated worker failure | gpt-5.3-codex high for review or first escalation; gpt-5.5 high/xhigh for top-risk correctness or planning failure | Opus | Strongest available reasoning model |
+| Coupled implementation | Bounded but cross-file work with some coupling | gpt-5.4-mini xhigh only when coupling is shallow and each file verifies independently; otherwise gpt-5.4 high/xhigh (files must change together, shared invariants, or tool-heavy debugging) | Sonnet high or Opus | Stronger implementation model |
+| Gate review | Plan plus failing test, replay, metric, or diff triage | gpt-5.4 high | Opus or Sonnet high | Strong review model |
+| Escalation | Code review, gate interpretation, subtle correctness, high-blast-radius refactors, weak tests, repeated worker failure | gpt-5.4 high for review or first escalation; gpt-5.5 high/xhigh for top-risk correctness or planning failure | Opus | Strongest available reasoning model |
 
 If a harness cannot choose models or reasoning per agent, use `inherit` and note
 that limitation in the plan or worker report.
@@ -29,9 +29,9 @@ per-agent selection. Do not leave `model` unset when a supported route exists.
 Inherit only when the route itself says `inherit`, no route exists, or the
 harness cannot select the mapped model or reasoning effort.
 
-For Codex review routing, use `gpt-5.3-codex high` for adversarial review,
+For Codex review routing, use `gpt-5.4 high` for adversarial review,
 gate-interpretation review, code review, and failed-worker diagnosis. Use
-`gpt-5.3-codex xhigh` for terminal-heavy bug fixing or repeated failed-worker
+`gpt-5.4 xhigh` for terminal-heavy bug fixing or repeated failed-worker
 diagnosis. Use `gpt-5.5 high/xhigh` when the failure suggests the plan,
 architecture, public API contract, security posture, or verification strategy
 is wrong.
@@ -82,6 +82,16 @@ For coupled but still bounded implementation, choose one:
 - use the coupled implementation tier for the worker
 - keep the work in the lead session
 - split strategy-tier investigation from implementation-tier edits
+
+`gpt-5.4-mini` may take a coupled lane only when the coupling is shallow enough
+that the task still satisfies every Worker Eligibility rule — narrow,
+non-overlapping file ownership, a local expected change, and per-file
+verification that does not depend on cross-file state. The moment the files must
+change together, the change rides a shared invariant the worker cannot see
+locally, or diagnosis turns tool-heavy, route to `gpt-5.4` or keep the work in
+the lead session. Do not let a mini worker discover the coupling mid-task; the
+lead decides the tier up front and does not hand `mini` cross-file work on the
+assumption it will escalate itself.
 
 ## Lead Duties
 

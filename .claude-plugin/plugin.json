@@ -1,7 +1,7 @@
 {
   "name": "razorback",
   "description": "Code-intelligence-powered development workflow with subagent-driven execution, inline review, and MCP-first codebase orientation (julie or miller).",
-  "version": "0.15.0",
+  "version": "0.15.1",
   "author": {
     "name": "anortham"
   },

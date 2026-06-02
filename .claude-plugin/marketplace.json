@@ -11,7 +11,7 @@
       "name": "razorback",
       "source": "./",
       "description": "Code-intelligence-aware development workflow skills. Fork of Superpowers with explicit code intelligence integration.",
-      "version": "0.15.0",
+      "version": "0.15.1",
       "category": "productivity"
     }
   ]
