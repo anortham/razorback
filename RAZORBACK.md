@@ -14,9 +14,9 @@ radius.
 | Tier | Use for | Codex | Claude | OpenCode |
 |---|---|---|---|---|
 | Strategy | Planning, architecture, decomposition, lead review, finding triage | gpt-5.5 medium/high | Opus or Sonnet, based on risk | Strongest available reasoning model |
-| Implementation | Bounded worker tasks from a clear plan | gpt-5.4-mini xhigh | Sonnet or Haiku for boxed-in edits | Fast implementation model |
-| Mechanical | Docs, fixtures, rote edits, formatting, manifests with no gate ownership | gpt-5.4-mini low/medium | Haiku or Sonnet low-cost equivalent | Fastest reliable model |
-| Coupled implementation | Bounded but cross-file work with some coupling | gpt-5.4-mini xhigh only when coupling is shallow and each file verifies independently; otherwise gpt-5.4 high/xhigh (files must change together, shared invariants, or tool-heavy debugging) | Sonnet high or Opus | Stronger implementation model |
+| Implementation | Bounded worker tasks from a clear plan | gpt-5.4 xhigh | Sonnet or Haiku for boxed-in edits | Fast implementation model |
+| Mechanical | Docs, fixtures, rote edits, formatting, manifests with no gate ownership | gpt-5.4 low/medium | Haiku or Sonnet low-cost equivalent | Fastest reliable model |
+| Coupled implementation | Bounded but cross-file work with some coupling | gpt-5.4 high when coupling is shallow and each file verifies independently; otherwise gpt-5.4 xhigh (files must change together, shared invariants, or tool-heavy debugging) | Sonnet high or Opus | Stronger implementation model |
 | Gate review | Plan plus failing test, replay, metric, or diff triage | gpt-5.4 high | Opus or Sonnet high | Strong review model |
 | Escalation | Code review, gate interpretation, subtle correctness, high-blast-radius refactors, weak tests, repeated worker failure | gpt-5.4 high for review or first escalation; gpt-5.5 high/xhigh for top-risk correctness or planning failure | Opus | Strongest available reasoning model |
 
@@ -83,15 +83,16 @@ For coupled but still bounded implementation, choose one:
 - keep the work in the lead session
 - split strategy-tier investigation from implementation-tier edits
 
-`gpt-5.4-mini` may take a coupled lane only when the coupling is shallow enough
-that the task still satisfies every Worker Eligibility rule — narrow,
-non-overlapping file ownership, a local expected change, and per-file
+A boxed-in implementation worker may take a coupled lane only when the coupling
+is shallow enough that the task still satisfies every Worker Eligibility rule —
+narrow, non-overlapping file ownership, a local expected change, and per-file
 verification that does not depend on cross-file state. The moment the files must
 change together, the change rides a shared invariant the worker cannot see
-locally, or diagnosis turns tool-heavy, route to `gpt-5.4` or keep the work in
-the lead session. Do not let a mini worker discover the coupling mid-task; the
-lead decides the tier up front and does not hand `mini` cross-file work on the
-assumption it will escalate itself.
+locally, or diagnosis turns tool-heavy, raise the reasoning effort to `gpt-5.4
+xhigh` or keep the work in the lead session. Do not let a worker discover the
+coupling mid-task; the lead decides the tier and reasoning effort up front and
+does not hand a boxed-in worker cross-file work on the assumption it will
+escalate itself.
 
 ## Lead Duties
 

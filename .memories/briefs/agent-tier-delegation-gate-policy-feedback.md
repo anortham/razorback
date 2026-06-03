@@ -17,7 +17,7 @@ Testing in `/Users/murphy/source/julie` showed that tiered workers were effectiv
 ## Policy Direction
 - Mechanical-tier workers must not own any failing test, replay, metric, or acceptance gate.
 - Any task that interprets verification evidence, replay invariants, metric semantics, or whether a gate should change needs implementation xhigh or strategy/escalation ownership.
-- Bounded implementation workers can use `gpt-5.4-mini` at `xhigh` when the task has narrow ownership and clear tests.
+- Bounded implementation workers can use `gpt-5.4` at `xhigh` when the task has narrow ownership and clear tests.
 - Add a `5.3-codex` high reviewer role for plan + failing test + diff triage, focused on deciding whether the test or implementation is wrong.
 - Workers must stop and report assigned verification failure unless the spec tells them to update the gate.
 - Workers should state the invariant enforced by each assigned test or gate.
