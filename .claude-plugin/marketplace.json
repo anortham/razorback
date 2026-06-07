@@ -4,14 +4,14 @@
     "name": "Alan Northam"
   },
   "metadata": {
-    "description": "Code-intelligence-aware development workflow skills for Claude Code"
+    "description": "Miller-powered development workflow skills for Claude Code"
   },
   "plugins": [
     {
       "name": "razorback",
       "source": "./",
-      "description": "Code-intelligence-aware development workflow skills. Fork of Superpowers with explicit code intelligence integration.",
-      "version": "0.15.2",
+      "description": "Miller-powered development workflow skills. Fork of Superpowers with explicit Miller integration.",
+      "version": "0.16.0",
       "category": "productivity"
     }
   ]

@@ -55,16 +55,16 @@ Agent tool (general-purpose):
 
     **Verify by reading code, not by trusting report.**
 
-    ## How to Review (use your code-intelligence MCP)
+    ## How to Review (use Miller)
 
-    Use your code-intelligence MCP (julie or miller — whichever is installed) for efficient, targeted review:
+    Use Miller for efficient, targeted review:
 
     1. **List the file's symbols** before reading full content
-       (julie `get_symbols(file_path='<file>')` / miller `inspect(target='<file>')`)
+       (Miller `inspect(target='<file>')`)
     2. **Find references** to verify the implementation connects to the rest of the codebase
-       (julie `fast_refs(symbol='<symbol>')` / miller `trace(target='<symbol>')`)
+       (Miller `trace(target='<symbol>')`)
     3. **Inspect a symbol** to understand its context if behavior is unclear
-       (julie `deep_dive(symbol='<symbol>')` / miller `inspect(target='<symbol>', depth=full)`)
+       (Miller `inspect(target='<symbol>', depth=full)`)
 
     Only use Read for specific sections identified by the symbol listing. Do NOT read entire files.
 

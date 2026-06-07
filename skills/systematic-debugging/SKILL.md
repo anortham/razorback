@@ -119,18 +119,18 @@ You MUST complete each phase before proceeding to the next.
    - Keep tracing up until you find the source
    - Fix at source, not at symptom
 
-**Use your code-intelligence MCP (julie or miller) for investigation:**
-- **Inspect** the buggy function — understand callers, callees, type flow (julie `deep_dive` / miller `inspect depth=full`)
-- **Find references** — find all call sites that might trigger the bug (julie `fast_refs` / miller `trace`)
-- **Orient** on the broader subsystem (julie `get_context` / miller `context`)
+**Use Miller for investigation:**
+- **Inspect** the buggy function — understand callers, callees, type flow with `inspect depth=full`
+- **Find references** — find all call sites that might trigger the bug with `trace`
+- **Orient** on the broader subsystem with `context`
 
 ### Phase 2: Pattern Analysis
 
 **Find the pattern before fixing:**
 
 1. **Find Working Examples**
-   - **Search** for similar working code in the codebase (julie `fast_search` / miller `search`)
-   - **Orient** for a token-budgeted view of the relevant area (julie `get_context` / miller `context`)
+   - **Search** for similar working code in the codebase with Miller `search`
+   - **Orient** for a token-budgeted view of the relevant area with Miller `context`
    - What works that's similar to what's broken?
 
 2. **Compare Against References**
@@ -144,7 +144,7 @@ You MUST complete each phase before proceeding to the next.
    - Don't assume "that can't matter"
 
 4. **Understand Dependencies**
-   - **Inspect** the broken function — see callers, callees, types, children (julie `deep_dive` / miller `inspect depth=full`)
+   - **Inspect** the broken function — see callers, callees, types, children with Miller `inspect depth=full`
    - What other components does this need?
    - What settings, config, environment?
    - What assumptions does it make?
@@ -171,7 +171,7 @@ You MUST complete each phase before proceeding to the next.
 4. **When You Don't Know**
    - Say "I don't understand X"
    - Don't pretend to know
-   - Research more with your code-intelligence MCP, targeted docs, and the smallest relevant verification command
+   - Research more with Miller, targeted docs, and the smallest relevant verification command
    - In an approved autonomous run, stop only if the uncertainty matches the blocker taxonomy
    - Outside an approved run, ask one specific question if the research path is exhausted
 

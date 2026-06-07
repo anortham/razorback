@@ -150,26 +150,23 @@ Instructions say WHAT, not HOW. "Add X" or "Fix Y" doesn't mean skip workflows.
 
 ## Your Toolchain
 
-Razorback skills assume a **code-intelligence MCP server is available and MUST be used** for ALL codebase exploration — instead of Glob/Grep/Read chains. Two interchangeable servers implement the same capabilities; use whichever is installed:
+Razorback skills assume **Miller MCP is available and MUST be used** for ALL codebase exploration — instead of Glob/Grep/Read chains.
 
-- **julie** (Rust + tree-sitter) — the current server
-- **miller** (.NET) — its successor, in progress
+Use Miller by capability, not by raw file reading:
 
-Work by **capability**, not by raw file reading. The tool name depends on which server is installed:
-
-| Capability — do this BEFORE the raw-file reflex | julie tool | miller tool |
-|---|---|---|
-| **Orient** — token-budgeted bundle for a task or area | `get_context(query)` | `context(query)` |
-| **Search** — find code by text, symbol, or concept | `fast_search(query)` | `search(query)` |
-| **List a file's symbols** before reading the whole file | `get_symbols(path)` | `inspect(path)` |
-| **Inspect a symbol** (callers, callees, body) before modifying it | `deep_dive(symbol)` | `inspect(symbol, depth=full)` |
-| **Find references** before changing a public API | `fast_refs(symbol)` | `trace(target)` |
-| **Assess impact / blast radius** of a change | `blast_radius(symbol)` | `impact(target)` |
-| **Rename / edit** a symbol safely | `rename_symbol(old, new)` | `edit(operation, target)` |
-| **Manage the workspace index** | `manage_workspace(...)` | `workspace(...)` |
+| Capability — do this BEFORE the raw-file reflex | Miller tool |
+|---|---|
+| **Orient** — token-budgeted bundle for a task or area | `context(query)` |
+| **Search** — find code by text, symbol, file/path, content, or concept | `search(query, mode=auto|text|symbol|file|content)` |
+| **List a file's symbols** before reading the whole file | `inspect(path)` |
+| **Inspect a symbol** (callers, callees, body) before modifying it | `inspect(symbol, depth=full)` |
+| **Find references** before changing a public API | `trace(target)` |
+| **Assess impact / blast radius** of a change | `impact(target)` |
+| **Rename / edit** a symbol safely | `edit(operation, target)` |
+| **Manage the workspace index** | `workspace(...)` |
 
 **Rules (apply to the lead AND to every implementer, reviewer, and fix worker you dispatch):**
-1. Use your code-intelligence MCP for ALL codebase exploration. Do NOT fall back to Glob → Read → Grep chains.
+1. Use Miller for ALL codebase exploration. Do NOT fall back to Glob → Read → Grep chains.
 2. List a file's symbols before reading it in full.
 3. Inspect a symbol before modifying it.
 4. Find a symbol's references before changing it, to check impact.

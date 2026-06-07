@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - [OpenCode.ai](https://opencode.ai) installed
-- **A code-intelligence MCP server** (julie or miller) configured and available — razorback uses it for code intelligence and requires it (unlike superpowers, there is no fallback to generic tools). Use [julie](https://github.com/anortham/julie) today, or miller (its .NET successor) once released
+- **Miller MCP** configured and available — razorback uses it for code orientation and symbol-aware review, and requires it (unlike superpowers, there is no fallback to generic tools)
 
 ## Installation
 
@@ -83,9 +83,9 @@ Then restart OpenCode.
 2. Confirm the plugin is loading (see above) — if it is, the skills directory is registered automatically
 3. Confirm you don't have a stale `skills.paths` entry pointing at a symlinked location
 
-### Code-intelligence MCP not available
+### Miller MCP not available
 
-Razorback skills assume a code-intelligence MCP (julie or miller) is present. If neither is configured, many skills (exploration, editing, refs) won't function. Install and configure a code-intelligence MCP server before using razorback.
+Razorback skills assume Miller is present. If Miller is not configured, many skills (exploration, editing, refs) won't function. Install and configure Miller before using razorback.
 
 ### Tool mapping
 

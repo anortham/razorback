@@ -44,7 +44,7 @@ await execFileAsync('git', ['init'], { cwd: projectDir });
 
 ### 3. Ask: What Called This?
 
-**Inspect the symbol first** (julie `deep_dive(symbol='<function>')` / miller `inspect(target='<function>', depth=full)`) — it shows callers, callees, and type flow automatically, replacing manual tracing in most cases.
+**Inspect the symbol first** with Miller `inspect(target='<function>', depth=full)` — it shows callers, callees, and type flow automatically, replacing manual tracing in most cases.
 
 If that reveals the chain, skip to step 5 (find original trigger). If the chain is too dynamic or indirect for static analysis, trace manually:
 

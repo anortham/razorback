@@ -1,6 +1,6 @@
 # Razorback — Project Instructions
 
-Razorback is a skill set for Claude Code, Cursor, Codex, OpenCode, Copilot CLI, and Gemini CLI that diverged from [Superpowers](https://github.com/obra/superpowers). It uses a code-intelligence MCP (julie or miller) for token-efficient codebase orientation. Plan execution routes through `subagent-driven-development` on harnesses that support delegation, and through `executing-plans` otherwise.
+Razorback is a skill set for Claude Code, Cursor, Codex, OpenCode, Copilot CLI, and Gemini CLI that diverged from [Superpowers](https://github.com/obra/superpowers). It uses Miller MCP for token-efficient codebase orientation. Plan execution routes through `subagent-driven-development` on harnesses that support delegation, and through `executing-plans` otherwise.
 
 ## Project Structure
 
@@ -66,25 +66,27 @@ docs/specs/                         — Design specifications
 - `run-hook.cmd` is a polyglot that works as both a cmd.exe batch file and bash script. On Windows without Git Bash, it emits a stderr warning and exits 0 (plugin still loads, bootstrap disabled).
 - `hooks/session-start` detects the harness from `CURSOR_PLUGIN_ROOT` / `CLAUDE_PLUGIN_ROOT` / `COPILOT_CLI` env vars and emits the JSON shape that harness expects.
 
-## Code-intelligence MCP Integration Pattern
+## Miller MCP Integration Pattern
 
-Razorback works with an interchangeable code-intelligence MCP server — **julie** (Rust + tree-sitter, current) or **miller** (.NET, its successor). Skills reference it by **capability**, not by hardcoded tool name; the authoritative capability → tool mapping lives in `skills/using-razorback/SKILL.md` ("Your Toolchain").
+Razorback works with Miller as its orientation and symbol-awareness layer. Skills reference Miller by **capability** first, and then by the concrete Miller tool name. Legacy predecessor tool names should appear only as migration/compatibility notes, not as the default workflow.
 
 When modifying skills, add tool awareness at exploration/investigation points by capability:
 
-| Capability | julie tool | miller tool |
-|---|---|---|
-| Search code (text, symbol, file/path, or concept) | `fast_search(query, backend?)` | `search(query, mode?)` |
-| Orient on the codebase | `get_context(query)` | `context(query)` |
-| Inspect a symbol before modifying it | `deep_dive(symbol)` | `inspect(target, depth=full)` |
-| Find references before changing a public API | `fast_refs(symbol)` | `trace(target)` |
-| List a file's symbols before reading it | `get_symbols(file_path)` | `inspect(target)` |
+| Capability | Miller tool |
+|---|---|
+| Search code (text, symbol, file/path, or concept) | `search(query, mode?)` |
+| Orient on the codebase | `context(query)` |
+| Inspect a symbol before modifying it | `inspect(target, depth=full)` |
+| Find references before changing a public API | `trace(target)` |
+| List a file's symbols before reading it | `inspect(target)` |
+| Assess impact / blast radius | `impact(target)` |
+| Manage the workspace index | `workspace(...)` |
 
-(julie's `fast_search` backend: omit `backend` for normal search with labeled semantic fallback on identifier-like unscoped zero hits when embeddings are ready; explicit `lexical` for pure lexical/file/path search and comparisons; `semantic` or `hybrid` only for concept-to-symbol discovery. miller's `search` is lexical-first with a `mode=auto|text|symbol|file` selector.)
+Miller's `search` is lexical-first with a `mode=auto|text|symbol|file|content` selector. Use `mode=content` for docs/prose content and `inspect(target, depth=full)` for symbol bodies, callers, and callees.
 
-Code-intelligence-MCP-first applies to the lead and to every dispatched implementer, reviewer, and fix worker, regardless of harness.
+Miller-first applies to the lead and to every dispatched implementer, reviewer, and fix worker, regardless of harness.
 
-Use directive, capability-first language in lead-facing skills: "inspect a symbol BEFORE modifying it" (the central table maps it to the installed server). In **subagent-facing prompt files** (implementer/fix/reviewer prompts), name both servers inline — e.g. "inspect the symbol (julie `deep_dive` / miller `inspect depth=full`)" — because dispatched subagents do not receive the using-razorback toolchain table.
+Use directive, capability-first language in lead-facing skills: "inspect a symbol BEFORE modifying it" and name Miller where the command matters. In **subagent-facing prompt files** (implementer/fix/reviewer prompts), name Miller inline — e.g. "inspect the symbol with Miller `inspect(target='<symbol>', depth=full)`" — because dispatched subagents do not receive the using-razorback toolchain table.
 
 ## Naming Rules
 - All skill cross-references use `razorback:` prefix, never `superpowers:`
@@ -92,9 +94,9 @@ Use directive, capability-first language in lead-facing skills: "inspect a symbo
 - SessionStart hook announces "You have razorback."
 
 ## Dependencies
-- A code-intelligence MCP server (julie or miller) is a **hard requirement** — no fallback to generic tools for codebase exploration
+- Miller MCP is a **hard requirement** — no fallback to generic tools for codebase exploration
 - Goldfish MCP server is a **hard requirement** — used for persistent memory (checkpoints, briefs, recall) and compaction-durable execution during long autonomous runs
-- Skills assume both a code-intelligence MCP (julie or miller) and Goldfish are configured and available
+- Skills assume both Miller and Goldfish are configured and available
 
 ## Execution Model
 
@@ -131,7 +133,7 @@ The `.version-bump.json` config drives the script. `.memories/` and `docs/plans/
 - Process flows (brainstorm → plan → TDD → execute → review → finish)
 - Anti-rationalization tables in skills
 - Two-pass inline review (spec compliance + code quality, done by lead, not separate agents)
-- Code-intelligence-MCP-first exploration (no Glob/Read/Grep chains)
+- Miller-first exploration (no Glob/Read/Grep chains)
 - Single-repo marketplace layout (both Claude Code and Copilot CLI read `.claude-plugin/marketplace.json` from this repo)
 - Autonomous-by-default execution (blocker-gated, not task-gated) with optional pre-merge external review
 - These conventions are intentionally chosen for token efficiency and quality

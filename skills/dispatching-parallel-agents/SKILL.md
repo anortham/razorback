@@ -66,12 +66,12 @@ Each agent gets:
 - **Model tier:** use the project model-routing policy when the harness supports per-agent model selection
 - **Gate invariant:** what each assigned failing test, replay, metric, or acceptance gate proves
 - **Expected output:** Summary of what you found and fixed
-- **Tool guidance (include in every agent prompt — use the code-intelligence MCP, julie or miller, whichever is installed):**
-  - **Orient** on the subsystem independently (julie `get_context(query='<area>')` / miller `context(query='<area>')`)
-  - **Inspect** the buggy symbol — callers, callees, types — before modifying (julie `deep_dive(symbol='<fn>')` / miller `inspect(target='<fn>', depth=full)`)
-  - **Find references** — check all references before changing anything (julie `fast_refs(symbol='<symbol>')` / miller `trace(target='<symbol>')`)
-  - **List a file's symbols** before reading full content (julie `get_symbols(file_path='<file>')` / miller `inspect(target='<file>')`)
-  - Do NOT use Glob → Read → Grep chains. The code-intelligence MCP returns targeted context in 1-2 calls.
+- **Tool guidance (include in every agent prompt — use Miller):**
+  - **Orient** on the subsystem independently with Miller `context(query='<area>')`
+  - **Inspect** the buggy symbol — callers, callees, types — before modifying with Miller `inspect(target='<fn>', depth=full)`
+  - **Find references** — check all references before changing anything with Miller `trace(target='<symbol>')`
+  - **List a file's symbols** before reading full content with Miller `inspect(target='<file>')`
+  - Do NOT use Glob → Read → Grep chains. Miller returns targeted context in 1-2 calls.
 
 ### 3. Dispatch in Parallel
 

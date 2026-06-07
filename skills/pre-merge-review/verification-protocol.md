@@ -10,11 +10,11 @@ Every finding falls into exactly one of four buckets:
 
 The code actually has the defect described. A caller, callee, edge case, or invariant breaks in the way the reviewer claims. Fix is **mandatory**.
 
-**Verify with your code-intelligence MCP** (julie or miller — whichever is installed; see the capability → tool map in `using-razorback`):
+**Verify with Miller**:
 
-- **Inspect the referenced symbol** (julie `deep_dive` / miller `inspect depth=full`) — confirm the symbol exists, check its callers/callees/types to see if the described path is real.
-- **Find references** (julie `fast_refs` / miller `trace`) — if the finding touches a public API or shared utility, check the full reference graph to size the impact.
-- **List the file's symbols** (julie `get_symbols` / miller `inspect`) — scan the file's structure to confirm the reviewer is pointing at the right region.
+- **Inspect the referenced symbol** with `inspect depth=full` — confirm the symbol exists, check its callers/callees/types to see if the described path is real.
+- **Find references** with `trace` — if the finding touches a public API or shared utility, check the full reference graph to size the impact.
+- **List the file's symbols** with `inspect` — scan the file's structure to confirm the reviewer is pointing at the right region.
 
 **Example — real-bug:**
 
@@ -29,7 +29,7 @@ The code actually has the defect described. A caller, callee, edge case, or inva
 
 Not a bug, but a legitimate quality improvement — better naming, reduced coupling, a missed edge case that matters, missing error handling at a genuine boundary. Fix is **recommended unless it expands scope beyond the plan**. If the fix would pull in unrelated subsystems or require architectural decisions the plan doesn't cover, reclassify as **out-of-scope** and flag it for follow-up.
 
-**Verify with your code-intelligence MCP:** same capabilities as real-bug. The goal is to confirm the described improvement is applicable to the code as written, not to a hypothetical version of it.
+**Verify with Miller:** same capabilities as real-bug. The goal is to confirm the described improvement is applicable to the code as written, not to a hypothetical version of it.
 
 **Example — real-improvement:**
 
@@ -44,7 +44,7 @@ Not a bug, but a legitimate quality improvement — better naming, reduced coupl
 
 The reviewer misread the code, invented a code path that doesn't exist, or flagged a pattern the codebase uses intentionally. Dismiss with a written reason.
 
-**Verify with your code-intelligence MCP:** verify by checking the actual code. The standard of evidence is "I looked and the reviewer's premise is wrong" — not "I don't think that's a problem."
+**Verify with Miller:** verify by checking the actual code. The standard of evidence is "I looked and the reviewer's premise is wrong" — not "I don't think that's a problem."
 
 **Example — false-positive:**
 
@@ -58,7 +58,7 @@ The reviewer misread the code, invented a code path that doesn't exist, or flagg
 
 Real finding, but outside the plan's scope — it touches an unrelated subsystem, or the fix requires architectural decisions the plan doesn't cover, or the issue pre-dates this branch and isn't touched by the current changes. Dismiss with "out of scope, filed as follow-up" (or an equivalent specific reason) and, if the issue merits tracking, note it in the morning report's "Next steps" section so the user can file a ticket.
 
-**Verify with your code-intelligence MCP:** confirm the finding is real and well-grounded (same verification as real-bug / real-improvement), then compare against the plan's stated scope.
+**Verify with Miller:** confirm the finding is real and well-grounded (same verification as real-bug / real-improvement), then compare against the plan's stated scope.
 
 **Example — out-of-scope:**
 

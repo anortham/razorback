@@ -73,8 +73,8 @@ digraph tdd_cycle {
 
 Before writing any test, understand what you're testing:
 
-1. **Inspect** the function/module to test — understand interface, callers, types, existing behavior (julie `deep_dive` / miller `inspect depth=full`)
-2. **Orient** on the test area — find existing test patterns and conventions in the codebase (julie `get_context` / miller `context`)
+1. **Inspect** the function/module to test — understand interface, callers, types, existing behavior with Miller `inspect depth=full`
+2. **Orient** on the test area — find existing test patterns and conventions in the codebase with Miller `context`
 
 This prevents writing tests against wrong assumptions about the API. Skip only if you just wrote the code being tested.
 
@@ -350,11 +350,11 @@ Can't check all boxes? You skipped TDD. Start over.
 
 | Problem | Solution |
 |---------|----------|
-| Don't know how to test | Inspect nearby tests with your code-intelligence MCP. Write wished-for API. Write the assertion first. If still unclear in an approved autonomous run, pick the smallest plan-consistent test shape, log it, and stop only for blocker-taxonomy ambiguity. |
+| Don't know how to test | Inspect nearby tests with Miller. Write wished-for API. Write the assertion first. If still unclear in an approved autonomous run, pick the smallest plan-consistent test shape, log it, and stop only for blocker-taxonomy ambiguity. |
 | Test too complicated | Design too complicated. Simplify interface. |
 | Must mock everything | Code too coupled. Use dependency injection. |
 | Test setup huge | Extract helpers. Still complex? Simplify design. |
-| Don't know existing patterns | List a file's symbols (julie `get_symbols` / miller `inspect`) to see test file organization |
+| Don't know existing patterns | List a file's symbols with Miller `inspect` to see test file organization |
 
 ## Debugging Integration
 

@@ -457,7 +457,7 @@ cd ~/source/other-project && claude -p --no-session-persistence \
   "prompt" 2>/dev/null
 ```
 
-**Self-review with razorback skills loaded:** if you want the reviewer to apply razorback's code-intelligence-MCP-first review checklist itself, add `--plugin-dir <path-to-razorback>` so the reviewer session loads the same skills your main session uses. Without it, the reviewer sees only the project's `CLAUDE.md`.
+**Self-review with razorback skills loaded:** if you want the reviewer to apply razorback's Miller-first review checklist itself, add `--plugin-dir <path-to-razorback>` so the reviewer session loads the same skills your main session uses. Without it, the reviewer sees only the project's `CLAUDE.md`.
 
 Do not use `--bare` for adversarial review unless you have a guaranteed `ANTHROPIC_API_KEY`. A working reviewer with a fresh prompt beats a broken "pure" invocation.
 

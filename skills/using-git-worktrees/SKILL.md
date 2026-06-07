@@ -80,7 +80,7 @@ Follow this priority order. Explicit user preference always beats observed files
    ```
    If a preference is specified, use it without asking.
 
-5. **Otherwise default to `.worktrees/` at the project root.** Razorback runs to completion; do not stop to ask for a directory preference. The user can override the location explicitly in their request.
+5. **Default to `.worktrees/` at the project root.** Razorback runs to completion; do not stop to ask for a directory preference. The user can override the location explicitly in their request.
 
 #### Safety Verification (project-local directories only)
 

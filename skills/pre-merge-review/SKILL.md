@@ -7,7 +7,7 @@ description: Use after all tasks are complete and branch verification passes, be
 
 ## Overview
 
-Run a fresh, isolated external reviewer (codex / gemini / claude) against the full branch diff after all tasks are done and the plan's branch-gate verification scope is green, then route verified findings through razorback's own fix flow. The lead verifies every finding against the code with the code-intelligence MCP (julie or miller), classifies it (real-bug / real-improvement / false-positive / out-of-scope), fixes what's real, dismisses what isn't (with a written reason), and flags what needs human judgment. Single pass, no round-two review after fixes. The output is a summary block that slots into the morning report's External review section, so the user sees exactly what the reviewer said, what the lead did with it, and why.
+Run a fresh, isolated external reviewer (codex / gemini / claude) against the full branch diff after all tasks are done and the plan's branch-gate verification scope is green, then route verified findings through razorback's own fix flow. The lead verifies every finding against the code with Miller, classifies it (real-bug / real-improvement / false-positive / out-of-scope), fixes what's real, dismisses what isn't (with a written reason), and flags what needs human judgment. Single pass, no round-two review after fixes. The output is a summary block that slots into the morning report's External review section, so the user sees exactly what the reviewer said, what the lead did with it, and why.
 
 ## When to invoke
 
@@ -39,7 +39,7 @@ digraph pre_merge_review {
     "Step 2: Dispatch chosen reviewer (adversarial, read-only)" [shape=box];
     "Step 3: Parse findings (JSON for codex/claude, envelope+fallback for gemini)" [shape=box];
     "Any findings?" [shape=diamond];
-    "Step 4: Lead verifies each finding with the code-intelligence MCP" [shape=box];
+    "Step 4: Lead verifies each finding with Miller" [shape=box];
     "Classify: real-bug / real-improvement / false-positive / out-of-scope" [shape=box];
     "Any verified fixes?" [shape=diamond];
     "Step 5: Apply verified fixes" [shape=box];
@@ -54,8 +54,8 @@ digraph pre_merge_review {
     "Step 2: Dispatch chosen reviewer (adversarial, read-only)" -> "Step 3: Parse findings (JSON for codex/claude, envelope+fallback for gemini)";
     "Step 3: Parse findings (JSON for codex/claude, envelope+fallback for gemini)" -> "Any findings?";
     "Any findings?" -> "Step 7: Emit summary block for morning report" [label="no"];
-    "Any findings?" -> "Step 4: Lead verifies each finding with the code-intelligence MCP" [label="yes"];
-    "Step 4: Lead verifies each finding with the code-intelligence MCP" -> "Classify: real-bug / real-improvement / false-positive / out-of-scope";
+    "Any findings?" -> "Step 4: Lead verifies each finding with Miller" [label="yes"];
+    "Step 4: Lead verifies each finding with Miller" -> "Classify: real-bug / real-improvement / false-positive / out-of-scope";
     "Classify: real-bug / real-improvement / false-positive / out-of-scope" -> "Any verified fixes?";
     "Any verified fixes?" -> "Step 7: Emit summary block for morning report" [label="no (all dismissed/flagged)"];
     "Any verified fixes?" -> "Step 5: Apply verified fixes" [label="yes"];
@@ -143,11 +143,11 @@ Summary of the four classifications:
 - **false-positive** — reviewer misread the code, invented a path, or flagged an intentional pattern. Dismiss with a written reason.
 - **out-of-scope** — real finding, outside the plan's scope. Dismiss with "out of scope, filed as follow-up" (or equivalent specific reason).
 
-Verification always uses your code-intelligence MCP (julie or miller — whichever is installed):
+Verification always uses Miller:
 
-- **Inspect** the referenced symbol — check its callers, callees, types (julie `deep_dive` / miller `inspect depth=full`).
-- **Find references** — check the full impact if the finding touches a public API (julie `fast_refs` / miller `trace`).
-- **List the file's symbols** — see the file structure without reading the whole file (julie `get_symbols` / miller `inspect`).
+- **Inspect** the referenced symbol — check its callers, callees, types with `inspect depth=full`.
+- **Find references** — check the full impact if the finding touches a public API with `trace`.
+- **List the file's symbols** — see the file structure without reading the whole file with `inspect`.
 
 Dismissal rule: no finding is dismissed without a written reason that ends up in the morning report. The user will read those reasons on PR review and can override any of them.
 
@@ -155,11 +155,11 @@ Flagging rule: if a finding is real AND the lead cannot determine the right fix 
 
 ## Step 5: Apply verified fixes
 
-Every fix path stays code-intelligence-MCP-first. Whoever applies the fix, the lead or a delegated worker, orients with the code-intelligence MCP before touching code.
+Every fix path stays Miller-first. Whoever applies the fix, the lead or a delegated worker, orients with Miller before touching code.
 
 **When delegation is available:** dispatch a fresh implementer worker per finding, or **group by file if multiple findings cluster on the same file**. Use the template at [`fix-dispatch-prompt.md`](fix-dispatch-prompt.md). File ownership and model tier must be stated so parallel fixers do not collide or run below the finding's risk level. If findings span disjoint files, you can dispatch in parallel. If they cluster on the same file, either serialize the fixes or batch them into one worker dispatch.
 
-**When delegation is unavailable (e.g., a no-delegation `executing-plans` run, or the lead is itself running as a subagent — Gemini blocks recursion):** the lead applies the verified fixes inline in the current session. Work one finding at a time, or batch same-file findings only. Use the scope boundary and code-intelligence-MCP-first checklist in [`fix-dispatch-prompt.md`](fix-dispatch-prompt.md) as the inline checklist. Do not invent a subagent path that the harness cannot run.
+**When delegation is unavailable (e.g., a no-delegation `executing-plans` run, or the lead is itself running as a subagent — Gemini blocks recursion):** the lead applies the verified fixes inline in the current session. Work one finding at a time, or batch same-file findings only. Use the scope boundary and Miller-first checklist in [`fix-dispatch-prompt.md`](fix-dispatch-prompt.md) as the inline checklist. Do not invent a subagent path that the harness cannot run.
 
 Why fresh workers when delegation exists? The review runs after the main execution phase has ended and worker context may be closed or stale. Fresh workers work at any point in the timeline, and they come with no implementation-phase bias that might rationalize around a finding.
 
@@ -197,7 +197,7 @@ The caller (`executing-plans` Step 3 or `subagent-driven-development` Step 4a) t
 **Never:**
 
 - **Loop external review.** Single pass only. No "review, fix, re-review" cycle. Leftover real findings that the lead cannot fix get flagged for human judgment and the PR proceeds.
-- **Let the reviewer edit code.** Reviewers are read-only: codex and claude pin `--tools "Read,Bash"`; gemini uses `--yolo` only to auto-approve its own Read calls and is instructed by prompt to be read-only. Delegated fixes route through fresh implementer workers, and no-delegation runs fix inline under the same code-intelligence-MCP-first checklist.
+- **Let the reviewer edit code.** Reviewers are read-only: codex and claude pin `--tools "Read,Bash"`; gemini uses `--yolo` only to auto-approve its own Read calls and is instructed by prompt to be read-only. Delegated fixes route through fresh implementer workers, and no-delegation runs fix inline under the same Miller-first checklist.
 - **Silently dismiss findings.** Every dismissal requires a written reason in the morning report so the user can override on PR review. Silent dismissals defeat the whole point of running an external reviewer.
 - **Skip verification after fixes.** Every fix invalidates prior affected scopes. Run the required project-defined verification scope, or reuse a ledger entry only when it covers the current HEAD and required scope. Never push a branch whose most recent verification does not include the fix commits.
 - **Ship a PR without the reviewer the user requested.** Reviewer unavailability (auth, rate limit, budget/turn cap with no usable partial output, empty stdout, schema violation persisting after one retry) is a **blocker**, not a silent downgrade. Stop the run, do NOT push, do NOT create a PR, emit a partial morning report with `Status: Blocked` and the specific failure in `Blockers hit`, and exit. The user chose this reviewer for the run; quietly skipping the review turns an explicit request into an implicit "never mind".

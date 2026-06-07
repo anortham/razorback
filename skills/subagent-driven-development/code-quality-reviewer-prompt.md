@@ -16,10 +16,10 @@ Use template at `requesting-code-review/code-reviewer.md` with these placeholder
 - `HEAD_SHA`: [current commit]
 - `DESCRIPTION`: [task summary]
 
-Use your code-intelligence MCP (julie or miller — whichever is installed) for impact analysis:
+Use Miller for impact analysis:
 
-- **Inspect** modified symbols to understand callers/callees/types (julie `deep_dive(symbol)` / miller `inspect(target, depth=full)`)
-- **Find references** to verify changes don't break dependents (julie `fast_refs(symbol)` / miller `trace(target)`)
-- **List a file's symbols** to review structure without reading entire files (julie `get_symbols(file_path)` / miller `inspect(target)`)
+- **Inspect** modified symbols to understand callers/callees/types with `inspect(target='<symbol>', depth=full)`
+- **Find references** to verify changes don't break dependents with `trace(target='<symbol>')`
+- **List a file's symbols** to review structure without reading entire files with `inspect(target='<file>')`
 
 **Code reviewer returns:** Findings (Critical/Important/Minor), optional Open Questions / Assumptions, Assessment

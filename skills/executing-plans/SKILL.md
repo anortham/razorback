@@ -21,7 +21,7 @@ Load plan, review critically, execute all tasks, report when complete.
 
 ### Step 1: Load and Review Plan
 1. Read plan file
-2. Review critically: use your code-intelligence MCP (julie or miller) to check that the plan's file paths and symbol references are still valid against current code
+2. Review critically: use Miller to check that the plan's file paths and symbol references are still valid against current code
 3. If you find a real blocker per `skills/using-razorback/references/blocker-taxonomy.md` (especially #3, plan-contradicting data, or #4, safety-critical ambiguity with no plan answer), stop and report
 4. For any other design-quality questions, decide the plan-consistent answer and note it in your eventual report (file:line + reason)
 5. Create tasks (TaskCreate) and proceed
@@ -30,12 +30,12 @@ Load plan, review critically, execute all tasks, report when complete.
 
 For each task:
 1. Mark as in_progress
-2. **Orient before coding:** Use your code-intelligence MCP (julie or miller — whichever is installed) to understand the area before making changes
-   - **Orient** — token-budgeted codebase orientation (julie `get_context` / miller `context`)
-   - **Inspect** the symbol to modify — callers, callees, types — before touching it (julie `deep_dive` / miller `inspect depth=full`)
-   - **Find references** — check all references before changing any symbol (julie `fast_refs` / miller `trace`)
-   - **List a file's symbols** before reading full content (julie `get_symbols` / miller `inspect`)
-   - **Do NOT fall back to Glob → Read → Grep chains.** The code-intelligence MCP returns targeted context in 1-2 calls.
+2. **Orient before coding:** Use Miller to understand the area before making changes
+   - **Orient** — token-budgeted codebase orientation with `context`
+   - **Inspect** the symbol to modify — callers, callees, types — before touching it with `inspect depth=full`
+   - **Find references** — check all references before changing any symbol with `trace`
+   - **List a file's symbols** before reading full content with `inspect`
+   - **Do NOT fall back to Glob → Read → Grep chains.** Miller returns targeted context in 1-2 calls.
 3. Follow each step exactly (plan has bite-sized steps)
 4. Run verifications as specified
 5. Mark as completed
@@ -87,7 +87,7 @@ Anything else: pick the plan-consistent option, note the choice in your report, 
 ## When to Revisit Earlier Steps
 
 **Return to Review (Step 1) when:**
-- New codebase evidence flags plan-contradicting state. Re-read the plan and use your code-intelligence MCP (orient + inspect) to check current state. If the plan is still valid, continue. If not, stop per blocker taxonomy #3 (plan-contradicting data).
+- New codebase evidence flags plan-contradicting state. Re-read the plan and use Miller (`context` + `inspect`) to check current state. If the plan is still valid, continue. If not, stop per blocker taxonomy #3 (plan-contradicting data).
 - Fundamental approach needs rethinking
 
 **Don't force through real blockers.** Stop and report per the taxonomy.

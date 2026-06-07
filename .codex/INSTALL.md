@@ -5,10 +5,10 @@ Enable razorback skills in Codex CLI or the Codex desktop app via native skill d
 ## Prerequisites
 
 - Git
-- A code-intelligence MCP server configured in Codex — [julie](https://github.com/anortham/julie) (current), or miller (its .NET successor) once released
+- Miller MCP configured in Codex
 - [Goldfish MCP Server](https://github.com/anortham/goldfish) configured in Codex
 
-Razorback assumes both a code-intelligence MCP (julie or miller) and Goldfish are available.
+Razorback assumes both Miller and Goldfish are available.
 
 ## Installation
 
