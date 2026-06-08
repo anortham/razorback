@@ -39,6 +39,9 @@ WHEN receiving code review feedback:
 
 ## Handling Unclear Feedback
 
+Unclear human direction blocks implementation. Ask first, because partial
+understanding can send the whole fix in the wrong direction.
+
 ```
 IF any item is unclear:
   STOP - do not implement anything yet
@@ -46,6 +49,11 @@ IF any item is unclear:
 
 WHY: Items may be related. Partial understanding = wrong implementation.
 ```
+
+Unclear external-review items during an approved autonomous run are different:
+verify the clear items, fix independently verifiable real issues, and flag the
+unclear item for review and continue unless it matches the blocker taxonomy.
+Do not let one vague external suggestion block unrelated safe fixes.
 
 **Example:**
 ```

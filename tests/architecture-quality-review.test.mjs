@@ -19,6 +19,14 @@ test('requesting-code-review exposes architecture-quality enforcement', () => {
   assert.match(skill, /approved architecture/);
 });
 
+test('requesting-code-review delegates planned pre-merge external review to pre-merge-review', () => {
+  const skill = read('skills/requesting-code-review/SKILL.md');
+
+  assert.match(skill, /standalone review is for ad-hoc or baseline review/i);
+  assert.match(skill, /planned pre-merge external review/i);
+  assert.match(skill, /razorback:pre-merge-review/);
+});
+
 test('requesting-code-review checklist includes compact architecture checks', () => {
   const reviewer = read('skills/requesting-code-review/code-reviewer.md');
 
@@ -43,6 +51,14 @@ test('receiving-code-review routes architecture feedback through architecture-qu
     skill,
     /external architecture feedback is evaluated through `architecture-quality` before implementation/i,
   );
+});
+
+test('receiving-code-review distinguishes unclear human direction from autonomous external review findings', () => {
+  const skill = read('skills/receiving-code-review/SKILL.md');
+
+  assert.match(skill, /Unclear human direction blocks implementation/i);
+  assert.match(skill, /Unclear external-review items during an approved autonomous run/i);
+  assert.match(skill, /flag the\s+unclear item for review and continue/i);
 });
 
 test('test-driven-development keeps the interface as the test surface', () => {

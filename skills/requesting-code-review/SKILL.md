@@ -31,9 +31,16 @@ When using `razorback:subagent-driven-development`, the **lead does inline revie
 
 **If issues found:** Route the fix back to an implementer using the harness-native follow-up path. Resume the existing implementer on Claude Code or Codex when possible, or dispatch a fresh implementer with fix context where resume is unavailable. They fix and re-report. Review cap: 3 iterations.
 
-## Mode 2: Standalone Review (Ad-Hoc / Pre-Merge)
+## Mode 2: Standalone Review (Ad-Hoc / Baseline)
 
 For work done outside plan execution, dispatch the `razorback:code-reviewer` agent.
+Standalone review is for ad-hoc or baseline review: when stuck, before a
+refactor, after a major feature outside an approved plan, or before merging
+ad-hoc work.
+
+For planned pre-merge external review in an approved execution flow, use
+`razorback:pre-merge-review` instead. That skill owns the stricter
+branch-gate, chosen-reviewer, finding-classification, fix, and report flow.
 
 **1. Get git SHAs:**
 ```bash
@@ -74,7 +81,8 @@ HEAD_SHA=$(git rev-parse HEAD)
 **Mandatory:**
 - After each task during plan execution (inline by lead)
 - After completing major feature (standalone)
-- Before merge to main (standalone)
+- Before merge to main for ad-hoc work (standalone); planned pre-merge
+  external review uses `razorback:pre-merge-review`
 
 **Optional but valuable:**
 - When stuck (fresh perspective)
