@@ -6,8 +6,9 @@ description: Use when the user explicitly asks to use Cursor Agent, Cursor CLI, 
 # Cursor Agent
 
 Use Cursor Agent CLI (`cursor-agent`) as a bounded implementation worker when
-the user explicitly wants Composer involved. Codex stays the lead: it plans,
-scopes ownership, reviews the diff, routes fixes, and owns final verification.
+the user explicitly wants Composer involved. The dispatching agent — whichever
+harness you are running in — stays the lead: it plans, scopes ownership,
+reviews the diff, routes fixes, and owns final verification.
 Cursor Agent is the implementer.
 
 ## Defaults
@@ -16,8 +17,11 @@ Cursor Agent is the implementer.
 - **Mode**: non-interactive print mode with `cursor-agent -p`.
 - **Workspace**: always pass `--workspace "$WORKSPACE"` so Cursor edits the
   intended repo.
-- **Permissions**: use `--trust --force` only for bounded implementation tasks
-  with explicit file ownership. Do not use them for read-only review.
+- **Permissions**: `--trust` only suppresses the workspace-trust prompt and is
+  needed on every headless `-p` run, including read-only ones. `--force` allows
+  commands without per-command approval — use it only for bounded
+  implementation tasks with explicit file ownership, never for read-only
+  review.
 - **Output**: prefer `--output-format json` for resumable runs and `text` for
   short ad-hoc output.
 - **Safety**: tell Cursor no push, no release, no deploy, no destructive git,
@@ -30,8 +34,9 @@ Otherwise use the normal harness-native execution path from
 `subagent-driven-development`.
 
 Good fit:
-- Codex makes the plan and hands a narrow implementation task to Composer.
-- Composer does a fast first pass while Codex reviews quality and correctness.
+- The lead makes the plan and hands a narrow implementation task to Composer.
+- Composer does a fast first pass while the lead reviews quality and
+  correctness.
 - A fix loop sends concrete review findings back to Cursor.
 
 Poor fit:
@@ -41,7 +46,7 @@ Poor fit:
 
 ## Implementation Prompt Contract
 
-Before invoking Cursor, Codex must prepare a complete prompt with:
+Before invoking Cursor, the lead must prepare a complete prompt with:
 
 1. The approved plan or task text.
 2. File ownership: exact files Cursor may edit.
@@ -53,7 +58,8 @@ Before invoking Cursor, Codex must prepare a complete prompt with:
 Include this safety block in every implementation prompt:
 
 ```markdown
-You are an implementation worker. Codex is the lead and reviewer.
+You are an implementation worker. The agent that dispatched you is the lead
+and reviewer.
 
 Constraints:
 - Edit only the assigned files.
@@ -84,15 +90,16 @@ cursor-agent -p \
 After the command returns:
 
 1. Run `git -C "$WORKSPACE" diff --stat` and inspect the diff.
-2. Codex reviews spec compliance and code quality.
-3. Codex runs or reuses the required verification scope.
+2. The lead reviews spec compliance and code quality.
+3. The lead runs or reuses the required verification scope.
 4. If issues remain, use the fix loop below.
 
 ## Resumable Fix Loop
 
-For multi-round work, create or capture a Cursor chat id. If the first response
-does not expose one clearly, use `cursor-agent ls` to identify the latest
-session for this workspace.
+For multi-round work, create the chat id up front with `cursor-agent
+create-chat` and pass it to every round. Do not try to discover the session
+afterwards: `cursor-agent ls` and `cursor-agent resume` are interactive TUI
+pickers and error out in non-interactive shells.
 
 ```bash
 WORKSPACE="/path/to/project"
@@ -108,7 +115,7 @@ cursor-agent -p \
   "$(cat /tmp/cursor-task.md)"
 ```
 
-Codex then reviews the result. When review finds issues, send only concrete
+The lead then reviews the result. When review finds issues, send only concrete
 findings and the expected end state:
 
 ```bash
@@ -126,9 +133,9 @@ Review cap: 3 iterations. Re-review after every fix. If the third fix still
 fails, stop using that Cursor session and start a fresh Cursor run with a
 smaller task, prior diff summary, and explicit reviewer findings.
 
-## Codex Review Checklist
+## Lead Review Checklist
 
-Codex reviews every Cursor implementation before accepting it:
+The lead reviews every Cursor implementation before accepting it:
 
 - Does the diff match the approved task and file ownership?
 - Did Cursor add anything not requested?
@@ -148,8 +155,9 @@ gates.
   then send a narrowed fix prompt. Do not revert unrelated user work.
 - **Cursor cannot use required MCP tools**: provide enough lead-gathered context
   in the prompt, and require Cursor to report what it inspected manually.
-- **Verification fails**: Codex classifies the failure. Send a fix only when the
-  failure is inside Cursor's assigned scope; otherwise handle it as lead work.
+- **Verification fails**: the lead classifies the failure. Send a fix only when
+  the failure is inside Cursor's assigned scope; otherwise handle it as lead
+  work.
 
 ## Quick Reference
 
@@ -157,6 +165,6 @@ gates.
 |---|---|
 | Implement bounded task | `cursor-agent -p --workspace "$WORKSPACE" --model composer-2.5-fast --trust --force "$(cat "$PROMPT_FILE")"` |
 | Resume fix loop | `cursor-agent -p --workspace "$WORKSPACE" --model composer-2.5-fast --trust --force --resume "$CHAT_ID" "$(cat "$FIX_FILE")"` |
-| Read-only analysis | `cursor-agent -p --workspace "$WORKSPACE" --model composer-2.5-fast --mode ask "$PROMPT"` |
+| Read-only analysis | `cursor-agent -p --workspace "$WORKSPACE" --model composer-2.5-fast --trust --mode ask "$PROMPT"` |
 | List models | `cursor-agent models` |
-| List sessions | `cursor-agent ls` |
+| Create chat id | `cursor-agent create-chat` |

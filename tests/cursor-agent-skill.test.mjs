@@ -10,13 +10,15 @@ function read(relativePath) {
   return readFileSync(join(root, relativePath), 'utf8');
 }
 
-test('cursor-agent skill pins Composer and keeps Codex as lead', () => {
+test('cursor-agent skill pins Composer and keeps the lead as reviewer', () => {
   const skill = read('skills/cursor-agent/SKILL.md');
 
   assert.match(skill, /composer-2\.5-fast/);
-  assert.match(skill, /Codex stays the lead/i);
+  assert.match(skill, /stays the lead/i);
   assert.match(skill, /Cursor Agent is the implementer/i);
-  assert.match(skill, /Codex reviews/i);
+  assert.match(skill, /lead reviews/i);
+  // Skill is shared across all harnesses; lead must stay harness-neutral.
+  assert.doesNotMatch(skill, /\bCodex\b/);
 });
 
 test('cursor-agent skill documents bounded implementation commands', () => {
@@ -35,8 +37,12 @@ test('cursor-agent skill requires review and fix iterations', () => {
 
   assert.match(skill, /Review cap: 3 iterations/i);
   assert.match(skill, /--resume "\$CHAT_ID"/);
+  assert.match(skill, /create-chat/);
   assert.match(skill, /fresh Cursor run/i);
   assert.match(skill, /re-review/i);
+  // `cursor-agent ls`/`resume` are interactive TUIs and fail headless;
+  // the skill must warn against relying on them.
+  assert.match(skill, /interactive TUI/i);
 });
 
 test('subagent-driven-development points explicit Composer delegation to cursor-agent', () => {
