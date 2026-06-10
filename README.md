@@ -249,6 +249,7 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 | **subagent-driven-development** | **Primary delegated plan execution: fresh implementer subagents, parallel when independent, inline review by lead** |
 | pre-merge-review | Optional external review (codex / gemini / claude) run before PR — verifies findings, dispatches fixes, emits morning-report block |
 | codex-cli | Invokes `codex exec` for second opinions and adversarial review, using `RAZORBACK.md` routing when present |
+| cursor-agent | Invokes Cursor Agent / Composer 2.5 Fast for bounded implementation while the current lead owns planning, review, and verification |
 | gemini-cli | Invokes `gemini` for second opinions and adversarial review, using `RAZORBACK.md` routing when present |
 | claude-cli | Invokes `claude -p` for second opinions and adversarial review; omits `--bare` because it breaks OAuth auth |
 
