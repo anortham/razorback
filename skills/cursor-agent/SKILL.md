@@ -13,6 +13,11 @@ Cursor Agent is the implementer.
 
 ## Defaults
 
+- **Execution**: always local. `cursor-agent -p` runs on this machine — there
+  is no cloud flag on headless runs. Never start the prompt *text* with `&`
+  (that is Cursor's Cloud Agent handoff; PowerShell's `&` call operator before
+  an exe path is fine), never run `cursor-agent worker`, and never dispatch
+  via cursor.com/agents. Cloud Agents are out of scope for this skill.
 - **Model**: `composer-2.5-fast` unless the user asks for another Cursor model.
 - **Mode**: non-interactive print mode with `cursor-agent -p`.
 - **Workspace**: always pass `--workspace "$WORKSPACE"` so Cursor edits the
@@ -26,6 +31,28 @@ Cursor Agent is the implementer.
   short ad-hoc output.
 - **Safety**: tell Cursor no push, no release, no deploy, no destructive git,
   and no edits outside assigned files.
+
+## Preflight
+
+Before the first run, verify the CLI exists: `cursor-agent --version`
+(the installer also creates an `agent` alias).
+
+If it is missing, STOP and give the user the install command for their
+platform. Do not run the installer yourself, and never retry it in a loop.
+
+| Platform | Install (user runs it) | Binary location |
+|---|---|---|
+| macOS / Linux / WSL | `curl https://cursor.com/install -fsS \| bash` | `~/.local/bin/cursor-agent` |
+| Windows (native) | `irm 'https://cursor.com/install?win32=true' \| iex` | `%LOCALAPPDATA%\cursor-agent\cursor-agent.exe` (alias `agent.exe`) |
+
+**Windows trap:** the installer adds `%LOCALAPPDATA%\cursor-agent` to the
+*user* PATH, which already-running shells and agent sessions do not see. If
+`cursor-agent` is "not found" immediately after an install, call it by
+absolute path — PowerShell: `& "$env:LOCALAPPDATA\cursor-agent\cursor-agent.exe"`,
+Git Bash: `"$LOCALAPPDATA/cursor-agent/cursor-agent.exe"` — instead of
+reinstalling. Repeated `irm … | iex` / `Invoke-WebRequest` runs to "fix" a
+missing cursor-agent are a red flag: install at most once, then use the full
+path.
 
 ## When To Use
 
@@ -64,6 +91,8 @@ and reviewer.
 Constraints:
 - Edit only the assigned files.
 - Do not push, release, deploy, publish, rewrite history, or run destructive git.
+- Do not fetch URLs or run web requests (curl, wget, irm, Invoke-WebRequest);
+  work only from the local repo and this prompt.
 - Do not broaden the task or redesign the architecture.
 - If requirements conflict with the codebase, stop and report the mismatch.
 - Run the assigned verification commands and report exact results.
@@ -85,6 +114,20 @@ cursor-agent -p \
   --force \
   --output-format json \
   "$(cat "$PROMPT_FILE")"
+```
+
+### Windows
+
+The bash examples in this skill assume Git Bash (Claude Code's shell on
+Windows runs them fine). In PowerShell, `$(cat file)` and `/tmp` are
+bash-isms — substitute `Get-Content -Raw` and `$env:TEMP`:
+
+```powershell
+$Workspace = "C:\path\to\project"
+$Prompt = Get-Content -Raw "$env:TEMP\cursor-task.md"
+
+cursor-agent -p --workspace $Workspace --model composer-2.5-fast `
+  --trust --force --output-format json $Prompt
 ```
 
 After the command returns:
@@ -151,6 +194,11 @@ gates.
 
 - **Cursor asks for permission or stalls**: retry once with more directive
   wording and `--force` if the task is already authorized.
+- **Cursor (or the lead) loops on the same command — e.g. repeated PowerShell
+  web requests**: kill the run. If the loop was installing cursor-agent, apply
+  the Preflight rule (absolute path, no reinstall). If the loop was inside
+  Cursor's run, re-dispatch with the web-request ban restated and a narrower
+  task.
 - **Cursor changes unassigned files**: revert only Cursor's unapproved edits,
   then send a narrowed fix prompt. Do not revert unrelated user work.
 - **Cursor cannot use required MCP tools**: provide enough lead-gathered context
@@ -163,6 +211,7 @@ gates.
 
 | Use case | Command |
 |---|---|
+| Preflight (always first) | `cursor-agent --version` |
 | Implement bounded task | `cursor-agent -p --workspace "$WORKSPACE" --model composer-2.5-fast --trust --force "$(cat "$PROMPT_FILE")"` |
 | Resume fix loop | `cursor-agent -p --workspace "$WORKSPACE" --model composer-2.5-fast --trust --force --resume "$CHAT_ID" "$(cat "$FIX_FILE")"` |
 | Read-only analysis | `cursor-agent -p --workspace "$WORKSPACE" --model composer-2.5-fast --trust --mode ask "$PROMPT"` |
