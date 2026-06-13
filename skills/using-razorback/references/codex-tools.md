@@ -107,6 +107,21 @@ On Codex, delegated plan execution uses `subagent-driven-development`: dispatch 
 
 For single-task or tightly sequential work, use `executing-plans` even when delegation is available.
 
+### External model CLI waiting
+
+When using a skill that launches another model through a CLI, such as
+`cursor-agent -p`, `claude -p`, `codex exec`, or `gemini -p`, run it as a
+foreground command and let it finish. The lead model should not narrate elapsed
+time, guess why the external model is slow, or do repeated status checks just
+because the command is still running.
+
+Codex shell tools may return a running session before the external model CLI
+finishes. If that happens, do not send speculative progress updates. Poll no
+more often than every 2 minutes unless the CLI produced actionable output or the
+user asked for status. Prefer a quiet long wait with an empty `write_stdin` call
+and `yield_time_ms=300000`, then inspect the final output, diff, and
+verification results after the command exits.
+
 ## Miller MCP
 
 Razorback assumes Miller MCP is available. The exploration directives in skill bodies (orient, search, inspect, find references, assess impact) require it.
