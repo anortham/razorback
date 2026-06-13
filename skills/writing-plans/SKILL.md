@@ -50,6 +50,18 @@ Before defining tasks, map out which files will be created or modified and what 
 
 This structure informs the task decomposition. Each task should produce self-contained changes that make sense independently.
 
+## Task Slicing
+
+**Default to vertical slices.** Each task should cut through the stack to deliver one thin, observable behavior end to end — query + endpoint + UI affordance + test in one task — rather than one horizontal layer per task (all queries, then all endpoints, then all UI). Vertical slices are independently verifiable, reviewable, and revertible; horizontal layers ship nothing until the last one lands.
+
+Horizontal decomposition is justified only when a layer is genuinely shared by several later slices, or an interface contract must be locked before parallel work can fan out (contract-first). When one task carries most of the technical risk, schedule it first (risk-first) so a wrong bet is discovered at minimum sunk cost.
+
+**Keep it compilable.** Every task ends with the repo building and worker-scope verification green, committed. No committed state may be broken; broader gates still run at the batch/branch scopes defined in the Verification Strategy.
+
+**Rollback-friendly ordering.** Order tasks so a partially executed plan leaves the branch shippable or cleanly revertible: no half-wired user-facing behavior between tasks, and the slice that completes a user-visible behavior is the one that exposes it.
+
+**Slice boundaries are not stop points.** Slices exist for verifiability and rollback, not for pausing. Completing a slice means checkpoint and continue immediately to the next task — the autonomous execution model stops only for the blocker taxonomy and the final PR, never because a slice finished.
+
 ## No Placeholders
 
 Every step must contain the actual content an engineer needs. These are **plan failures**, never write them:
@@ -191,7 +203,7 @@ Harness-specific model selection:
 ## Task Structure
 
 ````markdown
-### Task N: [Component Name]
+### Task N: [Slice or component name]
 
 **Files:**
 - Create: `exact/path/to/file.py`
@@ -234,7 +246,7 @@ git commit -m "feat: add specific feature"
 ## Light Plan Task Structure
 
 ````markdown
-### Task N: [Component Name]
+### Task N: [Slice or component name]
 
 **Files:**
 - Create: `exact/path/to/file.py`

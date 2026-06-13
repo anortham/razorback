@@ -63,8 +63,9 @@ Every project goes through this process. A todo list, a single-function utility,
 6. **Present design** - in sections scaled to their complexity, get user approval after each section
 7. **Write design doc** - save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit
 8. **Spec self-review** - quick inline check for placeholders, contradictions, ambiguity, scope (see below)
-9. **User reviews written spec** - ask user to review the spec file before proceeding
-10. **Transition to implementation** - invoke writing-plans skill to create implementation plan
+9. **Doubt pass (conditional)** - if architecture-quality rated the risk medium/high, run the Doubt Pass from `razorback:cross-model-convergence` and fold surviving objections into the spec. This is lead work inside the flow, not a user gate.
+10. **User reviews written spec** - ask user to review the spec file before proceeding
+11. **Transition to implementation** - invoke writing-plans skill to create implementation plan
 
 ## Process Flow
 
@@ -83,6 +84,7 @@ digraph brainstorming {
     "User approves design?" [shape=diamond];
     "Write design doc" [shape=box];
     "Spec self-review\n(fix inline)" [shape=box];
+    "Doubt pass\n(if architecture risk medium/high)" [shape=box];
     "User reviews spec?" [shape=diamond];
     "Invoke writing-plans skill" [shape=doublecircle];
     "Lightweight implementation" [shape=doublecircle];
@@ -104,7 +106,8 @@ digraph brainstorming {
     "User approves design?" -> "Present design sections" [label="no, revise"];
     "User approves design?" -> "Write design doc" [label="yes"];
     "Write design doc" -> "Spec self-review\n(fix inline)";
-    "Spec self-review\n(fix inline)" -> "User reviews spec?";
+    "Spec self-review\n(fix inline)" -> "Doubt pass\n(if architecture risk medium/high)";
+    "Doubt pass\n(if architecture risk medium/high)" -> "User reviews spec?";
     "User reviews spec?" -> "Write design doc" [label="changes requested"];
     "User reviews spec?" -> "Task moderate + same-session?" [label="approved"];
     "Task moderate + same-session?" -> "Lightweight implementation" [label="yes"];
@@ -121,9 +124,11 @@ digraph brainstorming {
 - For non-trivial work, run `razorback:architecture-quality` after that orientation and once requirements are clear enough to assess structure, before presenting the design. If the task has no architecture impact, record `No Architecture Impact` and continue.
 - Check recent commits: `git log --oneline -10`
 - Ask questions one at a time to refine the idea
+- Attach your best guess to every question and make it falsifiable: "I'm guessing X because Y — is that right?" A confirmed guess advances the design; a corrected one is the cheapest correction you'll ever get. In multiple choice, put your guess first and label it as your guess.
 - Prefer multiple choice questions when possible, but open-ended is fine too
 - Only one question per message - if a topic needs more exploration, break it into multiple messages
 - Focus on understanding: purpose, constraints, success criteria
+- Stop asking when you can state the purpose, constraints, and success criteria in your own words AND your last question produced no correction — then move to approaches. If you cannot state all three, you are not done asking.
 
 **Exploring approaches:**
 - Propose 2-3 different approaches with trade-offs
@@ -213,6 +218,7 @@ If they agree to the companion, read the detailed guide before proceeding:
 ## Key Principles
 
 - **One question at a time** - Don't overwhelm with multiple questions
+- **Guess, then ask** - Every question carries a falsifiable guess; expose your prior so one word can correct it
 - **Multiple choice preferred** - Easier to answer than open-ended when possible
 - **YAGNI ruthlessly** - Remove unnecessary features from all designs
 - **Explore alternatives** - Always propose 2-3 approaches before settling

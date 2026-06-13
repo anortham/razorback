@@ -49,7 +49,9 @@ test('subagent-driven-development points explicit Composer delegation to cursor-
   const skill = read('skills/subagent-driven-development/SKILL.md');
 
   assert.match(skill, /cursor-agent/);
-  assert.match(skill, /composer-2\.5-fast/);
+  // Model pinning lives in cursor-agent/SKILL.md only; neutral skills must not
+  // duplicate hard-coded model names.
+  assert.doesNotMatch(skill, /composer-2\.5-fast/);
   assert.match(skill, /razorback:cursor-agent/);
 });
 

@@ -248,6 +248,8 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 | writing-skills | Meta-skill for creating/editing skills |
 | **subagent-driven-development** | **Primary delegated plan execution: fresh implementer subagents, parallel when independent, inline review by lead** |
 | pre-merge-review | Optional external review (codex / gemini / claude) run before PR — verifies findings, dispatches fixes, emits morning-report block |
+| cross-model-convergence | Adversarial find → verify → fix loop between the lead and an external reviewer (default codex) until a double-clean round or the round cap; includes the pre-implementation Doubt Pass |
+| grounding-in-current-docs | Verify external framework/library/API behavior against current official docs when training knowledge may be stale |
 | codex-cli | Invokes `codex exec` for second opinions and adversarial review, using `RAZORBACK.md` routing when present |
 | cursor-agent | Invokes Cursor Agent / Composer 2.5 Fast for bounded implementation while the current lead owns planning, review, and verification |
 | gemini-cli | Invokes `gemini` for second opinions and adversarial review, using `RAZORBACK.md` routing when present |
