@@ -70,6 +70,7 @@ test('supporting skills route autonomous uncertainty through blocker taxonomy', 
 
   assert.doesNotMatch(tdd, /Exceptions \(ask your human partner\)/);
   assert.doesNotMatch(tdd, /Ask your human partner/);
+  assert.doesNotMatch(tdd, /human partner's permission/i);
   assert.match(tdd, /planned exception/i);
 
   assert.doesNotMatch(gemini, /ask the user what to do/i);

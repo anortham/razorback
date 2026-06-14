@@ -376,4 +376,4 @@ Production code → test exists and failed first
 Otherwise → not TDD
 ```
 
-No exceptions without your human partner's permission.
+Exceptions are only the planned exceptions above: they must be explicit in the user request or approved plan and logged. Missing exception language is not a mid-run permission stop; follow TDD or classify the issue under the blocker taxonomy.
