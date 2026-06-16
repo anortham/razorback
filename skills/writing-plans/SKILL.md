@@ -241,7 +241,13 @@ Expected: PASS
 git add tests/path/test.py src/path/file.py
 git commit -m "feat: add specific feature"
 ```
+
+**Acceptance criteria:**
+- [ ] [Specific, testable requirement for this task]
+- [ ] Tests pass and changes committed
 ````
+
+The execution skills tick these `[ ]` → `[x]` as each task completes, so every task carries a tickable progress marker regardless of plan type.
 
 ## Light Plan Task Structure
 
@@ -269,6 +275,7 @@ git commit -m "feat: add specific feature"
 - Exact file paths
 - Reference relevant skills with @ syntax
 - DRY, YAGNI, TDD, frequent commits
+- Tickable `- [ ]` acceptance criteria per task — execution flips these to `[x]` as a durable, in-document progress record
 
 **Full plans only:**
 - Complete code in plan (not "add validation")

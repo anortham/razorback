@@ -1,0 +1,7 @@
+# Enforce LF line endings for all text files on every platform.
+#
+# Without this, a Windows clone with core.autocrlf=true checks files out with
+# CRLF, which breaks LF-strict tests (e.g. tests/architecture-quality-skill.test.mjs)
+# and the bash/cmd polyglot hook scripts (hooks/run-hook.cmd, hooks/session-start),
+# both of which require LF. eol=lf overrides autocrlf on checkout.
+* text=auto eol=lf

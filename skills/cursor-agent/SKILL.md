@@ -118,13 +118,25 @@ cursor-agent -p \
 
 ### Windows
 
-The bash examples in this skill assume Git Bash (Claude Code's shell on
-Windows runs them fine). In PowerShell, `$(cat file)` and `/tmp` are
-bash-isms — substitute `Get-Content -Raw` and `$env:TEMP`:
+Do not run the bash blocks above on Windows — run in PowerShell. Two failures
+are confirmed on Windows:
+
+1. **Bare `cursor-agent` is not on the Git Bash PATH.** Cursor ships only
+   `cursor-agent.cmd` and `cursor-agent.ps1` (no extensionless shim), so the
+   harness Bash tool (Git Bash) resolves it only with an explicit `.cmd`, never
+   the bare name.
+2. **Multi-line prompts are truncated to the first line** when passed as a CLI
+   argument through the `.cmd`→`powershell` shim — the worker silently receives
+   only line 1 of the plan.
+
+So on Windows, run in PowerShell with the bare `cursor-agent` name (PowerShell's
+command discovery resolves the `.ps1`/`.cmd` shim) and build the prompt with
+`Get-Content -Raw` into a variable, which preserves newlines. `$(cat file)` and `/tmp` are bash-isms — substitute
+`Get-Content -Raw` and `$env:TEMP`:
 
 ```powershell
 $Workspace = "C:\path\to\project"
-$Prompt = Get-Content -Raw "$env:TEMP\cursor-task.md"
+$Prompt = Get-Content -Raw "$env:TEMP\cursor-task.md"   # never let line 1 start with '&'
 
 cursor-agent -p --workspace $Workspace --model composer-2.5-fast `
   --trust --force --output-format json $Prompt
@@ -206,6 +218,9 @@ gates.
 - **Verification fails**: the lead classifies the failure. Send a fix only when
   the failure is inside Cursor's assigned scope; otherwise handle it as lead
   work.
+- **Windows: "command not found" or a truncated/single-line prompt**: you ran
+  the bash form. Use the PowerShell flow in the Windows section under One-Shot
+  Implementation (bare `cursor-agent` via PATHEXT, `Get-Content -Raw` prompt).
 
 ## Quick Reference
 

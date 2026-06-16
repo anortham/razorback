@@ -261,6 +261,8 @@ Spec compliance checking earns its keep when the plan leaves room for misinterpr
 
 Either way, the review is a single pass by the lead. Never collapse the loop to skip re-reviewing after a fix.
 
+**When the review passes (approved):** mark the task complete (`TaskUpdate`) and tick that task's acceptance-criteria checkboxes in the plan file (`[ ]` → `[x]`), so the plan document records progress alongside the TaskList. This is fast bookkeeping — never a stop or a review gate; move straight to the next task or parallel dispatch.
+
 ## Step 4: Fixes
 
 When review finds issues, route the fix back to an implementer with the reviewer findings.
@@ -333,12 +335,14 @@ The lead writes a `goldfish:checkpoint` at four points during the run. This pers
 
 Checkpoint at phase granularity, not per task or per subagent dispatch. Per-task checkpoints are noise; per-phase is enough to recover.
 
+A checkpoint is a fast, non-blocking memory write — never a stop, a review gate, or a reason to ask the user anything. A phase boundary is a checkpoint trigger, not a stop: finishing a phase never means pausing for confirmation. Write the checkpoint and immediately continue.
+
 ## Recovery
 
 On detecting a resumed run (post-compaction note, mismatch between expected and actual conversation state, or the user says "resume"), the lead follows this fixed orientation sequence before continuing:
 
 1. `goldfish:recall` — retrieve the active brief and recent checkpoints.
-2. Read the plan file.
+2. Read the plan file, noting which acceptance-criteria checkboxes are already `[x]`.
 3. Check the TaskList for completed / in-progress / pending tasks.
 4. `git log --oneline <base>..HEAD` — verify what is actually committed.
 5. Identify the next incomplete task and resume execution.

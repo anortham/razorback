@@ -38,7 +38,7 @@ For each task:
    - **Do NOT fall back to Glob → Read → Grep chains.** Miller returns targeted context in 1-2 calls.
 3. Follow each step exactly (plan has bite-sized steps)
 4. Run verifications as specified
-5. Mark as completed
+5. Mark as completed (TaskUpdate), then tick that task's acceptance-criteria checkboxes in the plan file (`[ ]` → `[x]`) so the plan document itself records progress alongside the TaskList. This is a fast bookkeeping write — do not pause, request review, or wait for confirmation; continue straight to the next task.
 6. Candidate Mode during autonomous execution: record non-required refactor candidates in the report or ADR offer, not in the current work. Only fold in refactors required for correctness, testability, or avoiding a brittle patch without a new user prompt.
 
 ### Step 3: Pre-merge external review (if chosen)
@@ -91,6 +91,24 @@ Anything else: pick the plan-consistent option, note the choice in your report, 
 - Fundamental approach needs rethinking
 
 **Don't force through real blockers.** Stop and report per the taxonomy.
+
+## Checkpoints
+
+Write a `goldfish:checkpoint` at phase boundaries (or, for a flat task list, every few completed tasks) to persist progress and decisions across auto-compaction and session restarts. Capture what is done, the key decisions, and the next task to run.
+
+A checkpoint is a fast, non-blocking memory write. It is **not** a stop, a review gate, or a reason to ask the user anything — write it and immediately continue. A phase boundary is a checkpoint trigger, not a stop: finishing a phase never means pausing for confirmation. Checkpoint at phase (or few-task) granularity, not per task; per-task checkpoints are noise.
+
+## Recovery
+
+This sequence runs **only on a resumed run** — a post-compaction note, a mismatch between expected and actual conversation state, or the user says "resume." It never runs during normal forward execution; on a fresh or in-flight run, skip it and keep going.
+
+On a resumed run, orient before continuing:
+
+1. `goldfish:recall` — retrieve the active brief and recent checkpoints.
+2. Read the plan file, noting which acceptance-criteria checkboxes are already `[x]`.
+3. Check the TaskList for completed / in-progress / pending tasks.
+4. `git log --oneline <base>..HEAD` — verify what is actually committed.
+5. Identify the next incomplete task and resume execution.
 
 ## Remember
 - Review plan critically first
