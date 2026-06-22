@@ -94,6 +94,14 @@ digraph process {
 
 Read the plan file once. Extract every task with its full text and surrounding context. Create tracking tasks via `TaskCreate` so progress is visible.
 
+Check for durable progress before dispatching:
+
+```bash
+cat "$(git rev-parse --show-toplevel)/.razorback/sdd/progress.md" 2>/dev/null || true
+```
+
+Tasks listed there as complete are DONE. Do not re-dispatch them; verify the named commits with `git log` if needed, then resume at the first incomplete task.
+
 Before dispatching, orient yourself on the codebase with Miller:
 - **Orient** around the areas the plan touches with `context`
 - **List a file's symbols** on files the plan will modify with `inspect`, so you can spot later drift during review
@@ -113,6 +121,7 @@ Use the template at `./implementer-prompt.md`. The spawn prompt MUST include:
 8. **Miller evidence requirement** (the implementer must report which Miller calls they used and what those calls confirmed)
 9. **Gate invariant requirement** (the implementer must state what each assigned test, replay, metric, or acceptance gate proves)
 10. **architecture-quality context** (the approved architecture, any `No Architecture Impact` note, and the plan mismatch rule)
+11. **Report file path** under `.razorback/sdd`, so the worker writes the full report to a file and returns only status, commits, test summary, and concerns
 
 ### Model Routing Contract
 
@@ -184,6 +193,24 @@ Maintain a verification ledger during execution:
 ```
 
 If the same HEAD already has a passing ledger entry for the required scope, reuse that evidence instead of rerunning the same expensive command. If HEAD changed, the affected scopes are stale.
+
+## File Handoffs
+
+Large task text, reports, and diffs should move as files instead of pasted prompt content. This keeps the lead context small and makes recovery after compaction concrete.
+
+- **Task brief:** before dispatching an implementer, run `skills/subagent-driven-development/scripts/task-brief PLAN_FILE N`. It writes `task-N-brief.md` under `.razorback/sdd` and prints the path. The dispatch prompt should point the implementer at that brief as the source of requirements.
+- **Report file:** name the implementer's report file after the brief (`task-N-report.md`) and put it under `.razorback/sdd`. The implementer writes the full report there, then returns only status, commits, one-line test summary, and concerns.
+- **Review package:** when a focused diff helps the lead inline review, run `skills/subagent-driven-development/scripts/review-package BASE HEAD`. The lead reads the generated package; do not dispatch a reviewer subagent. No reviewer subagents means the lead still owns spec compliance and code quality.
+- **Fix rounds:** append fix reports and test evidence to the same report file. Re-review the updated diff/report before approving the task.
+
+## Durable Progress
+
+Conversation memory does not survive every long run. Track task completion in `.razorback/sdd/progress.md` in addition to TaskList state and plan checkboxes.
+
+- At skill start, read `.razorback/sdd/progress.md` if it exists. Trust it with `git log` over stale recollection after compaction or resume.
+- When a task's Lead inline review passes, append one line in the same bookkeeping step:
+  `Task N: complete (commits <base7>..<head7>, Lead inline review clean)`.
+- The ledger is git-ignored working-tree scratch. `git clean -fdx` deletes it; if that happens, recover from `git log` and checked plan boxes.
 
 Per-harness state to keep after dispatch:
 

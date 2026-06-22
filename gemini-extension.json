@@ -1,6 +1,6 @@
 {
   "name": "razorback",
   "description": "Miller-powered development workflow with subagent-driven execution where delegation exists, and single-agent execution otherwise.",
-  "version": "0.18.0",
+  "version": "0.18.1",
   "contextFileName": "GEMINI.md"
 }

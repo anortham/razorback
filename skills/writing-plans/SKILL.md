@@ -109,8 +109,18 @@ Light plans use task-level granularity instead: each task is a coherent unit of 
 
 **Architecture Quality:** [Approved module/interface shape, architecture risk, or `No Architecture Impact` for mechanical plans]
 
+## Global Constraints
+
+[The spec's project-wide requirements — version floors, dependency limits, naming and copy rules, platform requirements — one line each, with exact values copied verbatim from the spec. Every task implicitly includes this section.]
+
 ---
 ```
+
+## Global Constraints
+
+Every plan MUST include `## Global Constraints` before the task list. Use it for requirements that bind every task: version floors, dependency limits, naming and copy rules, platform support, exact strings, exact formats, and relationships such as "same layout as X" or "matches Y".
+
+Copy exact values verbatim from the spec. Do not make each task repeat them, and do not leave implementers or reviewers to infer them from prose.
 
 ## Architecture Quality
 
@@ -210,6 +220,10 @@ Harness-specific model selection:
 - Modify: `exact/path/to/existing.py:123-145`
 - Test: `tests/exact/path/to/test.py`
 
+**Interfaces:**
+- Consumes: [what this task uses from earlier tasks — exact symbols, signatures, data shape, or user-facing contract]
+- Produces: [what later tasks rely on — exact function names, parameter and return types, file formats, CLI flags, routes, or events. A task's implementer sees only their own task; this block is how they learn neighboring contracts.]
+
 **Step 1: Write the failing test**
 
 ```python
@@ -258,6 +272,10 @@ The execution skills tick these `[ ]` → `[x]` as each task completes, so every
 - Create: `exact/path/to/file.py`
 - Modify: `exact/path/to/existing.py:123-145`
 - Test: `tests/exact/path/to/test.py`
+
+**Interfaces:**
+- Consumes: [exact contract this task depends on]
+- Produces: [exact contract future tasks depend on. A task's implementer sees only their own task, so include names and shapes here.]
 
 **What to build:** [2-3 sentences describing the feature/change and why]
 

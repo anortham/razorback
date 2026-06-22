@@ -11,7 +11,7 @@
       "name": "razorback",
       "source": "./",
       "description": "Miller-powered development workflow skills. Fork of Superpowers with explicit Miller integration.",
-      "version": "0.18.0",
+      "version": "0.18.1",
       "category": "productivity"
     }
   ]
