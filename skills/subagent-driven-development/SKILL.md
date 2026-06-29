@@ -119,9 +119,10 @@ Use the template at `./implementer-prompt.md`. The spawn prompt MUST include:
 6. **Verification scope** specific to this task, using commands from the plan's verification strategy
 7. **Model routing tier** assigned to this task (`implementation`, `mechanical`, `strategy`, `gate-review`, or `escalation`)
 8. **Miller evidence requirement** (the implementer must report which Miller calls they used and what those calls confirmed)
-9. **Gate invariant requirement** (the implementer must state what each assigned test, replay, metric, or acceptance gate proves)
-10. **architecture-quality context** (the approved architecture, any `No Architecture Impact` note, and the plan mismatch rule)
-11. **Report file path** under `.razorback/sdd`, so the worker writes the full report to a file and returns only status, commits, test summary, and concerns
+9. **API-shape evidence requirement** (the implementer must name the Miller evidence used for every symbol name, function signature, config shape, route name, CLI flag, or public contract they rely on)
+10. **Gate invariant requirement** (the implementer must state what each assigned test, replay, metric, or acceptance gate proves)
+11. **architecture-quality context** (the approved architecture, any `No Architecture Impact` note, and the plan mismatch rule)
+12. **Report file path** under `.razorback/sdd`, so the worker writes the full report to a file and returns only status, commits, test summary, and concerns
 
 ### Model Routing Contract
 
@@ -243,6 +244,9 @@ When the implementer reports completion, the lead does a single inline review co
 - **List a file's symbols** to scan changed files without reading them fully with Miller `inspect`.
 - Confirm the report includes the Miller calls used. If the implementer cannot
   show Miller-first orientation, send it back.
+- Confirm the report includes API-shape evidence for symbol names, function signatures,
+  config shapes, route names, CLI flags, and public contracts it relies on. If the
+  implementer guessed a shape instead of proving it with Miller, send it back.
 
 **architecture-quality review:**
 - Did the worker preserve the approved architecture shape, or did it report a plan mismatch when code reality disagreed?

@@ -79,7 +79,7 @@ You cannot write accurate file paths, line ranges, or implementation steps witho
 3. **Find exact locations:** list a file's symbols with Miller `inspect` — get file structure with line numbers for `Modify:` references
 4. **Assess impact:** find references with Miller `trace` — find all callers before planning changes
 
-**Do NOT guess file paths or line numbers.** Use Miller to discover them. Plans with wrong paths waste implementer time on dead ends.
+**Do NOT guess file paths, line numbers, symbol names, function signatures, config shapes, route names, CLI flags, or public contracts.** Use Miller to discover them. Plans with wrong paths or invented API shapes waste implementer time on dead ends.
 
 ## Bite-Sized Task Granularity (Full Plans)
 

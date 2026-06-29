@@ -28,11 +28,12 @@ You are reviewing code changes for production readiness.
 2. For each changed file, **list its symbols** before reading with Miller `inspect(target='<file>')`
 3. For key modified symbols, **inspect** them — callers, callees, types — with Miller `inspect(target='<symbol>', depth=full)`
 4. For changed public APIs, **find references** — verify no broken dependents with Miller `trace(target='<symbol>')`
-5. Only then: `git diff {BASE_SHA}..{HEAD_SHA} -- <specific-file>` for targeted sections that need line-level review
+5. Verify API shapes before relying on them: symbol names, function signatures, config shapes, route names, CLI flags, and public contracts need Miller-backed evidence, not memory or guesses
+6. Only then: `git diff {BASE_SHA}..{HEAD_SHA} -- <specific-file>` for targeted sections that need line-level review
 
 **Do NOT dump the full diff upfront.** Use Miller to understand what changed structurally, then read targeted diffs for the areas that matter.
 
-If your review does not cite Miller-assisted investigation, it is incomplete.
+If your review does not cite Miller-assisted investigation and API-shape evidence, it is incomplete.
 
 ## Review Checklist
 

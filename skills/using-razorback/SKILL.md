@@ -170,3 +170,5 @@ Use Miller by capability, not by raw file reading:
 2. List a file's symbols before reading it in full.
 3. Inspect a symbol before modifying it.
 4. Find a symbol's references before changing it, to check impact.
+5. Do not infer or invent API shapes. Use Miller to discover symbol names, function signatures, config shapes, route names, CLI flags, or public contracts before relying on them.
+6. When Miller cannot prove a shape, say what evidence is missing and choose the safest plan-consistent path. Do not fill gaps from memory or plausible guesses.

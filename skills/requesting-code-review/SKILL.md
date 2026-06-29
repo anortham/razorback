@@ -25,6 +25,9 @@ When using `razorback:subagent-driven-development`, the **lead does inline revie
 - Check tests verify behavior, not just that code runs
 - Reject the report if the implementer cannot show Miller-first orientation and
   the Miller calls they used
+- Reject the report if it relies on symbol names, function signatures, config
+  shapes, route names, CLI flags, or public contracts without Miller-backed
+  API-shape evidence
 - Compare the diff against the approved architecture, not just the symptom
 - If the same structural issue keeps recurring, route it through
   `architecture-quality` Candidate Mode instead of looping more patches

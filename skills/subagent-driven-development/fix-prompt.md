@@ -36,6 +36,10 @@ Agent tool (resume: "<implementer-agent-id>"):
        (Miller `trace(target='<symbol>')`).
 
     Do not start by skimming raw files. Miller-first still applies during fix rounds.
+    Do not infer or invent API shapes. Use Miller to discover symbol names, function
+    signatures, config shapes, route names, CLI flags, or public contracts before
+    relying on them. If Miller cannot prove the shape, say what evidence is missing
+    instead of guessing.
 
     ## Report Format
 
@@ -43,6 +47,7 @@ Agent tool (resume: "<implementer-agent-id>"):
     - What you changed
     - Verification scope, command, commit SHA, result, and timestamp
     - **Miller calls used** - list the orient / inspect / find-references calls you made during the fix round
+    - **API-shape evidence** - list the Miller evidence for any symbol names, function signatures, config shapes, route names, CLI flags, or public contracts you relied on
     - Any judgment calls made
 ```
 

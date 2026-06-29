@@ -61,6 +61,16 @@ Agent tool (general-purpose):
     targeted, token-efficient context in 1-2 calls instead of 5-8. If you skip it
     and start with raw-file exploration, you have broken the workflow.
 
+    ## API Shape Evidence
+
+    Do not infer or invent API shapes. Before relying on symbol names, function
+    signatures, config shapes, route names, CLI flags, or public contracts, use
+    Miller to discover the real shape in the current codebase.
+
+    In your report, report the exact Miller calls that proved each important API
+    shape. If Miller cannot prove a shape, say what evidence is missing and choose
+    the safest plan-consistent path instead of guessing from memory.
+
     ## Architecture Quality
 
     The approved module/interface shape in the plan is part of the spec.
@@ -152,6 +162,7 @@ Agent tool (general-purpose):
     - Hard-gate metrics and report-only metrics, when replay or metric evidence is involved
     - Files changed
     - **Miller calls used** - list the orient / inspect / find-references / list-symbols calls you made and what each one confirmed
+    - **API-shape evidence** - list the Miller evidence for any symbol names, function signatures, config shapes, route names, CLI flags, or public contracts you relied on
     - Self-review findings (if any)
     - **Judgment calls made** - non-obvious decisions in the form `file:line - chose X over Y because [reason]`. Include every ambiguity you resolved without asking. Feeds the morning report's "Judgment calls" section.
     - Any issues or concerns

@@ -67,6 +67,10 @@ Fresh implementer dispatch (delegation available):
 
     Do NOT use Glob -> Read -> Grep chains for exploration, and do not start by
     opening raw files or raw diffs. Miller returns targeted, token-efficient context.
+    Do not infer or invent API shapes. Use Miller to discover symbol names,
+    function signatures, config shapes, route names, CLI flags, or public contracts
+    before relying on them. If Miller cannot prove the shape, say what evidence is
+    missing instead of guessing.
 
     ## Your job
 
@@ -97,6 +101,7 @@ Fresh implementer dispatch (delegation available):
     - Commit SHA (first 7 chars)
     - Verification scope, command, commit SHA, result, and timestamp
     - **Miller calls used** - list the orient / inspect / find-references calls you made before editing
+    - **API-shape evidence** - list the Miller evidence for any symbol names, function signatures, config shapes, route names, CLI flags, or public contracts you relied on
     - Any observations that belong in the morning report's judgment-calls log
       (e.g. "chose to preserve original stack via cause rather than rethrowing
       raw err because cause is supported by the project's Node version")

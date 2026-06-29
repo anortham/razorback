@@ -71,6 +71,7 @@ Each agent gets:
   - **Inspect** the buggy symbol — callers, callees, types — before modifying with Miller `inspect(target='<fn>', depth=full)`
   - **Find references** — check all references before changing anything with Miller `trace(target='<symbol>')`
   - **List a file's symbols** before reading full content with Miller `inspect(target='<file>')`
+  - **Prove API shapes** — use Miller evidence for symbol names, function signatures, config shapes, route names, CLI flags, and public contracts before relying on them
   - Do NOT use Glob → Read → Grep chains. Miller returns targeted context in 1-2 calls.
 
 ### 3. Dispatch in Parallel

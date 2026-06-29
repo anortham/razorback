@@ -35,6 +35,7 @@ For each task:
    - **Inspect** the symbol to modify — callers, callees, types — before touching it with `inspect depth=full`
    - **Find references** — check all references before changing any symbol with `trace`
    - **List a file's symbols** before reading full content with `inspect`
+   - **Prove API shapes** — use Miller evidence for symbol names, function signatures, config shapes, route names, CLI flags, and public contracts before relying on them
    - **Do NOT fall back to Glob → Read → Grep chains.** Miller returns targeted context in 1-2 calls.
 3. Follow each step exactly (plan has bite-sized steps)
 4. Run verifications as specified
