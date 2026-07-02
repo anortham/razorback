@@ -215,5 +215,7 @@ Ready to implement <feature-name>
 
 **Escape hatch:** The "REQUIRED" callers above default to worktree isolation. The user can opt out with explicit consent for small, same-session work where a feature branch on the current workspace is sufficient. Record the consent and proceed — don't silently skip worktree setup.
 
+**Never called by:** razorback:fixing-small-issues. Quick-fix-tier work happens on the current checkout by policy — no worktree, no baseline verification, and no consent question needed, because this skill is never invoked for that tier.
+
 **Pairs with:**
 - **finishing-a-development-branch** - REQUIRED for cleanup after work complete

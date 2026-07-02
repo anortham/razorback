@@ -1,6 +1,6 @@
 ---
 name: brainstorming
-description: "You MUST use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design before implementation."
+description: "You MUST use this before any creative work - creating features, building components, adding functionality, or changing designed behavior. Small defect repairs and tweaks triage through razorback:fixing-small-issues first. Explores user intent, requirements and design before implementation."
 ---
 
 # Brainstorming Ideas Into Designs
@@ -14,6 +14,12 @@ Start by understanding the current project context, then ask questions one at a 
 <HARD-GATE>
 Do NOT invoke any implementation skill, write any code, scaffold any project, or take any implementation action until you have a design and the user has approved it.
 </HARD-GATE>
+
+## Triage First: Is This Design Work?
+
+Before choosing a path, check the tier. A reported defect or a small tweak that meets the quick-fix criteria (≤ 2 source files, ~20 changed lines, no contract changes, reversible — see razorback:fixing-small-issues) is repair work, not design work: route it to razorback:fixing-small-issues instead of running this skill. Investigation happens there first; if the issue outgrows the criteria, it escalates back here with its evidence.
+
+This is a measured gate, not a judgment call. "Feels simple" is not a criterion — the anti-pattern below still applies to everything that doesn't measurably fit the quick-fix tier. Brainstorming remains mandatory for creating features, building components, adding functionality, or changing designed behavior.
 
 ## Choosing the Right Path
 

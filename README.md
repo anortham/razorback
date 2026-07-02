@@ -220,6 +220,7 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 - **2+ independent tasks (any harness):** `subagent-driven-development` dispatches fresh implementer subagents (in parallel when tasks are independent), and the lead does inline review (spec compliance + code quality) per task. On Gemini CLI, dispatch goes through `invoke_agent(agent_name="generalist", …)`.
 - **1 task, tightly sequential work, or no delegation available:** `executing-plans` runs single-agent batch execution.
 - **Ad-hoc parallel work (delegation available):** `dispatching-parallel-agents` for independent tasks outside plans.
+- **Small, local, reversible fixes:** `fixing-small-issues` triages against objective criteria (≤ 2 files, ~20 lines, no contract changes) and fixes on the current checkout — no worktree, no baseline suite run, affected-scope verification only. Escalates to the standard flow the moment the fix outgrows the criteria.
 
 **Verification and model routing:**
 - Plans define language-agnostic verification scopes: worker red/green, worker ceiling, affected-change, branch gate, and expensive specialist gates.
@@ -234,6 +235,7 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 |-------|---------|
 | using-razorback | Entry point: skill routing, execution model, Miller toolchain |
 | brainstorming | Requirements exploration, design, approach selection |
+| fixing-small-issues | Quick-fix tier: triage small defects/tweaks by objective criteria, fix in place, affected-scope verification |
 | architecture-quality | Architecture and interface quality checks for planning, review, and test surface decisions |
 | writing-plans | Implementation plans (full or light) with MCP-verified file paths |
 | executing-plans | Single-agent execution (fallback for sequential/single-task work or no-subagent harnesses) |

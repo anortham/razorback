@@ -297,6 +297,7 @@ These techniques are part of systematic debugging and available in this director
 **Related skills:**
 - **razorback:test-driven-development** - For creating failing test case (Phase 4, Step 1)
 - **razorback:verification-before-completion** - Verify fix worked before claiming success
+- **razorback:fixing-small-issues** - When the root-caused fix meets the quick-fix criteria, execute it there: in place, affected-scope verification, no worktree or baseline-suite ceremony
 
 ## Real-World Impact
 

@@ -105,6 +105,7 @@ Use directive, capability-first language in lead-facing skills: "inspect a symbo
 **Shared across all harnesses:**
 - **Sequential/single-task:** `executing-plans` (single agent, batch execution)
 - **Ad-hoc parallel:** `dispatching-parallel-agents` (independent agent dispatch outside plans)
+- **Small, local, reversible fixes:** `fixing-small-issues` (quick-fix tier: objective triage criteria, fix on current checkout, affected-scope verification; no worktree, no baseline suite run; escalates to the standard flow when the fix outgrows the criteria)
 - Lead does inline review (spec compliance + code quality) — no separate reviewer subagents
 
 **Per-harness bootstrap mechanics:**

@@ -36,6 +36,27 @@ diagnosis. Use `gpt-5.5 high/xhigh` when the failure suggests the plan,
 architecture, public API contract, security posture, or verification strategy
 is wrong.
 
+## Change Tiers
+
+Triage every incoming change before choosing a process. **Investigate before
+infrastructure:** locate the change target with Miller evidence before creating
+a worktree, running project setup, or running any test suite. This ordering
+rule applies to every tier and is not tunable.
+
+| Tier | Entry criteria | Process | Verification scope |
+|---|---|---|---|
+| Quick fix | ≤ 2 source files, ~20 changed lines (tests excluded), no public API / schema / config-contract / security / dependency changes, no new modules, single-revert reversible, target confirmed with Miller evidence | `razorback:fixing-small-issues` on the current checkout — no worktree, no baseline suite run, no design doc, no implementer dispatch | Affected scope only: the targeted test(s) plus the original symptom. For this repo: the specific `node --test tests/<file>` plus `./scripts/bump-version.sh --check` when manifests change. The full suite runs at the branch gate. |
+| Standard | Anything above quick fix | brainstorming → writing-plans → subagent-driven-development or executing-plans, with worktree isolation | Per plan: worker narrow scope, lead affected-change verification, full branch gate (`node --test`) before merge |
+
+Escalate quick fix → standard the moment any of these appears: a 3rd source
+file, ~2× the line budget, a root cause in shared or public code, a second
+failed fix attempt, or a dependency or module change. Escalation carries the
+investigation evidence forward; it is a tier change, not a restart.
+
+Projects copying this file may tune the numeric thresholds. The
+investigate-before-infrastructure rule and the escalation triggers are policy,
+not suggestions.
+
 ## Gate Ownership
 
 Do not assign mechanical-tier workers any task that owns a failing test, replay,

@@ -123,6 +123,7 @@ When executing implementation plans:
 - **2+ independent tasks (delegation available):** Use `razorback:subagent-driven-development` (fresh subagent per task, inline review by lead)
 - **1 task, tightly sequential work, or no delegation:** Use `razorback:executing-plans` (single agent, batch execution)
 - **Ad-hoc parallel work (delegation available):** Use `razorback:dispatching-parallel-agents` (independent agent dispatch)
+- **Small, local, reversible fix (quick-fix criteria):** Use `razorback:fixing-small-issues` — triage first, fix on the current checkout, verify the affected scope only. No worktree, no baseline suite run.
 
 `subagent-driven-development` is the delegated execution path across Claude Code, Cursor, Codex, OpenCode, Copilot CLI, and Gemini CLI. If the current session cannot delegate (e.g., already running as a subagent — Gemini blocks recursion), fall back to `executing-plans`. The lead does inline review (spec compliance + code quality) either way.
 
