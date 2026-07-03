@@ -13,13 +13,23 @@ Agent tool (resume: "<implementer-agent-id>"):
 
     [Paste the reviewer's full output here — issues, severity, file:line references]
 
+    ## Contract inputs
+
+    [Exact shared constraints, fixtures, upstream outputs, tool contracts, or public strings this task may rely on]
+
+    ## File ownership
+
+    [Exact files this task may modify during the fix]
+
+    Report file: [path under .razorback/sdd]
+
     ## What to Do
 
     1. Fix each issue listed above
     2. Fix the structural cause, not only the symptom
     3. Do not weaken tests or introduce speculative seams
     4. Run the assigned verification scope from the plan
-    5. Commit the fixes
+    5. Apply the assigned commit mode
     6. Report what you changed
 
     Keep it focused - fix what the reviewer flagged, don't refactor beyond that.
@@ -41,11 +51,21 @@ Agent tool (resume: "<implementer-agent-id>"):
     relying on them. If Miller cannot prove the shape, say what evidence is missing
     instead of guessing.
 
+    ## Commit mode
+
+    Commit mode: [serial-worker-commit / parallel-lead-commit]
+
+    - `serial-worker-commit`: after assigned verification passes, you may commit
+      only your owned files and report the resulting SHA.
+    - `parallel-lead-commit`: do not run `git add` or `git commit`. Edit only
+      your owned files, write the full report to the report file, and report
+      `commit SHA: none - parallel-lead-commit`.
+
     ## Report Format
 
     When done, report:
     - What you changed
-    - Verification scope, command, commit SHA, result, and timestamp
+    - Verification invariant, scope label, command, commit SHA if any, result, and timestamp
     - **Miller calls used** - list the orient / inspect / find-references calls you made during the fix round
     - **API-shape evidence** - list the Miller evidence for any symbol names, function signatures, config shapes, route names, CLI flags, or public contracts you relied on
     - Any judgment calls made

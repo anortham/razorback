@@ -16,6 +16,14 @@ Agent tool (general-purpose):
 
     [Scene-setting: where this fits, dependencies, architectural context]
 
+    ## Contract inputs
+
+    [Exact shared constraints, fixtures, upstream outputs, tool contracts, or public strings this task may rely on]
+
+    ## File ownership
+
+    [Exact files this task may modify]
+
     ## Before You Begin
 
     You are operating inside an approved plan. The plan text in "Task Description" above is the authoritative spec. If something is ambiguous:
@@ -91,11 +99,12 @@ Agent tool (general-purpose):
     1. Implement exactly what the task specifies
     2. Write tests (following TDD if task says to)
     3. Verify implementation with the assigned worker scope
-    4. Commit your work only after assigned verification passes
+    4. Apply the assigned commit mode
     5. Self-review (see below)
     6. Report back
 
     Work from: [directory]
+    Report file: [path under .razorback/sdd]
 
     ## Model Routing
 
@@ -128,6 +137,16 @@ Agent tool (general-purpose):
     - Report the invariant, scope label, command, commit SHA, result, and
       timestamp so the lead can update the verification ledger.
 
+    ## Commit mode
+
+    Commit mode: [serial-worker-commit / parallel-lead-commit]
+
+    - `serial-worker-commit`: after assigned verification passes, you may commit
+      only your owned files and report the resulting SHA.
+    - `parallel-lead-commit`: do not run `git add` or `git commit`. Edit only
+      your owned files, write the full report to the report file, and report
+      `commit SHA: none - parallel-lead-commit`.
+
     ## Before Reporting Back: Self-Review
 
     Review your work with fresh eyes. Ask yourself:
@@ -158,7 +177,7 @@ Agent tool (general-purpose):
 
     When done, report:
     - What you implemented
-    - Verification invariant, scope, command, commit SHA, result, and timestamp
+    - Verification invariant, scope label, command, commit SHA if any, result, and timestamp
     - Hard-gate metrics and report-only metrics, when replay or metric evidence is involved
     - Files changed
     - **Miller calls used** - list the orient / inspect / find-references / list-symbols calls you made and what each one confirmed

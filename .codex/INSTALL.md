@@ -1,6 +1,6 @@
 # Installing Razorback for Codex CLI and Desktop
 
-Enable razorback skills in Codex CLI or the Codex desktop app via native skill discovery. Clone and symlink.
+Enable razorback skills in Codex CLI or the Codex desktop app with the Codex plugin install path first. Local clone plus skills symlink remains the development fallback.
 
 ## Prerequisites
 
@@ -11,6 +11,20 @@ Enable razorback skills in Codex CLI or the Codex desktop app via native skill d
 Razorback assumes both Miller and Goldfish are available.
 
 ## Installation
+
+### Preferred: Codex plugin install
+
+1. **Use the repo-scoped Codex marketplace entry** in `.agents/plugins/marketplace.json` to install the `razorback` plugin from this repository.
+
+2. **Enable multi-agent support** (required for parallel execution skills). Add to your Codex config:
+   ```toml
+   [features]
+   multi_agent = true
+   ```
+
+3. **Restart Codex** (quit and relaunch the CLI or desktop app) so native skill discovery reloads the installed plugin skills.
+
+### Fallback: local clone plus skills symlink
 
 1. **Clone the razorback repository:**
    ```bash
@@ -40,21 +54,34 @@ Razorback assumes both Miller and Goldfish are available.
 ## Verify
 
 ```bash
-ls -la ~/.agents/skills/razorback
 codex features list | grep '^multi_agent'
 ```
 
-You should see a symlink (or junction on Windows) pointing to your razorback skills directory, and `multi_agent` should show as enabled.
+If you used the manual fallback, also verify the local skills path:
+
+```bash
+ls -la ~/.agents/skills/razorback
+```
+
+`multi_agent` should show as enabled. For the manual fallback, the path should be a symlink (or junction on Windows) pointing to your razorback skills directory.
 
 ## Updating
+
+For the preferred plugin install path, refresh razorback through the same Codex plugin marketplace flow you used to install it.
+
+For the manual fallback:
 
 ```bash
 cd ~/.codex/razorback && git pull
 ```
 
-Skills update instantly through the symlink.
+Skills update instantly through the fallback symlink. Restart Codex if you want the refreshed skill list reflected in discovery.
 
 ## Uninstalling
+
+If you installed via the Codex plugin path, remove the `razorback` plugin from Codex.
+
+If you used the manual fallback:
 
 ```bash
 rm ~/.agents/skills/razorback

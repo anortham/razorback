@@ -7,6 +7,8 @@ Razorback is a skill set for Claude Code, Cursor, Codex, OpenCode, Copilot CLI, 
 ```
 .claude-plugin/plugin.json        — Claude Code / Copilot CLI plugin manifest
 .claude-plugin/marketplace.json   — Marketplace listing (Claude Code + Copilot CLI read this)
+.codex-plugin/plugin.json         — Codex plugin manifest
+.agents/plugins/marketplace.json  — Repo-scoped Codex plugin marketplace entry
 .cursor-plugin/plugin.json        — Cursor plugin manifest
 gemini-extension.json             — Gemini CLI extension manifest
 GEMINI.md                          — Gemini context file (pulls using-razorback + gemini-tools)
@@ -31,7 +33,7 @@ docs/specs/                         — Design specifications
 |---------|------------------------|---------------------|
 | Claude Code | `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `agents/`, `commands/`, `hooks/hooks.json`, `hooks/session-start`, `hooks/run-hook.cmd` | `SessionStart` hook injects `using-razorback` as `hookSpecificOutput.additionalContext` |
 | Cursor | `.cursor-plugin/plugin.json`, `hooks/hooks-cursor.json` (reuses `hooks/session-start`) | `sessionStart` hook injects `using-razorback` as `additional_context` (snake_case) |
-| Codex (CLI + desktop app) | `.codex/INSTALL.md`, `skills/using-razorback/references/codex-tools.md` | Native skill discovery from `~/.agents/skills/razorback/` |
+| Codex (CLI + desktop app) | `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json`, `.codex/INSTALL.md`, `skills/using-razorback/references/codex-tools.md` | Preferred: install the Codex plugin from the repo-scoped marketplace entry. Fallback: local clone plus `~/.agents/skills/razorback/` symlink. Native skill discovery loads the installed skills at startup. |
 | OpenCode | `.opencode/plugins/razorback.js`, `AGENTS.md` symlink, `package.json`, `index.js` | Plugin's `config` hook registers skills path; `experimental.chat.messages.transform` injects bootstrap into first user message |
 | Copilot CLI | `skills/using-razorback/references/copilot-tools.md` (reuses `.claude-plugin/` manifests, `hooks/session-start`) | `SessionStart` hook injects bootstrap as top-level `additionalContext` (SDK standard) |
 | Gemini CLI | `gemini-extension.json`, `GEMINI.md`, `skills/using-razorback/references/gemini-tools.md` | `GEMINI.md` uses `@./` includes to pull `using-razorback/SKILL.md` + `gemini-tools.md` at session start |
@@ -111,7 +113,7 @@ Use directive, capability-first language in lead-facing skills: "inspect a symbo
 **Per-harness bootstrap mechanics:**
 - **Claude Code:** `hooks/session-start` reads `skills/using-razorback/SKILL.md` verbatim and injects it via the SessionStart hook.
 - **Cursor:** same `hooks/session-start` script; platform detection keys on `CURSOR_PLUGIN_ROOT` and emits `additional_context` (snake_case).
-- **Codex (CLI + desktop app):** native skill discovery scans `~/.agents/skills/razorback/` at startup. Users see the raw SKILL.md content; delegated runs use `subagent-driven-development` when the session can spawn workers, and fall back to `executing-plans` otherwise. Tool-name mapping lives in `skills/using-razorback/references/codex-tools.md`.
+- **Codex (CLI + desktop app):** the preferred install path is the Codex plugin defined by `.codex-plugin/plugin.json` and exposed through `.agents/plugins/marketplace.json`; local clone plus `~/.agents/skills/razorback/` symlink remains the development fallback. Native skill discovery loads the installed skills at startup. Users see the raw SKILL.md content; delegated runs use `subagent-driven-development` when the session can spawn workers, and fall back to `executing-plans` otherwise. Tool-name mapping lives in `skills/using-razorback/references/codex-tools.md`.
 - **OpenCode:** `.opencode/plugins/razorback.js` registers the skills directory and injects the bootstrap on the first user message (via `experimental.chat.messages.transform`). The plugin injects the shared bootstrap verbatim and adds OpenCode tool mapping.
 - **Copilot CLI:** same `hooks/session-start` script; platform detection keys on `COPILOT_CLI` and emits top-level `additionalContext` (SDK standard). Plugin agents (like `razorback:code-reviewer`) are auto-discovered from the installed marketplace.
 - **Gemini CLI:** `gemini-extension.json` declares `GEMINI.md` as the context file. `GEMINI.md` uses `@./` includes to pull in `skills/using-razorback/SKILL.md` + `skills/using-razorback/references/gemini-tools.md` at session start. Subagent dispatch uses Gemini's `invoke_agent` tool with the built-in `generalist` agent (parallel by default; `wait_for_previous: true` to serialize). Subagents cannot recursively dispatch other subagents — fine for razorback because review is inline by the lead.
@@ -122,11 +124,11 @@ Once a plan is approved, razorback's execution skills run to completion without 
 
 ## Version management
 
-Five manifests carry a version field (`package.json`, `.claude-plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `gemini-extension.json`). Keep them in sync with `./scripts/bump-version.sh`:
+Razorback now has six version-bearing manifests (`package.json`, `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `gemini-extension.json`). Keep them in sync with `./scripts/bump-version.sh`:
 
 - `--check` reports current versions and detects drift
 - `--audit` runs `--check` plus grep-scans the repo for undeclared version references
-- `<new-version>` bumps all five in one pass
+- `<new-version>` bumps all six in one pass
 
 The `.version-bump.json` config drives the script. `.memories/` and `docs/plans/` are excluded from the audit because they freeze the version string at time of writing.
 

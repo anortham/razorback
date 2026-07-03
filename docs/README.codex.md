@@ -1,6 +1,6 @@
 # Razorback for Codex
 
-Guide for using Razorback with OpenAI Codex via native skill discovery in the CLI or desktop app.
+Guide for using Razorback with OpenAI Codex in the CLI or desktop app. Preferred install uses the Codex plugin path; native skill discovery still loads the installed skills at startup.
 
 ## Quick Install
 
@@ -9,6 +9,8 @@ Tell Codex:
 ```
 Fetch and follow instructions from https://raw.githubusercontent.com/anortham/razorback/refs/heads/main/.codex/INSTALL.md
 ```
+
+The preferred path is the Codex plugin install flow from this repository's `.agents/plugins/marketplace.json`.
 
 ## Manual Installation
 
@@ -20,6 +22,8 @@ Fetch and follow instructions from https://raw.githubusercontent.com/anortham/ra
 - [Goldfish MCP Server](https://github.com/anortham/goldfish) configured in Codex
 
 ### Steps
+
+Manual installation is the local-development fallback when you do not want to install the Codex plugin from the repo-scoped marketplace entry.
 
 1. Clone the repo:
    ```bash
@@ -51,13 +55,13 @@ cmd /c mklink /J "$env:USERPROFILE\.agents\skills\razorback" "$env:USERPROFILE\.
 
 ## How It Works
 
-Codex CLI and the Codex desktop app share native skill discovery. They scan `~/.agents/skills/` at startup, parse SKILL.md frontmatter, and load skills on demand. Razorback skills are made visible through a single symlink:
+Codex CLI and the Codex desktop app share native skill discovery. With the preferred install path, Codex reads the plugin metadata from `.codex-plugin/plugin.json`, installs from the repo-scoped marketplace entry, and loads the bundled skills at startup. The manual fallback still uses `~/.agents/skills/`:
 
 ```
-~/.agents/skills/razorback/ → ~/.codex/razorback/skills/
+~/.agents/skills/razorback/ -> ~/.codex/razorback/skills/
 ```
 
-The `using-razorback` skill is discovered automatically and enforces skill usage discipline. No additional configuration needed beyond the shared install above.
+The `using-razorback` skill is discovered automatically and enforces skill usage discipline. No additional Codex hook setup is required for this plugin path or for the fallback symlink.
 
 **Note:** On Codex, delegated plan execution routes through `subagent-driven-development`, which dispatches fresh implementer subagents in parallel when tasks are independent. If the current session cannot delegate, fall back to `executing-plans`.
 Miller-first applies to the lead session and every spawned worker. Implementers, reviewers, and fix workers should orient with Miller before raw file reads.
@@ -104,11 +108,15 @@ The `description` field is how Codex decides when to activate a skill automatica
 
 ## Updating
 
+If you installed razorback as a Codex plugin, refresh it through the same plugin marketplace flow you used to install it.
+
+If you used the manual fallback:
+
 ```bash
 cd ~/.codex/razorback && git pull
 ```
 
-Skills update instantly through the symlink.
+Skills update instantly through the fallback symlink. Restart Codex if you want the refreshed skill list reflected in discovery.
 
 ## Uninstalling
 
@@ -127,9 +135,9 @@ Optionally delete the clone: `rm -rf ~/.codex/razorback` (Windows: `Remove-Item 
 
 ### Skills not showing up
 
-1. Verify the symlink: `ls -la ~/.agents/skills/razorback`
-2. Check skills exist: `ls ~/.codex/razorback/skills`
-3. Restart Codex CLI or the desktop app. Skills are discovered at startup.
+1. Restart Codex CLI or the desktop app. Native skill discovery runs at startup.
+2. If you used the manual fallback, verify the symlink: `ls -la ~/.agents/skills/razorback`
+3. If you used the manual fallback, check skills exist: `ls ~/.codex/razorback/skills`
 
 ### Windows junction issues
 

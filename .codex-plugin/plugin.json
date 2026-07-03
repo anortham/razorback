@@ -1,0 +1,39 @@
+{
+  "name": "razorback",
+  "version": "0.19.0",
+  "description": "Miller-powered development workflow for Claude Code, Codex, and OpenCode.",
+  "author": {
+    "name": "anortham"
+  },
+  "homepage": "https://github.com/anortham/razorback",
+  "repository": "https://github.com/anortham/razorback",
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "tdd",
+    "debugging",
+    "miller",
+    "workflows"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Razorback",
+    "shortDescription": "Miller-powered development workflow skills.",
+    "longDescription": "Development workflow skills for Codex with Miller-first orientation, TDD discipline, and subagent-driven execution.",
+    "developerName": "anortham",
+    "category": "Productivity",
+    "capabilities": [
+      "Write"
+    ],
+    "websiteURL": "https://github.com/anortham/razorback",
+    "defaultPrompt": [
+      "Plan a code change with Miller-first repo grounding.",
+      "Run a TDD fix with worker verification and a concise report.",
+      "Review a diff for regressions, contract drift, and missing tests."
+    ],
+    "brandColor": "#B31B1B",
+    "composerIcon": "./assets/app-icon.png",
+    "logo": "./assets/razorback-small.svg",
+    "logoDark": "./assets/razorback-small.svg"
+  }
+}

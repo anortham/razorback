@@ -64,7 +64,9 @@ Tell Codex:
 Fetch and follow instructions from https://raw.githubusercontent.com/anortham/razorback/refs/heads/main/.codex/INSTALL.md
 ```
 
-Codex uses native skill discovery, so installation is a clone plus a symlink at `~/.agents/skills/razorback`. Delegated execution skills (`subagent-driven-development`, `dispatching-parallel-agents`) require Codex's `multi_agent` feature.
+Preferred install: use the Codex plugin path documented in `.codex/INSTALL.md`. It installs razorback from the repo-scoped marketplace entry in `.agents/plugins/marketplace.json`, then relies on native skill discovery to load the bundled skills at startup.
+
+Manual clone plus `~/.agents/skills/razorback` symlink remains the local-development fallback. Delegated execution skills (`subagent-driven-development`, `dispatching-parallel-agents`) still require Codex's `multi_agent` feature.
 
 **Detailed docs:** [.codex/INSTALL.md](.codex/INSTALL.md)
 
@@ -99,7 +101,7 @@ Gemini loads `gemini-extension.json` + `GEMINI.md` at session start, which pulls
 
 Once loaded, razorback works automatically. The bootstrap path varies by harness:
 
-1. **Session starts** — the `SessionStart` hook (Claude Code, Cursor), `messages.transform` (OpenCode), native skill discovery (Codex), the `SessionStart` hook with `additionalContext` (Copilot CLI), or `GEMINI.md` includes (Gemini CLI) surfaces the `using-razorback` skill.
+1. **Session starts** — the `SessionStart` hook (Claude Code, Cursor), `messages.transform` (OpenCode), native skill discovery from the installed Codex plugin or fallback skills symlink (Codex), the `SessionStart` hook with `additionalContext` (Copilot CLI), or `GEMINI.md` includes (Gemini CLI) surfaces the `using-razorback` skill.
 2. **You request work** — the agent checks for applicable skills before every response.
 3. **Skills guide the workflow** — brainstorming, planning, TDD, execution, review, and verification all route through Miller and the appropriate execution strategy for your harness.
 
@@ -168,11 +170,7 @@ Until razorback lands in the Cursor marketplace, update by `git pull` in the loc
 
 ### Codex
 
-```bash
-cd ~/.codex/razorback && git pull
-```
-
-Skills update instantly through the symlink. Restart Codex if you want the new skill list reflected in discovery.
+For the preferred plugin install path and the local clone fallback, follow the update instructions in [.codex/INSTALL.md](.codex/INSTALL.md).
 
 ### OpenCode
 
@@ -268,12 +266,12 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 
 ## Version management
 
-Razorback ships five version-bearing manifests (`package.json`, `.claude-plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `gemini-extension.json`). Keep them in sync with:
+Razorback ships six version-bearing manifests (`package.json`, `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `gemini-extension.json`). Keep them in sync with:
 
 ```bash
 ./scripts/bump-version.sh --check          # detect drift
 ./scripts/bump-version.sh --audit          # check + scan for undeclared version references
-./scripts/bump-version.sh <new-version>    # bump all five in one pass
+./scripts/bump-version.sh <new-version>    # bump all six in one pass
 ```
 
 ## License

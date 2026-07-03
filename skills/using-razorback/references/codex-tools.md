@@ -5,7 +5,7 @@ Skills in razorback use Claude Code tool names. When you see these in a skill bo
 | Skill references | Codex equivalent |
 |-----------------|------------------|
 | `Task` / `Agent` tool (dispatch subagent) | `spawn_agent` (returns an agent ID; see [Subagent dispatch](#subagent-dispatch)) |
-| Multiple `Task` calls (parallel) | Multiple `spawn_agent` calls |
+| Multiple `Task` calls (parallel) | Multiple `spawn_agent` calls in the same turn |
 | Task follow-up / resume | `send_input(target=<agent-id>, message=...)` |
 | Task returns result | `wait_agent(targets=[<agent-id>])` |
 | Task completes | `close_agent(target=<agent-id>)` to free the slot |
@@ -76,6 +76,12 @@ For Codex gate-review lanes, prefer the project route for a reviewer that reads
 the plan, failing test or replay, and diff, then decides whether the test or
 implementation is wrong. In repos following the current Razorback policy, that
 route is `gpt-5.4` at high reasoning.
+
+### Parallel safe batches
+
+When an approved plan marks multiple eligible safe tasks in the same batch, that approval is also approval to make multiple `spawn_agent` calls in the same turn. In other words: multiple eligible safe tasks mean multiple `spawn_agent` calls in the same turn.
+
+Do not serialize a safe batch just because it feels simpler. If you serialize, record the dependency or tool limitation that forced it. Serializing requires a recorded dependency or tool limitation.
 
 ### Message framing
 

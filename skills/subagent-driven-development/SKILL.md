@@ -5,7 +5,7 @@ description: Execute an implementation plan by dispatching fresh subagents (sequ
 
 # Subagent-Driven Development
 
-Execute a plan by dispatching fresh subagents per task, with the lead doing inline review (spec compliance + code quality) after each task. Independent tasks can be dispatched in parallel; tightly coupled tasks run sequentially. For fixes, dispatch a fresh implementer with the fix prompt and prior-task context.
+Execute a plan by dispatching fresh subagents per task, with the lead doing inline review (spec compliance + code quality) after each task. Independent tasks can be dispatched in parallel; tightly coupled tasks run sequentially. Commit mode decides whether the worker commits directly or hands the approved diff back to the lead. For fixes, dispatch a fresh implementer with the fix prompt and prior-task context.
 
 **Core principle:** Fresh subagent per task + inline review by lead + parallel fan-out when tasks are independent = high quality without wasted ceremony.
 
@@ -61,7 +61,7 @@ digraph process {
         "Dispatch implementer subagent (./implementer-prompt.md)" [shape=box];
         "Implementer asks questions?" [shape=diamond];
         "Answer questions, provide context" [shape=box];
-        "Implementer implements, tests, commits, reports" [shape=box];
+        "Implementer implements, tests, honors commit mode, reports" [shape=box];
         "Lead: inline review (spec + quality)" [shape=box];
         "Issues found?" [shape=diamond];
         "Resume implementer with findings (./fix-prompt.md)" [shape=box];
@@ -77,8 +77,8 @@ digraph process {
     "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer asks questions?";
     "Implementer asks questions?" -> "Answer questions, provide context" [label="yes"];
     "Answer questions, provide context" -> "Dispatch implementer subagent (./implementer-prompt.md)";
-    "Implementer asks questions?" -> "Implementer implements, tests, commits, reports" [label="no"];
-    "Implementer implements, tests, commits, reports" -> "Lead: inline review (spec + quality)";
+    "Implementer asks questions?" -> "Implementer implements, tests, honors commit mode, reports" [label="no"];
+    "Implementer implements, tests, honors commit mode, reports" -> "Lead: inline review (spec + quality)";
     "Lead: inline review (spec + quality)" -> "Issues found?";
     "Issues found?" -> "Resume implementer with findings (./fix-prompt.md)" [label="yes"];
     "Resume implementer with findings (./fix-prompt.md)" -> "Lead: inline review (spec + quality)" [label="re-review"];
@@ -107,22 +107,30 @@ Before dispatching, orient yourself on the codebase with Miller:
 - **List a file's symbols** on files the plan will modify with `inspect`, so you can spot later drift during review
 - Do NOT chain Glob/Grep/Read for orientation — Miller is the required entry point
 
+Read `## Parallel Execution Contract` before dispatching and validate every task row:
+- A safe batch with 2+ eligible tasks dispatches together when subagents are available.
+- Safe means: non-overlapping file ownership, no ordering dependency, and `Serialization required: No`.
+- Serialized lanes must record `Serialization required: Yes` plus a `Dependency reason` naming the real dependency or tool limitation.
+- Serializing a safe batch requires a recorded dependency or tool limitation. Habit, caution, or "one at a time is easier" are not enough.
+
 ## Step 2: Dispatch Implementer Subagent
 
 Use the template at `./implementer-prompt.md`. The spawn prompt MUST include:
 
 1. **Task text** copied from the plan (don't make the subagent read the plan file)
 2. **Scene-setting context** (how this task fits the larger plan)
-3. **File ownership** (which files this task may modify)
-4. **Miller directives** (orient, inspect before modifying any symbol, find references before changing public APIs, list a file's symbols before reading full files)
-5. **TDD expectations** (from `razorback:test-driven-development`)
-6. **Verification scope** specific to this task, using commands from the plan's verification strategy
-7. **Model routing tier** assigned to this task (`implementation`, `mechanical`, `strategy`, `gate-review`, or `escalation`)
-8. **Miller evidence requirement** (the implementer must report which Miller calls they used and what those calls confirmed)
-9. **API-shape evidence requirement** (the implementer must name the Miller evidence used for every symbol name, function signature, config shape, route name, CLI flag, or public contract they rely on)
-10. **Gate invariant requirement** (the implementer must state what each assigned test, replay, metric, or acceptance gate proves)
-11. **architecture-quality context** (the approved architecture, any `No Architecture Impact` note, and the plan mismatch rule)
-12. **Report file path** under `.razorback/sdd`, so the worker writes the full report to a file and returns only status, commits, test summary, and concerns
+3. **Contract inputs** (the exact shared constraints, fixtures, upstream outputs, tool contracts, or public strings this task may rely on)
+4. **File ownership** (which files this task may modify)
+5. **Miller directives** (orient, inspect before modifying any symbol, find references before changing public APIs, list a file's symbols before reading full files)
+6. **TDD expectations** (from `razorback:test-driven-development`)
+7. **Verification scope** specific to this task, using commands from the plan's verification strategy
+8. **Model routing tier** assigned to this task (`implementation`, `mechanical`, `strategy`, `gate-review`, or `escalation`)
+9. **Commit mode** (`serial-worker-commit` or `parallel-lead-commit`)
+10. **Miller evidence requirement** (the implementer must report which Miller calls they used and what those calls confirmed)
+11. **API-shape evidence requirement** (the implementer must name the Miller evidence used for every symbol name, function signature, config shape, route name, CLI flag, or public contract they rely on)
+12. **Gate invariant requirement** (the implementer must state what each assigned test, replay, metric, or acceptance gate proves)
+13. **architecture-quality context** (the approved architecture, any `No Architecture Impact` note, and the plan mismatch rule)
+14. **Report file path** under `.razorback/sdd`, so the worker writes the full report to a file and returns only status, commits, test summary, and concerns
 
 ### Model Routing Contract
 
@@ -195,6 +203,20 @@ Maintain a verification ledger during execution:
 
 If the same HEAD already has a passing ledger entry for the required scope, reuse that evidence instead of rerunning the same expensive command. If HEAD changed, the affected scopes are stale.
 
+### Commit Mode Contract
+
+Every dispatch chooses one commit mode and copies it into the worker prompt:
+
+- `serial-worker-commit`: the task is single-threaded from Git's perspective
+  (single task or deliberately serialized lane). The worker may commit only owned
+  files after assigned verification passes.
+- `parallel-lead-commit`: the task belongs to a safe batch with 2+ eligible
+  tasks. The worker edits only owned files, writes the report, and does not run
+  `git add` or `git commit`. The lead stages and commits after inline review to
+  avoid Git index races between concurrent workers.
+
+Fix rounds keep the same commit mode unless the lead explicitly changes it.
+
 ## File Handoffs
 
 Large task text, reports, and diffs should move as files instead of pasted prompt content. This keeps the lead context small and makes recovery after compaction concrete.
@@ -210,7 +232,8 @@ Conversation memory does not survive every long run. Track task completion in `.
 
 - At skill start, read `.razorback/sdd/progress.md` if it exists. Trust it with `git log` over stale recollection after compaction or resume.
 - When a task's Lead inline review passes, append one line in the same bookkeeping step:
-  `Task N: complete (commits <base7>..<head7>, Lead inline review clean)`.
+  - `serial-worker-commit`: `Task N: complete (commits <base7>..<head7>, Lead inline review clean)`.
+  - `parallel-lead-commit`: `Task N: complete (parallel-lead-commit, Lead inline review clean, lead commit pending)`.
 - The ledger is git-ignored working-tree scratch. `git clean -fdx` deletes it; if that happens, recover from `git log` and checked plan boxes.
 
 Per-harness state to keep after dispatch:
@@ -223,13 +246,21 @@ If the subagent asks questions, answer completely before letting it proceed.
 
 ### Parallel Dispatch (Independent Tasks)
 
-When the plan has 2+ independent tasks (non-overlapping files, no ordering dependency), dispatch them in parallel:
+When the plan marks a safe batch with 2+ eligible tasks and the harness supports
+subagents, dispatch the whole batch together. A safe batch with 2+ eligible tasks
+dispatches together. Serializing a safe batch requires a recorded dependency or
+tool limitation.
+
+Per harness, that means:
 
 - **Claude Code:** make multiple `Agent` tool calls in a single turn. They run concurrently and you review each as it reports back.
 - **opencode:** make multiple `Task` tool calls in a single turn (or in the TUI, @mention the `general` subagent concurrently). Child sessions run in parallel; navigate with `session_child_*` keybinds.
 - **Codex:** make multiple `spawn_agent` calls in a single turn. Each returns its own agent ID. Use `wait_agent(targets=[<agent-id>])` per agent, or pass multiple IDs at once, when you need a given implementer's output before proceeding with its review.
 
-Assign file ownership per subagent to prevent collisions. If tasks are tightly coupled (same files, shared state, ordering dependency), dispatch sequentially instead — one subagent at a time, lead reviews, then next.
+Assign file ownership per subagent to prevent collisions. If tasks are tightly
+coupled (same files, shared state, ordering dependency), dispatch sequentially
+instead — one subagent at a time, lead reviews, then next — and record the
+dependency or tool limitation in the plan's `Dependency reason`.
 
 Reviews still happen inline per-task. Do not batch reviews — a failing task shouldn't block review of the ones that passed.
 
@@ -292,7 +323,7 @@ Spec compliance checking earns its keep when the plan leaves room for misinterpr
 
 Either way, the review is a single pass by the lead. Never collapse the loop to skip re-reviewing after a fix.
 
-**When the review passes (approved):** mark the task complete (`TaskUpdate`) and tick that task's acceptance-criteria checkboxes in the plan file (`[ ]` → `[x]`), so the plan document records progress alongside the TaskList. This is fast bookkeeping — never a stop or a review gate; move straight to the next task or parallel dispatch.
+**When the review passes (approved):** mark the task complete (`TaskUpdate`) and tick that task's acceptance-criteria checkboxes in the plan file (`[ ]` → `[x]`), so the plan document records progress alongside the TaskList. For `parallel-lead-commit`, the approved worker report should still show `commit SHA: none - parallel-lead-commit`; the lead owns staging and commit after review. This is fast bookkeeping — never a stop or a review gate; move straight to the next task or parallel dispatch.
 
 ## Step 4: Fixes
 
@@ -310,6 +341,9 @@ When review finds issues, route the fix back to an implementer with the reviewer
 Either way, re-review after the fix. Iteration cap applies: 3 resume / `send_input` / fresh-dispatch attempts, then a 4th attempt with reframed context, then flag-and-continue (see "Review cap" in Step 3).
 
 **When to dispatch fresh on Claude Code (or Codex):** the subagent is unreachable (session error, context limit), the prior implementer's context is genuinely stale (another task modified the same files), or the fix needs a fundamentally different approach.
+
+The original commit mode still applies during fixes unless the lead explicitly
+changes it. `parallel-lead-commit` fix rounds still do not commit directly.
 
 ## Step 4a: Pre-merge external review (if chosen)
 
@@ -494,6 +528,7 @@ Done.
 - Skip inline review (it consistently catches real issues)
 - Proceed to the next task while any review has open issues
 - Dispatch parallel implementer subagents on overlapping files (conflicts)
+- Let parallel-batch workers race on `git add` or `git commit`
 - Make the subagent read the plan file (provide the full task text instead)
 - Skip scene-setting context (the subagent needs to know where the task fits)
 - Ignore subagent questions (answer before letting them proceed)

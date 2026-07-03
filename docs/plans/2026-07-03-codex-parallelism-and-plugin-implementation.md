@@ -260,14 +260,14 @@ rg -n "manifest|marketplace|hooks|asset|metadata|https?://" docs/plans/2026-07-0
 - Add `tests/codex-parallelism-contract.test.mjs` with assertions for the required strings and anti-regression cases.
 
 **Acceptance criteria:**
-- [ ] `writing-plans` requires `## Parallel Execution Contract`.
-- [ ] `writing-plans` documents compact single-task full-plan form.
-- [ ] `writing-plans` requires `Contract inputs`, `File ownership`, `Serialization required`, and `Dependency reason`.
-- [ ] SDD validates safe batches and dispatches 2+ eligible tasks together.
-- [ ] SDD says serializing a safe batch requires a recorded reason.
-- [ ] Codex mapping says multiple eligible tasks mean multiple `spawn_agent` calls in the same turn.
-- [ ] Implementer/fix prompts support parallel-batch no-commit mode and serial worker-commit mode.
-- [ ] Tests lock the above wording.
+- [x] `writing-plans` requires `## Parallel Execution Contract`.
+- [x] `writing-plans` documents compact single-task full-plan form.
+- [x] `writing-plans` requires `Contract inputs`, `File ownership`, `Serialization required`, and `Dependency reason`.
+- [x] SDD validates safe batches and dispatches 2+ eligible tasks together.
+- [x] SDD says serializing a safe batch requires a recorded reason.
+- [x] Codex mapping says multiple eligible tasks mean multiple `spawn_agent` calls in the same turn.
+- [x] Implementer/fix prompts support parallel-batch no-commit mode and serial worker-commit mode.
+- [x] Tests lock the above wording.
 
 **Worker verification:**
 
@@ -318,13 +318,13 @@ node --test tests/codex-parallelism-contract.test.mjs
 - Add `tests/codex-plugin-manifest.test.mjs` to parse JSON, assert manifest values, assert `hooks` is absent, assert marketplace has no version field, assert asset paths exist, and assert `.version-bump.json` includes `.codex-plugin/plugin.json`.
 
 **Acceptance criteria:**
-- [ ] `.codex-plugin/plugin.json` exists, parses, and points `skills` to `./skills/`.
-- [ ] `.codex-plugin/plugin.json` omits `hooks`.
-- [ ] `.agents/plugins/marketplace.json` exists, parses, and has no version field unless Lead Gate 0 changed the contract.
-- [ ] `.version-bump.json` includes `.codex-plugin/plugin.json` field `version`.
-- [ ] `assets/razorback-small.svg` and `assets/app-icon.png` exist and are referenced by the manifest.
-- [ ] `./scripts/bump-version.sh --check` reports six version-bearing manifests after this task.
-- [ ] Tests verify the manifest, marketplace, assets, and version sync config.
+- [x] `.codex-plugin/plugin.json` exists, parses, and points `skills` to `./skills/`.
+- [x] `.codex-plugin/plugin.json` omits `hooks`.
+- [x] `.agents/plugins/marketplace.json` exists, parses, and has no version field unless Lead Gate 0 changed the contract.
+- [x] `.version-bump.json` includes `.codex-plugin/plugin.json` field `version`.
+- [x] `assets/razorback-small.svg` and `assets/app-icon.png` exist and are referenced by the manifest.
+- [x] `./scripts/bump-version.sh --check` reports six version-bearing manifests after this task.
+- [x] Tests verify the manifest, marketplace, assets, and version sync config.
 
 **Worker verification:**
 
@@ -383,15 +383,15 @@ node --test tests/codex-plugin-manifest.test.mjs
 - If Lead Gate 0 proves per-skill OpenAI metadata files are required, stop and revise this plan before adding broad `skills/*/agents/openai.yaml` files.
 
 **Acceptance criteria:**
-- [ ] Packaging script exists and is executable.
-- [ ] Packaging script supports zip and tar.gz outputs.
-- [ ] Packaging script refuses dirty worktrees by default.
-- [ ] Package contents are rootless and Codex-only.
-- [ ] Package includes local assets and all skills.
-- [ ] Package tests assert every `skills/*/SKILL.md` from the source checkout appears in the archive and has `name` and `description` frontmatter.
-- [ ] Package preserves the manifest's omission of `hooks`.
-- [ ] Package tests avoid assuming absent `CODE_OF_CONDUCT.md`.
-- [ ] Tests cover archive include/exclude rules.
+- [x] Packaging script exists and is executable.
+- [x] Packaging script supports zip and tar.gz outputs.
+- [x] Packaging script refuses dirty worktrees by default.
+- [x] Package contents are rootless and Codex-only.
+- [x] Package includes local assets and all skills.
+- [x] Package tests assert every `skills/*/SKILL.md` from the source checkout appears in the archive and has `name` and `description` frontmatter.
+- [x] Package preserves the manifest's omission of `hooks`.
+- [x] Package tests avoid assuming absent `CODE_OF_CONDUCT.md`.
+- [x] Tests cover archive include/exclude rules.
 
 **Worker verification:**
 
@@ -435,12 +435,12 @@ The test must not read package contents from the source checkout's `HEAD`. It mu
 - In `docs/README.codex.md`, update Quick Install, Manual Installation, How It Works, Updating, and Troubleshooting to reflect plugin install and symlink fallback.
 
 **Acceptance criteria:**
-- [ ] `CLAUDE.md` lists `.codex-plugin/plugin.json` and `.agents/plugins/marketplace.json`.
-- [ ] `CLAUDE.md` version-management text says six manifests and includes `.codex-plugin/plugin.json`.
-- [ ] README Codex section prefers plugin install and keeps manual fallback.
-- [ ] `.codex/INSTALL.md` prefers plugin install and keeps manual fallback.
-- [ ] `docs/README.codex.md` describes plugin install, native skill discovery, and `multi_agent = true`.
-- [ ] No doc says Codex is symlink-only.
+- [x] `CLAUDE.md` lists `.codex-plugin/plugin.json` and `.agents/plugins/marketplace.json`.
+- [x] `CLAUDE.md` version-management text says six manifests and includes `.codex-plugin/plugin.json`.
+- [x] README Codex section prefers plugin install and keeps manual fallback.
+- [x] `.codex/INSTALL.md` prefers plugin install and keeps manual fallback.
+- [x] `docs/README.codex.md` describes plugin install, native skill discovery, and `multi_agent = true`.
+- [x] No doc says Codex is symlink-only.
 
 **Worker verification:**
 

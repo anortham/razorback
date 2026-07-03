@@ -21,7 +21,7 @@ Once the plan is approved, razorback runs to completion; it stops only for real 
 
 **Full plan** — for async handoffs, complex multi-session work, or unfamiliar domains:
 - Complete code snippets in every task
-- Step-by-step TDD choreography (write test → verify fail → implement → verify pass → commit)
+- Step-by-step TDD choreography (write test → verify fail → implement → verify pass → apply commit mode)
 - Exact verification scopes with commands supplied from the target repo's docs
 - Assumes the engineer has zero codebase context and questionable taste
 
@@ -56,7 +56,7 @@ This structure informs the task decomposition. Each task should produce self-con
 
 Horizontal decomposition is justified only when a layer is genuinely shared by several later slices, or an interface contract must be locked before parallel work can fan out (contract-first). When one task carries most of the technical risk, schedule it first (risk-first) so a wrong bet is discovered at minimum sunk cost.
 
-**Keep it compilable.** Every task ends with the repo building and worker-scope verification green, committed. No committed state may be broken; broader gates still run at the batch/branch scopes defined in the Verification Strategy.
+**Keep it compilable.** Every task ends with the repo building and worker-scope verification green, then either committed by the worker (`serial-worker-commit`) or handed to the lead for staging and commit after inline review (`parallel-lead-commit`). No accepted task state may be broken; broader gates still run at the batch/branch scopes defined in the Verification Strategy.
 
 **Rollback-friendly ordering.** Order tasks so a partially executed plan leaves the branch shippable or cleanly revertible: no half-wired user-facing behavior between tasks, and the slice that completes a user-visible behavior is the one that exposes it.
 
@@ -88,7 +88,7 @@ You cannot write accurate file paths, line ranges, or implementation steps witho
 - "Run it to make sure it fails" - step
 - "Implement the minimal code to make the test pass" - step
 - "Run the tests and make sure they pass" - step
-- "Commit" - step
+- "Apply commit mode" - step
 
 Light plans use task-level granularity instead: each task is a coherent unit of work (add a function, modify an API, write tests for a component). Steps within a task are left to the implementer's judgment.
 
@@ -210,6 +210,43 @@ Harness-specific model selection:
 - **Cursor:** model selection is IDE-level; use `inherit` and note the limitation.
 - **OpenCode / Copilot CLI:** use the harness model parameter if available, otherwise `inherit`.
 
+## Parallel Execution Contract
+
+Every plan MUST include `## Parallel Execution Contract` between `## Model Routing`
+and the task list. This is the lead's dispatch contract: it says which tasks form
+safe parallel batches, which ones must serialize, and why.
+
+Use this exact structure:
+
+```markdown
+## Parallel Execution Contract
+
+| Task | Parallel batch | File ownership | Serialization required | Dependency reason |
+|---|---|---|---|---|
+| Task 1: [name] | [Batch A / Batch B / None - serial] | [Exact create/modify/test ownership for this task] | [No / Yes / Not applicable - single task.] | [Why serialization is required, or `None - safe parallel batch.` / `Not applicable - single task.`] |
+```
+
+Rules:
+- `Parallel batch` names the safe batch this task belongs to. Use a shared label
+  such as `Batch A` only when the tasks can dispatch together without file or
+  ordering conflicts.
+- `File ownership` is exact. Do not rely on "same area" or "related files" as a
+  proxy.
+- `Serialization required` is `No` for safe parallel tasks, `Yes` only for a real
+  dependency or tool limitation, and `Not applicable - single task.` only when the
+  whole plan has one task.
+- `Dependency reason` is mandatory. If serialization is `Yes`, record the blocking
+  dependency or tool limitation. If serialization is `No`, write
+  `None - safe parallel batch.`. If the plan has one task, write
+  `Not applicable - single task.`.
+
+Completion follows commit mode:
+- `serial-worker-commit`: after assigned verification passes, the worker may make
+  the owned-file commit and record the commit SHA.
+- `parallel-lead-commit`: after assigned verification passes, the worker does not
+  commit. The worker hands the verified diff to the lead for staging and commit
+  after inline review.
+
 ## Task Structure
 
 ````markdown
@@ -223,6 +260,14 @@ Harness-specific model selection:
 **Interfaces:**
 - Consumes: [what this task uses from earlier tasks — exact symbols, signatures, data shape, or user-facing contract]
 - Produces: [what later tasks rely on — exact function names, parameter and return types, file formats, CLI flags, routes, or events. A task's implementer sees only their own task; this block is how they learn neighboring contracts.]
+
+**Contract inputs:** [Exact shared constraints, prior-task outputs, fixtures, tool contracts, or public strings this task may rely on]
+
+**File ownership:** [Copy the ownership entry from `## Parallel Execution Contract` verbatim]
+
+**Serialization required:** [No / Yes / Not applicable - single task.]
+
+**Dependency reason:** [Required reason from `## Parallel Execution Contract`]
 
 **Step 1: Write the failing test**
 
@@ -249,19 +294,42 @@ def function(input):
 Run: `<project-defined worker red/green command for this behavior>`
 Expected: PASS
 
-**Step 5: Commit**
+**Step 5: Apply commit mode**
 
-```bash
-git add tests/path/test.py src/path/file.py
-git commit -m "feat: add specific feature"
-```
+- `serial-worker-commit`: after assigned verification passes, create the owned-file
+  worker commit and record the resulting SHA.
+- `parallel-lead-commit`: do not commit from the worker lane. Hand the verified
+  change to the lead for staging and commit after inline review.
 
 **Acceptance criteria:**
 - [ ] [Specific, testable requirement for this task]
-- [ ] Tests pass and changes committed
+- [ ] Tests pass and the change is either committed by the worker or handed to the lead per commit mode
 ````
 
 The execution skills tick these `[ ]` → `[x]` as each task completes, so every task carries a tickable progress marker regardless of plan type.
+
+## Compact Single-Task Full-Plan Form
+
+When a full plan has exactly one task, keep the full TDD steps, but collapse the
+parallel contract to a single row and copy the same fields into the task body.
+
+````markdown
+## Parallel Execution Contract
+
+| Task | Parallel batch | File ownership | Serialization required | Dependency reason |
+|---|---|---|---|---|
+| Task 1: [name] | None - serial | [Exact ownership] | Not applicable - single task. | Not applicable - single task. |
+
+### Task 1: [Slice or component name]
+
+**Contract inputs:** [Exact shared constraints and upstream facts this task may rely on]
+
+**File ownership:** [Exact ownership]
+
+**Serialization required:** Not applicable - single task.
+
+**Dependency reason:** Not applicable - single task.
+````
 
 ## Light Plan Task Structure
 
@@ -277,6 +345,14 @@ The execution skills tick these `[ ]` → `[x]` as each task completes, so every
 - Consumes: [exact contract this task depends on]
 - Produces: [exact contract future tasks depend on. A task's implementer sees only their own task, so include names and shapes here.]
 
+**Contract inputs:** [Exact shared constraints, prior-task outputs, fixtures, tool contracts, or public strings this task may rely on]
+
+**File ownership:** [Copy the ownership entry from `## Parallel Execution Contract` verbatim]
+
+**Serialization required:** [No / Yes / Not applicable - single task.]
+
+**Dependency reason:** [Required reason from `## Parallel Execution Contract`]
+
 **What to build:** [2-3 sentences describing the feature/change and why]
 
 **Approach:** [Key decisions — which pattern to follow, what to call things, edge cases to handle]
@@ -284,7 +360,7 @@ The execution skills tick these `[ ]` → `[x]` as each task completes, so every
 **Acceptance criteria:**
 - [ ] [Specific, testable requirement]
 - [ ] [Another requirement]
-- [ ] Worker-scope verification passes, committed
+- [ ] Worker-scope verification passes and the change is either committed by the worker or handed to the lead per commit mode
 ````
 
 ## Remember
@@ -292,7 +368,7 @@ The execution skills tick these `[ ]` → `[x]` as each task completes, so every
 **Always (both plan types):**
 - Exact file paths
 - Reference relevant skills with @ syntax
-- DRY, YAGNI, TDD, frequent commits
+- DRY, YAGNI, TDD, frequent review-approved branch updates through the active commit mode
 - Tickable `- [ ]` acceptance criteria per task — execution flips these to `[x]` as a durable, in-document progress record
 
 **Full plans only:**
