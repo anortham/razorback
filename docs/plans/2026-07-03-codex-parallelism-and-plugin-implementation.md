@@ -114,7 +114,7 @@ Tasks in Batch A may rely on these approved contracts:
 
 ## Verification Strategy
 
-**Project source of truth:** `RAZORBACK.md`, `CLAUDE.md`, `README.md`, `.version-bump.json`, and the approved design spec.
+**Project source of truth:** `CLAUDE.md`, `README.md`, `.version-bump.json`, and the approved design spec.
 
 **Worker red/green scope:**
 - Task 1: `node --test tests/codex-parallelism-contract.test.mjs`
@@ -158,36 +158,6 @@ git diff --check
 **Assigned verification failure:** Workers stop and report when assigned verification fails unless their task explicitly says the failing test is expected during TDD. The lead owns affected-change and branch-gate acceptance.
 
 **Verification ledger:** Record invariant, command, scope label, commit SHA, result, and timestamp for every worker and lead gate.
-
-## Model Routing
-
-**Project source of truth:** `RAZORBACK.md`.
-
-**Strategy tier:** planning, architecture, decomposition, lead review, finding triage.
-- Codex mapping: `gpt-5.5` medium/high when available, otherwise inherit and report limitation.
-
-**Implementation tier:** bounded worker tasks from a clear plan.
-- Codex mapping: `gpt-5.4` xhigh when available.
-
-**Mechanical tier:** docs, fixtures, rote edits, formatting, manifests with no gate ownership.
-- Codex mapping: `gpt-5.4` low/medium when available.
-
-**Coupled implementation tier:** bounded cross-file work with shallow coupling and disjoint file ownership.
-- Codex mapping: `gpt-5.4` high when coupling is shallow and each file verifies independently; `gpt-5.4` xhigh when files must change together, shared invariants are present, or tool-heavy debugging appears.
-
-**Gate-interpretation reviewer:** reading the plan, failing test or replay, and diff to decide whether the test or implementation is wrong.
-- Codex mapping: `gpt-5.4` high.
-
-**Escalation tier:** security, subtle correctness, high blast radius, weak tests, repeated failures, gate interpretation.
-- Codex mapping: `gpt-5.4` high for first escalation; `gpt-5.5` high/xhigh for top-risk contract or planning failure.
-
-**Worker eligibility:** Batch A workers have explicit file ownership and tests. Public plugin schema interpretation remains lead-owned through Gate 0 and final review.
-
-**Escalation triggers:** Use the triggers in `RAZORBACK.md` plus this plan's Verification Strategy.
-
-**Mechanical exclusion:** Mechanical workers cannot own failing tests, public plugin schema interpretation, or acceptance gates. Task 4 may use mechanical tier because it records decided docs and does not interpret schema.
-
-**Unsupported harness behavior:** If the harness cannot choose models per agent, use `inherit`, note it in the worker report, and continue.
 
 ## Implementation Tasks
 
@@ -250,7 +220,7 @@ rg -n "manifest|marketplace|hooks|asset|metadata|https?://" docs/plans/2026-07-0
 **What to build:** Make plan-level parallelism mandatory and actionable. Update writing-plans to require the contract fields; update SDD to validate safe batches and dispatch them together; update implementer/fix prompts so parallel-batch workers do not commit directly; update Codex mapping to require multiple `spawn_agent` calls in the same turn for safe batches.
 
 **Approach:**
-- In `skills/writing-plans/SKILL.md`, add `Parallel Execution Contract` to the plan header/required sections and task structure. Preserve global constraints, architecture quality, verification, model routing, and light-plan behavior.
+- In `skills/writing-plans/SKILL.md`, add `Parallel Execution Contract` to the plan header/required sections and task structure. Preserve global constraints, architecture quality, verification, and light-plan behavior.
 - In `skills/subagent-driven-development/SKILL.md`, replace advisory parallel guidance with a validation-and-dispatch rule: a safe batch with 2+ tasks dispatches together when subagents are available.
 - Define commit mode:
   - Serial task: worker may commit after assigned verification passes, preserving current behavior.

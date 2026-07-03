@@ -63,7 +63,6 @@ Each agent gets:
 - **Specific scope:** One test file or subsystem
 - **Clear goal:** Make these tests pass
 - **Constraints:** Don't change other code
-- **Model tier:** use the project model-routing policy when the harness supports per-agent model selection
 - **Gate invariant:** what each assigned failing test, replay, metric, or acceptance gate proves
 - **Expected output:** Summary of what you found and fixed
 - **Tool guidance (include in every agent prompt — use Miller):**
@@ -92,11 +91,10 @@ When agents return:
 - Run the project-defined integration or branch verification scope
 - Integrate all changes
 
-Use lower-cost implementation/mechanical tiers only for boxed-in lanes.
-Mechanical workers cannot own failing tests, replay evidence, metrics, or
-acceptance gates. If a lane has hidden invariants, shared lifecycle behavior,
-weak tests, gate interpretation, or repeated failures, move it to the
-strategy/escalation tier or keep it in the lead session.
+Model choice is left to the lead agent and the harness default unless the user or
+environment explicitly requests an override. If a lane has hidden invariants,
+shared lifecycle behavior, weak tests, gate interpretation, or repeated
+failures, keep it in the lead session or give the worker tighter instructions.
 
 ## Agent Prompt Structure
 

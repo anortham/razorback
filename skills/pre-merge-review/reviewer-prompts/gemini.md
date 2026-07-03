@@ -130,19 +130,19 @@ FINAL_PROMPT="${ADVERSARIAL_TEMPLATE//\{\{TARGET_LABEL\}\}/$TARGET_LABEL}"
 FINAL_PROMPT="${FINAL_PROMPT//\{\{USER_FOCUS\}\}/${USER_FOCUS:-none specified}}"
 FINAL_PROMPT="${FINAL_PROMPT//\{\{REVIEW_INPUT\}\}/$REVIEW_INPUT}"
 
-GEMINI_MODEL="${RAZORBACK_GEMINI_REVIEW_MODEL:-gemini-3-pro}"
+GEMINI_MODEL="${RAZORBACK_GEMINI_REVIEW_MODEL:-}"
 
 cd "$PROJECT_DIR" && gemini -p "$FINAL_PROMPT
 
 Return your response as a JSON object matching this schema:
-$SCHEMA_JSON" -o json -m "$GEMINI_MODEL" --yolo 2>/dev/null
+$SCHEMA_JSON" -o json ${GEMINI_MODEL:+-m "$GEMINI_MODEL"} --yolo 2>/dev/null
 ```
 
 Flag rationale:
 
 - `-p` — explicit non-interactive (headless) mode. Gemini's positional `[query..]` runs interactive by default and relies on TTY auto-detection to switch to headless; that detection is unreliable from harness tools and on Windows. `-p` removes the ambiguity.
 - `-o json` — wraps the model response in the envelope described above. Without this, the model output lands as raw text on stdout with no metadata. We want the envelope so we can extract `stats.models.*.tokens` for cost tracking.
-- `-m "$GEMINI_MODEL"` - strategy or escalation tier from the plan's Model Routing section. Do not use mechanical-tier models for adversarial review.
+- `-m "$GEMINI_MODEL"` - explicit model override when `GEMINI_MODEL` is set.
 - `--yolo` — **required** so gemini auto-approves its own `Read` tool calls. Without it, gemini stalls waiting for interactive approval. We still instruct gemini by prompt to be read-only (no file writes). `--yolo` widens gemini's auto-approval for tools, not its file-write authorization; the read-only behavior is enforced by prompt.
 - No `--json-schema` / `--output-schema` — the flag does not exist. The schema is inlined into the prompt.
 - `2>/dev/null` — drops gemini's auth messages and debug info from stderr.

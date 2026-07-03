@@ -35,7 +35,8 @@ Symptoms: a user reports a small defect (double-submit, missing disabled state, 
 
 ## Step 2: Triage (measure, don't vibe)
 
-The quick-fix tier applies only when ALL criteria hold. Projects may tune the numeric thresholds in repo-root `RAZORBACK.md`; the criteria themselves are not optional.
+The quick-fix tier applies only when ALL criteria hold. Project instructions may
+tune the numeric thresholds; the criteria themselves are not optional.
 
 | Criterion | Threshold |
 |-----------|-----------|
@@ -60,7 +61,8 @@ The quick-fix tier applies only when ALL criteria hold. Projects may tune the nu
 ## Step 4: Verify the affected scope only
 
 - Run the targeted test(s) and reconfirm the original symptom is gone. razorback:verification-before-completion applies in full — evidence, not "should work."
-- The full suite is NOT part of this tier. It belongs to the project's branch gate (CI or pre-merge), not to the inner loop.
+- The full suite is NOT part of this tier. The full suite runs at the branch gate
+  (CI or pre-merge), not in the inner loop.
 - Finish per project convention: commit with a clear message; open a PR where the project is branch-gated.
 
 ## Escalation Triggers
@@ -107,4 +109,5 @@ Downscaling abuse and ceremony reflex are both violations.
 
 **Never calls:** razorback:using-git-worktrees.
 
-**Policy source:** repo-root `RAZORBACK.md` Change Tiers section, when present, overrides the numeric thresholds and names the affected-scope verification commands.
+Use the active project instructions for any threshold tuning or affected-scope
+verification commands.

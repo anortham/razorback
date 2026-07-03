@@ -164,56 +164,10 @@ If the repo has no documented hierarchy, define one in the plan using neutral sc
 
 Do not bake language, framework, or test-runner commands into razorback skills. Put concrete commands in the plan from the target repo's docs.
 
-## Model Routing
-
-Every plan that will dispatch workers MUST include a language-agnostic model-routing section. Razorback owns the role/risk policy; the target repo maps tiers to harness-specific model names.
-
-Read repo-root `RAZORBACK.md` first. If it exists, copy the relevant routing policy into the plan. If it is absent, use explicit harness docs if present. If no policy exists and the run needs delegation, ask once for routing.
-
-```markdown
-## Model Routing
-
-**Project source of truth:** [RAZORBACK.md / harness docs / user choice]
-
-**Strategy tier:** [planning, architecture, decomposition, lead review, finding triage]
-- Harness mapping: [model/reasoning setting or inherit]
-
-**Implementation tier:** [bounded worker tasks from a clear plan]
-- Harness mapping: [model/reasoning setting or inherit]
-
-**Mechanical tier:** [docs, fixtures, rote edits, formatting, manifests with no test, replay, metric, or acceptance-gate ownership]
-- Harness mapping: [model/reasoning setting or inherit]
-
-**Gate-interpretation reviewer:** [reviewer tier for reading the plan, failing test or replay, and diff to decide whether the test or implementation is wrong]
-- Harness mapping: [model/reasoning setting or inherit]
-
-**Escalation tier:** [security, subtle correctness, high blast radius, weak tests, repeated failures, gate interpretation]
-- Harness mapping: [model/reasoning setting or inherit]
-
-**Worker eligibility:** [conditions that allow implementation-tier workers]
-
-**Escalation triggers:** [conditions that require strategy/escalation tier]
-
-**Mechanical exclusion:** Mechanical workers cannot own failing tests, replay evidence, metrics, or acceptance gates. Split docs-only updates from evidence interpretation.
-
-**Unsupported harness behavior:** If the harness cannot choose models per agent, use `inherit`, note it in the plan, and continue.
-```
-
-Do not hard-code provider-specific model names in razorback skills. Put those names in `RAZORBACK.md` or the plan's copied routing block.
-
-Harness-specific model selection:
-- **Claude Code:** Agent tool `model` parameter accepts short names only: `opus`, `sonnet`, `haiku`. Translate full model IDs (e.g., `claude-opus-4-7`) to the short form when dispatching.
-- **Codex:** `spawn_agent(model=..., reasoning_effort=...)` for delegated workers
-  when the session supports per-agent selection; `-m <model>` on `codex exec`
-  for CLI reviewer runs; otherwise inherit the global default from
-  `~/.codex/config.toml` and note the limitation.
-- **Cursor:** model selection is IDE-level; use `inherit` and note the limitation.
-- **OpenCode / Copilot CLI:** use the harness model parameter if available, otherwise `inherit`.
-
 ## Parallel Execution Contract
 
-Every plan MUST include `## Parallel Execution Contract` between `## Model Routing`
-and the task list. This is the lead's dispatch contract: it says which tasks form
+Every plan MUST include `## Parallel Execution Contract` between
+`## Verification Strategy` and the task list. This is the lead's dispatch contract: it says which tasks form
 safe parallel batches, which ones must serialize, and why.
 
 Use this exact structure:
@@ -387,7 +341,7 @@ If the user requests changes, revise the plan, re-run the self-review, re-save, 
 
 **Step 3, capture the reviewer choice without prompting.** The default reviewer choice is `none`. If the approval message already named a choice (e.g. "approved, run it, pre-merge codex review", "approved, no external review") or the saved spec explicitly requested a reviewer, set `reviewer_choice` to `codex`, `gemini`, or `claude` as requested. Do not ask a separate reviewer-choice question after approval.
 
-**Step 4, invoke the execution skill immediately.** After approval, announce which execution skill will run and invoke it, passing the plan path, the reviewer choice (`none` / `codex` / `gemini` / `claude`), verification strategy, and model routing:
+**Step 4, invoke the execution skill immediately.** After approval, announce which execution skill will run and invoke it, passing the plan path, the reviewer choice (`none` / `codex` / `gemini` / `claude`), and verification strategy:
 
 - **When subagent delegation is available:** `razorback:subagent-driven-development`
 - **For single-task, tightly-sequential, or no-delegation plans:** `razorback:executing-plans`

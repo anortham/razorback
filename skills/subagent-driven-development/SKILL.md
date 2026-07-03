@@ -14,9 +14,11 @@ Execute a plan by dispatching fresh subagents per task, with the lead doing inli
 - **opencode:** `Task` tool (one call per subagent; multiple calls in one turn run in parallel). The built-in `general` subagent is suitable for most implementer work; `@mention` also works for manual invocation.
 - **Codex:** `spawn_agent(agent_type="worker", message=<filled prompt>)` (one call per subagent; multiple calls in one turn run in parallel). Keep the returned agent ID, `send_input(target=<agent-id>, message=...)` feeds follow-ups (the closest thing to Claude Code's resume), `wait_agent(targets=[<agent-id>])` blocks until the agent finishes, and `close_agent(target=<agent-id>)` frees the slot. Requires `multi_agent = true` in `~/.codex/config.toml` (see `skills/using-razorback/references/codex-tools.md`).
 - **Gemini CLI:** `invoke_agent(agent_name="generalist", prompt=<filled prompt>)` (parallel by default; set `wait_for_previous: true` only when you need a call serialized behind earlier ones). Resume is not available — route fix rounds via a fresh `invoke_agent` call with the fix prompt and prior-task context. Subagents cannot recursively dispatch other subagents, so all worker dispatch happens from the lead session.
-- **Explicit Cursor/Composer delegation from another harness:** use `razorback:cursor-agent`, which owns the Cursor CLI invocation and its model default. The current lead still owns planning, review, fix routing, and final verification; Cursor Agent is only the implementation worker.
+- **Explicit Cursor/Composer delegation from another harness:** use `razorback:cursor-agent`, which owns the Cursor CLI invocation. The current lead still owns planning, review, fix routing, and final verification; Cursor Agent is only the implementation worker.
 
-If the harness supports per-agent model or reasoning selection, apply the plan's Model Routing tier when dispatching. If it does not, use `inherit` and note that in the task report.
+Use the harness default model unless the user, environment, or lead explicitly
+selects another model for this run. Razorback does not require a model table
+before dispatch.
 
 ## When to Use
 
@@ -124,48 +126,12 @@ Use the template at `./implementer-prompt.md`. The spawn prompt MUST include:
 5. **Miller directives** (orient, inspect before modifying any symbol, find references before changing public APIs, list a file's symbols before reading full files)
 6. **TDD expectations** (from `razorback:test-driven-development`)
 7. **Verification scope** specific to this task, using commands from the plan's verification strategy
-8. **Model routing tier** assigned to this task (`implementation`, `mechanical`, `strategy`, `gate-review`, or `escalation`)
-9. **Commit mode** (`serial-worker-commit` or `parallel-lead-commit`)
-10. **Miller evidence requirement** (the implementer must report which Miller calls they used and what those calls confirmed)
-11. **API-shape evidence requirement** (the implementer must name the Miller evidence used for every symbol name, function signature, config shape, route name, CLI flag, or public contract they rely on)
-12. **Gate invariant requirement** (the implementer must state what each assigned test, replay, metric, or acceptance gate proves)
-13. **architecture-quality context** (the approved architecture, any `No Architecture Impact` note, and the plan mismatch rule)
-14. **Report file path** under `.razorback/sdd`, so the worker writes the full report to a file and returns only status, commits, test summary, and concerns
-
-### Model Routing Contract
-
-Read the plan's Model Routing section before dispatching any worker. Model names are harness-specific mappings; the workflow uses role/risk tiers.
-
-Harness-specific dispatch:
-- **Claude Code:** Agent tool `model` parameter accepts `opus`, `sonnet`, `haiku`. Translate full model IDs to the short form.
-- **Codex:** `spawn_agent(agent_type="worker", message=..., model=<mapped model>, reasoning_effort=<mapped effort>)` when the session supports per-agent model selection. For CLI helper invocations (`codex exec`), use `-m <model>`. If neither is available, inherit the global default.
-- **Cursor:** model selection is IDE-level; use `inherit` and note the limitation.
-- **OpenCode / Copilot CLI:** use the harness model parameter if available, otherwise `inherit`.
-
-| Tier | Owner | Use when |
-|------|-------|----------|
-| `strategy` | Lead | Planning, architecture, decomposition, inline review, finding triage |
-| `implementation` | Worker | Bounded tasks from a clear plan with narrow ownership and tests |
-| `mechanical` | Worker | Docs, fixtures, rote edits, formatting, manifests with no gate ownership |
-| `gate-review` | Lead or reviewer | Plan plus failing test, replay, metric, or diff triage to decide whether the gate or implementation is wrong |
-| `escalation` | Lead or worker | Security, subtle correctness, high blast radius, weak tests, gate interpretation, repeated failures |
-
-Mechanical-tier workers must not own failing tests, replay evidence, metrics, or
-acceptance gates. A docs or fixture task stays mechanical only when it records
-already-decided evidence. If the task must decide what the evidence means, use
-gate-review, strategy, or escalation tier.
-
-Implementation-tier workers are allowed only when all are true:
-- The task has clear acceptance criteria.
-- File ownership is narrow and non-overlapping.
-- The expected change is local.
-- The relevant behavior has a narrow verification scope.
-- The task does not depend on hidden shared invariants.
-- The task does not require interpreting replay, metric, or acceptance-gate semantics.
-
-Do not use implementation-tier workers unattended for shared lifecycle behavior, concurrency, public API contracts with many callers, weak tests, replay or metric interpretation, or findings involving subtle correctness. Use strategy/escalation tier, or split strategy-tier investigation from implementation-tier edits.
-
-Escalate after two failed worker attempts, one failure involving hidden invariants, assigned verification failure not covered by the plan, or any plan-contradicting code discovery.
+8. **Commit mode** (`serial-worker-commit` or `parallel-lead-commit`)
+9. **Miller evidence requirement** (the implementer must report which Miller calls they used and what those calls confirmed)
+10. **API-shape evidence requirement** (the implementer must name the Miller evidence used for every symbol name, function signature, config shape, route name, CLI flag, or public contract they rely on)
+11. **Gate invariant requirement** (the implementer must state what each assigned test, replay, metric, or acceptance gate proves)
+12. **architecture-quality context** (the approved architecture, any `No Architecture Impact` note, and the plan mismatch rule)
+13. **Report file path** under `.razorback/sdd`, so the worker writes the full report to a file and returns only status, commits, test summary, and concerns
 
 ### Verification Scope Contract
 
@@ -281,6 +247,7 @@ When the implementer reports completion, the lead does a single inline review co
 
 **architecture-quality review:**
 - Did the worker preserve the approved architecture shape, or did it report a plan mismatch when code reality disagreed?
+- reject worker-local redesigns that do not come from the approved plan.
 - Does this keep complexity local?
 - Is the caller-facing interface smaller than the behavior it unlocks?
 - Are tests written through the same interface callers use?
@@ -357,7 +324,6 @@ If the reviewer choice propagated from `writing-plans` (via the execution handof
 - reviewer choice
 - verification strategy
 - verification ledger
-- model routing
 
 If the choice is `none` (or absent), skip Step 4a.
 

@@ -75,11 +75,11 @@ test('verification-before-completion requires evidence for architecture and revi
   assert.match(skill, /review finding fixed/i);
 });
 
-test('RAZORBACK policy gives the lead architecture-quality enforcement duties', () => {
-  const policy = read('RAZORBACK.md');
+test('subagent-driven-development gives the lead architecture-quality enforcement duties', () => {
+  const skill = read('skills/subagent-driven-development/SKILL.md');
 
-  assert.match(policy, /enforce architecture-quality decisions/);
-  assert.match(policy, /reject worker-local redesigns/);
+  assert.match(skill, /approved architecture/);
+  assert.match(skill, /reject worker-local redesigns/);
 });
 
 test('README skill table includes architecture-quality', () => {

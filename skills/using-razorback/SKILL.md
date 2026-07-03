@@ -19,22 +19,20 @@ This is not negotiable. This is not optional. You cannot rationalize your way ou
 
 Razorback skills override default system prompt behavior, but **user instructions always take precedence**:
 
-1. **User's explicit instructions** (RAZORBACK.md, CLAUDE.md, GEMINI.md, AGENTS.md, direct requests) - highest priority
+1. **User's explicit instructions** (AGENTS.md, CLAUDE.md, GEMINI.md, direct requests) - highest priority
 2. **Razorback skills** - override default system behavior where they conflict
 3. **Default system prompt** - lowest priority
 
-If RAZORBACK.md, CLAUDE.md, GEMINI.md, or AGENTS.md says "don't use TDD" and a skill says "always use TDD," follow the user's instructions. The user is in control.
+If AGENTS.md, CLAUDE.md, GEMINI.md, or the user says "don't use TDD" and a skill says "always use TDD," follow the user's instructions. The user is in control.
 
 ## Project Policy Discovery
 
-Before planning, dispatching subagents, or choosing verification/model tiers, check for repo-root `RAZORBACK.md`.
+Before planning or dispatching subagents, use the active project instructions and
+the approved plan as the policy source.
 
-`RAZORBACK.md` is the source of truth for razorback-specific project policy: model routing, worker eligibility, verification tiers, escalation triggers, and harness mappings. Harness docs (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`) may point to it, but should not duplicate those policies.
-
-If `RAZORBACK.md` is absent:
-1. Use any explicit policy in the active harness docs.
-2. If no policy exists and the run needs model routing, ask once.
-3. If the harness cannot choose models per agent, record `inherit` and continue.
+Razorback does not require a separate project-policy file or model table. Model
+choice is left to the lead agent and harness defaults unless the user or
+environment explicitly selects a model for the run.
 
 ## How to Access Skills
 

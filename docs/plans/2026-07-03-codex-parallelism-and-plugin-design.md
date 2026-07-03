@@ -119,8 +119,8 @@ Update `skills/writing-plans/SKILL.md` so full plans:
 - require a `Contract inputs` block that points to the approved parallel
   contract, global constraints, architecture decision, or external fact
 - define serialization as the exception, not the default
-- preserve existing `Global Constraints`, `Architecture Quality`,
-  `Verification Strategy`, and `Model Routing` sections
+- preserve existing `Global Constraints`, `Architecture Quality`, and
+  `Verification Strategy` sections
 
 Light plans may include a smaller parallel contract when they dispatch multiple
 workers, but single coherent light plans do not need the full section.
@@ -135,7 +135,7 @@ parallel execution:
    - no overlapping write scopes
    - every task has satisfied `Contract inputs`
    - every task has `Serialization required: No`
-   - model routing and verification scope are assigned
+   - verification scope is assigned
 3. If a validated batch contains two or more tasks and the harness supports
    subagents, dispatch every task in that batch before waiting for results.
 4. If the lead serializes a validated batch, record the reason before

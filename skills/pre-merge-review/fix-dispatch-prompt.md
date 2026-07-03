@@ -32,15 +32,6 @@ Fresh implementer dispatch (delegation available):
     src/review/parse.ts wires gemini's envelope-unwrap parser into the findings
     normalization step."]
 
-    ## Model Routing
-
-    Assigned tier: [implementation / mechanical / strategy / gate-review / escalation]
-    Harness mapping: [model/reasoning setting or inherit]
-
-    If the finding exposes hidden invariants, weak tests, public API risk, or
-    repeated failure, use the strategy/escalation tier. If the harness cannot
-    choose model or reasoning per worker, use inherit and report that limitation.
-
     ## Scope boundary (critical)
 
     Fix ONLY this finding. Do not refactor. Do not expand scope. Do not "improve

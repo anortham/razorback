@@ -57,11 +57,10 @@ draws from a separate Agent SDK credit pool, not the general subscription.
 
 ## Defaults
 
-- **Model**: use repo-root `RAZORBACK.md` model routing when present. If absent,
-  inherit the current Claude default or use the strongest available reviewer
-  model for adversarial review.
-- **Reasoning effort**: `--effort <level>` accepts `low | medium | high | xhigh | max`. Map razorback's tiers to it (mechanical→low, implementation→medium, strategy→high, escalation→xhigh, escalation-deep→max). If `RAZORBACK.md` doesn't specify, omit the flag and let the model default.
-- **Fallback model**: `--fallback-model <model>` auto-falls-back when the primary is overloaded (works only with `--print`). Fits razorback's autonomous-by-default flow — a review shouldn't hard-fail on capacity. Use the project policy's lower-cost reviewer tier as the fallback.
+- **Model**: inherit the current Claude default unless the user or environment
+  explicitly selects a model.
+- **Reasoning effort**: `--effort <level>` accepts `low | medium | high | xhigh | max`. Omit it unless the user or environment explicitly selects one.
+- **Fallback model**: `--fallback-model <model>` auto-falls back when the primary is overloaded (works only with `--print`). Fits razorback's autonomous-by-default flow; use it only when an explicit fallback is configured.
 - **Ephemeral**: `--no-session-persistence` so the review leaves no stored
   session behind (parity with codex's `--ephemeral`).
 - **No `--bare`**: bare mode reads auth strictly from `ANTHROPIC_API_KEY` or `apiKeyHelper` (not OAuth or keychain). The common razorback caller has OAuth, so this skill avoids `--bare` to keep normal logins working. If you have a guaranteed `ANTHROPIC_API_KEY` env in CI, `--bare` is fine.
@@ -81,7 +80,7 @@ draws from a separate Agent SDK credit pool, not the general subscription.
   effectively a no-op — set it but don't rely on it for budget control on
   subscription plans.
 - **Timeout**: 600000ms (10 min) for simple queries, 1200000ms (20 min) for
-  deep reviews, 1800000ms (30 min) for escalation-tier models on large diffs.
+  deep reviews, 1800000ms (30 min) for large diffs.
   Err generous — a single timeout wastes more time (and tokens) than a longer
   wait, especially when this Claude is itself delegating to another model.
   Don't default below 10 min.
@@ -92,14 +91,17 @@ draws from a separate Agent SDK credit pool, not the general subscription.
   older command that includes `--bare`, remove that flag first (unless you
   have a guaranteed `ANTHROPIC_API_KEY`).
 
-For command snippets below, set `CLAUDE_MODEL` and (optionally) `CLAUDE_EFFORT` before invoking:
+For command snippets below, optionally set `CLAUDE_MODEL` and `CLAUDE_EFFORT` before invoking:
 
 ```bash
-CLAUDE_MODEL="${RAZORBACK_CLAUDE_REVIEW_MODEL:-opus}"
-CLAUDE_EFFORT="${RAZORBACK_CLAUDE_REVIEW_EFFORT:-high}"  # low | medium | high | xhigh | max
+CLAUDE_MODEL="${RAZORBACK_CLAUDE_REVIEW_MODEL:-}"
+CLAUDE_EFFORT="${RAZORBACK_CLAUDE_REVIEW_EFFORT:-}"  # low | medium | high | xhigh | max
 ```
 
-Source the values from the plan's Model Routing section, `RAZORBACK.md`, or the env vars above. If no route exists, `opus` + `high` is a reasonable adversarial-review default. Claude Code's Agent tool uses short names (`opus`, `sonnet`, `haiku`); the CLI's `--model` flag accepts both short and full model IDs. Add `--effort "$CLAUDE_EFFORT"` to any review command when the project policy specifies a tier; omit it to inherit the model default.
+Use the environment variables above only as explicit overrides. Otherwise let
+Claude choose its configured default. Claude Code's Agent tool uses short names
+(`opus`, `sonnet`, `haiku`); the CLI's `--model` flag accepts both short and
+full model IDs. Add `--effort "$CLAUDE_EFFORT"` only when it is non-empty.
 
 ## Review Targeting
 
@@ -176,7 +178,7 @@ cd /path/to/project && claude -p \
   --no-session-persistence \
   --dangerously-skip-permissions \
   --tools "Read,Bash" \
-  --model "$CLAUDE_MODEL" \
+  ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} \
   ${CLAUDE_EFFORT:+--effort "$CLAUDE_EFFORT"} \
   "Your prompt here" \
   2>/dev/null
@@ -232,7 +234,7 @@ cd /path/to/project && claude -p \
   --tools "Read,Bash" \
   --max-turns 15 \
   --max-budget-usd 5.00 \
-  --model "$CLAUDE_MODEL" \
+  ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} \
   ${CLAUDE_EFFORT:+--effort "$CLAUDE_EFFORT"} \
   ${CLAUDE_FALLBACK_MODEL:+--fallback-model "$CLAUDE_FALLBACK_MODEL"} \
   "$PROMPT" \
@@ -333,7 +335,7 @@ cd /path/to/project && claude -p \
   --tools "Read,Bash" \
   --max-turns 15 \
   --max-budget-usd 5.00 \
-  --model "$CLAUDE_MODEL" \
+  ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} \
   ${CLAUDE_EFFORT:+--effort "$CLAUDE_EFFORT"} \
   ${CLAUDE_FALLBACK_MODEL:+--fallback-model "$CLAUDE_FALLBACK_MODEL"} \
   --system-prompt-file "$PROMPT_FILE" \
@@ -344,7 +346,7 @@ cd /path/to/project && claude -p \
 The baseline flags are: `-p`, `--no-session-persistence`,
 `--dangerously-skip-permissions`, `--output-format json`, `--json-schema`,
 `--tools "Read,Bash"`, `--max-turns 15`, `--max-budget-usd 5.00`,
-`--model "$CLAUDE_MODEL"`, `--system-prompt-file`. Add `--effort "$CLAUDE_EFFORT"` when policy specifies a tier, and `--fallback-model "$CLAUDE_FALLBACK_MODEL"` for autonomous runs that should survive an overload.
+`${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"}`, `--system-prompt-file`. Add `--effort "$CLAUDE_EFFORT"` when the environment sets it, and `--fallback-model "$CLAUDE_FALLBACK_MODEL"` for autonomous runs that should survive an overload.
 
 No `--bare` flag is used. Current Claude help says bare mode skips OAuth and
 keychain auth reads, so it is a trap for the common login path.
@@ -432,7 +434,7 @@ need follow-up capability, drop that flag, then resume with `claude -r`:
 
 ```bash
 # Initial task (persistent session)
-cd /path && claude -p --dangerously-skip-permissions --model "$CLAUDE_MODEL" "prompt" 2>/dev/null
+cd /path && claude -p --dangerously-skip-permissions ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} "prompt" 2>/dev/null
 
 # Resume the last session
 claude -r "follow-up prompt" 2>/dev/null
@@ -453,7 +455,7 @@ override. To review a project other than cwd, `cd` into it first:
 
 ```bash
 cd ~/source/other-project && claude -p --no-session-persistence \
-  --dangerously-skip-permissions --tools "Read,Bash" --model "$CLAUDE_MODEL" \
+  --dangerously-skip-permissions --tools "Read,Bash" ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} \
   "prompt" 2>/dev/null
 ```
 
@@ -521,18 +523,18 @@ think it's wrong, and your evidence.
 
 ## Quick Reference
 
-Use the model and effort tier from repo-root `RAZORBACK.md` when present. If no policy
-exists, inherit the current Claude default or use the strongest available
-reviewer model for adversarial review. This skill avoids `--bare` for OAuth/keychain users; CI with `ANTHROPIC_API_KEY` can use it.
+Inherit the current Claude default unless the user or environment selects a
+model. This skill avoids `--bare` for OAuth/keychain users; CI with
+`ANTHROPIC_API_KEY` can use it.
 
 See `references/command-parity.md` before assuming a command exists in both Claude and Codex.
 
 | Use case | Mode | Command pattern |
 |---|---|---|
-| Second opinion | read-only | `cd dir && claude -p --no-session-persistence --dangerously-skip-permissions --tools "Read,Bash" --model "$CLAUDE_MODEL" "prompt" 2>/dev/null` |
+| Second opinion | read-only | `cd dir && claude -p --no-session-persistence --dangerously-skip-permissions --tools "Read,Bash" ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} "prompt" 2>/dev/null` |
 | Code review | read-only + schema | Add `--output-format json --json-schema "$SCHEMA_JSON" --max-turns 15 --max-budget-usd 5.00` (inline schema as a string; see Code Review section). Scope/sizing per Review Targeting. |
 | Adversarial review | read-only + schema + system prompt | Add `--system-prompt-file "$PROMPT_FILE"` (temp file materialized from the Adversarial Prompt Template) to the code-review pattern. Scope/sizing per Review Targeting. |
 | Resume session | persistent | Drop `--no-session-persistence`, use `claude -r "prompt"` |
-| Apply policy tier | any | Add `--effort "$CLAUDE_EFFORT"` (low/medium/high/xhigh/max) when `RAZORBACK.md` specifies a reasoning tier |
+| Apply explicit effort | any | Add `--effort "$CLAUDE_EFFORT"` (low/medium/high/xhigh/max) when the environment sets it |
 | Survive overload | autonomous | Add `--fallback-model "$CLAUDE_FALLBACK_MODEL"` so the run doesn't hard-fail on capacity |
 | Self-review with razorback skills | any | Add `--plugin-dir <path-to-razorback>` so the reviewer loads the same skill set |

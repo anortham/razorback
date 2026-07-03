@@ -39,6 +39,25 @@ test('writing-plans routes task completion through commit mode instead of direct
   assert.doesNotMatch(skill, /frequent commits/);
 });
 
+test('planning and dispatch do not require Razorback-owned model routing', () => {
+  const writingPlans = read('skills/writing-plans/SKILL.md');
+  const sdd = read('skills/subagent-driven-development/SKILL.md');
+  const implementerPrompt = read('skills/subagent-driven-development/implementer-prompt.md');
+  const codexTools = read('skills/using-razorback/references/codex-tools.md');
+
+  for (const content of [writingPlans, sdd, implementerPrompt, codexTools]) {
+    assert.doesNotMatch(content, /RAZORBACK\.md/);
+    assert.doesNotMatch(content, /Model Routing/);
+    assert.doesNotMatch(content, /model-routing tier/i);
+    assert.doesNotMatch(content, /mechanical tier/i);
+    assert.doesNotMatch(content, /strategy tier/i);
+    assert.doesNotMatch(content, /gate-review/i);
+  }
+
+  assert.match(sdd, /Use the harness default model unless/i);
+  assert.match(codexTools, /Model choice is left to the lead agent/i);
+});
+
 test('subagent-driven-development validates safe batches and commit modes', () => {
   const skill = read('skills/subagent-driven-development/SKILL.md');
 

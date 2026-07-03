@@ -70,14 +70,14 @@ Flag rationale:
 
 - `--ephemeral` — no persistent session left behind.
 - `--color never` — clean non-interactive output suitable for piping into `jq`.
-- `${CODEX_MODEL:+-m "$CODEX_MODEL"}` — applies the plan's model routing when `RAZORBACK_CODEX_REVIEW_MODEL` is set. When unset, the expansion is empty and codex uses its configured default.
+- `${CODEX_MODEL:+-m "$CODEX_MODEL"}` — explicit model override from `RAZORBACK_CODEX_REVIEW_MODEL`. When unset, the expansion is empty and codex uses its configured default.
 - `--output-schema` — forces codex to return JSON conforming to the shared review-output schema. The same schema is inlined in `reviewer-prompts/claude.md` and `reviewer-prompts/gemini.md` so all three reviewers target identical shape.
 - `-` — read the prompt from stdin (which is the piped `$ADVERSARIAL_PROMPT_WITH_DIFF`).
 - `2>/dev/null` — drop codex's session banner and transcript noise; the JSON lands on stdout.
 
-**Model:** use the strategy or escalation tier from the plan's Model Routing section. The `RAZORBACK_CODEX_REVIEW_MODEL` env var controls the model; when unset, codex inherits its global default. If the Codex CLI cannot select the routed model, note the limitation.
+**Model:** `RAZORBACK_CODEX_REVIEW_MODEL` is an optional explicit override. When unset, codex inherits its global default.
 
-**Timeout:** set the Bash tool's `timeout` to at least `600000` (10 min). Escalation-tier reasoning on a large diff can take minutes.
+**Timeout:** set the Bash tool's `timeout` to at least `600000` (10 min). Large diffs can take minutes.
 
 ## Expected output format
 

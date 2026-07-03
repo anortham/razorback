@@ -7,15 +7,14 @@ description: Call OpenAI's Codex CLI for second opinions, code review, adversari
 
 Use the Codex CLI (`codex exec`) to get a second opinion, review code changes,
 run adversarial security/correctness reviews, or delegate tasks to OpenAI
-models through the project's razorback routing policy.
+models.
 
 ## Defaults
 
-- **Model**: use repo-root `RAZORBACK.md` model routing when present. If absent,
-  inherit the current Codex default.
-- **Reasoning**: use the tier mapped by `RAZORBACK.md`. Reserve the escalation
-  tier for subtle correctness, security, weak tests, high blast radius, or
-  repeated failures.
+- **Model**: inherit the current Codex default unless the user or environment
+  explicitly selects a model with `-m`.
+- **Reasoning**: inherit the current Codex default unless the user or environment
+  explicitly selects reasoning effort.
 - **Sandbox mode**: `-s, --sandbox <MODE>` accepts `read-only | workspace-write | danger-full-access`. Use `read-only` for review (the reviewer can investigate but cannot edit). For delegate flows use `--sandbox workspace-write` plus `-a never` (the old `--full-auto` shorthand is deprecated as of codex 0.134; it still runs but emits a warning). Pair with `--dangerously-bypass-approvals-and-sandbox` only when the user explicitly asks and the environment is externally sandboxed.
 - **Windows sandbox**: codex's `read-only` and `workspace-write` sandboxes build a restricted-token child process via `CreateProcessAsUserW`. On locked-down Windows (Enterprise/LTSC, GPO-restricted process creation) that call fails with `CreateProcessAsUserW failed: 5` / `windows sandbox failed: spawn setup`, so codex cannot spawn **any** child process and reads no files — even for read-only review. When you hit this, re-run with `-s danger-full-access` so codex skips its own sandbox; the host harness (Claude Code) still bounds the run, but note `danger-full-access` removes codex's local isolation, so `read-only` is then enforced only by the prompt, not the sandbox. On a host where this failure is known to recur (e.g. an Enterprise/LTSC machine with GPO restrictions), pass the flag from the start to skip a wasted first run. It is environmental: retrying the same sandbox mode on the affected host fails identically, and if you control the host the native Windows sandbox setup (`codex-windows-sandbox-setup.exe`) or running under WSL2 may restore sandboxing. Do NOT work around it by embedding file contents in the prompt, and do not reach for `--dangerously-bypass-approvals-and-sandbox` (it also skips approvals) unless the user asks. See Error Handling.
 - **Always use**: `--ephemeral --color never` for clean non-interactive output
@@ -24,8 +23,7 @@ models through the project's razorback routing policy.
 - **Working directory**: `-C /path/to/project` sets the root. Defaults to cwd.
 - **Output capture**: `-o, --output-last-message <FILE>` writes the agent's final message to a file. Use this for adversarial review when you need the JSON cleanly without stderr/banner contamination — point a temp file at it and read the file afterwards.
 - **Timeout**: 600000ms (10 min) for simple queries, 1200000ms (20 min) for
-  deep reviews or delegation work, 1800000ms (30 min) for escalation-tier
-  reasoning on large diffs. Err generous — a single timeout wastes more time
+  deep reviews or delegation work, 1800000ms (30 min) for large diffs. Err generous — a single timeout wastes more time
   (and tokens) than a longer wait, especially when Codex is itself calling out
   to another model. Don't default below 10 min.
 - **Auth**: Logged in via ChatGPT OAuth. If auth fails, tell the user to run
@@ -119,8 +117,8 @@ perspectives.
 
 ### Code Review
 
-The user wants a review of current changes. Use the strategy tier from
-`RAZORBACK.md`, or inherit the current Codex default if no policy exists.
+The user wants a review of current changes. Inherit the current Codex default
+unless the user or environment explicitly selects a model.
 
 **Native alternative — `codex exec review`:** Codex ships a built-in scoped review subcommand: `codex exec review --uncommitted` (working tree), `codex exec review --base <branch>` (branch vs base), or `codex exec review --commit <sha>`. It auto-detects scope and accepts a custom prompt via `[PROMPT]` or stdin. It does **not** support `--output-schema`, so use the regular `codex exec` path below for adversarial / schema-validated review. Use `codex exec review` when the user wants a quick codex-flavored second opinion and doesn't need cross-reviewer prompt parity.
 
@@ -406,9 +404,8 @@ think it's wrong, and your evidence.
 
 ## Quick Reference
 
-Use the model/reasoning tier from repo-root `RAZORBACK.md` when present. If no
-policy exists, inherit the current Codex default. Only override with `-m` when
-the project policy or user request gives a concrete route.
+Inherit the current Codex default. Only override with `-m` when the user or
+environment gives a concrete model.
 
 See `references/follow-goals.md` for the verified `/goal` surface and setup note.
 

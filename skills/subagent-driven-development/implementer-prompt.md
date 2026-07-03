@@ -106,15 +106,6 @@ Agent tool (general-purpose):
     Work from: [directory]
     Report file: [path under .razorback/sdd]
 
-    ## Model Routing
-
-    Assigned tier: [implementation / mechanical / strategy / gate-review / escalation]
-    Harness mapping: [model/reasoning setting or inherit]
-
-    If the harness cannot choose model or reasoning per worker, use inherit and
-    report that limitation. Do not self-upgrade or downgrade. If the task no
-    longer fits the assigned tier, report BLOCKED with the reason.
-
     ## Verification Scope
 
     Use the plan's Verification Strategy. The target repo supplies concrete

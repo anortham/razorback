@@ -38,44 +38,16 @@ When a skill says to dispatch a subagent with a prompt:
 
 1. Read the prompt file
 2. Fill any template placeholders (task spec, file ownership, Miller directives)
-3. Apply the plan's model-routing tier when the session supports per-agent selection. If no route is available, inherit the parent model/reasoning and note it.
+3. Choose any model override only when the user, environment, or lead explicitly
+   wants one for this run. Otherwise use the harness default.
 4. Spawn a `worker` agent with the filled content as the `message`
 
 ```
 spawn_agent(agent_type="worker", message=<filled prompt>)
 ```
 
-When using Codex Desktop or another Codex harness that exposes model controls, map razorback tiers through the project's `RAZORBACK.md`:
-
-```text
-strategy    -> planning, architecture, lead review
-implementation -> bounded worker tasks from a clear plan
-mechanical  -> docs, fixtures, rote edits with no gate ownership
-gate-review -> plan + failing gate + diff triage
-escalation  -> subtle correctness, security, weak tests, gate interpretation, repeated failures
-```
-
-Do not hard-code model names in generic prompts. Use the mapping from the project policy. If the configured route is unsupported by the current Codex session, use `inherit` and report the limitation.
-
-In Codex, a project `RAZORBACK.md` model-routing block counts as a clear
-task-specific reason to set `spawn_agent(model=..., reasoning_effort=...)` when
-the current session supports per-agent model selection. Do not leave `model`
-unset when a supported route exists. Inherit only when the route itself says
-`inherit`, no route exists, or the harness cannot select the mapped model or
-reasoning effort.
-
-Use mechanical or implementation tiers only for boxed-in lanes. Mechanical
-workers cannot own failing tests, replay evidence, metrics, or acceptance gates.
-Test-audit work can use a lower-cost tier when it is checklist-driven coverage
-enumeration and owns no failing gate. Keep it on strategy, escalation, or the
-project's gate-review route when it requires judgment about weak tests, hidden
-invariants, scoring semantics, shared workspace behavior, replay evidence,
-metric semantics, or correctness risk.
-
-For Codex gate-review lanes, prefer the project route for a reviewer that reads
-the plan, failing test or replay, and diff, then decides whether the test or
-implementation is wrong. In repos following the current Razorback policy, that
-route is `gpt-5.4` at high reasoning.
+Model choice is left to the lead agent. Razorback does not require a model table
+or a per-task model override before spawning workers.
 
 ### Parallel safe batches
 

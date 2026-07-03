@@ -18,7 +18,7 @@ test('fixing-small-issues defines objective entry criteria, not judgment calls',
   assert.match(skill, /single `git revert`/);
   assert.match(skill, /Confirmed with Miller evidence/);
   assert.match(skill, /An unknown is a failure, not a pass/);
-  assert.match(skill, /RAZORBACK\.md/);
+  assert.doesNotMatch(skill, /RAZORBACK\.md/);
 });
 
 test('fixing-small-issues enforces investigation before infrastructure', () => {
@@ -92,12 +92,11 @@ test('systematic-debugging hands qualifying fixes to the quick-fix tier', () => 
   assert.match(skill, /razorback:fixing-small-issues/);
 });
 
-test('RAZORBACK.md declares change tiers with scoped verification', () => {
-  const policy = read('RAZORBACK.md');
+test('fixing-small-issues carries its own scoped verification policy', () => {
+  const skill = read('skills/fixing-small-issues/SKILL.md');
 
-  assert.match(policy, /## Change Tiers/);
-  assert.match(policy, /Investigate before\ninfrastructure/);
-  assert.match(policy, /razorback:fixing-small-issues/);
-  assert.match(policy, /Affected scope only/);
-  assert.match(policy, /full suite runs at the branch gate/i);
+  assert.match(skill, /NO INFRASTRUCTURE BEFORE INVESTIGATION/);
+  assert.match(skill, /Affected scope only/);
+  assert.match(skill, /full suite runs at the branch gate/i);
+  assert.doesNotMatch(skill, /repo-root `RAZORBACK\.md`/);
 });

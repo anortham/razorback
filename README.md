@@ -19,7 +19,6 @@ AI-assisted development burns tokens on repetitive codebase exploration. Every a
 - Miller MCP — hard requirement for code orientation and symbol-aware review; must be configured and indexing your workspace
 - [Goldfish MCP Server](https://github.com/anortham/goldfish) — hard requirement for persistent memory (checkpoints, briefs, recall); used for compaction-durable execution during long autonomous runs
 - For Codex: enable `multi_agent = true` in `~/.codex/config.toml` so parallel execution skills can dispatch subagents
-- Optional but recommended: repo-root `RAZORBACK.md` for project-specific razorback policy, such as model routing and verification tiers
 
 ## Installation
 
@@ -109,41 +108,21 @@ No configuration needed beyond plugin installation (assuming Miller is already s
 
 ## Project Policy
 
-Razorback checks repo-root `RAZORBACK.md` before planning, dispatching workers,
-or choosing verification/model tiers. Use it as the shared source of truth when
-you move between Claude Code, Codex, OpenCode, Copilot CLI, and Gemini CLI.
+Razorback does not need a separate project-policy file. Use the active project
+instructions (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, or the harness equivalent)
+plus the approved plan.
 
-`RAZORBACK.md` is for razorback-specific policy:
+Razorback owns process contracts:
 
-- model routing tiers and harness-specific mappings
-- worker eligibility and escalation triggers
-- verification scopes and broad-gate rules
-- gate ownership, including which evidence is a hard gate versus report-only
-- project-specific constraints that should apply across harnesses
+- skill routing and Miller-first orientation
+- parallel-safety checks and file ownership
+- commit mode for serial versus parallel batches
+- verification scopes and gate ownership
+- blocker handling and final branch verification
 
-Harness docs such as `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md` can point to
-`RAZORBACK.md`, but should not duplicate those policies.
-
-Minimal model-routing shape:
-
-```markdown
-## Model Routing
-
-| Tier | Use for | Codex | Claude | OpenCode |
-|---|---|---|---|---|
-| Strategy | Planning, architecture, lead review | <model/effort> | <model> | <model> |
-| Implementation | Bounded worker tasks from a clear plan | <model/effort> | <model> | <model> |
-| Mechanical | Docs, fixtures, rote edits with no gate ownership | <model/effort> | <model> | <model> |
-| Gate review | Plan + failing gate + diff triage | <model/effort> | <model> | <model> |
-| Escalation | Security, subtle correctness, weak tests, gate interpretation, repeated failures | <model/effort> | <model> | <model> |
-```
-
-Mechanical workers should not own failing tests, replay evidence, metrics, or
-acceptance gates. Split docs-only updates from evidence interpretation.
-
-If `RAZORBACK.md` is absent, razorback uses explicit harness docs if present,
-then asks once when model routing matters. If the harness cannot choose models
-per agent, workers use `inherit` and report that limitation.
+Model choice is not a Razorback contract. Use the harness default unless the
+user, environment, or lead agent explicitly selects a different model for that
+run.
 
 ## Updating
 
@@ -220,11 +199,9 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 - **Ad-hoc parallel work (delegation available):** `dispatching-parallel-agents` for independent tasks outside plans.
 - **Small, local, reversible fixes:** `fixing-small-issues` triages against objective criteria (≤ 2 files, ~20 lines, no contract changes) and fixes on the current checkout — no worktree, no baseline suite run, affected-scope verification only. Escalates to the standard flow the moment the fix outgrows the criteria.
 
-**Verification and model routing:**
+**Verification and delegation:**
 - Plans define language-agnostic verification scopes: worker red/green, worker ceiling, affected-change, branch gate, and expensive specialist gates.
 - Concrete commands come from the target repo, not from razorback.
-- Plans define model-routing tiers: strategy, implementation, mechanical, and escalation.
-- Lower-cost workers are used only for boxed-in lanes with clear acceptance criteria, narrow ownership, and meaningful verification.
 - The lead owns decomposition, integration review, escalation, and final branch verification.
 
 ## Skills
@@ -250,9 +227,9 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 | pre-merge-review | Optional external review (codex / gemini / claude) run before PR — verifies findings, dispatches fixes, emits morning-report block |
 | cross-model-convergence | Adversarial find → verify → fix loop between the lead and an external reviewer (default codex) until a double-clean round or the round cap; includes the pre-implementation Doubt Pass |
 | grounding-in-current-docs | Verify external framework/library/API behavior against current official docs when training knowledge may be stale |
-| codex-cli | Invokes `codex exec` for second opinions and adversarial review, using `RAZORBACK.md` routing when present |
+| codex-cli | Invokes `codex exec` for second opinions and adversarial review |
 | cursor-agent | Invokes Cursor Agent / Composer 2.5 Fast for bounded implementation while the current lead owns planning, review, and verification |
-| gemini-cli | Invokes `gemini` for second opinions and adversarial review, using `RAZORBACK.md` routing when present |
+| gemini-cli | Invokes `gemini` for second opinions and adversarial review |
 | claude-cli | Invokes `claude -p` for second opinions and adversarial review; omits `--bare` because it breaks OAuth auth |
 
 ## Prompt Templates

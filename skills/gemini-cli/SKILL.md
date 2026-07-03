@@ -9,9 +9,8 @@ Use the Gemini CLI (`gemini`) to get a second opinion, delegate work, request co
 
 ## Defaults
 
-- **Model**: use repo-root `RAZORBACK.md` model routing when present. If absent,
-  use a reviewer-grade model for strategy/escalation work and a faster model
-  for mechanical work.
+- **Model**: inherit the current Gemini default unless the user or environment
+  explicitly selects a model.
 - **Output**: `-o text` for human-readable (use `-o json` when you need stats or structured parsing)
 - **Always append**: `2>/dev/null` to suppress stderr noise (auth messages, debug info) and get clean stdout only
 - **Non-interactive mode**: always pass the prompt via `-p, --prompt "…"`. Gemini's positional `[query..]` runs in interactive mode by default and relies on TTY auto-detection to switch to headless — that detection is unreliable when invoked from harness tools, especially on Windows. `-p` is the documented headless-mode flag and removes the ambiguity.
@@ -19,13 +18,14 @@ Use the Gemini CLI (`gemini`) to get a second opinion, delegate work, request co
 - **Working directory**: Gemini operates on whatever directory it's launched from — it has no `-C` flag like Codex. If the target code isn't in the current working directory, **always `cd` to the target directory first** using `cd /path/to/project && gemini ...`. Without this, Gemini will waste its entire session trying to find the files.
 - **Forceful prompts**: Gemini sometimes presents plans and asks for confirmation even in yolo mode. Use directive language: "Apply now", "Start immediately", "Do this without asking for confirmation."
 
-For command snippets below, set `GEMINI_MODEL` before invoking:
+For command snippets below, optionally set `GEMINI_MODEL` before invoking:
 
 ```bash
-GEMINI_MODEL="${RAZORBACK_GEMINI_REVIEW_MODEL:-gemini-3-pro}"
+GEMINI_MODEL="${RAZORBACK_GEMINI_REVIEW_MODEL:-}"
 ```
 
-Source the value from the plan's Model Routing section, `RAZORBACK.md`, or the env var above. If no route exists, the default (`gemini-3-pro`) applies for strategy/escalation work; use a faster model for mechanical work.
+Use the environment variable above only as an explicit override. Otherwise let
+Gemini choose its configured default.
 
 ## Review Targeting
 
@@ -163,11 +163,11 @@ gemini -p "Use codebase_investigator to analyze this project's architecture. Foc
 **After**: Present the analysis. Add your own observations, especially about patterns Gemini may have missed.
 
 ### Quick Tasks
-For simple tasks where speed matters more than depth, use the mechanical tier
-from `RAZORBACK.md` when available:
+For simple tasks where speed matters more than depth, inherit Gemini's default
+unless the user or environment explicitly selected a model:
 
 ```bash
-gemini -p "Your prompt" -m "$GEMINI_MODEL" -o text 2>/dev/null
+gemini -p "Your prompt" ${GEMINI_MODEL:+-m "$GEMINI_MODEL"} -o text 2>/dev/null
 ```
 
 ## Resuming a Session
@@ -223,5 +223,5 @@ echo "This is Claude following up. I disagree with [X] because [evidence]. What'
 | Code review | read-only | `gemini -p "Review $REFS for bugs" -o text` (scope/sizing per Review Targeting; `$REFS` is `@./` list from changed files) |
 | Web research | search | `gemini -p "latest X? Use Google Search." -o text` |
 | Architecture analysis | investigator | `gemini -p "Use codebase_investigator..." -o text` |
-| Quick/simple task | mechanical tier | `gemini -p "prompt" -m "$GEMINI_MODEL" -o text` |
+| Quick/simple task | inherited or explicit model | `gemini -p "prompt" ${GEMINI_MODEL:+-m "$GEMINI_MODEL"} -o text` |
 | Resume session | inherited | `echo "prompt" \| gemini -r latest -o text` |

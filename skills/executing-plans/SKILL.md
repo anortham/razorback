@@ -11,7 +11,7 @@ Load plan, review critically, execute all tasks, report when complete.
 
 **When to use this vs. subagent-driven-development:** Use this skill for single-task plans, tightly sequential work, separate-session execution, or any run where delegation is unavailable. For plans with 2+ independent tasks in the same session, prefer `razorback:subagent-driven-development` for parallel execution with inline review.
 
-**Inputs from `writing-plans`:** plan path, `reviewer_choice` (`none` / `codex` / `gemini` / `claude`, default `none`), verification strategy, and model routing. These propagate via the execution handoff and gate Step 3 below.
+**Inputs from `writing-plans`:** plan path, `reviewer_choice` (`none` / `codex` / `gemini` / `claude`, default `none`), and verification strategy. These propagate via the execution handoff and gate Step 3 below.
 
 **Architecture Quality:** The plan's `architecture-quality` output is authoritative. Preserve the approved architecture, do not redesign locally, and report a plan mismatch if code reality contradicts it.
 
@@ -54,7 +54,6 @@ If the `reviewer_choice` propagated from `writing-plans` is one of `codex`, `gem
 - reviewer choice
 - verification strategy
 - verification ledger
-- model routing
 
 If the reviewer choice is `none` (or absent), skip Step 3 entirely.
 
@@ -123,6 +122,6 @@ On a resumed run, orient before continuing:
 
 **Required workflow skills:**
 - **razorback:using-git-worktrees** - Set up isolated workspace before starting. Skip only with explicit user consent (small, single-session work where a feature branch is sufficient).
-- **razorback:writing-plans** - Creates the plan this skill executes; propagates `reviewer_choice`, verification strategy, and model routing as inputs.
+- **razorback:writing-plans** - Creates the plan this skill executes; propagates `reviewer_choice` and verification strategy as inputs.
 - **razorback:pre-merge-review** - Invoked at Step 3 when `reviewer_choice` is `codex` / `gemini` / `claude`. Skipped if the choice is `none`.
 - **razorback:finishing-a-development-branch** - Complete development after all tasks (and pre-merge review, if any)

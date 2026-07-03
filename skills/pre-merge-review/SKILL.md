@@ -24,7 +24,6 @@ Skip this skill entirely if the reviewer choice is `none`. The choice is fixed b
 - The verification ledger has a passing `branch-gate` entry for current HEAD, or the caller can run that scope before review
 - The branch is NOT yet pushed (no PR yet)
 - A reviewer was chosen: one of `codex`, `gemini`, `claude`
-- The plan's model routing identifies the strategy/escalation tier for external review and fix workers
 
 If any pre-condition is not met, abort and surface the gap to the caller. Do not review a partial branch or pre-push a branch on your own.
 
@@ -94,13 +93,13 @@ Pass all four to the chosen reviewer: `$DIFF`, `$FILE_STAT`, `$COMMIT_LOG`, `$PL
 
 Optional: if the plan carried a focus area ("focus on the auth boundary", "pay attention to schema migrations"), include it in the prompt. Do not invent a focus the user did not ask for.
 
-Apply the plan's Model Routing section when invoking the external reviewer if the reviewer CLI supports model selection. External review should use the strategy or escalation tier, never a mechanical or implementation tier.
+Use the chosen reviewer CLI's default model unless the user, environment, or
+lead explicitly selects another model for this run.
 
 Gate-interpretation review is a separate lane from pre-merge review. When the
 question is "is this failing test, replay, or metric wrong, or is the
-implementation wrong?", use the plan's gate-review or escalation route before
-claiming verification evidence. Do not route that decision to a mechanical
-worker.
+implementation wrong?", treat that as lead-owned review evidence before claiming
+verification evidence.
 
 ## Step 2: Dispatch the chosen reviewer
 
