@@ -19,7 +19,9 @@ The comparison repos point at two useful lessons:
   `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json`, and
   deterministic Codex portal packaging checks. It also uses `hooks: {}` in the
   Codex manifest so Codex does not auto-discover and re-register session-start
-  hooks meant for other harnesses.
+  hooks meant for other harnesses. Superpowers is useful evidence, but it is
+  not the Codex plugin schema source of truth; implementation must ground the
+  manifest shape in current Codex docs before writing packaging tests.
 - Simplepower makes parallelism concrete by requiring plan fields for file
   ownership, task contracts, serialization decisions, and approved aggregate
   dispatch. Razorback should borrow the contract shape without adopting
@@ -74,7 +76,19 @@ packaging and release hygiene.
 ## Parallel Execution Contract
 
 Every full implementation plan must include `## Parallel Execution Contract`
-before the task list.
+before the task list. A one-task full plan may use the compact form:
+
+```markdown
+## Parallel Execution Contract
+
+Single task. No parallel batches.
+
+**File ownership:** Task 1 owns [exact paths].
+**Contract inputs:** [global constraints / architecture decision / external facts this task may rely on].
+**Serialization required:** Not applicable - single task.
+```
+
+Multi-task full plans use the full form below.
 
 The section must include:
 
@@ -151,9 +165,15 @@ Add first-class Codex plugin metadata:
   - interface metadata for Codex plugin browsing and install prompts
 - Create `.agents/plugins/marketplace.json` so Codex can discover Razorback from
   this repository as a plugin source.
-- Add minimal checked-in assets only if required by Codex plugin metadata or
-  packaging validation. Prefer small static assets over generated or remote
-  assets.
+- The Codex marketplace file must not carry a version field unless current
+  Codex docs require one. Based on Superpowers' current manifest shape, version
+  sync belongs in `.codex-plugin/plugin.json`, while
+  `.agents/plugins/marketplace.json` is discovery metadata only.
+- Include checked-in Codex interface assets:
+  - `assets/razorback-small.svg` for `interface.composerIcon`
+  - `assets/app-icon.png` for `interface.logo`
+  The packaging script must include these assets and tests must verify the
+  manifest references resolve inside the package. Do not use remote assets.
 - Update `.version-bump.json` so `.codex-plugin/plugin.json` participates in
   `./scripts/bump-version.sh --check`, `--audit`, and version bumps.
 - Update `scripts/bump-version.sh` only if the existing JSON-field bumping logic
@@ -165,10 +185,20 @@ Add first-class Codex plugin metadata:
   - preserve executable modes where needed
   - normalize archive metadata for repeatable output where practical
   - verify every packaged skill has required metadata
+  - include `assets/`
   - keep `hooks: {}` in the packaged manifest
 - Update `docs/README.codex.md`, `.codex/INSTALL.md`, and top-level `README.md`
   so Codex plugin install is the preferred path when available, with the current
   symlink/manual path retained as a fallback for local development.
+- Update `CLAUDE.md` (`AGENTS.md` is a symlink) so the harness split, Codex
+  bootstrap description, and version-management text mention the Codex plugin
+  manifest and the new version target count.
+- Before writing the Codex manifest or packaging tests, use
+  `razorback:grounding-in-current-docs` to verify current Codex plugin manifest,
+  marketplace, asset, and hook-discovery semantics from official Codex/OpenAI
+  docs. Record the verified source in the implementation notes. If current docs
+  conflict with this design, update the design or implementation plan before
+  coding against the stale assumption.
 
 ## Files To Modify Or Create
 
@@ -178,6 +208,7 @@ Add first-class Codex plugin metadata:
 - Modify: `docs/README.codex.md`
 - Modify: `.codex/INSTALL.md`
 - Modify: `README.md`
+- Modify: `CLAUDE.md` (`AGENTS.md` symlink target)
 - Modify: `.version-bump.json`
 - Modify if needed: `scripts/bump-version.sh`
 - Create: `.codex-plugin/plugin.json`
@@ -185,11 +216,14 @@ Add first-class Codex plugin metadata:
 - Create: `scripts/package-codex-plugin.sh`
 - Create: `tests/codex-plugin.test.mjs` or a focused `tests/codex/` shell suite
 - Modify or create prompt-contract tests under `tests/`
-- Create asset files only if the Codex manifest or packaging tests require them
+- Create: `assets/razorback-small.svg`
+- Create: `assets/app-icon.png`
 
 ## Acceptance Criteria
 
 - [ ] Full plans require a `Parallel Execution Contract`.
+- [ ] Single-task full plans can use the compact "single task, no parallel
+      batches" contract form.
 - [ ] Each implementation task records batch membership, file ownership,
       `Contract inputs`, and `Serialization required`.
 - [ ] `subagent-driven-development` says safe batches of two or more tasks are
@@ -202,9 +236,16 @@ Add first-class Codex plugin metadata:
       Simplepower-style batch review+fix agent.
 - [ ] `.codex-plugin/plugin.json` exists and points at `./skills/`.
 - [ ] Codex manifest uses `hooks: {}`.
-- [ ] Codex plugin metadata participates in version sync.
+- [ ] `.codex-plugin/plugin.json` participates in version sync.
+- [ ] `.agents/plugins/marketplace.json` is discovery metadata and has no
+      version field unless current Codex docs require one.
+- [ ] Codex interface asset references resolve to checked-in packaged files.
 - [ ] Codex install docs prefer plugin install when available and keep manual
       symlink installation as a fallback.
+- [ ] `CLAUDE.md` / `AGENTS.md` harness and version-management text is updated.
+- [ ] Implementation notes cite the current Codex docs used to ground manifest,
+      marketplace, asset, and hook-discovery behavior before packaging tests are
+      written.
 - [ ] Packaging tests or smoke checks verify the Codex plugin manifest and
       package contents.
 - [ ] `node --test tests/*.test.mjs`, `./scripts/bump-version.sh --check`,
