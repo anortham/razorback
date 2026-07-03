@@ -63,7 +63,7 @@ Dispatch Tasks 1-4 together after Lead Gate 0 passes. These tasks have non-overl
 |---|---|---|---|---|
 | Task 1: Parallel execution contract in workflow skills | Batch A | `skills/writing-plans/SKILL.md`, `skills/subagent-driven-development/SKILL.md`, `skills/subagent-driven-development/implementer-prompt.md`, `skills/subagent-driven-development/fix-prompt.md`, `skills/using-razorback/references/codex-tools.md`, `tests/codex-parallelism-contract.test.mjs` | No | Contract inputs cover the shared prompt terms and Codex dispatch behavior. |
 | Task 2: Codex plugin metadata, version sync, and assets | Batch A | `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json`, `.version-bump.json`, `assets/razorback-small.svg`, `assets/app-icon.png`, `tests/codex-plugin-manifest.test.mjs` | No | Lead Gate 0 supplies the manifest schema contract. |
-| Task 3: Codex packaging script and package tests | Batch A | `scripts/package-codex-plugin.sh`, `tests/codex-package-script.test.mjs` | No | The Interface Contract supplies expected manifest, asset, and package paths before Task 2 files exist. Full package tests run after the batch. |
+| Task 3: Codex packaging script and package tests | Batch A | `scripts/package-codex-plugin.sh`, `tests/codex-package-script.test.mjs` | No | The Interface Contract supplies expected manifest, asset, and package paths before Task 2 files exist. Hermetic fixture tests let the worker run the real package gate before Batch A is committed. |
 | Task 4: User-facing docs and harness docs | Batch A | `CLAUDE.md`, `README.md`, `.codex/INSTALL.md`, `docs/README.codex.md` | No | Docs consume the approved install and versioning contract. |
 
 ### Interface Contract
@@ -102,11 +102,11 @@ Tasks in Batch A may rely on these approved contracts:
 | `.codex-plugin/plugin.json` | Task 2 | create | Codex plugin manifest | Consumed by Task 3 through Interface Contract. |
 | `.agents/plugins/marketplace.json` | Task 2 | create | Codex plugin source discovery metadata | Consumed by docs; no version unless docs require. |
 | `.version-bump.json` | Task 2 | modify | Add `.codex-plugin/plugin.json` version target | No other task edits this file. |
-| `assets/razorback-small.svg` | Task 2 | create | Composer icon asset | Task 3 package test checks inclusion after batch. |
-| `assets/app-icon.png` | Task 2 | create | App icon asset | Task 3 package test checks inclusion after batch. |
+| `assets/razorback-small.svg` | Task 2 | create | Composer icon asset | Task 3 package test checks inclusion through its committed fixture and the lead affected-change gate. |
+| `assets/app-icon.png` | Task 2 | create | App icon asset | Task 3 package test checks inclusion through its committed fixture and the lead affected-change gate. |
 | `tests/codex-plugin-manifest.test.mjs` | Task 2 | create | Manifest, marketplace, asset, and version sync tests | No other task edits this file. |
-| `scripts/package-codex-plugin.sh` | Task 3 | create | Deterministic Codex package builder | Reads Task 2 files after batch. |
-| `tests/codex-package-script.test.mjs` | Task 3 | create | Package script tests | Full execution waits until Batch A completes. |
+| `scripts/package-codex-plugin.sh` | Task 3 | create | Deterministic Codex package builder | Uses the Interface Contract during the worker gate and real Task 2 files when present. |
+| `tests/codex-package-script.test.mjs` | Task 3 | create | Package script tests with committed temporary git fixtures | Worker may run real package tests before Task 2 commits because the test creates its own committed fixture. |
 | `CLAUDE.md` | Task 4 | modify | Harness split and version-management updates; `AGENTS.md` tracks symlink | No other task edits this file. |
 | `README.md` | Task 4 | modify | Codex install/update/version wording | No other task edits this file. |
 | `.codex/INSTALL.md` | Task 4 | modify | Prefer plugin install path with symlink fallback | No other task edits this file. |
@@ -119,15 +119,15 @@ Tasks in Batch A may rely on these approved contracts:
 **Worker red/green scope:**
 - Task 1: `node --test tests/codex-parallelism-contract.test.mjs`
 - Task 2: `node --test tests/codex-plugin-manifest.test.mjs` and `./scripts/bump-version.sh --check`
-- Task 3: `bash -n scripts/package-codex-plugin.sh` and `node --check tests/codex-package-script.test.mjs`
+- Task 3: `bash -n scripts/package-codex-plugin.sh` and `node --test tests/codex-package-script.test.mjs`
 - Task 4: focused `rg` assertions listed in Task 4
 
-**Worker ceiling:** Workers run only their focused command(s). Task 3 does not run the full package test until Task 2 files exist; the lead owns that affected-change gate after Batch A.
+**Worker ceiling:** Workers run only their focused command(s). Task 3's package test must use a committed temporary git repo fixture so it can run during the parallel batch before Task 2 files are committed in the source checkout.
 
 **Worker gate invariant:**
 - Task 1 proves workflow prompts require and honor the parallel execution contract.
 - Task 2 proves Codex manifest/version/assets are internally consistent.
-- Task 3 proves the package script and test file parse before the batch is assembled.
+- Task 3 proves the package script can package a committed fixture, reject dirty fixtures, preserve `hooks: {}`, include every skill, and exclude source-only files before the batch is committed.
 - Task 4 proves user-facing docs name the new install, harness, and version surfaces.
 
 **Lead affected-change scope after Batch A:** Run:
@@ -235,6 +235,10 @@ rg -n "manifest|marketplace|hooks|asset|metadata|https?://" docs/plans/2026-07-0
 - Modify: `skills/using-razorback/references/codex-tools.md`
 - Create: `tests/codex-parallelism-contract.test.mjs`
 
+**Interfaces:**
+- Consumes: Approved prompt terms `Parallel Execution Contract`, `Contract inputs`, `File ownership`, `Serialization required`, and `Dependency reason`; existing SDD worker prompt flow; Codex `spawn_agent`/`wait_agent` tool mapping.
+- Produces: Updated plan-writing and execution contract that future plans and `subagent-driven-development` use to dispatch safe batches together while leaving parallel-batch commits to the lead.
+
 **Contract inputs:**
 - Parallel execution terms and compact single-task form from the approved design.
 - Interface Contract statement that parallel-batch workers must not race on Git commits.
@@ -285,6 +289,10 @@ node --test tests/codex-parallelism-contract.test.mjs
 - Create: `assets/app-icon.png`
 - Create: `tests/codex-plugin-manifest.test.mjs`
 
+**Interfaces:**
+- Consumes: Lead Gate 0's grounded Codex manifest and marketplace schema; `package.json` metadata values; approved asset paths; existing `.version-bump.json` file list format.
+- Produces: `.codex-plugin/plugin.json` with `version`, `skills`, interface asset references, and `hooks: {}`; `.agents/plugins/marketplace.json` without a version field unless Gate 0 changes the contract; local assets and version-sync configuration consumed by Task 3 and Task 4.
+
 **Contract inputs:**
 - Lead Gate 0 grounding note for current Codex schema.
 - Package metadata from `package.json`: name `razorback`, version `0.19.0`, author `anortham`, license `MIT`, homepage `https://github.com/anortham/razorback`.
@@ -307,7 +315,7 @@ node --test tests/codex-parallelism-contract.test.mjs
   - interface display name `Razorback`, category matching current Codex docs, local asset paths, and default prompts.
 - Create `.agents/plugins/marketplace.json` with plugin name `razorback`, local URL source `./`, install policy, and no version field unless Lead Gate 0 changes the contract.
 - Add `.codex-plugin/plugin.json` to `.version-bump.json` with field `version`.
-- Create small local assets. The SVG can be a simple static Razorback wordmark/icon. The PNG must be a valid small app icon; use a deterministic generated bitmap or checked-in static asset and keep it lightweight.
+- Create small local assets. The SVG can be a simple static Razorback wordmark/icon. The PNG must be a valid 64x64 app icon under 8 KB, produced from a fixed base64 literal or another deterministic repo-local generation command recorded in the worker report; the manifest test must validate the PNG signature and file size.
 - Add `tests/codex-plugin-manifest.test.mjs` to parse JSON, assert manifest values, assert `hooks` is `{}`, assert marketplace has no version field, assert asset paths exist, and assert `.version-bump.json` includes `.codex-plugin/plugin.json`.
 
 **Acceptance criteria:**
@@ -336,6 +344,10 @@ node --test tests/codex-plugin-manifest.test.mjs
 - Create: `scripts/package-codex-plugin.sh`
 - Create: `tests/codex-package-script.test.mjs`
 
+**Interfaces:**
+- Consumes: Lead Gate 0's package metadata requirements; Interface Contract paths for `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json`, `assets/razorback-small.svg`, `assets/app-icon.png`, `skills/`, `README.md`, and `LICENSE`.
+- Produces: `scripts/package-codex-plugin.sh` CLI with `--output`, `--format`, `--ref`, `--allow-dirty`, and `--keep-stage`; `tests/codex-package-script.test.mjs` that proves the script packages committed fixture content without depending on the source checkout's `HEAD`.
+
 **Contract inputs:**
 - Lead Gate 0 grounding note for package metadata requirements.
 - Task 2's approved manifest and asset paths from the Interface Contract.
@@ -360,10 +372,12 @@ node --test tests/codex-plugin-manifest.test.mjs
 - Normalize timestamps for repeatable zip/tar output where the platform tools support it.
 - Print archive path, format, and SHA-256.
 - Package `hooks: {}` exactly as present in `.codex-plugin/plugin.json`.
-- In `tests/codex-package-script.test.mjs`, create temporary outputs and assert:
-  - script refuses dirty worktree by default
-  - script works with `--allow-dirty` for test execution
-  - archive contains `.codex-plugin/plugin.json`, `skills/using-razorback/SKILL.md`, `assets/razorback-small.svg`, `assets/app-icon.png`, `README.md`, and `LICENSE`
+- In `tests/codex-package-script.test.mjs`, create a hermetic temporary git repo fixture by copying `scripts/package-codex-plugin.sh`, `skills/`, `README.md`, `LICENSE`, and the Codex manifest/assets when present; if Task 2 files are not present yet, write fixture-only `.codex-plugin/plugin.json`, `assets/razorback-small.svg`, and `assets/app-icon.png` with the Interface Contract paths. Commit the fixture before invoking the script so `git archive --ref HEAD` packages the fixture's committed tree, not the source checkout's pre-batch `HEAD`.
+- In the fixture tests, assert:
+  - script refuses dirty fixture worktree by default
+  - script works with `--allow-dirty` for dirty-fixture test execution
+  - archive contains `.codex-plugin/plugin.json`, `assets/razorback-small.svg`, `assets/app-icon.png`, `README.md`, `LICENSE`, and every `skills/*/SKILL.md` from the source checkout
+  - every packaged `skills/*/SKILL.md` has YAML frontmatter with `name` and `description`
   - archive excludes hooks, docs, tests, `.agents`, `.claude-plugin`, `.cursor-plugin`, `.opencode`, `gemini-extension.json`, `package.json`, and `.memories`
   - archive manifest preserves `hooks: {}`
   - zip and tar.gz contain the same rootless paths when both tools are available
@@ -375,6 +389,7 @@ node --test tests/codex-plugin-manifest.test.mjs
 - [ ] Packaging script refuses dirty worktrees by default.
 - [ ] Package contents are rootless and Codex-only.
 - [ ] Package includes local assets and all skills.
+- [ ] Package tests assert every `skills/*/SKILL.md` from the source checkout appears in the archive and has `name` and `description` frontmatter.
 - [ ] Package preserves `hooks: {}`.
 - [ ] Package tests avoid assuming absent `CODE_OF_CONDUCT.md`.
 - [ ] Tests cover archive include/exclude rules.
@@ -383,10 +398,10 @@ node --test tests/codex-plugin-manifest.test.mjs
 
 ```bash
 bash -n scripts/package-codex-plugin.sh
-node --check tests/codex-package-script.test.mjs
+node --test tests/codex-package-script.test.mjs
 ```
 
-The lead runs `node --test tests/codex-package-script.test.mjs` after Batch A, because the package test consumes Task 2 files.
+The test must not read package contents from the source checkout's `HEAD`. It must package a committed temporary fixture so it remains valid before the lead commits Batch A.
 
 ### Task 4: User-Facing Docs And Harness Docs
 
@@ -399,6 +414,10 @@ The lead runs `node --test tests/codex-package-script.test.mjs` after Batch A, b
 - Modify: `README.md`
 - Modify: `.codex/INSTALL.md`
 - Modify: `docs/README.codex.md`
+
+**Interfaces:**
+- Consumes: Preferred Codex plugin install path; manual symlink fallback path; new six-manifest version policy; `AGENTS.md` symlink-to-`CLAUDE.md` ownership rule.
+- Produces: User-facing docs that name the Codex plugin files, preserve manual fallback instructions, document native skill discovery and `multi_agent = true`, and remove stale symlink-only/five-manifest claims.
 
 **Contract inputs:**
 - Codex plugin install is preferred when available.
@@ -427,8 +446,18 @@ The lead runs `node --test tests/codex-package-script.test.mjs` after Batch A, b
 **Worker verification:**
 
 ```bash
-rg -n "\.codex-plugin/plugin\.json|\.agents/plugins/marketplace\.json|six version-bearing manifests|multi_agent" CLAUDE.md README.md .codex/INSTALL.md docs/README.codex.md
-rg -n "symlink-only|Five manifests|five version-bearing manifests" CLAUDE.md README.md .codex/INSTALL.md docs/README.codex.md; test $? -eq 1
+rg -n "\.codex-plugin/plugin\.json" CLAUDE.md
+rg -n "\.agents/plugins/marketplace\.json" CLAUDE.md
+rg -n "six manifests|six version-bearing manifests" CLAUDE.md
+rg -n "six manifests|six version-bearing manifests" README.md
+rg -n "plugin install|Codex plugin" README.md
+rg -n "manual.*fallback|symlink" README.md
+rg -n "plugin install|Codex plugin" .codex/INSTALL.md
+rg -n "manual.*fallback|symlink" .codex/INSTALL.md
+rg -n "plugin install|Codex plugin" docs/README.codex.md
+rg -n "native skill discovery" docs/README.codex.md
+rg -n "multi_agent = true" .codex/INSTALL.md docs/README.codex.md
+if rg -n "symlink-only|Five manifests|five version-bearing manifests" CLAUDE.md README.md .codex/INSTALL.md docs/README.codex.md; then exit 1; fi
 ```
 
 ## Lead Integration Review
