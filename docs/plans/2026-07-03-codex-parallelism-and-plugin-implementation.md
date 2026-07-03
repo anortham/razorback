@@ -17,7 +17,7 @@
 - `Parallel Execution Contract`, `Contract inputs`, `File ownership`, `Serialization required`, and `Dependency reason` are exact prompt-facing terms.
 - Approved safe parallel batches are built-in approval for Codex to make multiple `spawn_agent` calls in the same turn.
 - Serializing a safe batch requires a recorded dependency or tool-limitation reason; habit or uncertainty is not enough.
-- Codex manifest must include `hooks: {}` unless current official Codex docs prove a different hook-suppression surface.
+- Codex manifest must omit `hooks`; Razorback is not bundling Codex lifecycle hooks in this task, and current plugin validation rejects unsupported manifest fields including `hooks`.
 - `.agents/plugins/marketplace.json` is discovery metadata and must not include a version field unless current official Codex docs require one.
 - `.codex-plugin/plugin.json` is the Codex version-bearing manifest and must participate in `.version-bump.json`.
 - Codex interface assets are local files: `assets/razorback-small.svg` and `assets/app-icon.png`.
@@ -48,7 +48,7 @@ This gate runs before any file-edit worker dispatch.
 **Required output:** A short grounding note that records official doc URLs or current-doc lookup results for:
 - `.codex-plugin/plugin.json` location and field names
 - `.agents/plugins/marketplace.json` location and field names
-- `hooks: {}` behavior or the current hook-suppression equivalent
+- whether `hooks` belongs in the plugin manifest for this task
 - interface asset fields and whether local asset paths are accepted
 - whether `skills/*/agents/openai.yaml` or equivalent per-skill metadata is required
 - whether Codex marketplace discovery metadata carries a version field
@@ -80,7 +80,7 @@ Tasks in Batch A may rely on these approved contracts:
 - `subagent-driven-development` must dispatch validated safe batches together when subagents are available.
 - Codex-specific guidance must explicitly say multiple eligible tasks mean multiple `spawn_agent` calls in one turn.
 - Parallel-batch workers must not race on Git commits. For parallel batches, the lead owns staging and commit creation after per-task inline review. Serial workers may keep the existing worker-commit flow.
-- `.codex-plugin/plugin.json` must be named `razorback`, version `0.19.0` at initial implementation time, point `skills` to `./skills/`, and include `hooks: {}` unless Lead Gate 0 updates the contract.
+- `.codex-plugin/plugin.json` must be named `razorback`, version `0.19.0` at initial implementation time, point `skills` to `./skills/`, include required `author` and `interface` metadata, and omit `hooks`.
 - `.agents/plugins/marketplace.json` must describe a local URL source `./` for plugin name `razorback` and must not include a version field unless Lead Gate 0 updates the contract.
 - `assets/razorback-small.svg` and `assets/app-icon.png` must be checked in and referenced by the Codex plugin manifest.
 - `.version-bump.json` must include `.codex-plugin/plugin.json` with field `version`; it must not include `.agents/plugins/marketplace.json` unless Lead Gate 0 proves a version field exists there.
@@ -127,7 +127,7 @@ Tasks in Batch A may rely on these approved contracts:
 **Worker gate invariant:**
 - Task 1 proves workflow prompts require and honor the parallel execution contract.
 - Task 2 proves Codex manifest/version/assets are internally consistent.
-- Task 3 proves the package script can package a committed fixture, reject dirty fixtures, preserve `hooks: {}`, include every skill, and exclude source-only files before the batch is committed.
+- Task 3 proves the package script can package a committed fixture, reject dirty fixtures, preserve the manifest's omission of `hooks`, include every skill, and exclude source-only files before the batch is committed.
 - Task 4 proves user-facing docs name the new install, harness, and version surfaces.
 
 **Lead affected-change scope after Batch A:** Run:
@@ -209,10 +209,10 @@ git diff --check
 - If docs require a marketplace version field, per-skill metadata files, different asset fields, or different hook suppression than this plan, stop and revise this plan before dispatch.
 
 **Acceptance criteria:**
-- [ ] Grounding note exists at `docs/plans/2026-07-03-codex-plugin-docs-grounding.md`.
-- [ ] The note names the official source or explains why official docs were unreachable.
-- [ ] The note states manifest fields, marketplace version policy, asset fields, hook behavior, and per-skill metadata requirement.
-- [ ] Any doc conflict is resolved by revising this plan before Batch A.
+- [x] Grounding note exists at `docs/plans/2026-07-03-codex-plugin-docs-grounding.md`.
+- [x] The note names the official source or explains why official docs were unreachable.
+- [x] The note states manifest fields, marketplace version policy, asset fields, hook behavior, and per-skill metadata requirement.
+- [x] Any doc conflict is resolved by revising this plan before Batch A.
 
 **Verification:**
 
@@ -291,7 +291,7 @@ node --test tests/codex-parallelism-contract.test.mjs
 
 **Interfaces:**
 - Consumes: Lead Gate 0's grounded Codex manifest and marketplace schema; `package.json` metadata values; approved asset paths; existing `.version-bump.json` file list format.
-- Produces: `.codex-plugin/plugin.json` with `version`, `skills`, interface asset references, and `hooks: {}`; `.agents/plugins/marketplace.json` without a version field unless Gate 0 changes the contract; local assets and version-sync configuration consumed by Task 3 and Task 4.
+- Produces: `.codex-plugin/plugin.json` with `version`, `skills`, `author`, interface metadata, and interface asset references, omitting `hooks`; `.agents/plugins/marketplace.json` without a version field unless Gate 0 changes the contract; local assets and version-sync configuration consumed by Task 3 and Task 4.
 
 **Contract inputs:**
 - Lead Gate 0 grounding note for current Codex schema.
@@ -311,16 +311,15 @@ node --test tests/codex-parallelism-contract.test.mjs
   - `homepage` and `repository`: `https://github.com/anortham/razorback`
   - `license`: `MIT`
   - `skills`: `./skills/`
-  - `hooks`: `{}`
   - interface display name `Razorback`, category matching current Codex docs, local asset paths, and default prompts.
 - Create `.agents/plugins/marketplace.json` with plugin name `razorback`, local URL source `./`, install policy, and no version field unless Lead Gate 0 changes the contract.
 - Add `.codex-plugin/plugin.json` to `.version-bump.json` with field `version`.
 - Create small local assets. The SVG can be a simple static Razorback wordmark/icon. The PNG must be a valid 64x64 app icon under 8 KB, produced from a fixed base64 literal or another deterministic repo-local generation command recorded in the worker report; the manifest test must validate the PNG signature and file size.
-- Add `tests/codex-plugin-manifest.test.mjs` to parse JSON, assert manifest values, assert `hooks` is `{}`, assert marketplace has no version field, assert asset paths exist, and assert `.version-bump.json` includes `.codex-plugin/plugin.json`.
+- Add `tests/codex-plugin-manifest.test.mjs` to parse JSON, assert manifest values, assert `hooks` is absent, assert marketplace has no version field, assert asset paths exist, and assert `.version-bump.json` includes `.codex-plugin/plugin.json`.
 
 **Acceptance criteria:**
 - [ ] `.codex-plugin/plugin.json` exists, parses, and points `skills` to `./skills/`.
-- [ ] `.codex-plugin/plugin.json` includes `hooks: {}` unless Lead Gate 0 changed the contract.
+- [ ] `.codex-plugin/plugin.json` omits `hooks`.
 - [ ] `.agents/plugins/marketplace.json` exists, parses, and has no version field unless Lead Gate 0 changed the contract.
 - [ ] `.version-bump.json` includes `.codex-plugin/plugin.json` field `version`.
 - [ ] `assets/razorback-small.svg` and `assets/app-icon.png` exist and are referenced by the manifest.
@@ -371,7 +370,7 @@ node --test tests/codex-plugin-manifest.test.mjs
 - Preserve executable bits for skill scripts.
 - Normalize timestamps for repeatable zip/tar output where the platform tools support it.
 - Print archive path, format, and SHA-256.
-- Package `hooks: {}` exactly as present in `.codex-plugin/plugin.json`.
+- Package `.codex-plugin/plugin.json` exactly as written, including the absence of `hooks`.
 - In `tests/codex-package-script.test.mjs`, create a hermetic temporary git repo fixture by copying `scripts/package-codex-plugin.sh`, `skills/`, `README.md`, `LICENSE`, and the Codex manifest/assets when present; if Task 2 files are not present yet, write fixture-only `.codex-plugin/plugin.json`, `assets/razorback-small.svg`, and `assets/app-icon.png` with the Interface Contract paths. Commit the fixture before invoking the script so `git archive --ref HEAD` packages the fixture's committed tree, not the source checkout's pre-batch `HEAD`.
 - In the fixture tests, assert:
   - script refuses dirty fixture worktree by default
@@ -379,7 +378,7 @@ node --test tests/codex-plugin-manifest.test.mjs
   - archive contains `.codex-plugin/plugin.json`, `assets/razorback-small.svg`, `assets/app-icon.png`, `README.md`, `LICENSE`, and every `skills/*/SKILL.md` from the source checkout
   - every packaged `skills/*/SKILL.md` has YAML frontmatter with `name` and `description`
   - archive excludes hooks, docs, tests, `.agents`, `.claude-plugin`, `.cursor-plugin`, `.opencode`, `gemini-extension.json`, `package.json`, and `.memories`
-  - archive manifest preserves `hooks: {}`
+  - archive manifest omits `hooks`
   - zip and tar.gz contain the same rootless paths when both tools are available
 - If Lead Gate 0 proves per-skill OpenAI metadata files are required, stop and revise this plan before adding broad `skills/*/agents/openai.yaml` files.
 
@@ -390,7 +389,7 @@ node --test tests/codex-plugin-manifest.test.mjs
 - [ ] Package contents are rootless and Codex-only.
 - [ ] Package includes local assets and all skills.
 - [ ] Package tests assert every `skills/*/SKILL.md` from the source checkout appears in the archive and has `name` and `description` frontmatter.
-- [ ] Package preserves `hooks: {}`.
+- [ ] Package preserves the manifest's omission of `hooks`.
 - [ ] Package tests avoid assuming absent `CODE_OF_CONDUCT.md`.
 - [ ] Tests cover archive include/exclude rules.
 
@@ -469,7 +468,7 @@ After Batch A workers finish:
 3. Do lead inline review per task, including:
    - prompt contract exactness
    - no public plugin schema invention beyond Lead Gate 0
-   - package tests meaningful enough to catch missing assets/hooks/version sync
+   - package tests meaningful enough to catch missing assets, accidental hooks, and version sync
    - docs not stale against new manifest count
    - parallel batch commit-mode safety
 4. Stage and commit reviewed task changes in a controlled order. Parallel-batch workers do not create their own commits.
