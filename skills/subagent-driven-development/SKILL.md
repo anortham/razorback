@@ -183,15 +183,17 @@ Every dispatch chooses one commit mode and copies it into the worker prompt:
   `git add` or `git commit`. The lead stages and commits after inline review to
   avoid Git index races between concurrent workers.
 
-**Lead staging (`parallel-lead-commit`):** stage **only the reviewed task's owned
-files** — `git add <owned paths>` then commit. Never `git add -A`, `git add .`,
-or `git commit -a`: sibling workers in the same batch may have unreviewed,
-in-flight edits in the shared working tree, and a broad stage would sweep them
-into the wrong commit and bypass inline review. **Commit before you record:** the
-lead creates the commit first, then writes the durable-progress line with the
-real commit SHA (see Durable Progress). Never mark a `parallel-lead-commit` task
-complete while its commit is still pending — that record has no verifiable commit
-and a crash in that window strands the approved work.
+**Lead staging (`parallel-lead-commit`):** tick the task's acceptance-criteria
+checkboxes before staging, then stage the reviewed task's owned files plus the
+plan file — `git add <owned paths> <plan file>` then commit. Never `git add -A`,
+`git add .`, or `git commit -a`: sibling workers in the same batch may have
+unreviewed, in-flight edits in the shared working tree, and a broad stage would
+sweep them into the wrong commit and bypass inline review. **Commit before you
+record:** the lead creates the commit first, then writes the durable-progress
+line with the real commit SHA (see Durable Progress). Never mark a
+`parallel-lead-commit` task complete while its commit is still pending — that
+record has no verifiable commit and a crash in that window strands the approved
+work.
 
 Fix rounds keep the same commit mode unless the lead explicitly changes it.
 
@@ -302,7 +304,7 @@ Spec compliance checking earns its keep when the plan leaves room for misinterpr
 
 Either way, the review is a single pass by the lead. Never collapse the loop to skip re-reviewing after a fix.
 
-**When the review passes (approved):** for `parallel-lead-commit`, the lead first stages that task's owned files and commits (the approved worker report shows `commit SHA: none - parallel-lead-commit`; the lead owns staging and commit). Then, for either mode, mark the task complete (`TaskUpdate`), append the durable-progress line with the real commit SHA, and tick that task's acceptance-criteria checkboxes in the plan file (`[ ]` → `[x]`), so the plan document records progress alongside the TaskList. This is fast bookkeeping — never a stop or a review gate; move straight to the next task or parallel dispatch.
+**When the review passes (approved):** for `parallel-lead-commit`, the lead first ticks that task's acceptance-criteria checkboxes in the plan file (`[ ]` → `[x]`), then stages the reviewed task's owned files plus the plan file and commits (the approved worker report shows `commit SHA: none - parallel-lead-commit`; the lead owns staging and commit). Then write the durable-progress line with the real commit SHA. For either mode, mark the task complete (`TaskUpdate`) so the plan document records progress alongside the TaskList. This is fast bookkeeping — never a stop or a review gate; move straight to the next task or parallel dispatch.
 
 ## Step 4: Fixes
 

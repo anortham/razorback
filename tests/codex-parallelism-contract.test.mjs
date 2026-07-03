@@ -113,6 +113,15 @@ test('subagent-driven-development enforces the parallel-lead-commit durability c
   assert.match(skill, /INCOMPLETE/);
 });
 
+test('parallel-lead-commit includes plan progress in the lead commit', () => {
+  const skill = read('skills/subagent-driven-development/SKILL.md');
+
+  assert.match(skill, /tick the task's acceptance-criteria\s+checkboxes before staging/i);
+  assert.match(skill, /stage the reviewed task's owned files plus the\s+plan file/i);
+  assert.match(skill, /then write the durable-progress line with the real commit SHA/i);
+  assert.doesNotMatch(skill, /lead first stages that task's owned files and commits/i);
+});
+
 // The four contract fields must live inside EACH plan form, not just somewhere
 // in the file — otherwise deleting them from the light or compact form passes.
 test('light and compact plan forms each carry the parallel-contract task fields', () => {
