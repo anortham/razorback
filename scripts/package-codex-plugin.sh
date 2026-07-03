@@ -191,12 +191,20 @@ rm -f "$OUTPUT_PATH"
 
 ARCHIVE_MTIME="$(git -C "$REPO_ROOT" show -s --format=%cI "$REF")"
 
-git -C "$REPO_ROOT" archive \
-  --format="$FORMAT" \
-  --mtime="$ARCHIVE_MTIME" \
-  --output="$OUTPUT_PATH" \
-  "$REF" \
-  "${ARCHIVE_PATHS[@]}"
+# `git archive --mtime` normalizes entry timestamps for reproducible output but
+# was only added in git 2.32. Probe support (capturing the help text so the
+# non-zero exit of `-h` under `set -o pipefail` does not abort the script) and
+# fall back gracefully on older git — the archive still carries the commit
+# timestamp from ARCHIVE_MTIME's source, just un-normalized.
+archive_args=(--format="$FORMAT" --output="$OUTPUT_PATH")
+archive_help="$(git -C "$REPO_ROOT" archive -h 2>&1 || true)"
+if printf '%s\n' "$archive_help" | grep -q -- '--mtime'; then
+  archive_args+=(--mtime="$ARCHIVE_MTIME")
+else
+  echo "warning: this git lacks 'git archive --mtime' (needs git >= 2.32); archive timestamps will not be normalized" >&2
+fi
+
+git -C "$REPO_ROOT" archive "${archive_args[@]}" "$REF" "${ARCHIVE_PATHS[@]}"
 
 if [[ "$KEEP_STAGE" -eq 1 ]]; then
   extract_stage "$FORMAT" "$OUTPUT_PATH"

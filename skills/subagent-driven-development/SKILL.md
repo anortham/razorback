@@ -102,7 +102,9 @@ Check for durable progress before dispatching:
 cat "$(git rev-parse --show-toplevel)/.razorback/sdd/progress.md" 2>/dev/null || true
 ```
 
-Tasks listed there as complete are DONE. Do not re-dispatch them; verify the named commits with `git log` if needed, then resume at the first incomplete task.
+Tasks listed there as complete **with a named commit** are DONE. Do not re-dispatch them; verify the named commit with `git log` if needed, then resume at the first incomplete task.
+
+Treat any completion line whose commit SHA is missing, `pending`, or absent from `git log` as **INCOMPLETE** — this is the `parallel-lead-commit` crash window. Run `git status`, inspect the working tree for that task's owned files, and either re-review and commit the approved edits (scoped to owned files) or re-dispatch the task. Never skip a task whose completion record has no verifiable commit.
 
 Before dispatching, orient yourself on the codebase with Miller:
 - **Orient** around the areas the plan touches with `context`
@@ -181,6 +183,16 @@ Every dispatch chooses one commit mode and copies it into the worker prompt:
   `git add` or `git commit`. The lead stages and commits after inline review to
   avoid Git index races between concurrent workers.
 
+**Lead staging (`parallel-lead-commit`):** stage **only the reviewed task's owned
+files** — `git add <owned paths>` then commit. Never `git add -A`, `git add .`,
+or `git commit -a`: sibling workers in the same batch may have unreviewed,
+in-flight edits in the shared working tree, and a broad stage would sweep them
+into the wrong commit and bypass inline review. **Commit before you record:** the
+lead creates the commit first, then writes the durable-progress line with the
+real commit SHA (see Durable Progress). Never mark a `parallel-lead-commit` task
+complete while its commit is still pending — that record has no verifiable commit
+and a crash in that window strands the approved work.
+
 Fix rounds keep the same commit mode unless the lead explicitly changes it.
 
 ## File Handoffs
@@ -197,9 +209,9 @@ Large task text, reports, and diffs should move as files instead of pasted promp
 Conversation memory does not survive every long run. Track task completion in `.razorback/sdd/progress.md` in addition to TaskList state and plan checkboxes.
 
 - At skill start, read `.razorback/sdd/progress.md` if it exists. Trust it with `git log` over stale recollection after compaction or resume.
-- When a task's Lead inline review passes, append one line in the same bookkeeping step:
-  - `serial-worker-commit`: `Task N: complete (commits <base7>..<head7>, Lead inline review clean)`.
-  - `parallel-lead-commit`: `Task N: complete (parallel-lead-commit, Lead inline review clean, lead commit pending)`.
+- Record a task complete only after its durable commit exists — the completion line always carries a real commit SHA:
+  - `serial-worker-commit`: after the worker commit, `Task N: complete (commits <base7>..<head7>, Lead inline review clean)`.
+  - `parallel-lead-commit`: after the **lead** stages the owned files and commits, `Task N: complete (parallel-lead-commit, Lead inline review clean, lead commit <sha7>)`. Do not write this line while the commit is still pending; the lead commits first, then records the SHA.
 - The ledger is git-ignored working-tree scratch. `git clean -fdx` deletes it; if that happens, recover from `git log` and checked plan boxes.
 
 Per-harness state to keep after dispatch:
@@ -290,7 +302,7 @@ Spec compliance checking earns its keep when the plan leaves room for misinterpr
 
 Either way, the review is a single pass by the lead. Never collapse the loop to skip re-reviewing after a fix.
 
-**When the review passes (approved):** mark the task complete (`TaskUpdate`) and tick that task's acceptance-criteria checkboxes in the plan file (`[ ]` → `[x]`), so the plan document records progress alongside the TaskList. For `parallel-lead-commit`, the approved worker report should still show `commit SHA: none - parallel-lead-commit`; the lead owns staging and commit after review. This is fast bookkeeping — never a stop or a review gate; move straight to the next task or parallel dispatch.
+**When the review passes (approved):** for `parallel-lead-commit`, the lead first stages that task's owned files and commits (the approved worker report shows `commit SHA: none - parallel-lead-commit`; the lead owns staging and commit). Then, for either mode, mark the task complete (`TaskUpdate`), append the durable-progress line with the real commit SHA, and tick that task's acceptance-criteria checkboxes in the plan file (`[ ]` → `[x]`), so the plan document records progress alongside the TaskList. This is fast bookkeeping — never a stop or a review gate; move straight to the next task or parallel dispatch.
 
 ## Step 4: Fixes
 
@@ -376,7 +388,8 @@ On detecting a resumed run (post-compaction note, mismatch between expected and 
 2. Read the plan file, noting which acceptance-criteria checkboxes are already `[x]`.
 3. Check the TaskList for completed / in-progress / pending tasks.
 4. `git log --oneline <base>..HEAD` — verify what is actually committed.
-5. Identify the next incomplete task and resume execution.
+5. Reconcile `parallel-lead-commit` gaps: for any progress line marked complete whose commit SHA is missing, `pending`, or absent from `git log`, run `git status` and inspect the working tree for that task's owned files. If approved edits are uncommitted, re-review and commit them (scoped to owned files) before advancing; if nothing is there, treat the task as incomplete and re-dispatch. Do not trust a completion record that has no verifiable commit.
+6. Identify the next incomplete task and resume execution.
 
 This sequence runs only on resumed runs. A fresh run dispatches directly into Step 1 (Extract Tasks from the Plan). Subagent IDs from the prior session cannot be resumed post-compaction — treat any needed fix as a fresh dispatch with prior-commit context.
 
@@ -495,6 +508,8 @@ Done.
 - Proceed to the next task while any review has open issues
 - Dispatch parallel implementer subagents on overlapping files (conflicts)
 - Let parallel-batch workers race on `git add` or `git commit`
+- As the lead, stage a `parallel-lead-commit` task with `git add -A`, `git add .`, or `git commit -a` — sibling workers' in-flight edits get swept into the wrong commit. Stage only the reviewed task's owned files.
+- Record a `parallel-lead-commit` task complete before its lead commit exists, or write its progress line without the real commit SHA
 - Make the subagent read the plan file (provide the full task text instead)
 - Skip scene-setting context (the subagent needs to know where the task fits)
 - Ignore subagent questions (answer before letting them proceed)
