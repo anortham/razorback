@@ -164,7 +164,7 @@ function createFixture() {
       fixtureManifest,
       `${JSON.stringify({
         name: 'razorback',
-        version: '0.19.0',
+        version: '0.0.0',
         description: 'Razorback skills for Codex',
         author: 'anortham',
         skills: './skills/',
