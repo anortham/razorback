@@ -15,7 +15,7 @@ models.
   explicitly selects a model with `-m`.
 - **Reasoning**: inherit the current Codex default unless the user or environment
   explicitly selects reasoning effort.
-- **Sandbox mode**: `-s, --sandbox <MODE>` accepts `read-only | workspace-write | danger-full-access`. Use `read-only` for review (the reviewer can investigate but cannot edit). For delegate flows use `--sandbox workspace-write` plus `-a never` (the old `--full-auto` shorthand is deprecated as of codex 0.134; it still runs but emits a warning). Pair with `--dangerously-bypass-approvals-and-sandbox` only when the user explicitly asks and the environment is externally sandboxed.
+- **Sandbox mode**: `-s, --sandbox <MODE>` accepts `read-only | workspace-write | danger-full-access`. Use `read-only` for review (the reviewer can investigate but cannot edit). For delegate flows use `--sandbox workspace-write` alone — `codex exec` is non-interactive and never prompts for approval, and codex 0.143 removed `-a/--ask-for-approval` from `exec` entirely (passing it now errors with `unexpected argument '-a'`; the flag remains valid only on interactive `codex`). The old `--full-auto` shorthand still parses on `exec` but is deprecated. Pair with `--dangerously-bypass-approvals-and-sandbox` only when the user explicitly asks and the environment is externally sandboxed.
 - **Windows sandbox**: codex's `read-only` and `workspace-write` sandboxes build a restricted-token child process via `CreateProcessAsUserW`. On locked-down Windows (Enterprise/LTSC, GPO-restricted process creation) that call fails with `CreateProcessAsUserW failed: 5` / `windows sandbox failed: spawn setup`, so codex cannot spawn **any** child process and reads no files — even for read-only review. When you hit this, re-run with `-s danger-full-access` so codex skips its own sandbox; the host harness (Claude Code) still bounds the run, but note `danger-full-access` removes codex's local isolation, so `read-only` is then enforced only by the prompt, not the sandbox. On a host where this failure is known to recur (e.g. an Enterprise/LTSC machine with GPO restrictions), pass the flag from the start to skip a wasted first run. It is environmental: retrying the same sandbox mode on the affected host fails identically, and if you control the host the native Windows sandbox setup (`codex-windows-sandbox-setup.exe`) or running under WSL2 may restore sandboxing. Do NOT work around it by embedding file contents in the prompt, and do not reach for `--dangerously-bypass-approvals-and-sandbox` (it also skips approvals) unless the user asks. See Error Handling.
 - **Always use**: `--ephemeral --color never` for clean non-interactive output
 - **Always append**: `2>/dev/null` to suppress stderr noise (session banner, transcript)
@@ -120,7 +120,7 @@ perspectives.
 The user wants a review of current changes. Inherit the current Codex default
 unless the user or environment explicitly selects a model.
 
-**Native alternative — `codex exec review`:** Codex ships a built-in scoped review subcommand: `codex exec review --uncommitted` (working tree), `codex exec review --base <branch>` (branch vs base), or `codex exec review --commit <sha>`. It auto-detects scope and accepts a custom prompt via `[PROMPT]` or stdin. It does **not** support `--output-schema`, so use the regular `codex exec` path below for adversarial / schema-validated review. Use `codex exec review` when the user wants a quick codex-flavored second opinion and doesn't need cross-reviewer prompt parity.
+**Native alternative — `codex exec review`:** Codex ships a built-in scoped review subcommand: `codex exec review --uncommitted` (staged + unstaged + untracked), `codex exec review --base <branch>` (branch vs base), or `codex exec review --commit <sha>`, plus an optional `--title <TITLE>` for the review summary. The top-level `codex review` is the same non-interactive review with the same scope flags. It auto-detects scope and accepts a custom prompt via `[PROMPT]` or stdin. It does **not** support `--output-schema`, so use the regular `codex exec` path below for adversarial / schema-validated review. Use `codex exec review` when the user wants a quick codex-flavored second opinion and doesn't need cross-reviewer prompt parity.
 
 ```bash
 # Quick scoped review of uncommitted changes
@@ -248,16 +248,19 @@ bug. Codex needs tool access.
 
 ```bash
 codex exec --ephemeral --color never \
-  --sandbox workspace-write -a never \
+  --sandbox workspace-write \
   -C /path/to/project \
   "Your task instructions here. Apply changes directly." \
   < /dev/null 2>/dev/null
 ```
 
-`--sandbox workspace-write -a never` gives Codex write access inside the
-workspace and tells it not to ask for approval mid-run (the replacement for
-the deprecated `--full-auto` shorthand). It can read files, write files, and
-run commands within the project directory.
+`--sandbox workspace-write` gives Codex write access inside the workspace
+(the replacement for the deprecated `--full-auto` shorthand). Do NOT add
+`-a never`: `codex exec` never prompts for approval, and codex 0.143 removed
+`-a/--ask-for-approval` from `exec` — passing it errors with
+`unexpected argument '-a'`. Codex can read files, write files, and run
+commands within the project directory. If the task must write outside the
+workspace root, add `--add-dir <DIR>` for each extra writable directory.
 
 **After**: Summarize what Codex changed. Run `git diff --stat` in the project
 to show the scope, then review the changes yourself. Flag anything wrong or
@@ -400,7 +403,8 @@ think it's wrong, and your evidence.
 - **ACP transport unsupported**: Codex CLI does NOT support the `--acp` protocol flag. If a `delegate_task` call with `acp_command: "codex"` fails with `unexpected argument '--acp'`, remove the `acp_command` parameter entirely — it will fall back to the default Hermes subagent transport instead.
 - **Windows hang (no output for many minutes)**: `codex exec` reads stdin even when a prompt argument is supplied. On Windows (Git Bash via Claude Code's Bash tool, PowerShell, cmd.exe) stdin can stay open with no producer, so codex blocks on stdin EOF forever and never starts the model run. Always add `< /dev/null` (bash) or `< NUL` (cmd/PowerShell) to non-piped invocations. If you've already triggered the hang, kill the process — it will not recover.
 - **Windows sandbox spawn failure (`CreateProcessAsUserW failed: 5` / `windows sandbox failed: spawn setup`)**: codex's `read-only`/`workspace-write` sandbox needs to spawn a restricted-token child process, which locked-down Windows (Enterprise/LTSC, GPO process-creation restrictions) denies. Codex then can't run any shell command, so it reads zero files and the review/delegate returns nothing useful. This is **not** a finding about the code under review — it's the sandbox failing to start. Fix: re-run with `-s danger-full-access` so codex skips its own sandbox (the host harness still constrains the run; `read-only` is then enforced by the prompt, not the sandbox). On a host where this recurs, pass the flag from the start. Do not work around it by inlining file contents into the prompt. Retrying the same sandbox mode on the affected host fails identically; if you control the host, the native Windows sandbox setup or WSL2 may restore sandboxing.
-- **`--full-auto` deprecation warning**: codex 0.134+ prints `warning: --full-auto is deprecated; use --sandbox workspace-write instead`. Replace `--full-auto` with `--sandbox workspace-write -a never` (or `--sandbox workspace-write` alone if you want the default approval policy).
+- **`--full-auto` deprecation warning**: codex 0.134+ prints `warning: --full-auto is deprecated; use --sandbox workspace-write instead`. Replace `--full-auto` with `--sandbox workspace-write` alone.
+- **`unexpected argument '-a' found`**: codex 0.143 removed `-a/--ask-for-approval` from `codex exec` (non-interactive runs never prompt, so the flag was meaningless there). Drop `-a never` from `exec` invocations; the flag still exists on interactive `codex`.
 
 ## Quick Reference
 
@@ -418,9 +422,9 @@ On **Windows**, if codex's sandbox fails to spawn (`CreateProcessAsUserW failed:
 | Second opinion | read-only | `codex exec --ephemeral --color never -C dir "prompt" < /dev/null 2>/dev/null` |
 | Code review (unified prompt) | read-only | Pipe diff: `echo "$PROMPT" \| codex exec --ephemeral --color never -C dir - 2>/dev/null` (scope/sizing per Review Targeting) |
 | Code review (codex-native scope) | read-only | `codex exec review --uncommitted -C dir -o /tmp/review.txt "focus" < /dev/null 2>/dev/null` (or `--base <branch>` / `--commit <sha>`). No `--output-schema` support. |
-| Goal tracking | experimental | `/goal` sets or views a long-running objective; requires `features.goals` |
+| Goal tracking | interactive only | `/goal` sets or views a long-running objective; the `goals` feature is stable and enabled by default as of codex 0.143 |
 | Adversarial review | read-only + schema | Add `--output-schema "$SCHEMA_FILE"` where `$SCHEMA_FILE` is a temp file materialized from the inlined schema (see Adversarial Review section). Scope/sizing per Review Targeting. |
-| Delegate (complex) | workspace-write | `codex exec --ephemeral --color never --sandbox workspace-write -a never -C dir "prompt" < /dev/null 2>/dev/null` (replaces the deprecated `--full-auto`) |
+| Delegate (complex) | workspace-write | `codex exec --ephemeral --color never --sandbox workspace-write -C dir "prompt" < /dev/null 2>/dev/null` (no `-a` — removed from `exec` in codex 0.143; replaces the deprecated `--full-auto`; add `--add-dir <DIR>` for extra writable dirs) |
 | Truly fresh reviewer | read-only + isolated | Add `--ignore-user-config --ignore-rules` to skip project AGENTS.md and execpolicy `.rules` |
 | Clean output capture | any | Add `-o <file>` to write the agent's last message to a file instead of mixing it with stderr/banner output |
 | Resume session | persistent | Drop `--ephemeral`, use `codex exec resume --last "prompt" < /dev/null 2>/dev/null` |

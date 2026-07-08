@@ -37,6 +37,8 @@ print(f'Org: {d.get(\"orgName\")}')
 `claude auth status` output fields:
 - **`loggedIn`**: bool — if false, tell user to run `claude login`
 - **`authMethod`**: `"claude.ai"` (OAuth) or `"api_key"` — confirms auth path
+- **`apiProvider`**: `"firstParty"` for direct Anthropic; differs under
+  Bedrock/Vertex/Foundry
 - **`subscriptionType`**: `"pro"`, `"max"`, `"team"`, or `"enterprise"`. Use this
   to set user expectations about rate limits and budget before heavy invocations.
   Not present under API key auth.
@@ -60,13 +62,26 @@ draws from a separate Agent SDK credit pool, not the general subscription.
 - **Model**: inherit the current Claude default unless the user or environment
   explicitly selects a model.
 - **Reasoning effort**: `--effort <level>` accepts `low | medium | high | xhigh | max`. Omit it unless the user or environment explicitly selects one.
-- **Fallback model**: `--fallback-model <model>` auto-falls back when the primary is overloaded (works only with `--print`). Fits razorback's autonomous-by-default flow; use it only when an explicit fallback is configured.
+- **Fallback model**: `--fallback-model <model>` auto-falls back when the primary is overloaded or unavailable (works only with `--print`). Accepts a comma-separated list tried in order; the primary is re-tried at the start of each user turn. Fits razorback's autonomous-by-default flow; use it only when an explicit fallback is configured.
 - **Ephemeral**: `--no-session-persistence` so the review leaves no stored
   session behind (parity with codex's `--ephemeral`).
 - **No `--bare`**: bare mode reads auth strictly from `ANTHROPIC_API_KEY` or `apiKeyHelper` (not OAuth or keychain). The common razorback caller has OAuth, so this skill avoids `--bare` to keep normal logins working. If you have a guaranteed `ANTHROPIC_API_KEY` env in CI, `--bare` is fine.
 - **Output format**: `--output-format json` for structured returns; combine
   with `--json-schema` for schema-validated adversarial output.
 - **Stderr**: append `2>/dev/null` to suppress banner and status noise.
+- **Always redirect stdin**: append `< /dev/null` (bash) or `< NUL` (Windows
+  cmd/PowerShell) to every invocation that doesn't intentionally pipe input.
+  `claude -p` reads piped stdin to EOF even when the prompt is passed as an
+  argument (verified on 2.1.204: a run with a held-open pipe waits for the
+  pipe to close before answering). On macOS/Linux the shell closes stdin so
+  this is harmless, but on Windows (Git Bash via a harness Bash tool) stdin
+  can stay open with no producer and `claude -p` blocks indefinitely — the
+  same hang class documented for `codex exec` in razorback:codex-cli.
+- **Hidden but supported flags**: `--max-turns`, `--system-prompt-file`, and
+  `--append-system-prompt-file` no longer appear in `claude --help` but are
+  still parsed and supported (verified on 2.1.204: probing each without a
+  value returns `option ... argument missing`, not `unknown option`). Do not
+  strip them from these recipes just because help output omits them.
 - **Working directory**: Claude uses the shell's cwd. There is no equivalent
   to codex's `-C` flag; `cd` first or run from the project root.
 - **Non-interactive permissions**: `--dangerously-skip-permissions` is
@@ -181,7 +196,7 @@ cd /path/to/project && claude -p \
   ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} \
   ${CLAUDE_EFFORT:+--effort "$CLAUDE_EFFORT"} \
   "Your prompt here" \
-  2>/dev/null
+  < /dev/null 2>/dev/null
 ```
 
 Drop `--json-schema` and `--max-turns`; a second opinion is free-form text.
@@ -238,7 +253,7 @@ cd /path/to/project && claude -p \
   ${CLAUDE_EFFORT:+--effort "$CLAUDE_EFFORT"} \
   ${CLAUDE_FALLBACK_MODEL:+--fallback-model "$CLAUDE_FALLBACK_MODEL"} \
   "$PROMPT" \
-  2>/dev/null
+  < /dev/null 2>/dev/null
 ```
 
 Same command shape as adversarial review but without the adversarial system
@@ -340,7 +355,7 @@ cd /path/to/project && claude -p \
   ${CLAUDE_FALLBACK_MODEL:+--fallback-model "$CLAUDE_FALLBACK_MODEL"} \
   --system-prompt-file "$PROMPT_FILE" \
   "$DIFF_AND_CONTEXT" \
-  2>/dev/null
+  < /dev/null 2>/dev/null
 ```
 
 The baseline flags are: `-p`, `--no-session-persistence`,
@@ -434,10 +449,10 @@ need follow-up capability, drop that flag, then resume with `claude -r`:
 
 ```bash
 # Initial task (persistent session)
-cd /path && claude -p --dangerously-skip-permissions ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} "prompt" 2>/dev/null
+cd /path && claude -p --dangerously-skip-permissions ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} "prompt" < /dev/null 2>/dev/null
 
 # Resume the last session
-claude -r "follow-up prompt" 2>/dev/null
+claude -r "follow-up prompt" < /dev/null 2>/dev/null
 ```
 
 See the Claude Code CLI reference for session-resume details. Use this when
@@ -456,7 +471,7 @@ override. To review a project other than cwd, `cd` into it first:
 ```bash
 cd ~/source/other-project && claude -p --no-session-persistence \
   --dangerously-skip-permissions --tools "Read,Bash" ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} \
-  "prompt" 2>/dev/null
+  "prompt" < /dev/null 2>/dev/null
 ```
 
 **Self-review with razorback skills loaded:** if you want the reviewer to apply razorback's Miller-first review checklist itself, add `--plugin-dir <path-to-razorback>` so the reviewer session loads the same skills your main session uses. Without it, the reviewer sees only the project's `CLAUDE.md`.
@@ -515,6 +530,17 @@ think it's wrong, and your evidence.
   timeout.
 - **Empty output**: if stdout is empty, check stderr (remove `2>/dev/null`
   temporarily) for error messages.
+- **Windows hang (no output for many minutes)**: `claude -p` blocks waiting
+  for stdin EOF when stdin is an open pipe, even with a prompt argument. On
+  Windows (Git Bash via a harness Bash tool, cmd, PowerShell) stdin can stay
+  open with no producer, so the run never starts. Always add `< /dev/null`
+  (bash) or `< NUL` (cmd/PowerShell) to non-piped invocations. If you've
+  already triggered the hang, kill the process — it will not recover.
+- **Flag missing from `--help`**: `--max-turns`, `--system-prompt-file`, and
+  `--append-system-prompt-file` are hidden from help output but still
+  supported. Verify with a missing-argument probe (`claude -p --max-turns`
+  should say `argument missing`, not `unknown option`) before concluding a
+  flag was removed.
 - **Claude not installed**: check with `claude --version`. Install via
   `npm install -g @anthropic-ai/claude-code` if missing.
 - **Schema violation**: if the returned JSON doesn't validate, inspect the
@@ -529,12 +555,14 @@ model. This skill avoids `--bare` for OAuth/keychain users; CI with
 
 See `references/command-parity.md` before assuming a command exists in both Claude and Codex.
 
+All non-piped patterns must include `< /dev/null` (bash) or `< NUL` (Windows cmd/PowerShell) to prevent `claude -p` from blocking on stdin EOF — see the Defaults section.
+
 | Use case | Mode | Command pattern |
 |---|---|---|
-| Second opinion | read-only | `cd dir && claude -p --no-session-persistence --dangerously-skip-permissions --tools "Read,Bash" ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} "prompt" 2>/dev/null` |
+| Second opinion | read-only | `cd dir && claude -p --no-session-persistence --dangerously-skip-permissions --tools "Read,Bash" ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} "prompt" < /dev/null 2>/dev/null` |
 | Code review | read-only + schema | Add `--output-format json --json-schema "$SCHEMA_JSON" --max-turns 15 --max-budget-usd 5.00` (inline schema as a string; see Code Review section). Scope/sizing per Review Targeting. |
 | Adversarial review | read-only + schema + system prompt | Add `--system-prompt-file "$PROMPT_FILE"` (temp file materialized from the Adversarial Prompt Template) to the code-review pattern. Scope/sizing per Review Targeting. |
-| Resume session | persistent | Drop `--no-session-persistence`, use `claude -r "prompt"` |
+| Resume session | persistent | Drop `--no-session-persistence`, use `claude -r "prompt" < /dev/null 2>/dev/null` |
 | Apply explicit effort | any | Add `--effort "$CLAUDE_EFFORT"` (low/medium/high/xhigh/max) when the environment sets it |
 | Survive overload | autonomous | Add `--fallback-model "$CLAUDE_FALLBACK_MODEL"` so the run doesn't hard-fail on capacity |
 | Self-review with razorback skills | any | Add `--plugin-dir <path-to-razorback>` so the reviewer loads the same skill set |
