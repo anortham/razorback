@@ -1,0 +1,39 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # razorback has zero npm dependencies, so there is nothing to install.
+
+      - name: Run tests
+        run: npm test
+
+      - name: Check version consistency
+        run: ./scripts/bump-version.sh --audit
+
+      # The audit only proves the manifests agree with each other. If every
+      # manifest is stale together, it still passes. On tag runs, pin the
+      # release to the tag so a stale-but-consistent version cannot ship.
+      - name: Verify tag matches manifest version
+        if: github.ref_type == 'tag'
+        run: |
+          manifest_version="$(jq -r .version package.json)"
+          tag_version="${GITHUB_REF_NAME#v}"
+          if [ "$manifest_version" != "$tag_version" ]; then
+            echo "tag ${GITHUB_REF_NAME} does not match manifest version ${manifest_version}" >&2
+            exit 1
+          fi
+          echo "tag ${GITHUB_REF_NAME} matches manifest version ${manifest_version}"
