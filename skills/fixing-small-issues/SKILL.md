@@ -57,6 +57,7 @@ tune the numeric thresholds; the criteria themselves are not optional.
 - TDD still applies where a test harness covers the behavior: write the failing regression test first, then the minimal fix. **REQUIRED SUB-SKILL:** razorback:test-driven-development.
 - No test surface (pure visual or copy change)? Verify by observing the rendered or actual result, and say that's what you did.
 - One fix at a time. No while-I'm-here improvements.
+- If the quick fix cuts a real corner with a known ceiling, mark it: `# razorback: <ceiling>, <upgrade trigger>` (`//` in C-family languages) — e.g. `# razorback: global lock, per-account locks if throughput matters`. A marker names the limit and the trigger to revisit; razorback:harvesting-debt harvests them into a ledger later. An unmarked deliberate shortcut is the one that rots.
 
 ## Step 4: Verify the affected scope only
 
@@ -64,6 +65,7 @@ tune the numeric thresholds; the criteria themselves are not optional.
 - The full suite is NOT part of this tier. The full suite runs at the branch gate
   (CI or pre-merge), not in the inner loop.
 - Finish per project convention: commit with a clear message; open a PR where the project is branch-gated.
+- In the closing summary, list any `# razorback:` markers left behind (`<file>:<line>` + the ceiling), or say "no markers left."
 
 ## Escalation Triggers
 

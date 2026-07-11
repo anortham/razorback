@@ -189,10 +189,10 @@ File-ownership note: Tasks 1–4 all create separate `tests/*.test.mjs` files an
 - `tests/debt-marker.test.mjs`: content assertions in the existing style — marker syntax documented in both skills, harvest skill has required frontmatter fields, scan command excludes the razorback-internal directories, one-shot boundary stated.
 
 **Acceptance criteria:**
-- [ ] Marker rule present in `fixing-small-issues` without changing its triage criteria.
-- [ ] `harvesting-debt` skill exists with valid frontmatter and the exclusion-aware scan.
-- [ ] `node --test tests/debt-marker.test.mjs` passes; no existing test regresses.
-- [ ] Worker-scope verification passes and the change is handed to the lead per commit mode.
+- [x] Marker rule present in `fixing-small-issues` without changing its triage criteria.
+- [x] `harvesting-debt` skill exists with valid frontmatter and the exclusion-aware scan.
+- [x] `node --test tests/debt-marker.test.mjs` passes; no existing test regresses.
+- [x] Worker-scope verification passes and the change is handed to the lead per commit mode.
 
 ---
 
