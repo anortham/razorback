@@ -92,8 +92,10 @@ cmd_check() {
 }
 
 cmd_audit() {
-  # First run check
-  cmd_check || true
+  # First run check. Drift in the declared manifests is a hard failure: remember
+  # it and propagate it as the audit's exit status (CI gates on --audit).
+  local check_status=0
+  cmd_check || check_status=$?
   echo ""
 
   # Determine the current version (most common across declared files)
@@ -161,6 +163,10 @@ cmd_audit() {
     echo "Review the above files — if they should be bumped, add them to .version-bump.json"
     echo "If they should be skipped, add them to the audit.exclude list."
   fi
+
+  # Undeclared references are advisory (prose may legitimately mention the
+  # version); only declared-manifest drift fails the audit.
+  return $check_status
 }
 
 cmd_bump() {
