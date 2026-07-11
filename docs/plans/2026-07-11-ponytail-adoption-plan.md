@@ -156,11 +156,11 @@ File-ownership note: Tasks 1–4 all create separate `tests/*.test.mjs` files an
 - Add a short "Instruction-tier hosts" row block to CLAUDE.md's harness table? NO — CLAUDE.md edits are lead-discretion after review; worker leaves CLAUDE.md untouched and notes the follow-up in the report.
 
 **Acceptance criteria:**
-- [ ] All four copies match the canonical body exactly (post-frontmatter-strip); checker exits 0.
-- [ ] Checker exits 1 on a drifted copy and on a missing invariant (covered by fixture test).
-- [ ] Canonical contains no Skill-tool or `razorback:<skill>` references.
-- [ ] `node --test tests/rule-copies.test.mjs` passes; no existing test regresses.
-- [ ] Worker-scope verification passes and the change is handed to the lead per commit mode.
+- [x] All four copies match the canonical body exactly (post-frontmatter-strip); checker exits 0.
+- [x] Checker exits 1 on a drifted copy and on a missing invariant (covered by fixture test).
+- [x] Canonical contains no Skill-tool or `razorback:<skill>` references.
+- [x] `node --test tests/rule-copies.test.mjs` passes; no existing test regresses.
+- [x] Worker-scope verification passes and the change is handed to the lead per commit mode.
 
 ### Task 4: Shortcut-debt marker convention + harvest skill
 

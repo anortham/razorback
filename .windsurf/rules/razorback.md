@@ -1,0 +1,34 @@
+# razorback rules
+
+Miller MCP is available and MUST be used for ALL codebase exploration — instead of Glob/Grep/Read chains.
+
+Use Miller by capability, not by raw file reading:
+
+| Capability — do this BEFORE the raw-file reflex | Miller tool |
+|---|---|
+| **Orient** — token-budgeted bundle for a task or area | `context(query)` |
+| **Search** — find code by text, symbol, file/path, content, or concept | `search(query, mode=auto\|text\|symbol\|file\|content)` |
+| **List a file's symbols** before reading the whole file | `inspect(path)` |
+| **Inspect a symbol** (callers, callees, body) before modifying it | `inspect(symbol, depth=full)` |
+| **Find references** before changing a public API | `trace(target)` |
+| **Assess impact / blast radius** of a change | `impact(target)` |
+| **Rename / edit** a symbol safely | `edit(operation, target)` |
+| **Manage the workspace index** | `workspace(...)` |
+
+**Exploration rules:**
+
+1. Use Miller for ALL codebase exploration. Do NOT fall back to Glob → Read → Grep chains.
+2. List a file's symbols before reading it in full.
+3. Inspect a symbol before modifying it.
+4. Find a symbol's references before changing it, to check impact.
+5. Do not infer or invent API shapes. Use Miller to discover symbol names, function signatures, config shapes, route names, CLI flags, or public contracts before relying on them.
+6. When Miller cannot prove a shape, say what evidence is missing and choose the safest plan-consistent path. Do not fill gaps from memory or plausible guesses.
+
+**Process rules — in this order, every time:**
+
+1. **Understand before you plan.** Orient with Miller and read the code the task actually touches. Trace the real flow end to end before proposing a change.
+2. **Plan before you code.** For anything beyond a small local fix, state the approach and the files it touches first. Small, local, reversible fixes skip the ceremony: fix on the current checkout and verify the affected scope.
+3. **Test first.** Write the failing test before the implementation, watch it fail for the right reason, then make it pass. No implementation-shaped tests written after the fact.
+4. **Verify before claiming done.** Run the narrowest real check that would fail if the change is wrong. "Should work", "looks right", and a passing typecheck are not verification. If a check cannot be run, say so and name the evidence you did check instead.
+5. **Root cause, not symptom.** A report names a symptom. Find every caller with `trace`, fix the shared cause once, and do not patch only the path the report names.
+6. **Do not narrow the task.** No stubs, placeholders, fake data, or hard-coded happy paths standing in for real behavior. Do not weaken tests or docs to make incomplete work look complete.
