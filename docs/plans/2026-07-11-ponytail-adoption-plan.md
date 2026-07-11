@@ -121,10 +121,10 @@ File-ownership note: Tasks 1–4 all create separate `tests/*.test.mjs` files an
 - Deliberately skipped (note in report): ponytail-style matcher env var (`PONYTAIL_SUBAGENT_MATCHER`) to filter agent types — add later if read-only Explore agents prove noisy. `# razorback: injects into all subagents, add agent-type matcher if Explore-agent noise shows up.`
 
 **Acceptance criteria:**
-- [ ] Running `CLAUDE_PLUGIN_ROOT=$PWD hooks/subagent-start` emits valid JSON in the SubagentStart `hookSpecificOutput` shape containing the Miller rules.
-- [ ] `hooks/hooks.json` remains valid JSON and registers both SessionStart and SubagentStart.
-- [ ] `node --test tests/subagent-hook.test.mjs` passes; no existing test regresses.
-- [ ] Worker-scope verification passes and the change is handed to the lead per commit mode.
+- [x] Running `CLAUDE_PLUGIN_ROOT=$PWD hooks/subagent-start` emits valid JSON in the SubagentStart `hookSpecificOutput` shape containing the Miller rules.
+- [x] `hooks/hooks.json` remains valid JSON and registers both SessionStart and SubagentStart.
+- [x] `node --test tests/subagent-hook.test.mjs` passes; no existing test regresses.
+- [x] Worker-scope verification passes and the change is handed to the lead per commit mode.
 
 ### Task 3: Instruction-tier ruleset + drift check
 

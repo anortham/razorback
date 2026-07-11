@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# SubagentStart hook for razorback plugin (Claude Code only).
+#
+# Injects the compact Miller-first ruleset into every dispatched subagent.
+# Subagents never see the using-razorback toolchain table -- they skip that
+# skill by design (<SUBAGENT-STOP>) -- so without this hook every dispatch
+# prompt has to restate Miller usage from scratch. This makes the floor
+# automatic; prompt files still name task-specific symbols.
+#
+# razorback: injects into all subagents, add agent-type matcher if Explore-agent noise shows up.
+
+set -euo pipefail
+
+# Determine plugin root directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+# Read the subagent toolchain ruleset
+toolchain_content=$(cat "${PLUGIN_ROOT}/skills/using-razorback/references/subagent-toolchain.md" 2>&1 || echo "Error reading subagent-toolchain reference")
+
+# Escape string for JSON embedding using bash parameter substitution.
+# Each ${s//old/new} is a single C-level pass - orders of magnitude
+# faster than a character-by-character loop.
+escape_for_json() {
+    local s="$1"
+    s="${s//\\/\\\\}"
+    s="${s//\"/\\\"}"
+    s="${s//$'\n'/\\n}"
+    s="${s//$'\r'/\\r}"
+    s="${s//$'\t'/\\t}"
+    printf '%s' "$s"
+}
+
+toolchain_escaped=$(escape_for_json "$toolchain_content")
+subagent_context="<EXTREMELY_IMPORTANT>\n${toolchain_escaped}\n</EXTREMELY_IMPORTANT>"
+
+# Output context injection as JSON.
+# Claude Code drops raw stdout for SubagentStart -- only the nested
+# hookSpecificOutput form is read (verified against ponytail's
+# hooks/ponytail-runtime.js writeHookOutput). Emit that shape and nothing else.
+#
+# Uses printf instead of heredoc to work around bash 5.3+ heredoc hang.
+# See: https://github.com/obra/superpowers/issues/571
+printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "SubagentStart",\n    "additionalContext": "%s"\n  }\n}\n' "$subagent_context"
+
+exit 0
