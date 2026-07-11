@@ -51,7 +51,15 @@ test('the debt-marker convention is documented in both skills', () => {
 test('harvesting-debt scans with an exclusion-aware grep', () => {
   const skill = read('skills/harvesting-debt/SKILL.md');
 
-  assert.match(skill, /grep -rnE '\(#\|\/\/\) \?razorback:'/);
+  // -I (skip binary files) is on every documented form of the scan: Miller's
+  // SQLite index matches the marker bytes and would otherwise print
+  // "Binary file ... matches" rows into the ledger.
+  const scanCommands = skill.match(/grep -rn\S* '\(#\|\/\/\) \?razorback:'/g) ?? [];
+  assert.ok(scanCommands.length >= 2, 'both the short and full scan commands must be documented');
+  for (const command of scanCommands) {
+    assert.match(command, /^grep -rn[a-zA-Z]*I[a-zA-Z]* /, `scan command must pass -I: ${command}`);
+  }
+
   for (const excluded of [
     'node_modules',
     '.git',
@@ -64,6 +72,13 @@ test('harvesting-debt scans with an exclusion-aware grep', () => {
     assert.ok(
       skill.includes(excluded),
       `scan guidance must name the excluded path: ${excluded}`,
+    );
+  }
+  // Tool-state dirs quote markers in reports / index content and are never source.
+  for (const excludeDir of ['.miller', '.razorback', '.claude']) {
+    assert.ok(
+      skill.includes(`--exclude-dir=${excludeDir}`),
+      `full scan command must exclude the tool-state dir: ${excludeDir}`,
     );
   }
   // The rationale for excluding razorback's own doc dirs must be stated.

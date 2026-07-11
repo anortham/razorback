@@ -33,21 +33,26 @@ Swift). Example: `# razorback: global lock, per-account locks if throughput matt
 
 Grep the repo for comment markers:
 
-`grep -rnE '(#|//) ?razorback:' .`
+`grep -rnIE '(#|//) ?razorback:' .`
+
+`-I` skips binary files — without it, any binary whose bytes happen to match prints
+a useless `Binary file … matches` row.
 
 Exclude, at minimum:
 
 - `node_modules/`, `.git/`, and build output (`dist/`, `build/`, `target/`, `out/`) — vendored and generated noise.
 - **In the razorback repo itself:** `skills/`, `docs/`, `commands/`, `agents/`, `.memories/`. Razorback's own skill **cross-reference** syntax is `razorback:<skill-name>` (e.g. `razorback:writing-plans`), and those prose references would otherwise flood the ledger with rows that are not debt at all. The comment prefix filters most of it; excluding these directories filters the rest.
+- **Tool-state directories:** `.miller/` (Miller's index), `.razorback/` (sdd briefs and reports), `.claude/` (Claude Code worktrees, which contain both). These quote markers in reports and index the marker bytes in binary content, and none of them are source code. Grep traverses hidden directories by default, so they land in the ledger unless excluded.
 
 Example with exclusions:
 
 ```
-grep -rnE '(#|//) ?razorback:' . \
+grep -rnIE '(#|//) ?razorback:' . \
   --exclude-dir=node_modules --exclude-dir=.git \
   --exclude-dir=dist --exclude-dir=build --exclude-dir=target --exclude-dir=out \
   --exclude-dir=skills --exclude-dir=docs --exclude-dir=commands \
-  --exclude-dir=agents --exclude-dir=.memories
+  --exclude-dir=agents --exclude-dir=.memories \
+  --exclude-dir=.miller --exclude-dir=.razorback --exclude-dir=.claude
 ```
 
 Add comment prefixes your stack uses (`--`, `;`, `%`) if the codebase needs them.
