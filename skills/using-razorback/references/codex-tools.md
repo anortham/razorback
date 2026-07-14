@@ -29,10 +29,12 @@ This enables `spawn_agent`, `send_input`, `wait_agent`, and `close_agent`.
 
 Razorback's subagent prompts live in the skills themselves:
 
-- `skills/subagent-driven-development/implementer-prompt.md` (if present) or inline in the skill body
+- `skills/subagent-driven-development/implementer-prompt.md`
 - `skills/subagent-driven-development/fix-prompt.md`
-- `skills/subagent-driven-development/spec-reviewer-prompt.md`
-- `skills/subagent-driven-development/code-quality-reviewer-prompt.md`
+
+(`spec-reviewer-prompt.md` and `code-quality-reviewer-prompt.md` in the same
+directory are checklists the lead applies during inline review — they are never
+dispatched to a subagent.)
 
 When a skill says to dispatch a subagent with a prompt:
 
