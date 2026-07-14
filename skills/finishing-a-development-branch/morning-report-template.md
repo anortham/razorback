@@ -12,7 +12,7 @@ Placeholders use {{double-brace}} syntax.
 **Status:** {{status}} <!-- Complete | Blocked | Partial -->
 **Plan:** {{plan_path}} <!-- e.g. docs/plans/2026-04-18-autonomous-execution.md -->
 **Branch:** {{branch_name}}
-**PR:** {{pr_url}} <!-- URL or "not created (blocked)" -->
+**PR:** {{pr_url}} <!-- URL (written back after PR creation), "pending — filled in after PR creation", or "not created (blocked)" -->
 **Duration:** {{duration}} <!-- e.g. 2h 14m -->
 **Phases:** {{phases_complete}}/{{phases_total}} complete
 **Tasks:** {{tasks_complete}}/{{tasks_total}} complete

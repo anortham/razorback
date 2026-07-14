@@ -79,6 +79,12 @@ Agent tool (general-purpose):
     shape. If Miller cannot prove a shape, say what evidence is missing and choose
     the safest plan-consistent path instead of guessing from memory.
 
+    Miller covers this repo only. For **external** framework/library/API surfaces,
+    use the verified surface or doc URL provided in your task — do not code
+    external APIs from training memory. If the task touches a staleness-risk
+    external API and provides no verified surface, say so in your report and
+    follow the repo's existing usage pattern.
+
     ## Architecture Quality
 
     The approved module/interface shape in the plan is part of the spec.

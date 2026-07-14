@@ -36,7 +36,7 @@ digraph pre_merge_review {
     "Reviewer choice (codex/gemini/claude)" [shape=box];
     "Step 1: Build diff + context" [shape=box];
     "Step 2: Dispatch chosen reviewer (adversarial, read-only)" [shape=box];
-    "Step 3: Parse findings (JSON for codex/claude, envelope+fallback for gemini)" [shape=box];
+    "Step 3: Parse findings (schema JSON for codex, result envelope for claude, envelope+fallback for gemini)" [shape=box];
     "Any findings?" [shape=diamond];
     "Step 4: Lead verifies each finding with Miller" [shape=box];
     "Classify: real-bug / real-improvement / false-positive / out-of-scope" [shape=box];
@@ -50,8 +50,8 @@ digraph pre_merge_review {
 
     "Reviewer choice (codex/gemini/claude)" -> "Step 1: Build diff + context";
     "Step 1: Build diff + context" -> "Step 2: Dispatch chosen reviewer (adversarial, read-only)";
-    "Step 2: Dispatch chosen reviewer (adversarial, read-only)" -> "Step 3: Parse findings (JSON for codex/claude, envelope+fallback for gemini)";
-    "Step 3: Parse findings (JSON for codex/claude, envelope+fallback for gemini)" -> "Any findings?";
+    "Step 2: Dispatch chosen reviewer (adversarial, read-only)" -> "Step 3: Parse findings (schema JSON for codex, result envelope for claude, envelope+fallback for gemini)";
+    "Step 3: Parse findings (schema JSON for codex, result envelope for claude, envelope+fallback for gemini)" -> "Any findings?";
     "Any findings?" -> "Step 7: Emit summary block for morning report" [label="no"];
     "Any findings?" -> "Step 4: Lead verifies each finding with Miller" [label="yes"];
     "Step 4: Lead verifies each finding with Miller" -> "Classify: real-bug / real-improvement / false-positive / out-of-scope";
@@ -106,19 +106,28 @@ verification evidence.
 Select the prompt file based on the reviewer choice and invoke the matching reviewer-cli skill. Each file contains a complete runnable invocation. All three invocations run the reviewer in adversarial mode with read-only tool access — the reviewer never edits code.
 
 - **codex** → follow [`reviewer-prompts/codex.md`](reviewer-prompts/codex.md). Calls `codex exec --ephemeral --color never --output-schema …` with the shared JSON schema. Background on codex's adversarial-review mode lives in the bundled `razorback:codex-cli` skill.
-- **gemini** → follow [`reviewer-prompts/gemini.md`](reviewer-prompts/gemini.md). Calls `gemini -o json -m gemini-3-pro --yolo` with the schema inlined in the prompt body (gemini has no `--json-schema` flag). The reviewer-prompts file is self-contained — the adversarial template, schema, and placeholder-substitution logic are all inlined there. The bundled `razorback:gemini-cli` skill covers general gemini usage but does not have a separate adversarial-review section.
-- **claude** → follow [`reviewer-prompts/claude.md`](reviewer-prompts/claude.md). Calls `claude -p --no-session-persistence --dangerously-skip-permissions --output-format json --json-schema … --tools "Read,Bash" --max-turns 15 --max-budget-usd 5.00 --model opus --system-prompt-file …`. The reviewer-prompts file is self-contained (schema + adversarial system prompt are inlined); `razorback:claude-cli` has the background treatment.
+- **gemini** → follow [`reviewer-prompts/gemini.md`](reviewer-prompts/gemini.md). Calls `gemini -o json --approval-mode plan` (plan = gemini's read-only mode) with the schema inlined in the prompt body (gemini has no `--json-schema` flag). The reviewer-prompts file is self-contained — the adversarial template, schema, and placeholder-substitution logic are all inlined there. The bundled `razorback:gemini-cli` skill covers general gemini usage but does not have a separate adversarial-review section.
+- **claude** → follow [`reviewer-prompts/claude.md`](reviewer-prompts/claude.md). Calls `claude -p --no-session-persistence --dangerously-skip-permissions --output-format json --json-schema … --tools "Read,Bash" --max-turns 15 --max-budget-usd 5.00 --system-prompt-file …`. The reviewer-prompts file is self-contained (schema + adversarial system prompt are inlined); `razorback:claude-cli` has the background treatment.
 
-All three target the shared output schema defined canonically at `skills/codex-cli/schemas/review-output.schema.json` in the razorback plugin (verdict, summary, findings[severity, title, body, file, line_start, line_end, confidence, recommendation], next_steps). The reviewer-prompts files inline the schema content so invocations need no install-path knowledge.
+All three target the shared output schema defined canonically at `../codex-cli/schemas/review-output.schema.json` in the razorback plugin (verdict, summary, findings[severity, title, body, file, line_start, line_end, confidence, recommendation], next_steps). The reviewer-prompts files inline the schema content so invocations need no install-path knowledge.
 
 ## Step 3: Parse findings
 
-Two paths, because gemini's output shape differs from codex's and claude's.
+Three paths, because each CLI's output shape differs.
 
-**codex / claude (strict schema):** the CLI enforces the JSON schema directly. Parse the stdout with `jq` against the same schema file and iterate `.findings[]`. No envelope.
+**codex (strict schema, no envelope):** `--output-schema` makes the CLI enforce the JSON schema directly on stdout. Validate the array shape, then iterate — a clean review has `findings: []`, and `jq -e '.findings[]'` exits 4 on a valid empty array, which would misread success as a parse failure.
 
 ```bash
-jq -e '.findings[]' < reviewer-output.json     # fail non-zero if any finding is malformed
+jq -e '.findings | type == "array"' < reviewer-output.json >/dev/null   # shape check
+jq '.findings[]?' < reviewer-output.json                                # iterate; empty = clean review
+```
+
+**claude (result envelope):** `--output-format json` wraps the response in a result envelope: `{type, subtype, result, structured_output, usage, total_cost_usd, …}`. With `--json-schema`, the parsed object lands in `.structured_output`; `.result` holds the same JSON as a string.
+
+```bash
+jq -e '.structured_output.findings | type == "array"' < claude-output.json >/dev/null \
+  || jq -re '.result' < claude-output.json | jq -e '.findings | type == "array"' >/dev/null
+jq '.structured_output.findings[]?' < claude-output.json   # iterate; empty = clean review
 ```
 
 **gemini (envelope + markdown fallback):** gemini's `-o json` wraps the model response in a metadata envelope: `{session_id, response, stats: {models: {…: {tokens: …}}}}`. The `.response` field is plain text, frequently fenced in markdown (```` ```json … ``` ````). Execute the 5-step parsing protocol in `reviewer-prompts/gemini.md`:
@@ -129,7 +138,7 @@ jq -e '.findings[]' < reviewer-output.json     # fail non-zero if any finding is
 4. Validate against the shared schema. If invalid, retry once with a stricter "return ONLY JSON, no prose, no fences" prompt. If still invalid, fall back to the structured-markdown regex parser (`## Finding N` blocks).
 5. Normalize every finding to the shared finding shape (the one in `review-output.schema.json`): `{severity, title, body, file, line_start, line_end, confidence, recommendation}`.
 
-After Step 3, all three reviewer paths produce the same in-memory list of normalized findings. Log `stats.models.*.tokens` from the gemini envelope into the morning report's per-reviewer section for cost tracking; codex and claude do not surface per-request token counts in their JSON output, so note the asymmetry in the report.
+After Step 3, all three reviewer paths produce the same in-memory list of normalized findings. For cost tracking in the morning report's per-reviewer section: gemini surfaces `stats.models.*.tokens` in its envelope; claude surfaces `.total_cost_usd` and `.usage.{input_tokens,output_tokens}` in its envelope; codex does not surface per-request token counts in its JSON output, so note the absence for codex rather than faking a number.
 
 ## Step 4: Verify findings
 
@@ -169,13 +178,13 @@ After all delegated fix workers report DONE and commit their changes, or after t
 If verification fails after fixes:
 
 1. If the failure is a straightforward issue introduced by the fix and the implementer missed it, apply one more focused fix round with the failure context. Dispatch a fresh fix worker when delegation exists, or fix inline on a no-delegation run. One retry, not a loop.
-2. If the retry fails or the failure looks structural, this is **blocker taxonomy #5** (unresolvable test failures) — see `skills/using-razorback/references/blocker-taxonomy.md`. Stop and write the blocker into the morning report. Do not push a red branch.
+2. If the retry fails or the failure looks structural, this is **blocker taxonomy #5** (unresolvable test failures) — see `../using-razorback/references/blocker-taxonomy.md` (in the razorback plugin). Stop and write the blocker into the morning report. Do not push a red branch.
 
 If verification passes, proceed to Step 7.
 
 ## Step 7: Emit summary for morning report
 
-Produce a structured block that slots into the External review section of `skills/finishing-a-development-branch/morning-report-template.md`. The template's External review section already defines these placeholders — fill them:
+Produce a structured block that slots into the External review section of `../finishing-a-development-branch/morning-report-template.md`. The template's External review section already defines these placeholders — fill them:
 
 - `{{reviewer}}` — one of `codex`, `gemini`, `claude`.
 - `{{findings_total}}` — count of findings returned by the reviewer (before classification).
@@ -187,7 +196,7 @@ Produce a structured block that slots into the External review section of `skill
 - `{{findings_flagged_count}}` — count of real findings left for human judgment.
   - Per-flagged-finding sub-block: short title + **why uncertain** (required).
 
-If the reviewer was gemini, also capture `stats.models.*.tokens` from the envelope and append a one-line cost note ("gemini used N prompt / M completion tokens"). Codex and claude do not surface per-request token counts — note the absence rather than faking a number.
+Append a one-line cost note per reviewer: gemini from `stats.models.*.tokens` ("gemini used N prompt / M completion tokens"); claude from `.total_cost_usd` and `.usage` ("claude used N in / M out tokens, $X.XX"). Codex does not surface per-request token counts — note the absence rather than faking a number.
 
 The caller (`executing-plans` Step 3 or `subagent-driven-development` Step 4a) takes this block and hands it forward to `finishing-a-development-branch`, which renders it into the PR description (summary form) and the full worktree report.
 
@@ -196,7 +205,7 @@ The caller (`executing-plans` Step 3 or `subagent-driven-development` Step 4a) t
 **Never:**
 
 - **Loop external review.** Single pass only. No "review, fix, re-review" cycle. Leftover real findings that the lead cannot fix get flagged for human judgment and the PR proceeds.
-- **Let the reviewer edit code.** Reviewers are read-only: codex and claude pin `--tools "Read,Bash"`; gemini uses `--yolo` only to auto-approve its own Read calls and is instructed by prompt to be read-only. Delegated fixes route through fresh implementer workers, and no-delegation runs fix inline under the same Miller-first checklist.
+- **Let the reviewer edit code.** Reviewers are read-only, each via its CLI's real mechanism: codex runs under `-s read-only` (sandbox blocks writes), claude pins `--tools "Read,Grep,Glob" --strict-mcp-config` (no write-capable tool in the set), gemini runs under `--approval-mode plan` (read-only mode). Delegated fixes route through fresh implementer workers, and no-delegation runs fix inline under the same Miller-first checklist.
 - **Silently dismiss findings.** Every dismissal requires a written reason in the morning report so the user can override on PR review. Silent dismissals defeat the whole point of running an external reviewer.
 - **Skip verification after fixes.** Every fix invalidates prior affected scopes. Run the required project-defined verification scope, or reuse a ledger entry only when it covers the current HEAD and required scope. Never push a branch whose most recent verification does not include the fix commits.
 - **Ship a PR without the reviewer the user requested.** Reviewer unavailability (auth, rate limit, budget/turn cap with no usable partial output, empty stdout, schema violation persisting after one retry) is a **blocker**, not a silent downgrade. Stop the run, do NOT push, do NOT create a PR, emit a partial morning report with `Status: Blocked` and the specific failure in `Blockers hit`, and exit. The user chose this reviewer for the run; quietly skipping the review turns an explicit request into an implicit "never mind".
@@ -216,6 +225,6 @@ The caller (`executing-plans` Step 3 or `subagent-driven-development` Step 4a) t
 
 **References:**
 
-- `skills/using-razorback/references/blocker-taxonomy.md` — stop-versus-proceed rules
-- `skills/finishing-a-development-branch/morning-report-template.md` — shape of the summary block emitted in Step 7
-- `skills/codex-cli/schemas/review-output.schema.json` (in the razorback plugin) — the shared finding shape all three reviewers target
+- `../using-razorback/references/blocker-taxonomy.md` (in the razorback plugin) — stop-versus-proceed rules
+- `../finishing-a-development-branch/morning-report-template.md` — shape of the summary block emitted in Step 7
+- `../codex-cli/schemas/review-output.schema.json` (in the razorback plugin) — the shared finding shape all three reviewers target

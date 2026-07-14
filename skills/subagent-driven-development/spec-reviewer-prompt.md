@@ -1,13 +1,14 @@
-# Spec Compliance Reviewer Prompt Template
+# Spec Compliance Review Checklist
 
-Use this template when dispatching a spec compliance reviewer subagent.
+The lead applies this checklist directly during inline review — it is NOT
+dispatched as a separate reviewer subagent (see SKILL.md "Prompt Templates").
+It encodes the spec-compliance half of the lead's single inline review pass;
+`./code-quality-reviewer-prompt.md` encodes the other half.
 
 **Purpose:** Verify implementer built what was requested (nothing more, nothing less)
 
 ```
-Agent tool (general-purpose):
-  description: "Review spec compliance for Task N"
-  prompt: |
+Lead inline review — spec compliance for Task N:
     You are reviewing whether an implementation matches its specification.
 
     ## What Was Requested

@@ -1,6 +1,6 @@
 ---
 name: requesting-code-review
-description: Use when completing tasks, implementing major features, or before merging to verify work meets requirements
+description: Use when the lead needs inline-review criteria during plan execution, or when reviewing work done outside an approved plan - ad-hoc features, baseline checks before a refactor, or when stuck. Planned pre-merge external review is razorback:pre-merge-review, not this skill.
 ---
 
 # Requesting Code Review
@@ -30,7 +30,7 @@ When using `razorback:subagent-driven-development`, the **lead does inline revie
   API-shape evidence
 - Compare the diff against the approved architecture, not just the symptom
 - If the same structural issue keeps recurring, route it through
-  `architecture-quality` Candidate Mode instead of looping more patches
+  `razorback:architecture-quality` Candidate Mode instead of looping more patches
 
 **If issues found:** Route the fix back to an implementer using the harness-native follow-up path. Resume the existing implementer on Claude Code or Codex when possible, or dispatch a fresh implementer with fix context where resume is unavailable. They fix and re-report. Review cap: 3 iterations.
 
@@ -60,7 +60,7 @@ HEAD_SHA=$(git rev-parse HEAD)
 | Claude Code | `Agent(subagent_type="razorback:code-reviewer", prompt=<filled template>)` |
 | Cursor | Same as Claude Code (plugin agents exposed through the Skill tool's agent discovery) |
 | Copilot CLI | `task(agent_type="razorback:code-reviewer", …)` — plugin agents auto-discovered |
-| Codex | `spawn_agent(agent_type="worker", message=<see two-file note below>)` |
+| Codex | `spawn_agent(task_name="code-review", message=<see two-file note below>)` |
 | OpenCode | `Task` tool with `general` subagent (message built as in the two-file note below) |
 | Gemini CLI | `invoke_agent(agent_name="generalist", prompt=<see two-file note below>)` — same concatenation pattern as Codex / OpenCode. Drop a custom `.gemini/agents/code-reviewer.md` into the target repo if you want a named reviewer agent instead. |
 
@@ -74,39 +74,30 @@ HEAD_SHA=$(git rev-parse HEAD)
 - `{DESCRIPTION}` - Brief summary
 
 **3. Act on feedback:**
-- Fix Critical issues immediately
-- Fix Important issues before proceeding
-- Note Minor issues for later
-- Push back if reviewer is wrong (with reasoning)
+Route the findings through `razorback:receiving-code-review` — verify each item against the code before implementing, push back with reasoning where the reviewer is wrong, and fix what survives verification.
 
 ## When to Request Review
 
 **Mandatory:**
-- After each task during plan execution (inline by lead)
-- After completing major feature (standalone)
-- Before merge to main for ad-hoc work (standalone); planned pre-merge
-  external review uses `razorback:pre-merge-review`
+- After each task during plan execution: inline review by the lead (Mode 1). Plan-execution work never dispatches a reviewer subagent.
+- Before merging ad-hoc work done outside an approved plan: standalone (Mode 2). Planned pre-merge external review uses `razorback:pre-merge-review` instead.
 
-**Optional but valuable:**
+**Optional but valuable (standalone, ad-hoc work only):**
 - When stuck (fresh perspective)
 - Before refactoring (baseline check)
 - After fixing complex bug
 
 ## Integration with Workflows
 
-**Plan Execution (subagent-driven):**
-- Lead does inline review (Mode 1) after each implementer reports DONE
-- See the execution skill for full review checklist
-
-**Executing Plans:**
-- Review after each batch (3 tasks)
-- Standalone review (Mode 2)
+**Plan Execution (`subagent-driven-development` or `executing-plans`):**
+- Lead does inline review (Mode 1) after each implementer reports DONE (subagent-driven) or applies the same criteria to its own work (executing-plans)
+- No standalone reviewer dispatch and no per-batch review stops — the flow is: execute all tasks → optional `razorback:pre-merge-review` (if a reviewer was chosen at plan approval) → `razorback:finishing-a-development-branch`
 
 **Ad-Hoc Development:**
 - Standalone review before merge
 - Standalone review when stuck
 - When repeated findings keep surfacing the same structural issue, stop the
-  patch loop, invoke `architecture-quality` Candidate Mode, and review against
+  patch loop, invoke `razorback:architecture-quality` Candidate Mode, and review against
   the approved architecture before asking for another change
 
 ## Red Flags

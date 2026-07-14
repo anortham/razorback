@@ -1,6 +1,6 @@
 ---
 name: codex-cli
-description: Call OpenAI's Codex CLI for second opinions, code review, adversarial review, and task delegation. Use this skill whenever the user says "ask codex", "get codex's take", "codex review", "second opinion", "have codex look at this", "delegate to codex", "deep review", "adversarial review", or any variation suggesting they want Codex's perspective. Also trigger when the user wants a fresh take from a different model on code, architecture, or implementation decisions.
+description: Use when the user says "ask codex", "get codex's take", "codex review", "have codex look at this", "delegate to codex", or any variation naming Codex/OpenAI as the perspective they want. Also use for a generic "second opinion from a different model" when no other model is named.
 ---
 
 # Codex Assistant
@@ -16,7 +16,7 @@ models.
 - **Reasoning**: inherit the current Codex default unless the user or environment
   explicitly selects reasoning effort.
 - **Sandbox mode**: `-s, --sandbox <MODE>` accepts `read-only | workspace-write | danger-full-access`. Use `read-only` for review (the reviewer can investigate but cannot edit). For delegate flows use `--sandbox workspace-write` alone — `codex exec` is non-interactive and never prompts for approval, and codex 0.143 removed `-a/--ask-for-approval` from `exec` entirely (passing it now errors with `unexpected argument '-a'`; the flag remains valid only on interactive `codex`). The old `--full-auto` shorthand still parses on `exec` but is deprecated. Pair with `--dangerously-bypass-approvals-and-sandbox` only when the user explicitly asks and the environment is externally sandboxed.
-- **Windows sandbox**: codex's `read-only` and `workspace-write` sandboxes build a restricted-token child process via `CreateProcessAsUserW`. On locked-down Windows (Enterprise/LTSC, GPO-restricted process creation) that call fails with `CreateProcessAsUserW failed: 5` / `windows sandbox failed: spawn setup`, so codex cannot spawn **any** child process and reads no files — even for read-only review. When you hit this, re-run with `-s danger-full-access` so codex skips its own sandbox; the host harness (Claude Code) still bounds the run, but note `danger-full-access` removes codex's local isolation, so `read-only` is then enforced only by the prompt, not the sandbox. On a host where this failure is known to recur (e.g. an Enterprise/LTSC machine with GPO restrictions), pass the flag from the start to skip a wasted first run. It is environmental: retrying the same sandbox mode on the affected host fails identically, and if you control the host the native Windows sandbox setup (`codex-windows-sandbox-setup.exe`) or running under WSL2 may restore sandboxing. Do NOT work around it by embedding file contents in the prompt, and do not reach for `--dangerously-bypass-approvals-and-sandbox` (it also skips approvals) unless the user asks. See Error Handling.
+- **Windows sandbox**: on locked-down Windows hosts codex's sandbox can fail to spawn (`CreateProcessAsUserW failed: 5` / `windows sandbox failed: spawn setup`) and codex then reads zero files. See Error Handling for the `-s danger-full-access` fallback and its caveats.
 - **Always use**: `--ephemeral --color never` for clean non-interactive output
 - **Always append**: `2>/dev/null` to suppress stderr noise (session banner, transcript)
 - **Always redirect stdin**: append `< /dev/null` to every invocation that doesn't pipe a prompt. `codex exec` reads stdin even when a prompt is passed as an argument (it prints "Reading additional input from stdin..." and waits for EOF). On macOS/Linux bash this is harmless because the shell closes stdin, but on Windows (Git Bash / Claude Code Bash tool) stdin can stay open and codex blocks forever with no output — this is the cause of the 30+ minute Windows hang. Use `< /dev/null` on bash; on Windows native cmd/PowerShell use `< NUL`.
@@ -35,7 +35,7 @@ models.
 For diff-based modes (Code Review, Adversarial Review), pick scope and
 execution mode before invoking Codex.
 
-**Scope** — user-passable arguments, default `--scope auto`:
+**Scope** — these are *skill arguments* the user passes to this skill, NOT `codex` CLI flags (never append them to the `codex exec` command). Default `--scope auto`:
 
 - `--scope auto`: working-tree if `git status --porcelain` is non-empty, else
   branch-vs-base
@@ -47,6 +47,8 @@ execution mode before invoking Codex.
 Resolve `$DIFF`, `$TARGET`, and `$RANGE` per scope:
 
 ```bash
+DIR="${DIR:-$(git rev-parse --show-toplevel)}"
+
 case "$SCOPE" in
   branch)
     BASE="${USER_BASE:-$(git -C "$DIR" merge-base HEAD main 2>/dev/null || git -C "$DIR" merge-base HEAD master 2>/dev/null)}"
@@ -102,6 +104,7 @@ No file changes needed.
 
 ```bash
 codex exec --ephemeral --color never \
+  -s read-only \
   -C /path/to/project \
   "Your prompt here" \
   < /dev/null 2>/dev/null
@@ -120,12 +123,12 @@ perspectives.
 The user wants a review of current changes. Inherit the current Codex default
 unless the user or environment explicitly selects a model.
 
-**Native alternative — `codex exec review`:** Codex ships a built-in scoped review subcommand: `codex exec review --uncommitted` (staged + unstaged + untracked), `codex exec review --base <branch>` (branch vs base), or `codex exec review --commit <sha>`, plus an optional `--title <TITLE>` for the review summary. The top-level `codex review` is the same non-interactive review with the same scope flags. It auto-detects scope and accepts a custom prompt via `[PROMPT]` or stdin. It does **not** support `--output-schema`, so use the regular `codex exec` path below for adversarial / schema-validated review. Use `codex exec review` when the user wants a quick codex-flavored second opinion and doesn't need cross-reviewer prompt parity.
+**Native alternative — `codex exec review`:** Codex ships a built-in scoped review subcommand: `codex exec review --uncommitted` (staged + unstaged + untracked), `codex exec review --base <branch>` (branch vs base), or `codex exec review --commit <sha>`, plus an optional `--title <TITLE>` for the review summary. The top-level `codex review` is the same non-interactive review with the same scope flags. It auto-detects scope and accepts a custom prompt via `[PROMPT]` or stdin. On codex 0.144.3 the `review` subcommand also accepts `--output-schema <FILE>`, `--ephemeral`, and `-o` directly. **Flag placement matters:** exec-level flags (`-C`, `--color`, `-s`) must come BEFORE `review` — codex rejects them after the subcommand (`unexpected argument '-C'`). Use `codex exec review` when the user wants a quick codex-flavored second opinion and doesn't need cross-reviewer prompt parity.
 
 ```bash
 # Quick scoped review of uncommitted changes
-codex exec review --uncommitted --ephemeral --color never \
-  -C /path/to/project \
+codex exec --color never -C /path/to/project -s read-only \
+  review --uncommitted --ephemeral \
   -o /tmp/review.txt \
   "Focus on error handling and concurrency safety." \
   < /dev/null 2>/dev/null
@@ -161,6 +164,7 @@ $DIFF"
 
 ```bash
 echo "$PROMPT" | codex exec --ephemeral --color never \
+  -s read-only \
   -C /path/to/project \
   - \
   2>/dev/null
@@ -224,6 +228,7 @@ SCHEMA_EOF
 
 RESULT_FILE=$(mktemp) && trap 'rm -f "$RESULT_FILE"' EXIT
 echo "$ADVERSARIAL_PROMPT" | codex exec --ephemeral --color never \
+  -s read-only \
   -C /path/to/project \
   --output-schema "$SCHEMA_FILE" \
   -o "$RESULT_FILE" \
@@ -400,7 +405,6 @@ think it's wrong, and your evidence.
 - **No git repo**: Add `--skip-git-repo-check` for non-repo directories.
 - **Codex not installed**: Check with `codex --version`. Install via
   `npm install -g @openai/codex` if missing.
-- **ACP transport unsupported**: Codex CLI does NOT support the `--acp` protocol flag. If a `delegate_task` call with `acp_command: "codex"` fails with `unexpected argument '--acp'`, remove the `acp_command` parameter entirely — it will fall back to the default Hermes subagent transport instead.
 - **Windows hang (no output for many minutes)**: `codex exec` reads stdin even when a prompt argument is supplied. On Windows (Git Bash via Claude Code's Bash tool, PowerShell, cmd.exe) stdin can stay open with no producer, so codex blocks on stdin EOF forever and never starts the model run. Always add `< /dev/null` (bash) or `< NUL` (cmd/PowerShell) to non-piped invocations. If you've already triggered the hang, kill the process — it will not recover.
 - **Windows sandbox spawn failure (`CreateProcessAsUserW failed: 5` / `windows sandbox failed: spawn setup`)**: codex's `read-only`/`workspace-write` sandbox needs to spawn a restricted-token child process, which locked-down Windows (Enterprise/LTSC, GPO process-creation restrictions) denies. Codex then can't run any shell command, so it reads zero files and the review/delegate returns nothing useful. This is **not** a finding about the code under review — it's the sandbox failing to start. Fix: re-run with `-s danger-full-access` so codex skips its own sandbox (the host harness still constrains the run; `read-only` is then enforced by the prompt, not the sandbox). On a host where this recurs, pass the flag from the start. Do not work around it by inlining file contents into the prompt. Retrying the same sandbox mode on the affected host fails identically; if you control the host, the native Windows sandbox setup or WSL2 may restore sandboxing.
 - **`--full-auto` deprecation warning**: codex 0.134+ prints `warning: --full-auto is deprecated; use --sandbox workspace-write instead`. Replace `--full-auto` with `--sandbox workspace-write` alone.
@@ -419,9 +423,9 @@ On **Windows**, if codex's sandbox fails to spawn (`CreateProcessAsUserW failed:
 
 | Use case | Mode | Command pattern |
 |---|---|---|
-| Second opinion | read-only | `codex exec --ephemeral --color never -C dir "prompt" < /dev/null 2>/dev/null` |
-| Code review (unified prompt) | read-only | Pipe diff: `echo "$PROMPT" \| codex exec --ephemeral --color never -C dir - 2>/dev/null` (scope/sizing per Review Targeting) |
-| Code review (codex-native scope) | read-only | `codex exec review --uncommitted -C dir -o /tmp/review.txt "focus" < /dev/null 2>/dev/null` (or `--base <branch>` / `--commit <sha>`). No `--output-schema` support. |
+| Second opinion | read-only | `codex exec --ephemeral --color never -s read-only -C dir "prompt" < /dev/null 2>/dev/null` |
+| Code review (unified prompt) | read-only | Pipe diff: `echo "$PROMPT" \| codex exec --ephemeral --color never -s read-only -C dir - 2>/dev/null` (scope/sizing per Review Targeting) |
+| Code review (codex-native scope) | read-only | `codex exec -C dir -s read-only review --uncommitted -o /tmp/review.txt "focus" < /dev/null 2>/dev/null` (or `--base <branch>` / `--commit <sha>`; exec-level flags like `-C`/`-s` go BEFORE `review`) |
 | Goal tracking | interactive only | `/goal` sets or views a long-running objective; the `goals` feature is stable and enabled by default as of codex 0.143 |
 | Adversarial review | read-only + schema | Add `--output-schema "$SCHEMA_FILE"` where `$SCHEMA_FILE` is a temp file materialized from the inlined schema (see Adversarial Review section). Scope/sizing per Review Targeting. |
 | Delegate (complex) | workspace-write | `codex exec --ephemeral --color never --sandbox workspace-write -C dir "prompt" < /dev/null 2>/dev/null` (no `-a` — removed from `exec` in codex 0.143; replaces the deprecated `--full-auto`; add `--add-dir <DIR>` for extra writable dirs) |

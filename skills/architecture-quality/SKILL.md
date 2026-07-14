@@ -43,7 +43,7 @@ Use `No Architecture Impact` when the work is mechanical or behavior-local. Othe
 
 ## Review Checklist
 
-These six questions are the canonical compact checklist. They are duplicated verbatim at every architecture-quality enforcement point (worker self-review, lead inline review, standalone reviewer prompt). Edit them here first; the drift test in `tests/architecture-quality-checklist.test.mjs` then fails everywhere else until the copies are updated to match.
+These six questions are the canonical compact checklist. They are duplicated verbatim at every architecture-quality enforcement point: the worker self-review in `subagent-driven-development/implementer-prompt.md`, the lead inline review in `subagent-driven-development/SKILL.md`, and the standalone reviewer prompt in `requesting-code-review/code-reviewer.md`. If you edit the questions here, update those three copies to match.
 
 - Does this keep complexity local?
 - Is the caller-facing interface smaller than the behavior it unlocks?

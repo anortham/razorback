@@ -22,18 +22,12 @@ The `.response` field is plain text, **often fenced in markdown** (```` ```json 
 
 ## Build the adversarial prompt
 
-Use the same adversarial framing as codex/claude. The template is inlined below as `$ADVERSARIAL_TEMPLATE`. Substitute `{{TARGET_LABEL}}`, `{{USER_FOCUS}}`, and `{{REVIEW_INPUT}}` the same way the codex and claude paths do. The schema is also inlined because gemini has no `--json-schema` / `--output-schema` flag — we append it to the user prompt and rely on gemini to conform.
+Use the same adversarial framing as codex/claude. The static core is inlined below as `$ADVERSARIAL_CORE`; the dynamic parts (target, focus, review input) are concatenated around it in `$FINAL_PROMPT`. Do NOT build the prompt with bash pattern substitution (`${var//{{X}}/$val}`): on bash 5.2+ `patsub_replacement` expands `&` in the replacement — and diffs routinely contain `&` — while on bash 3.2 quoting the replacement inserts literal quote characters. Plain string concatenation has neither problem. The schema is also inlined because gemini has no `--json-schema` / `--output-schema` flag — we append it to the user prompt and rely on gemini to conform.
 
 ## Invocation
 
 ```bash
-ADVERSARIAL_TEMPLATE=$(cat <<'ADV_EOF'
-You are performing an adversarial software review.
-Your job is to break confidence in the change, not to validate it.
-
-Target: {{TARGET_LABEL}}
-User focus: {{USER_FOCUS}}
-
+ADVERSARIAL_CORE=$(cat <<'ADV_EOF'
 OPERATING STANCE:
 Default to skepticism. Assume the change can fail in subtle, high-cost, or
 user-visible ways until evidence says otherwise. Do not give credit for good
@@ -111,11 +105,6 @@ SCHEMA_JSON=$(cat <<'SCHEMA_EOF'
 SCHEMA_EOF
 )
 
-# Substitute target-specific placeholders into the template. Use bash
-# parameter expansion so the `{{TARGET_LABEL}}` / `{{USER_FOCUS}}` /
-# `{{REVIEW_INPUT}}` tokens are replaced with actual values before the
-# prompt reaches gemini. Without this step gemini receives literal
-# placeholder text and loses focus / commit-log / file-stat context.
 TARGET_LABEL="$FILE_STAT (branch: base..HEAD)"
 REVIEW_INPUT="Files changed:
 $FILE_STAT
@@ -126,16 +115,23 @@ $COMMIT_LOG
 Diff:
 $DIFF"
 
-FINAL_PROMPT="${ADVERSARIAL_TEMPLATE//\{\{TARGET_LABEL\}\}/$TARGET_LABEL}"
-FINAL_PROMPT="${FINAL_PROMPT//\{\{USER_FOCUS\}\}/${USER_FOCUS:-none specified}}"
-FINAL_PROMPT="${FINAL_PROMPT//\{\{REVIEW_INPUT\}\}/$REVIEW_INPUT}"
+FINAL_PROMPT="You are performing an adversarial software review.
+Your job is to break confidence in the change, not to validate it.
+
+Target: $TARGET_LABEL
+User focus: ${USER_FOCUS:-none specified}
+
+$ADVERSARIAL_CORE
+
+REPOSITORY CONTEXT:
+$REVIEW_INPUT"
 
 GEMINI_MODEL="${RAZORBACK_GEMINI_REVIEW_MODEL:-}"
 
 cd "$PROJECT_DIR" && gemini -p "$FINAL_PROMPT
 
 Return your response as a JSON object matching this schema:
-$SCHEMA_JSON" -o json ${GEMINI_MODEL:+-m "$GEMINI_MODEL"} --yolo 2>/dev/null
+$SCHEMA_JSON" -o json ${GEMINI_MODEL:+-m "$GEMINI_MODEL"} --approval-mode plan < /dev/null 2>/dev/null
 ```
 
 Flag rationale:
@@ -143,7 +139,7 @@ Flag rationale:
 - `-p` — explicit non-interactive (headless) mode. Gemini's positional `[query..]` runs interactive by default and relies on TTY auto-detection to switch to headless; that detection is unreliable from harness tools and on Windows. `-p` removes the ambiguity.
 - `-o json` — wraps the model response in the envelope described above. Without this, the model output lands as raw text on stdout with no metadata. We want the envelope so we can extract `stats.models.*.tokens` for cost tracking.
 - `-m "$GEMINI_MODEL"` - explicit model override when `GEMINI_MODEL` is set.
-- `--yolo` — **required** so gemini auto-approves its own `Read` tool calls. Without it, gemini stalls waiting for interactive approval. We still instruct gemini by prompt to be read-only (no file writes). `--yolo` widens gemini's auto-approval for tools, not its file-write authorization; the read-only behavior is enforced by prompt.
+- `--approval-mode plan` — gemini's read-only mode: read tools are auto-approved, write/edit tools are blocked at the CLI layer. This both keeps the headless run from stalling on interactive approval and enforces "the reviewer never edits code" as a real mechanism instead of a prompt-level request. (Do not substitute `--yolo`, which auto-approves writes too.)
 - No `--json-schema` / `--output-schema` — the flag does not exist. The schema is inlined into the prompt.
 - `2>/dev/null` — drops gemini's auth messages and debug info from stderr.
 
@@ -209,11 +205,11 @@ Log `stats.models.*.tokens` from the envelope into the morning report's per-revi
 External review cost (gemini): prompt=12345, completion=678 tokens
 ```
 
-**Asymmetry note:** this field is unique to gemini. `codex` and `claude` do not surface per-request token counts in their JSON output. Render the cost line for gemini only; for the other two reviewers, note "cost not reported by CLI" or omit the line entirely.
+**Asymmetry note:** claude also reports usage (`.total_cost_usd`, `.usage.*` in its result envelope — see `reviewer-prompts/claude.md`); codex does not surface per-request token counts. Render the cost line for gemini and claude; for codex, note "cost not reported by CLI" or omit the line.
 
-## Yolo + read-only guarantee
+## Read-only guarantee
 
-`--yolo` is required so gemini auto-approves its own tool invocations and does not stall waiting for interactive confirmation — notably including file reads and shell commands. The adversarial prompt instructs gemini to be read-only ("Do not modify files") but that is prompt-level only. If gemini disobeys and writes a file anyway, that is an integrity failure — abort the review, revert the unauthorized change with `git checkout -- <file>`, log the incident in the morning report as a flagged concern, and consider switching the reviewer choice to codex or claude for this run. Do not push a branch that contains reviewer-originated writes.
+`--approval-mode plan` blocks gemini's write/edit tools at the CLI layer while auto-approving reads, so the headless run neither stalls on interactive approval nor gains write authority. The adversarial prompt's "Do not modify files" is backup instruction, not the mechanism.
 
 ## Error handling
 
@@ -222,11 +218,10 @@ External review cost (gemini): prompt=12345, completion=678 tokens
 Unavailability triggers:
 
 - **Auth failure** (gemini first-call auth error) → **blocker taxonomy #1** (credentials broken). Tell the user to authenticate gemini interactively.
-- **Rate limit exhausted** (free tier 60 req/min, 1000/day; gemini auto-retries with backoff internally, but if the single review call still 429s after that) → **blocker taxonomy #1** — credentials work but the backing service is unavailable. Suggest retry-after-cooldown or switching to a different reviewer choice on the next run.
+- **Rate limit exhausted** (free-tier caps — 60 req/min, 1000/day as of gemini-cli 0.46.0, 2026-07; gemini auto-retries with backoff internally, but if the single review call still 429s after that) → **blocker taxonomy #1** — credentials work but the backing service is unavailable. Suggest retry-after-cooldown or switching to a different reviewer choice on the next run.
 - **Empty stdout** → **blocker taxonomy #1**. Remove `2>/dev/null` and re-run to surface stderr in the blocker note.
-- **Envelope missing** (stdout is not valid JSON at the envelope level) → **blocker taxonomy #1**. `-o json` failed upstream. Common cause: `--yolo` prompting approval that the runtime blocked.
+- **Envelope missing** (stdout is not valid JSON at the envelope level) → **blocker taxonomy #1**. `-o json` failed upstream. Common cause: a tool call needing approval that plan mode blocked without a headless fallback.
 - **Schema violation that persists after the retry AND the markdown fallback fails** (parsing protocol sub-step 4 exhausted all paths) → **blocker taxonomy #5** (unresolvable — the reviewer is producing unusable output). The retry + fallback is gemini's built-in equivalent of codex/claude's "retry once"; once both fail, treat it as terminal.
-- **Reviewer-originated file writes** (gemini disobeys the read-only prompt and edits a file despite `--yolo` being intended only for tool auto-approval) → **blocker taxonomy #2** (destructive action not authorized by the plan). Abort the review, revert the unauthorized change with `git checkout -- <file>`, and block the run. See "Yolo + read-only guarantee" above.
 
 **Not a blocker:**
 

@@ -27,7 +27,7 @@ WHEN receiving code review feedback:
 ## Forbidden Responses
 
 **NEVER:**
-- "You're absolutely right!" (explicit CLAUDE.md violation)
+- "You're absolutely right!" (performative agreement)
 - "Great point!" / "Excellent feedback!" (performative)
 - "Let me implement that now" (before verification)
 
@@ -39,25 +39,27 @@ WHEN receiving code review feedback:
 
 ## Handling Unclear Feedback
 
-Unclear human direction blocks implementation. Ask first, because partial
-understanding can send the whole fix in the wrong direction.
+**Unclear external-review items during an approved autonomous run (the common
+case):** verify the clear items, fix independently verifiable real issues,
+flag the unclear item for review and continue — noting it in the report —
+unless it matches the blocker taxonomy. Do not let one vague external
+suggestion block unrelated safe fixes, and do not stop the run to ask about it.
+
+**Unclear human direction blocks implementation (interactive review from the
+user, outside an approved run):** ask first, because partial understanding can
+send the whole fix in the wrong direction.
 
 ```
-IF any item is unclear:
+IF any item from the user is unclear (interactive):
   STOP - do not implement anything yet
   ASK for clarification on unclear items
 
 WHY: Items may be related. Partial understanding = wrong implementation.
 ```
 
-Unclear external-review items during an approved autonomous run are different:
-verify the clear items, fix independently verifiable real issues, and flag the
-unclear item for review and continue unless it matches the blocker taxonomy.
-Do not let one vague external suggestion block unrelated safe fixes.
-
-**Example:**
+**Example (interactive):**
 ```
-your human partner: "Fix 1-6"
+User: "Fix 1-6"
 You understand 1,2,3,6. Unclear on 4,5.
 
 ❌ WRONG: Implement 1,2,3,6 now, ask about 4,5 later
@@ -66,7 +68,7 @@ You understand 1,2,3,6. Unclear on 4,5.
 
 ## Source-Specific Handling
 
-### From your human partner
+### From the user
 - **Trusted** - implement after understanding
 - **Still ask** if scope unclear
 - **No performative agreement**
@@ -91,14 +93,14 @@ IF can't easily verify:
   If still not verifiable during an approved autonomous run, classify it as flagged-for-review in the report and continue unless it matches the blocker taxonomy.
   If this is an interactive review outside an approved run, ask one specific clarifying question.
 
-IF conflicts with your human partner's prior decisions:
+IF conflicts with the user's prior decisions:
   In an approved autonomous run, keep the prior decision, flag the conflict in the report, and continue unless it matches the blocker taxonomy.
   Outside an approved run, ask one specific question before overriding the prior decision.
 ```
 
-External architecture feedback is evaluated through `architecture-quality` before implementation.
+External architecture feedback is evaluated through `razorback:architecture-quality` before implementation.
 
-**your human partner's rule:** "External feedback - be skeptical, but check carefully"
+**Rule:** external feedback - be skeptical, but check carefully.
 
 ## YAGNI Check for "Professional" Features
 
@@ -110,7 +112,7 @@ IF reviewer suggests "implementing properly":
   IF used: Then implement properly
 ```
 
-**your human partner's rule:** "You and reviewer both report to me. If we don't need this feature, don't add it."
+**Rule:** the reviewer doesn't set scope, the user does. If the feature isn't needed, don't add it.
 
 ## Implementation Order
 
@@ -133,15 +135,13 @@ Push back when:
 - Violates YAGNI (unused feature)
 - Technically incorrect for this stack
 - Legacy/compatibility reasons exist
-- Conflicts with your human partner's architectural decisions
+- Conflicts with the user's architectural decisions
 
 **How to push back:**
 - Use technical reasoning, not defensiveness
 - Ask specific questions
 - Reference working tests/code
-- Involve your human partner if architectural
-
-**Signal if uncomfortable pushing back out loud:** "Strange things are afoot at the Circle K"
+- Involve the user if architectural
 
 ## Acknowledging Correct Feedback
 
@@ -208,9 +208,9 @@ Reviewer: "Implement proper metrics tracking with database, date filters, CSV ex
 ✅ "Grepped codebase - nothing calls this endpoint. Remove it (YAGNI)? Or is there usage I'm missing?"
 ```
 
-**Unclear Item (Good):**
+**Unclear Item (Good, interactive):**
 ```
-your human partner: "Fix items 1-6"
+User: "Fix items 1-6"
 You understand 1,2,3,6. Unclear on 4,5.
 ✅ "Understand 1,2,3,6. Need clarification on 4 and 5 before implementing."
 ```

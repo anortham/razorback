@@ -30,7 +30,7 @@ BRANCH=$(git branch --show-current)
 git rev-parse --show-superproject-working-tree 2>/dev/null
 ```
 
-**If `GIT_DIR != GIT_COMMON` (and not a submodule):** You are already in a linked worktree. Skip to Step 3 (Project Setup). Do NOT create another worktree.
+**If `GIT_DIR != GIT_COMMON` (and not a submodule):** You are already in a linked worktree. Skip to Step 2 (Project Setup). Do NOT create another worktree.
 
 Report with branch state:
 - On a branch: "Already in isolated workspace at `<path>` on branch `<name>`."
@@ -44,7 +44,7 @@ Report with branch state:
 
 ### 1a. Native Worktree Tools (preferred)
 
-Do you already have a way to create a worktree? It might be a tool with a name like `EnterWorktree`, `WorktreeCreate`, a `/worktree` command, or a `--worktree` flag. If you do, use it and skip to Step 3.
+Do you already have a way to create a worktree? It might be a tool with a name like `EnterWorktree`, `WorktreeCreate`, a `/worktree` command, or a `--worktree` flag. If you do, use it and skip to Step 2.
 
 Native tools handle directory placement, branch creation, and cleanup automatically. Using `git worktree add` when you have a native tool creates phantom state your harness can't see or manage.
 
@@ -111,7 +111,7 @@ cd "$path"
 
 **Sandbox fallback:** If `git worktree add` fails with a permission error (sandbox denial), tell the user the sandbox blocked worktree creation and you're working in the current directory instead. Then run setup and baseline verification in place.
 
-## Step 3: Project Setup
+## Step 2: Project Setup
 
 Run the project-documented setup command. Prefer repo docs, existing scripts, CI metadata, or manifest-declared commands. If the repo has no setup guidance, use ecosystem detection as a fallback and record the choice.
 
@@ -119,7 +119,7 @@ Run the project-documented setup command. Prefer repo docs, existing scripts, CI
 <project-defined setup command>
 ```
 
-## Step 4: Verify Clean Baseline
+## Step 3: Verify Clean Baseline
 
 Run the project-defined baseline or smoke verification scope to ensure the worktree starts clean. Use the target repo's docs as the source of truth.
 
@@ -157,7 +157,6 @@ Ready to implement <feature-name>
 | Directory not ignored | Add to .gitignore + commit |
 | Permission error on create | Sandbox fallback, work in place |
 | Baseline verification fails | Report blocker; do not proceed unless plan allows it |
-| No package.json/Cargo.toml | Skip dependency install |
 
 ## Common Mistakes
 

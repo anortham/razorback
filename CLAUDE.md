@@ -14,15 +14,22 @@ gemini-extension.json             — Gemini CLI extension manifest
 GEMINI.md                          — Gemini context file (pulls using-razorback + gemini-tools)
 skills/*/SKILL.md                  — Skill definitions (frontmatter + markdown body)
 agents/*.md                        — Agent definitions (Claude Code / Cursor / Copilot CLI)
-commands/*.md                      — Slash command definitions (Claude Code)
-hooks/hooks.json                   — Claude Code hook configuration (SessionStart)
+hooks/hooks.json                   — Claude Code hook configuration (SessionStart + SubagentStart)
 hooks/hooks-cursor.json            — Cursor hook configuration (sessionStart, camelCase)
 hooks/session-start                — Polyglot bash script injecting using-razorback
+hooks/subagent-start               — SubagentStart script injecting the Miller-first ruleset into subagents (Claude Code)
 hooks/run-hook.cmd                 — Cross-platform polyglot wrapper (bash/cmd)
 .opencode/plugins/razorback.js     — OpenCode plugin (config hook + messages.transform)
 .codex/INSTALL.md                  — Codex install instructions
 scripts/bump-version.sh            — Version sync across manifests
+scripts/check-rule-copies.mjs      — Syncs the instruction-tier ruleset across its host copies
+scripts/package-codex-plugin.sh    — Builds the Codex plugin package
+.clinerules/, .cursor/rules/, .kiro/steering/, .windsurf/rules/ — Host copies of the instruction-tier ruleset (synced, test-guarded)
+tests/*.test.mjs                   — Repo guard tests (`npm test`)
+.github/workflows/test.yml         — CI: runs npm test
 .version-bump.json                 — Config for bump-version.sh (file list + audit excludes)
+index.js                           — OpenCode package entry point (stub)
+assets/                            — Plugin icons
 docs/plans/                         — Historical design and implementation plans
 docs/specs/                         — Design specifications
 ```
@@ -31,7 +38,7 @@ docs/specs/                         — Design specifications
 
 | Harness | Harness-specific files | Bootstrap mechanism |
 |---------|------------------------|---------------------|
-| Claude Code | `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `agents/`, `commands/`, `hooks/hooks.json`, `hooks/session-start`, `hooks/run-hook.cmd` | `SessionStart` hook injects `using-razorback` as `hookSpecificOutput.additionalContext` |
+| Claude Code | `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `agents/`, `hooks/hooks.json`, `hooks/session-start`, `hooks/subagent-start`, `hooks/run-hook.cmd` | `SessionStart` hook injects `using-razorback` as `hookSpecificOutput.additionalContext`; `SubagentStart` hook injects the Miller-first ruleset into dispatched subagents |
 | Cursor | `.cursor-plugin/plugin.json`, `hooks/hooks-cursor.json` (reuses `hooks/session-start`) | `sessionStart` hook injects `using-razorback` as `additional_context` (snake_case) |
 | Codex (CLI + desktop app) | `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json`, `.codex/INSTALL.md`, `skills/using-razorback/references/codex-tools.md` | Preferred: install the Codex plugin from the repo-scoped marketplace entry. Fallback: local clone plus `~/.agents/skills/razorback/` symlink. Native skill discovery loads the installed skills at startup. |
 | OpenCode | `.opencode/plugins/razorback.js`, `AGENTS.md` symlink, `package.json`, `index.js` | Plugin's `config` hook registers skills path; `experimental.chat.messages.transform` injects bootstrap into first user message |
@@ -56,17 +63,17 @@ docs/specs/                         — Design specifications
 - Body is the system prompt for the agent
 - Discoverable as named plugin agents on Claude Code, Cursor, Copilot CLI. On Codex / OpenCode / Gemini CLI, agents are dispatched via inline-prompt concatenation (see `skills/requesting-code-review/SKILL.md` Mode 2 for the pattern); on Gemini the dispatch tool is `invoke_agent(agent_name="generalist", prompt=…)`.
 
-### Commands
-- Live in `commands/<command-name>.md`
-- YAML frontmatter: `description`, optionally `disable-model-invocation`
-- Body tells Claude which skill to invoke
-- Claude Code only; deprecated in favor of direct skill invocation
-
 ### Hooks
-- `hooks.json` defines Claude Code hook triggers; `hooks-cursor.json` defines Cursor's (camelCase schema).
+- `hooks.json` defines Claude Code hook triggers (SessionStart + SubagentStart); `hooks-cursor.json` defines Cursor's (camelCase schema).
 - Hook scripts are extensionless bash files for cross-platform compatibility.
 - `run-hook.cmd` is a polyglot that works as both a cmd.exe batch file and bash script. On Windows without Git Bash, it emits a stderr warning and exits 0 (plugin still loads, bootstrap disabled).
 - `hooks/session-start` detects the harness from `CURSOR_PLUGIN_ROOT` / `CLAUDE_PLUGIN_ROOT` / `COPILOT_CLI` env vars and emits the JSON shape that harness expects.
+- `hooks/subagent-start` (Claude Code only) injects the compact Miller-first ruleset into every dispatched subagent — subagents skip `using-razorback` by design, so this hook is what gives them the toolchain floor.
+
+### Tests
+- `npm test` runs the guard suite in `tests/*.test.mjs` (also run by CI via `.github/workflows/test.yml`).
+- `scripts/check-rule-copies.mjs` (exercised by `tests/rule-copies.test.mjs`) keeps the instruction-tier ruleset byte-identical across its host copies (`.clinerules/`, `.cursor/rules/`, `.kiro/steering/`, `.windsurf/rules/`, `using-razorback` SKILL.md, `subagent-toolchain.md`).
+- The architecture-quality checklist duplication across skills is intentional and test-guarded — do not dedupe it.
 
 ## Miller MCP Integration Pattern
 
