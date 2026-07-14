@@ -135,7 +135,7 @@ GEMINI_MODEL="${RAZORBACK_GEMINI_REVIEW_MODEL:-}"
 cd "$PROJECT_DIR" && gemini -p "$FINAL_PROMPT
 
 Return your response as a JSON object matching this schema:
-$SCHEMA_JSON" -o json ${GEMINI_MODEL:+-m "$GEMINI_MODEL"} --yolo 2>/dev/null
+$SCHEMA_JSON" -o json ${GEMINI_MODEL:+-m "$GEMINI_MODEL"} --approval-mode plan 2>/dev/null
 ```
 
 Flag rationale:
@@ -143,7 +143,7 @@ Flag rationale:
 - `-p` — explicit non-interactive (headless) mode. Gemini's positional `[query..]` runs interactive by default and relies on TTY auto-detection to switch to headless; that detection is unreliable from harness tools and on Windows. `-p` removes the ambiguity.
 - `-o json` — wraps the model response in the envelope described above. Without this, the model output lands as raw text on stdout with no metadata. We want the envelope so we can extract `stats.models.*.tokens` for cost tracking.
 - `-m "$GEMINI_MODEL"` - explicit model override when `GEMINI_MODEL` is set.
-- `--yolo` — **required** so gemini auto-approves its own `Read` tool calls. Without it, gemini stalls waiting for interactive approval. We still instruct gemini by prompt to be read-only (no file writes). `--yolo` widens gemini's auto-approval for tools, not its file-write authorization; the read-only behavior is enforced by prompt.
+- `--approval-mode plan` — gemini's read-only mode: read tools are auto-approved, write/edit tools are blocked at the CLI layer. This both keeps the headless run from stalling on interactive approval and enforces "the reviewer never edits code" as a real mechanism instead of a prompt-level request. (Do not substitute `--yolo`, which auto-approves writes too.)
 - No `--json-schema` / `--output-schema` — the flag does not exist. The schema is inlined into the prompt.
 - `2>/dev/null` — drops gemini's auth messages and debug info from stderr.
 
@@ -209,11 +209,11 @@ Log `stats.models.*.tokens` from the envelope into the morning report's per-revi
 External review cost (gemini): prompt=12345, completion=678 tokens
 ```
 
-**Asymmetry note:** this field is unique to gemini. `codex` and `claude` do not surface per-request token counts in their JSON output. Render the cost line for gemini only; for the other two reviewers, note "cost not reported by CLI" or omit the line entirely.
+**Asymmetry note:** claude also reports usage (`.total_cost_usd`, `.usage.*` in its result envelope — see `reviewer-prompts/claude.md`); codex does not surface per-request token counts. Render the cost line for gemini and claude; for codex, note "cost not reported by CLI" or omit the line.
 
-## Yolo + read-only guarantee
+## Read-only guarantee
 
-`--yolo` is required so gemini auto-approves its own tool invocations and does not stall waiting for interactive confirmation — notably including file reads and shell commands. The adversarial prompt instructs gemini to be read-only ("Do not modify files") but that is prompt-level only. If gemini disobeys and writes a file anyway, that is an integrity failure — abort the review, revert the unauthorized change with `git checkout -- <file>`, log the incident in the morning report as a flagged concern, and consider switching the reviewer choice to codex or claude for this run. Do not push a branch that contains reviewer-originated writes.
+`--approval-mode plan` blocks gemini's write/edit tools at the CLI layer while auto-approving reads, so the headless run neither stalls on interactive approval nor gains write authority. The adversarial prompt's "Do not modify files" is backup instruction, not the mechanism.
 
 ## Error handling
 
@@ -222,11 +222,10 @@ External review cost (gemini): prompt=12345, completion=678 tokens
 Unavailability triggers:
 
 - **Auth failure** (gemini first-call auth error) → **blocker taxonomy #1** (credentials broken). Tell the user to authenticate gemini interactively.
-- **Rate limit exhausted** (free tier 60 req/min, 1000/day; gemini auto-retries with backoff internally, but if the single review call still 429s after that) → **blocker taxonomy #1** — credentials work but the backing service is unavailable. Suggest retry-after-cooldown or switching to a different reviewer choice on the next run.
+- **Rate limit exhausted** (free-tier caps — 60 req/min, 1000/day as of gemini-cli 0.46.0, 2026-07; gemini auto-retries with backoff internally, but if the single review call still 429s after that) → **blocker taxonomy #1** — credentials work but the backing service is unavailable. Suggest retry-after-cooldown or switching to a different reviewer choice on the next run.
 - **Empty stdout** → **blocker taxonomy #1**. Remove `2>/dev/null` and re-run to surface stderr in the blocker note.
-- **Envelope missing** (stdout is not valid JSON at the envelope level) → **blocker taxonomy #1**. `-o json` failed upstream. Common cause: `--yolo` prompting approval that the runtime blocked.
+- **Envelope missing** (stdout is not valid JSON at the envelope level) → **blocker taxonomy #1**. `-o json` failed upstream. Common cause: a tool call needing approval that plan mode blocked without a headless fallback.
 - **Schema violation that persists after the retry AND the markdown fallback fails** (parsing protocol sub-step 4 exhausted all paths) → **blocker taxonomy #5** (unresolvable — the reviewer is producing unusable output). The retry + fallback is gemini's built-in equivalent of codex/claude's "retry once"; once both fail, treat it as terminal.
-- **Reviewer-originated file writes** (gemini disobeys the read-only prompt and edits a file despite `--yolo` being intended only for tool auto-approval) → **blocker taxonomy #2** (destructive action not authorized by the plan). Abort the review, revert the unauthorized change with `git checkout -- <file>`, and block the run. See "Yolo + read-only guarantee" above.
 
 **Not a blocker:**
 

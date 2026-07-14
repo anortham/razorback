@@ -5,7 +5,7 @@ Invocation instructions for running `claude -p` as the pre-merge adversarial rev
 ## Preconditions
 
 - `claude --version` returns successfully (the CLI is installed).
-- `claude auth status` exits 0 (logged in via Anthropic OAuth or API key). Exit 1 means not logged in; this is **blocker taxonomy #1** (credentials broken). Stop, surface, do not push. See `skills/using-razorback/references/blocker-taxonomy.md`.
+- `claude auth status` exits 0 (logged in via Anthropic OAuth or API key). Exit 1 means not logged in; this is **blocker taxonomy #1** (credentials broken). Stop, surface, do not push. See `../../using-razorback/references/blocker-taxonomy.md` in the razorback plugin.
 - Do not add `--bare`. Current Claude help says bare mode skips OAuth and keychain auth reads, so it breaks the common login path.
 - Step 1 of the pre-merge-review flow has already built `$DIFF`, `$FILE_STAT`, `$COMMIT_LOG`, `$PROJECT_DIR`, and (optionally) `$USER_FOCUS`.
 
@@ -124,12 +124,13 @@ Flag rationale:
 
 ## Expected output format
 
-Direct JSON conforming to the schema inlined above (same schema as the codex path). **No envelope**; unlike gemini, claude's `--output-format json` returns the model response directly on stdout.
+A **result envelope** on stdout: `{"type":"result","subtype":"success","result":"<JSON string>","structured_output":{…},"usage":{…},"total_cost_usd":…,…}`. With `--json-schema`, the schema-conforming object lands in `.structured_output`; `.result` carries the same JSON as a string. The model response is NOT the top-level object.
 
 ## Parsing
 
 ```bash
-jq -e '.findings[]' < claude-output.json
+jq -e '.structured_output.findings[]' < claude-output.json \
+  || jq -re '.result' < claude-output.json | jq -e '.findings[]'   # fallback: parse the result string
 ```
 
 On parse failure, retry **once** with a stricter prompt instructing claude to return ONLY JSON conforming to the schema (no prose, no prefatory text). If the retry still fails to produce schema-valid output, reviewer unavailability applies; see Error Handling below. Do NOT loop beyond one retry (single pass rule).
@@ -138,7 +139,7 @@ If a schema-valid partial output exists despite a mid-stream failure (e.g. budge
 
 ## Cost / token notes
 
-Claude's `--output-format json` does not surface per-request token counts in a stable field. The morning report's external-review cost line for claude is rendered as "cost not reported by claude-cli" (or omitted), same as codex.
+Claude's result envelope surfaces both dollars and tokens: `.total_cost_usd`, `.usage.input_tokens`, `.usage.output_tokens` (plus cache fields and `.modelUsage`). Render the morning report's external-review cost line for claude from those fields, e.g. "claude used N in / M out tokens, $X.XX". (Codex is the reviewer that reports no per-request counts.)
 
 ## Error handling
 

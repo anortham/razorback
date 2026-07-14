@@ -5,7 +5,7 @@ Invocation instructions for running `codex` as the pre-merge adversarial reviewe
 ## Preconditions
 
 - `codex --version` returns successfully (the CLI is installed).
-- `codex login status` exits 0 (authenticated via ChatGPT OAuth). If it exits non-zero, this is **blocker taxonomy #1** (credentials broken) — stop the review, surface the blocker, and do not push the branch. See `skills/using-razorback/references/blocker-taxonomy.md`.
+- `codex login status` exits 0 (authenticated via ChatGPT OAuth). If it exits non-zero, this is **blocker taxonomy #1** (credentials broken) — stop the review, surface the blocker, and do not push the branch. See `../../using-razorback/references/blocker-taxonomy.md` in the razorback plugin.
 - Step 1 of the pre-merge-review flow has already built `$DIFF`, `$FILE_STAT`, `$COMMIT_LOG`, `$PROJECT_DIR`, and (optionally) `$USER_FOCUS`.
 
 ## Build the adversarial prompt
@@ -60,6 +60,7 @@ CODEX_MODEL="${RAZORBACK_CODEX_REVIEW_MODEL:-}"  # empty = inherit global defaul
 
 cd "$PROJECT_DIR" && echo "$ADVERSARIAL_PROMPT_WITH_DIFF" | codex exec \
   --ephemeral --color never \
+  -s read-only \
   ${CODEX_MODEL:+-m "$CODEX_MODEL"} \
   --output-schema "$SCHEMA_FILE" \
   - \
@@ -70,6 +71,7 @@ Flag rationale:
 
 - `--ephemeral` — no persistent session left behind.
 - `--color never` — clean non-interactive output suitable for piping into `jq`.
+- `-s read-only` — sandbox policy that blocks file writes at the CLI layer. This is what actually enforces "the reviewer never edits code"; the prompt's read-only instruction is backup, not the mechanism.
 - `${CODEX_MODEL:+-m "$CODEX_MODEL"}` — explicit model override from `RAZORBACK_CODEX_REVIEW_MODEL`. When unset, the expansion is empty and codex uses its configured default.
 - `--output-schema` — forces codex to return JSON conforming to the shared review-output schema. The same schema is inlined in `reviewer-prompts/claude.md` and `reviewer-prompts/gemini.md` so all three reviewers target identical shape.
 - `-` — read the prompt from stdin (which is the piped `$ADVERSARIAL_PROMPT_WITH_DIFF`).
