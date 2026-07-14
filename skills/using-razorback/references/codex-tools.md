@@ -4,26 +4,27 @@ Skills in razorback use Claude Code tool names. When you see these in a skill bo
 
 | Skill references | Codex equivalent |
 |-----------------|------------------|
-| `Task` / `Agent` tool (dispatch subagent) | `spawn_agent` (returns an agent ID; see [Subagent dispatch](#subagent-dispatch)) |
+| `Task` / `Agent` tool (dispatch subagent) | `spawn_agent(task_name=..., message=...)` (returns an agent ID; see [Subagent dispatch](#subagent-dispatch)) |
 | Multiple `Task` calls (parallel) | Multiple `spawn_agent` calls in the same turn |
-| Task follow-up / resume | `send_input(target=<agent-id>, message=...)` |
-| Task returns result | `wait_agent(targets=[<agent-id>])` |
-| Task completes | `close_agent(target=<agent-id>)` to free the slot |
+| Task follow-up / resume | `followup_task(target=<agent-id>, message=...)` (new task for the same worker) or `send_message(target=<agent-id>, message=...)` |
+| Task returns result | `wait_agent(timeout_ms=...)` (blocks until agent completion) |
+| Cancel a running agent | `interrupt_agent(target=<agent-id>)` |
+| List active agents | `list_agents(...)` |
 | `TodoWrite` / `TaskCreate` / `TaskUpdate` | `update_plan` |
 | `Skill` tool (invoke a skill) | Skills load natively, follow the instructions |
 | `Read`, `Write`, `Edit` (files) | Your native file tools |
 | `Bash` (run commands) | Your native shell tools |
 
+The collaboration tool surface above was verified on codex 0.144.3 (tools:
+`spawn_agent`, `followup_task`, `send_message`, `wait_agent`,
+`interrupt_agent`, `list_agents`; there is no `close_agent`, no `send_input`,
+and no `agent_type` parameter). Codex changes this surface between versions —
+**trust the live tool list in your session over this table**, and map by
+capability (dispatch / follow-up / wait / cancel / list) when names differ.
+
 ## Subagent dispatch
 
-Razorback's parallel execution skills (`subagent-driven-development`, `dispatching-parallel-agents`) require Codex's multi-agent feature. Add to `~/.codex/config.toml`:
-
-```toml
-[features]
-multi_agent = true
-```
-
-This enables `spawn_agent`, `send_input`, `wait_agent`, and `close_agent`.
+Razorback's parallel execution skills (`subagent-driven-development`, `dispatching-parallel-agents`) use Codex's multi-agent collaboration tools. They are enabled by default on current codex (verified 0.144.3); older versions needed `multi_agent = true` under `[features]` in `~/.codex/config.toml`. If no collaboration tools appear in your session, set that flag or update codex.
 
 ### Dispatching implementers
 
@@ -42,10 +43,10 @@ When a skill says to dispatch a subagent with a prompt:
 2. Fill any template placeholders (task spec, file ownership, Miller directives)
 3. Choose any model override only when the user, environment, or lead explicitly
    wants one for this run. Otherwise use the harness default.
-4. Spawn a `worker` agent with the filled content as the `message`
+4. Spawn a worker with the filled content as the `message`
 
 ```
-spawn_agent(agent_type="worker", message=<filled prompt>)
+spawn_agent(task_name="task-N-<slug>", message=<filled prompt>)
 ```
 
 Model choice is left to the lead agent. Razorback does not require a model table

@@ -123,12 +123,12 @@ perspectives.
 The user wants a review of current changes. Inherit the current Codex default
 unless the user or environment explicitly selects a model.
 
-**Native alternative — `codex exec review`:** Codex ships a built-in scoped review subcommand: `codex exec review --uncommitted` (staged + unstaged + untracked), `codex exec review --base <branch>` (branch vs base), or `codex exec review --commit <sha>`, plus an optional `--title <TITLE>` for the review summary. The top-level `codex review` is the same non-interactive review with the same scope flags. It auto-detects scope and accepts a custom prompt via `[PROMPT]` or stdin. It does **not** support `--output-schema`, so use the regular `codex exec` path below for adversarial / schema-validated review. Use `codex exec review` when the user wants a quick codex-flavored second opinion and doesn't need cross-reviewer prompt parity.
+**Native alternative — `codex exec review`:** Codex ships a built-in scoped review subcommand: `codex exec review --uncommitted` (staged + unstaged + untracked), `codex exec review --base <branch>` (branch vs base), or `codex exec review --commit <sha>`, plus an optional `--title <TITLE>` for the review summary. The top-level `codex review` is the same non-interactive review with the same scope flags. It auto-detects scope and accepts a custom prompt via `[PROMPT]` or stdin. On codex 0.144.3 the `review` subcommand also accepts `--output-schema <FILE>`, `--ephemeral`, and `-o` directly. **Flag placement matters:** exec-level flags (`-C`, `--color`, `-s`) must come BEFORE `review` — codex rejects them after the subcommand (`unexpected argument '-C'`). Use `codex exec review` when the user wants a quick codex-flavored second opinion and doesn't need cross-reviewer prompt parity.
 
 ```bash
 # Quick scoped review of uncommitted changes
-codex exec review --uncommitted --ephemeral --color never \
-  -C /path/to/project \
+codex exec --color never -C /path/to/project -s read-only \
+  review --uncommitted --ephemeral \
   -o /tmp/review.txt \
   "Focus on error handling and concurrency safety." \
   < /dev/null 2>/dev/null
@@ -425,7 +425,7 @@ On **Windows**, if codex's sandbox fails to spawn (`CreateProcessAsUserW failed:
 |---|---|---|
 | Second opinion | read-only | `codex exec --ephemeral --color never -s read-only -C dir "prompt" < /dev/null 2>/dev/null` |
 | Code review (unified prompt) | read-only | Pipe diff: `echo "$PROMPT" \| codex exec --ephemeral --color never -s read-only -C dir - 2>/dev/null` (scope/sizing per Review Targeting) |
-| Code review (codex-native scope) | read-only | `codex exec review --uncommitted -C dir -o /tmp/review.txt "focus" < /dev/null 2>/dev/null` (or `--base <branch>` / `--commit <sha>`). No `--output-schema` support. |
+| Code review (codex-native scope) | read-only | `codex exec -C dir -s read-only review --uncommitted -o /tmp/review.txt "focus" < /dev/null 2>/dev/null` (or `--base <branch>` / `--commit <sha>`; exec-level flags like `-C`/`-s` go BEFORE `review`) |
 | Goal tracking | interactive only | `/goal` sets or views a long-running objective; the `goals` feature is stable and enabled by default as of codex 0.143 |
 | Adversarial review | read-only + schema | Add `--output-schema "$SCHEMA_FILE"` where `$SCHEMA_FILE` is a temp file materialized from the inlined schema (see Adversarial Review section). Scope/sizing per Review Targeting. |
 | Delegate (complex) | workspace-write | `codex exec --ephemeral --color never --sandbox workspace-write -C dir "prompt" < /dev/null 2>/dev/null` (no `-a` — removed from `exec` in codex 0.143; replaces the deprecated `--full-auto`; add `--add-dir <DIR>` for extra writable dirs) |

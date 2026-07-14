@@ -31,8 +31,10 @@ If the plan path is short and likely to orient the reviewer, append it ("Plan: d
 
 Claude's `--json-schema` takes a string and `--system-prompt-file` takes a file path. Inline the schema as a string; materialize the adversarial prompt to a temp file. Do not add `--bare`; current Claude help says bare mode skips OAuth and keychain auth reads.
 
+The claude-side schema string must NOT contain a `$schema` key — claude 2.1.209's validator rejects it (`no schema with key or ref "https://json-schema.org/draft/2020-12/schema"`) before the run starts. The canonical schema file keeps `$schema` for other reviewers; strip it here.
+
 ```bash
-SCHEMA_JSON='{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","additionalProperties":false,"required":["verdict","summary","findings","next_steps"],"properties":{"verdict":{"type":"string","enum":["approve","needs-attention"]},"summary":{"type":"string","minLength":1},"findings":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["severity","title","body","file","line_start","line_end","confidence","recommendation"],"properties":{"severity":{"type":"string","enum":["critical","high","medium","low"]},"title":{"type":"string","minLength":1},"body":{"type":"string","minLength":1},"file":{"type":"string","minLength":1},"line_start":{"type":"integer","minimum":1},"line_end":{"type":"integer","minimum":1},"confidence":{"type":"number","minimum":0,"maximum":1},"recommendation":{"type":"string"}}}},"next_steps":{"type":"array","items":{"type":"string","minLength":1}}}}'
+SCHEMA_JSON='{"type":"object","additionalProperties":false,"required":["verdict","summary","findings","next_steps"],"properties":{"verdict":{"type":"string","enum":["approve","needs-attention"]},"summary":{"type":"string","minLength":1},"findings":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["severity","title","body","file","line_start","line_end","confidence","recommendation"],"properties":{"severity":{"type":"string","enum":["critical","high","medium","low"]},"title":{"type":"string","minLength":1},"body":{"type":"string","minLength":1},"file":{"type":"string","minLength":1},"line_start":{"type":"integer","minimum":1},"line_end":{"type":"integer","minimum":1},"confidence":{"type":"number","minimum":0,"maximum":1},"recommendation":{"type":"string"}}}},"next_steps":{"type":"array","items":{"type":"string","minLength":1}}}}'
 
 PROMPT_FILE=$(mktemp) && trap 'rm -f "$PROMPT_FILE"' EXIT
 cat > "$PROMPT_FILE" <<'PROMPT_EOF'
@@ -97,16 +99,17 @@ cd "$PROJECT_DIR" && claude -p \
   --dangerously-skip-permissions \
   --output-format json \
   --json-schema "$SCHEMA_JSON" \
-  --tools "Read,Bash" \
+  --tools "Read,Grep,Glob" \
+  --strict-mcp-config \
   --max-turns 15 \
   --max-budget-usd 5.00 \
   ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} \
   --system-prompt-file "$PROMPT_FILE" \
   "$DIFF_AND_CONTEXT" \
-  2>/dev/null
+  < /dev/null 2>/dev/null
 ```
 
-The validated baseline flags are: `-p`, `--no-session-persistence`, `--dangerously-skip-permissions`, `--output-format json`, `--json-schema`, `--tools "Read,Bash"`, `--max-turns 15`, `--max-budget-usd 5.00`, optional `${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"}`, `--system-prompt-file`.
+The validated baseline flags are: `-p`, `--no-session-persistence`, `--dangerously-skip-permissions`, `--output-format json`, `--json-schema`, `--tools "Read,Grep,Glob"`, `--strict-mcp-config`, `--max-turns 15`, `--max-budget-usd 5.00`, optional `${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"}`, `--system-prompt-file`.
 
 Flag rationale:
 
@@ -115,7 +118,8 @@ Flag rationale:
 - `--no-session-persistence` - ephemeral session (parity with codex's `--ephemeral`).
 - `--dangerously-skip-permissions` - required for scripted non-interactive use.
 - `--output-format json --json-schema …` - structured review output conforming to the shared schema.
-- `--tools "Read,Bash"` - read-only. The reviewer can read files and run shell commands (grep, git log, diff) but cannot edit. Enforced at the CLI layer, not only by prompt.
+- `--tools "Read,Grep,Glob"` - read-only, enforced at the CLI layer: no tool in the allowlist can write. Do NOT add `Bash` — an unrestricted Bash tool can write files and would make the read-only claim prompt-deep only. The diff and commit log are embedded in the prompt, so the reviewer doesn't need shell access.
+- `--strict-mcp-config` - drops MCP servers inherited from user/project settings, which can carry write-capable tools into an otherwise read-only allowlist.
 - `--max-turns 15 --max-budget-usd 5.00` - bounded cost/time. Raise only if a run legitimately needs more.
 - `--model "$CLAUDE_MODEL"` - explicit model override when `CLAUDE_MODEL` is set. The review's value is a fresh session and prompt framing, not model superiority.
 - `--system-prompt-file` - loads the adversarial operating stance from the temp file built above. The canonical source for that prompt is `skills/claude-cli/adversarial-prompt.txt` in the razorback plugin; update both in sync.
@@ -129,8 +133,13 @@ A **result envelope** on stdout: `{"type":"result","subtype":"success","result":
 ## Parsing
 
 ```bash
-jq -e '.structured_output.findings[]' < claude-output.json \
-  || jq -re '.result' < claude-output.json | jq -e '.findings[]'   # fallback: parse the result string
+# Validate shape first — a clean review has findings: [] and must NOT read as a
+# parse failure (`jq -e '.findings[]'` exits 4 on a valid empty array).
+jq -e '.structured_output.findings | type == "array"' < claude-output.json >/dev/null \
+  || jq -re '.result' < claude-output.json | jq -e '.findings | type == "array"' >/dev/null
+
+# Then iterate (empty output for a clean review is success):
+jq '.structured_output.findings[]?' < claude-output.json
 ```
 
 On parse failure, retry **once** with a stricter prompt instructing claude to return ONLY JSON conforming to the schema (no prose, no prefatory text). If the retry still fails to produce schema-valid output, reviewer unavailability applies; see Error Handling below. Do NOT loop beyond one retry (single pass rule).
@@ -147,7 +156,7 @@ Claude's result envelope surfaces both dollars and tokens: `.total_cost_usd`, `.
 
 Unavailability triggers:
 
-- **Auth failure** (`claude auth status` exits 1) → **blocker taxonomy #1** (credentials broken). Tell the user to run `claude login`.
+- **Auth failure** (`claude auth status` exits 1) → **blocker taxonomy #1** (credentials broken). Tell the user to run `claude auth login`.
 - **Rate limit exhausted** (Claude plan's rolling usage limits tripped) → **blocker taxonomy #1** - credentials work but the backing service is unavailable. Suggest retry-after-cooldown or dropping the reviewer-choice to `none` on the next run.
 - **Budget cap trips with no schema-valid partial output** (`--max-budget-usd` exhausted before `.findings[]` was produced) → **blocker taxonomy #1**. Raise the cap and re-run, or block.
 - **Turn cap trips with no schema-valid partial output** (`--max-turns` exhausted before final JSON) → **blocker taxonomy #1**. Raise `--max-turns` to 25 and re-run, or shrink the context, otherwise block.

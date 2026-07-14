@@ -115,17 +115,19 @@ All three target the shared output schema defined canonically at `../codex-cli/s
 
 Three paths, because each CLI's output shape differs.
 
-**codex (strict schema, no envelope):** `--output-schema` makes the CLI enforce the JSON schema directly on stdout. Iterate `.findings[]`.
+**codex (strict schema, no envelope):** `--output-schema` makes the CLI enforce the JSON schema directly on stdout. Validate the array shape, then iterate — a clean review has `findings: []`, and `jq -e '.findings[]'` exits 4 on a valid empty array, which would misread success as a parse failure.
 
 ```bash
-jq -e '.findings[]' < reviewer-output.json     # fail non-zero if any finding is malformed
+jq -e '.findings | type == "array"' < reviewer-output.json >/dev/null   # shape check
+jq '.findings[]?' < reviewer-output.json                                # iterate; empty = clean review
 ```
 
 **claude (result envelope):** `--output-format json` wraps the response in a result envelope: `{type, subtype, result, structured_output, usage, total_cost_usd, …}`. With `--json-schema`, the parsed object lands in `.structured_output`; `.result` holds the same JSON as a string.
 
 ```bash
-jq -e '.structured_output.findings[]' < claude-output.json \
-  || jq -re '.result' < claude-output.json | jq -e '.findings[]'   # fallback: parse the result string
+jq -e '.structured_output.findings | type == "array"' < claude-output.json >/dev/null \
+  || jq -re '.result' < claude-output.json | jq -e '.findings | type == "array"' >/dev/null
+jq '.structured_output.findings[]?' < claude-output.json   # iterate; empty = clean review
 ```
 
 **gemini (envelope + markdown fallback):** gemini's `-o json` wraps the model response in a metadata envelope: `{session_id, response, stats: {models: {…: {tokens: …}}}}`. The `.response` field is plain text, frequently fenced in markdown (```` ```json … ``` ````). Execute the 5-step parsing protocol in `reviewer-prompts/gemini.md`:
@@ -203,7 +205,7 @@ The caller (`executing-plans` Step 3 or `subagent-driven-development` Step 4a) t
 **Never:**
 
 - **Loop external review.** Single pass only. No "review, fix, re-review" cycle. Leftover real findings that the lead cannot fix get flagged for human judgment and the PR proceeds.
-- **Let the reviewer edit code.** Reviewers are read-only, each via its CLI's real mechanism: codex runs under `-s read-only` (sandbox blocks writes), claude pins `--tools "Read,Bash"` and is instructed by prompt to be read-only, gemini runs under `--approval-mode plan` (read-only mode). Delegated fixes route through fresh implementer workers, and no-delegation runs fix inline under the same Miller-first checklist.
+- **Let the reviewer edit code.** Reviewers are read-only, each via its CLI's real mechanism: codex runs under `-s read-only` (sandbox blocks writes), claude pins `--tools "Read,Grep,Glob" --strict-mcp-config` (no write-capable tool in the set), gemini runs under `--approval-mode plan` (read-only mode). Delegated fixes route through fresh implementer workers, and no-delegation runs fix inline under the same Miller-first checklist.
 - **Silently dismiss findings.** Every dismissal requires a written reason in the morning report so the user can override on PR review. Silent dismissals defeat the whole point of running an external reviewer.
 - **Skip verification after fixes.** Every fix invalidates prior affected scopes. Run the required project-defined verification scope, or reuse a ledger entry only when it covers the current HEAD and required scope. Never push a branch whose most recent verification does not include the fix commits.
 - **Ship a PR without the reviewer the user requested.** Reviewer unavailability (auth, rate limit, budget/turn cap with no usable partial output, empty stdout, schema violation persisting after one retry) is a **blocker**, not a silent downgrade. Stop the run, do NOT push, do NOT create a PR, emit a partial morning report with `Status: Blocked` and the specific failure in `Blockers hit`, and exit. The user chose this reviewer for the run; quietly skipping the review turns an explicit request into an implicit "never mind".

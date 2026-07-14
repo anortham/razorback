@@ -39,20 +39,28 @@ If required verification passes, continue.
 `git merge-base` returns a commit SHA, not a branch name. Autonomous Mode needs both: the branch name for `gh pr create --base`, and the SHA for diff-range computation. Resolve them as two separate values:
 
 ```bash
-# Try main, then master. The one that produces a merge-base is the base branch.
-if BASE_SHA=$(git merge-base HEAD main 2>/dev/null); then
+# Prefer an explicit base from the plan/user, then the remote's default branch,
+# then main/master. Merge-base-with-main alone is wrong for repos whose PRs
+# target another branch (develop, release/*) — main almost always shares history.
+if [ -n "$PLAN_BASE" ]; then
+  BASE_BRANCH="$PLAN_BASE"
+elif DEFAULT_REF=$(git symbolic-ref --quiet refs/remotes/origin/HEAD 2>/dev/null); then
+  BASE_BRANCH="${DEFAULT_REF#refs/remotes/origin/}"
+elif git show-ref --verify --quiet refs/heads/main; then
   BASE_BRANCH=main
-elif BASE_SHA=$(git merge-base HEAD master 2>/dev/null); then
+elif git show-ref --verify --quiet refs/heads/master; then
   BASE_BRANCH=master
-else
-  echo "No main/master ancestor found; cannot determine PR base." >&2
+fi
+
+if [ -z "$BASE_BRANCH" ] || ! BASE_SHA=$(git merge-base HEAD "$BASE_BRANCH" 2>/dev/null); then
+  echo "Cannot determine PR base branch/merge-base." >&2
   # Blocker taxonomy #3 (plan-contradicting data): the branch doesn't descend
   # from a known base. Emit a Blocked report per the failure protocol below and
   # exit. Do NOT push.
 fi
 ```
 
-Use `$BASE_SHA` for any `base..HEAD` range computation (e.g. `git diff --stat $BASE_SHA..HEAD` in Step 3). Use `$BASE_BRANCH` for `gh pr create --base "$BASE_BRANCH"` in Step 5.
+Use `$BASE_SHA` for any `base..HEAD` range computation (e.g. `git diff --stat $BASE_SHA..HEAD` in Step 3). Use `$BASE_BRANCH` for `gh pr create --base "$BASE_BRANCH"` in Step 6.
 
 **If both lookups fail** (no `main`, no `master` ancestor), that's a blocker per taxonomy #3. Render a partial morning report with `Status: Blocked`, describe the missing base in `Blockers hit`, write it to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md`, emit the terminal one-liner, and exit. Do **not** push.
 
@@ -66,12 +74,14 @@ Produce two renderings:
 
 ### Step 4: Write full report + commit
 
-Write the full rendered report to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md`, where `<slug>` is a short kebab-case identifier for the plan (e.g. `autonomous-execution`). Committing it before the push means the PR includes the report from its first revision — no dead link in the PR body.
+Write the full rendered report to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md`, where `<slug>` is a short kebab-case identifier for the plan (e.g. `autonomous-execution`). Committing it before the push means the PR includes the report from its first revision — no dead link in the PR body. The PR does not exist yet, so render `{{pr_url}}` as `pending — filled in after PR creation`; Step 7 writes the real URL back.
 
 ```bash
 git add .memories/autonomous-run-YYYY-MM-DD-<slug>.md
 git commit -m "docs: autonomous run report for <plan name>"
 ```
+
+This commit (and the Step 7 URL write-back) are metadata-only: they touch nothing outside `.memories/`, so the Step 1 branch-gate evidence carries over to the new HEAD. If anything outside `.memories/` changes after Step 1, the evidence is invalidated — re-run the branch gate before pushing.
 
 ### Step 5: Push branch
 
@@ -94,7 +104,17 @@ If `gh` is not installed or the command fails (auth, network, repo not on origin
 
 Capture the PR URL from `gh`'s output.
 
-### Step 7: Emit terminal pointer
+### Step 7: Write the PR URL back into the report
+
+Replace the `pending — filled in after PR creation` value in the committed report with the captured URL, then commit and push the update. This is a metadata-only commit; the branch-gate evidence still holds (see Step 4).
+
+```bash
+git add .memories/autonomous-run-YYYY-MM-DD-<slug>.md
+git commit -m "docs: record PR URL in run report"
+git push
+```
+
+### Step 8: Emit terminal pointer
 
 One line, then exit:
 

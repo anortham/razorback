@@ -22,18 +22,12 @@ The `.response` field is plain text, **often fenced in markdown** (```` ```json 
 
 ## Build the adversarial prompt
 
-Use the same adversarial framing as codex/claude. The template is inlined below as `$ADVERSARIAL_TEMPLATE`. Substitute `{{TARGET_LABEL}}`, `{{USER_FOCUS}}`, and `{{REVIEW_INPUT}}` the same way the codex and claude paths do. The schema is also inlined because gemini has no `--json-schema` / `--output-schema` flag — we append it to the user prompt and rely on gemini to conform.
+Use the same adversarial framing as codex/claude. The static core is inlined below as `$ADVERSARIAL_CORE`; the dynamic parts (target, focus, review input) are concatenated around it in `$FINAL_PROMPT`. Do NOT build the prompt with bash pattern substitution (`${var//{{X}}/$val}`): on bash 5.2+ `patsub_replacement` expands `&` in the replacement — and diffs routinely contain `&` — while on bash 3.2 quoting the replacement inserts literal quote characters. Plain string concatenation has neither problem. The schema is also inlined because gemini has no `--json-schema` / `--output-schema` flag — we append it to the user prompt and rely on gemini to conform.
 
 ## Invocation
 
 ```bash
-ADVERSARIAL_TEMPLATE=$(cat <<'ADV_EOF'
-You are performing an adversarial software review.
-Your job is to break confidence in the change, not to validate it.
-
-Target: {{TARGET_LABEL}}
-User focus: {{USER_FOCUS}}
-
+ADVERSARIAL_CORE=$(cat <<'ADV_EOF'
 OPERATING STANCE:
 Default to skepticism. Assume the change can fail in subtle, high-cost, or
 user-visible ways until evidence says otherwise. Do not give credit for good
@@ -111,11 +105,6 @@ SCHEMA_JSON=$(cat <<'SCHEMA_EOF'
 SCHEMA_EOF
 )
 
-# Substitute target-specific placeholders into the template. Use bash
-# parameter expansion so the `{{TARGET_LABEL}}` / `{{USER_FOCUS}}` /
-# `{{REVIEW_INPUT}}` tokens are replaced with actual values before the
-# prompt reaches gemini. Without this step gemini receives literal
-# placeholder text and loses focus / commit-log / file-stat context.
 TARGET_LABEL="$FILE_STAT (branch: base..HEAD)"
 REVIEW_INPUT="Files changed:
 $FILE_STAT
@@ -126,16 +115,23 @@ $COMMIT_LOG
 Diff:
 $DIFF"
 
-FINAL_PROMPT="${ADVERSARIAL_TEMPLATE//\{\{TARGET_LABEL\}\}/$TARGET_LABEL}"
-FINAL_PROMPT="${FINAL_PROMPT//\{\{USER_FOCUS\}\}/${USER_FOCUS:-none specified}}"
-FINAL_PROMPT="${FINAL_PROMPT//\{\{REVIEW_INPUT\}\}/$REVIEW_INPUT}"
+FINAL_PROMPT="You are performing an adversarial software review.
+Your job is to break confidence in the change, not to validate it.
+
+Target: $TARGET_LABEL
+User focus: ${USER_FOCUS:-none specified}
+
+$ADVERSARIAL_CORE
+
+REPOSITORY CONTEXT:
+$REVIEW_INPUT"
 
 GEMINI_MODEL="${RAZORBACK_GEMINI_REVIEW_MODEL:-}"
 
 cd "$PROJECT_DIR" && gemini -p "$FINAL_PROMPT
 
 Return your response as a JSON object matching this schema:
-$SCHEMA_JSON" -o json ${GEMINI_MODEL:+-m "$GEMINI_MODEL"} --approval-mode plan 2>/dev/null
+$SCHEMA_JSON" -o json ${GEMINI_MODEL:+-m "$GEMINI_MODEL"} --approval-mode plan < /dev/null 2>/dev/null
 ```
 
 Flag rationale:

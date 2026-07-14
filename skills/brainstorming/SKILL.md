@@ -47,19 +47,19 @@ Every project goes through this process. A todo list, a single-function utility,
 **Lightweight** (design agreed, moderate task, same-session):
 1. **Explore project context** — use Miller to orient, check recent commits
 2. **Summarize agreed design with acceptance criteria** - present for user confirmation. Note the approved module/interface shape, or `No Architecture Impact` for mechanical work.
-3. **Write design doc** - save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit. Include acceptance criteria checklist; this is the implementer's spec.
+3. **Write design doc** - save to `docs/plans/YYYY-MM-DD-<topic>-design.md`, do NOT commit yet (committing now would land it on the current branch — often `main`). Include acceptance criteria checklist; this is the implementer's spec.
 4. **Spec self-review** - quick inline check for placeholders, contradictions, ambiguity, scope (see below)
 5. **User reviews written spec** - ask user to review the spec file before proceeding
-6. **Create isolated workspace** - **REQUIRED SUB-SKILL:** razorback:using-git-worktrees (skip only with explicit user consent for small same-session work on a plain feature branch)
+6. **Create isolated workspace** - **REQUIRED SUB-SKILL:** razorback:using-git-worktrees (skip only with explicit user consent for small same-session work on a plain feature branch). Move the design doc into the worktree and commit it there as the branch's first commit — untracked files do NOT follow into a new worktree.
 7. **Dispatch implementer directly** - see "Lightweight Implementation" section below
 
 **Fast path** (design agreed, large or multi-session task):
 1. **Explore project context** — use Miller to orient, check recent commits
 2. **Summarize agreed design** - present concrete summary for user confirmation. Note the approved module/interface shape, or `No Architecture Impact` for mechanical work — writing-plans copies this into the plan's Architecture Quality header.
-3. **Write design doc** - save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit
+3. **Write design doc** - save to `docs/plans/YYYY-MM-DD-<topic>-design.md`, do NOT commit yet (that would land it on the current branch — often `main`)
 4. **Spec self-review** - quick inline check for placeholders, contradictions, ambiguity, scope (see below)
 5. **User reviews written spec** - ask user to review the spec file before proceeding
-6. **Create isolated workspace** - **REQUIRED SUB-SKILL:** razorback:using-git-worktrees (the plan is then written and executed in that worktree)
+6. **Create isolated workspace** - **REQUIRED SUB-SKILL:** razorback:using-git-worktrees. Move the design doc into the worktree and commit it there as the branch's first commit (untracked files do NOT follow into a new worktree); the plan is then written and executed in that worktree.
 7. **Transition to implementation** - invoke writing-plans skill
 
 **Full process** (requirements unclear or multiple approaches):
@@ -69,11 +69,11 @@ Every project goes through this process. A todo list, a single-function utility,
 4. **Propose 2-3 approaches** - with trade-offs and your recommendation
 5. **Run `razorback:architecture-quality`** - for non-trivial work, capture the approved module/interface shape before presenting the design. If the task has no architecture impact, note `No Architecture Impact`.
 6. **Present design** - in sections scaled to their complexity, get user approval after each section
-7. **Write design doc** - save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit
+7. **Write design doc** - save to `docs/plans/YYYY-MM-DD-<topic>-design.md`, do NOT commit yet (that would land it on the current branch — often `main`)
 8. **Spec self-review** - quick inline check for placeholders, contradictions, ambiguity, scope (see below)
 9. **Doubt pass (conditional)** - if architecture-quality rated the risk medium/high, run the Doubt Pass from `razorback:cross-model-convergence` and fold surviving objections into the spec. This is lead work inside the flow, not a user gate.
 10. **User reviews written spec** - ask user to review the spec file before proceeding
-11. **Create isolated workspace** - **REQUIRED SUB-SKILL:** razorback:using-git-worktrees (the plan is then written and executed in that worktree)
+11. **Create isolated workspace** - **REQUIRED SUB-SKILL:** razorback:using-git-worktrees. Move the design doc into the worktree and commit it there as the branch's first commit (untracked files do NOT follow into a new worktree); the plan is then written and executed in that worktree.
 12. **Transition to implementation** - invoke writing-plans skill to create implementation plan
 
 ## Process Flow

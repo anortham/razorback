@@ -110,10 +110,11 @@ JSON conforming to the schema inlined above:
 Direct — no envelope. Parse with `jq`:
 
 ```bash
-jq -e '.findings[]' < codex-output.json
+jq -e '.findings | type == "array"' < codex-output.json >/dev/null   # shape check
+jq '.findings[]?' < codex-output.json                                 # iterate; empty = clean review
 ```
 
-`jq -e` exits non-zero if `.findings` is missing or malformed. On parse failure, retry **once** with a stricter prompt instructing codex to return ONLY JSON conforming to the schema (no prose). If the retry still fails to produce schema-valid output, reviewer unavailability applies — see Error Handling below. Do NOT loop beyond one retry (single pass rule).
+The shape check exits non-zero if `.findings` is missing or malformed. Do NOT gate on `jq -e '.findings[]'` — it exits 4 on a valid empty array, turning a clean review into a false parse failure. On parse failure, retry **once** with a stricter prompt instructing codex to return ONLY JSON conforming to the schema (no prose). If the retry still fails to produce schema-valid output, reviewer unavailability applies — see Error Handling below. Do NOT loop beyond one retry (single pass rule).
 
 If a schema-valid partial output exists despite a mid-stream failure (e.g. stdout truncated but `.findings[]` parses), use it and note the truncation in the morning report.
 

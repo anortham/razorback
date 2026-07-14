@@ -32,7 +32,7 @@ print(f'Org: {d.get(\"orgName\")}')
 ```
 
 `claude auth status` output fields:
-- **`loggedIn`**: bool — if false, tell user to run `claude login`
+- **`loggedIn`**: bool — if false, tell user to run `claude auth login`
 - **`authMethod`**: `"claude.ai"` (OAuth) or `"api_key"` — confirms auth path
 - **`apiProvider`**: `"firstParty"` for direct Anthropic; differs under
   Bedrock/Vertex/Foundry
@@ -48,7 +48,7 @@ with no output. The `/usage` slash command works in interactive sessions. Best
 source: the usage page at `claude.ai/settings` (web UI).
 
 If the command exits non-zero or produces no JSON, the user is not logged in.
-Tell them to run `claude login` in a terminal.
+Tell them to run `claude auth login` in a terminal.
 
 **Billing context**: See `references/programmatic-billing.md` for the
 interactive vs. programmatic billing split. Since June 15, 2026, `claude -p`
@@ -83,8 +83,12 @@ draws from a separate Agent SDK credit pool, not the general subscription
 - **Working directory**: Claude uses the shell's cwd. There is no equivalent
   to codex's `-C` flag; `cd` first or run from the project root.
 - **Non-interactive permissions**: `--dangerously-skip-permissions` is
-  required for scripted use. Pair it with `--tools "Read,Bash"` to enforce
-  read-only behavior; the reviewer can investigate but cannot edit.
+  required for scripted use. Pair it with `--tools "Read,Grep,Glob"` plus
+  `--strict-mcp-config` to enforce read-only behavior at the CLI layer: no
+  tool in that set can write, and strict MCP config keeps write-capable MCP
+  tools from user/project settings out of the session. Do NOT treat
+  `--tools "Read,Bash"` as read-only — an unrestricted Bash tool can write
+  files; only add Bash when you accept that trade for shell investigation.
 - **`--max-budget-usd` behavior depends on auth**: On OAuth-authenticated
   Max/Pro subscriptions, this flag limits only *potential API overage* charges
   (when the user has enabled extra-usage billing). It does NOT limit
@@ -100,7 +104,7 @@ draws from a separate Agent SDK credit pool, not the general subscription
 - **Auth**: Logged in via Anthropic OAuth or API key. Run the Pre-flight
   Checklist above. `claude auth status` exits 0 logged in, 1 otherwise, and
   returns JSON with subscription type, auth method, email, and org. If auth
-  fails, tell the user to run `claude login` in a terminal. If you copied an
+  fails, tell the user to run `claude auth login` in a terminal. If you copied an
   older command that includes `--bare`, remove that flag first (unless you
   have a guaranteed `ANTHROPIC_API_KEY`).
 
@@ -192,7 +196,7 @@ piece of code. No file changes, no structured output.
 cd /path/to/project && claude -p \
   --no-session-persistence \
   --dangerously-skip-permissions \
-  --tools "Read,Bash" \
+  --tools "Read,Grep,Glob" --strict-mcp-config \
   ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} \
   ${CLAUDE_EFFORT:+--effort "$CLAUDE_EFFORT"} \
   "Your prompt here" \
@@ -236,17 +240,18 @@ $DIFF"
 
 `--json-schema` takes a JSON string; inline the schema directly (the canonical
 copy is `../codex-cli/schemas/review-output.schema.json` — all razorback
-reviewers share it):
+reviewers share it). Strip the `$schema` key for claude: 2.1.209's validator
+rejects it (`no schema with key or ref …`) before the run starts:
 
 ```bash
-SCHEMA_JSON='{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","additionalProperties":false,"required":["verdict","summary","findings","next_steps"],"properties":{"verdict":{"type":"string","enum":["approve","needs-attention"]},"summary":{"type":"string","minLength":1},"findings":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["severity","title","body","file","line_start","line_end","confidence","recommendation"],"properties":{"severity":{"type":"string","enum":["critical","high","medium","low"]},"title":{"type":"string","minLength":1},"body":{"type":"string","minLength":1},"file":{"type":"string","minLength":1},"line_start":{"type":"integer","minimum":1},"line_end":{"type":"integer","minimum":1},"confidence":{"type":"number","minimum":0,"maximum":1},"recommendation":{"type":"string"}}}},"next_steps":{"type":"array","items":{"type":"string","minLength":1}}}}'
+SCHEMA_JSON='{"type":"object","additionalProperties":false,"required":["verdict","summary","findings","next_steps"],"properties":{"verdict":{"type":"string","enum":["approve","needs-attention"]},"summary":{"type":"string","minLength":1},"findings":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["severity","title","body","file","line_start","line_end","confidence","recommendation"],"properties":{"severity":{"type":"string","enum":["critical","high","medium","low"]},"title":{"type":"string","minLength":1},"body":{"type":"string","minLength":1},"file":{"type":"string","minLength":1},"line_start":{"type":"integer","minimum":1},"line_end":{"type":"integer","minimum":1},"confidence":{"type":"number","minimum":0,"maximum":1},"recommendation":{"type":"string"}}}},"next_steps":{"type":"array","items":{"type":"string","minLength":1}}}}'
 
 cd /path/to/project && claude -p \
   --no-session-persistence \
   --dangerously-skip-permissions \
   --output-format json \
   --json-schema "$SCHEMA_JSON" \
-  --tools "Read,Bash" \
+  --tools "Read,Grep,Glob" --strict-mcp-config \
   --max-turns 15 \
   --max-budget-usd 5.00 \
   ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} \
@@ -265,8 +270,11 @@ at `.structured_output` (with `.result` holding the same JSON as a string, and
 `.usage` / `.total_cost_usd` carrying cost data):
 
 ```bash
-jq -e '.structured_output.findings[]' < output.json \
-  || jq -re '.result' < output.json | jq -e '.findings[]'
+# Shape check first — a clean review has findings: [] and `jq -e '.findings[]'`
+# exits 4 on a valid empty array (false parse failure).
+jq -e '.structured_output.findings | type == "array"' < output.json >/dev/null \
+  || jq -re '.result' < output.json | jq -e '.findings | type == "array"' >/dev/null
+jq '.structured_output.findings[]?' < output.json   # iterate; empty = clean review
 ```
 
 Present findings, add your own assessment. Highlight agreements and
@@ -293,7 +301,7 @@ file from the canonical content inlined in this skill's "Adversarial Prompt
 Template" section below:
 
 ```bash
-SCHEMA_JSON='{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","additionalProperties":false,"required":["verdict","summary","findings","next_steps"],"properties":{"verdict":{"type":"string","enum":["approve","needs-attention"]},"summary":{"type":"string","minLength":1},"findings":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["severity","title","body","file","line_start","line_end","confidence","recommendation"],"properties":{"severity":{"type":"string","enum":["critical","high","medium","low"]},"title":{"type":"string","minLength":1},"body":{"type":"string","minLength":1},"file":{"type":"string","minLength":1},"line_start":{"type":"integer","minimum":1},"line_end":{"type":"integer","minimum":1},"confidence":{"type":"number","minimum":0,"maximum":1},"recommendation":{"type":"string"}}}},"next_steps":{"type":"array","items":{"type":"string","minLength":1}}}}'
+SCHEMA_JSON='{"type":"object","additionalProperties":false,"required":["verdict","summary","findings","next_steps"],"properties":{"verdict":{"type":"string","enum":["approve","needs-attention"]},"summary":{"type":"string","minLength":1},"findings":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["severity","title","body","file","line_start","line_end","confidence","recommendation"],"properties":{"severity":{"type":"string","enum":["critical","high","medium","low"]},"title":{"type":"string","minLength":1},"body":{"type":"string","minLength":1},"file":{"type":"string","minLength":1},"line_start":{"type":"integer","minimum":1},"line_end":{"type":"integer","minimum":1},"confidence":{"type":"number","minimum":0,"maximum":1},"recommendation":{"type":"string"}}}},"next_steps":{"type":"array","items":{"type":"string","minLength":1}}}}'
 
 PROMPT_FILE=$(mktemp) && trap 'rm -f "$PROMPT_FILE"' EXIT
 cat > "$PROMPT_FILE" <<'PROMPT_EOF'
@@ -356,7 +364,7 @@ cd /path/to/project && claude -p \
   --dangerously-skip-permissions \
   --output-format json \
   --json-schema "$SCHEMA_JSON" \
-  --tools "Read,Bash" \
+  --tools "Read,Grep,Glob" --strict-mcp-config \
   --max-turns 15 \
   --max-budget-usd 5.00 \
   ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} \
@@ -369,7 +377,7 @@ cd /path/to/project && claude -p \
 
 The baseline flags are: `-p`, `--no-session-persistence`,
 `--dangerously-skip-permissions`, `--output-format json`, `--json-schema`,
-`--tools "Read,Bash"`, `--max-turns 15`, `--max-budget-usd 5.00`,
+`--tools "Read,Grep,Glob"`, `--strict-mcp-config`, `--max-turns 15`, `--max-budget-usd 5.00`,
 `${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"}`, `--system-prompt-file`. Add `--effort "$CLAUDE_EFFORT"` when the environment sets it, and `--fallback-model "$CLAUDE_FALLBACK_MODEL"` for autonomous runs that should survive an overload.
 
 The `--json-schema` flag tells Claude to return JSON matching the review
@@ -420,7 +428,7 @@ override. To review a project other than cwd, `cd` into it first:
 
 ```bash
 cd ~/source/other-project && claude -p --no-session-persistence \
-  --dangerously-skip-permissions --tools "Read,Bash" ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} \
+  --dangerously-skip-permissions --tools "Read,Grep,Glob" --strict-mcp-config ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} \
   "prompt" < /dev/null 2>/dev/null
 ```
 
@@ -455,7 +463,7 @@ think it's wrong, and your evidence.
 ## Error Handling
 
 - **Auth expired**: `claude auth status` exits non-zero. Tell the user to run
-  `claude login` in a terminal.
+  `claude auth login` in a terminal.
 - **Rate limits**: the Claude plan has rolling usage limits. If you hit
   them, tell the user and suggest trying again later, using a smaller prompt,
   or switching to the project policy's lower-cost tier temporarily.
@@ -507,7 +515,7 @@ All non-piped patterns must include `< /dev/null` (bash) or `< NUL` (Windows cmd
 
 | Use case | Mode | Command pattern |
 |---|---|---|
-| Second opinion | read-only | `cd dir && claude -p --no-session-persistence --dangerously-skip-permissions --tools "Read,Bash" ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} "prompt" < /dev/null 2>/dev/null` |
+| Second opinion | read-only | `cd dir && claude -p --no-session-persistence --dangerously-skip-permissions --tools "Read,Grep,Glob" --strict-mcp-config ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} "prompt" < /dev/null 2>/dev/null` |
 | Code review | read-only + schema | Add `--output-format json --json-schema "$SCHEMA_JSON" --max-turns 15 --max-budget-usd 5.00` (inline schema as a string; see Code Review section). Scope/sizing per Review Targeting. |
 | Adversarial review | read-only + schema + system prompt | Add `--system-prompt-file "$PROMPT_FILE"` (temp file materialized from the Adversarial Prompt Template) to the code-review pattern. Scope/sizing per Review Targeting. |
 | Resume session | persistent | Drop `--no-session-persistence`, use `claude -r "prompt" < /dev/null 2>/dev/null` |

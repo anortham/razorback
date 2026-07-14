@@ -126,17 +126,17 @@ The user wants Gemini to review code for bugs, style, performance, or correctnes
 REFS=$(printf "@./%s " $FILES)
 ```
 
-**Step 3: Send to Gemini.** For working-tree scope:
+**Step 3: Send to Gemini.** Reviews run under `--approval-mode plan` — the `@./` refs make Gemini read the files via tools, and plan mode is what actually blocks writes (see Defaults). For working-tree scope:
 
 ```bash
-gemini -p "Review the following changed files for bugs, security issues, and improvements: $REFS" -o text 2>/dev/null
+gemini -p "Review the following changed files for bugs, security issues, and improvements: $REFS" --approval-mode plan -o text 2>/dev/null
 ```
 
 For branch scope, include commit context:
 
 ```bash
 COMMITS=$(git log --oneline "$RANGE")
-gemini -p "Review changes on this branch ($RANGE) for bugs, security issues, and improvements. Commits: $COMMITS. Files: $REFS" -o text 2>/dev/null
+gemini -p "Review changes on this branch ($RANGE) for bugs, security issues, and improvements. Commits: $COMMITS. Files: $REFS" --approval-mode plan -o text 2>/dev/null
 ```
 
 Note the `@./` file reference syntax — Gemini reads files directly via these
@@ -211,7 +211,7 @@ echo "This is Claude following up. I disagree with [X] because [evidence]. What'
 ## Error Handling
 
 - **Rate limits**: Free-tier caps are 60 req/min, 1000/day (as of gemini-cli 0.46.0, 2026-07 — re-verify before relying on exact numbers). Gemini auto-retries with backoff. If you hit limits, switch to the project policy's lower-cost tier for lower-priority tasks or wait.
-- **Command failures**: Check with `gemini --version` to verify auth. Use `--debug` for verbose error info.
+- **Command failures**: `gemini --version` verifies the install only — it does NOT check auth (it prints a version even logged out). Auth errors surface on the first real invocation; drop `2>/dev/null` temporarily to read them, or use `--debug` for verbose error info.
 - **Sandbox mode**: `--sandbox` adds process isolation and is the safe choice when a delegated task should not touch the host. Risky modes are the ones that widen write authority (`--yolo`, `--approval-mode yolo`); use those only when the user request or plan explicitly authorizes them; otherwise treat the risky mode as blocker taxonomy #2 (see `../using-razorback/references/blocker-taxonomy.md`).
 - If output contains warnings or partial results during an approved run, classify the result under the plan and blocker taxonomy. Use usable partial output with a logged limitation, retry once when the failure is tool-shaped, or stop only for a real blocker. For ad-hoc Gemini use outside an approved run, summarize the limitation and ask one specific question.
 
@@ -221,7 +221,7 @@ echo "This is Claude following up. I disagree with [X] because [evidence]. What'
 |---|---|---|
 | Second opinion / analysis | read-only | `gemini -p "prompt" -o text` |
 | Write code / refactor | yolo | `gemini -p "prompt. Apply now." --yolo -o text` |
-| Code review | read-only | `gemini -p "Review $REFS for bugs" -o text` (scope/sizing per Review Targeting; `$REFS` is `@./` list from changed files) |
+| Code review | read-only | `gemini -p "Review $REFS for bugs" --approval-mode plan -o text` (scope/sizing per Review Targeting; `$REFS` is `@./` list from changed files) |
 | Web research | search | `gemini -p "latest X? Use Google Search." -o text` |
 | Architecture analysis | investigator | `gemini -p "Use codebase_investigator..." -o text` |
 | Quick/simple task | inherited or explicit model | `gemini -p "prompt" ${GEMINI_MODEL:+-m "$GEMINI_MODEL"} -o text` |

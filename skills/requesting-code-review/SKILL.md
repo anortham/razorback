@@ -60,7 +60,7 @@ HEAD_SHA=$(git rev-parse HEAD)
 | Claude Code | `Agent(subagent_type="razorback:code-reviewer", prompt=<filled template>)` |
 | Cursor | Same as Claude Code (plugin agents exposed through the Skill tool's agent discovery) |
 | Copilot CLI | `task(agent_type="razorback:code-reviewer", …)` — plugin agents auto-discovered |
-| Codex | `spawn_agent(agent_type="worker", message=<see two-file note below>)` |
+| Codex | `spawn_agent(task_name="code-review", message=<see two-file note below>)` |
 | OpenCode | `Task` tool with `general` subagent (message built as in the two-file note below) |
 | Gemini CLI | `invoke_agent(agent_name="generalist", prompt=<see two-file note below>)` — same concatenation pattern as Codex / OpenCode. Drop a custom `.gemini/agents/code-reviewer.md` into the target repo if you want a named reviewer agent instead. |
 
