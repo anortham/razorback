@@ -240,9 +240,9 @@ If you catch yourself thinking:
 
 **ALL of these mean: STOP. Return to Phase 1.**
 
-**If 3+ fixes failed:** Question the architecture (see Phase 4.5)
+**If 3+ fixes failed:** the problem is structural, not local. Stop patching and question the architecture with razorback:architecture-quality.
 
-## your human partner's Signals You're Doing It Wrong
+## Signals You're Doing It Wrong
 
 **Watch for these redirections:**
 - "Is that not happening?" - You assumed without verifying
@@ -298,11 +298,3 @@ These techniques are part of systematic debugging and available in this director
 - **razorback:test-driven-development** - For creating failing test case (Phase 4, Step 1)
 - **razorback:verification-before-completion** - Verify fix worked before claiming success
 - **razorback:fixing-small-issues** - When the root-caused fix meets the quick-fix criteria, execute it there: in place, affected-scope verification, no worktree or baseline-suite ceremony
-
-## Real-World Impact
-
-From debugging sessions:
-- Systematic approach: 15-30 minutes to fix
-- Random fixes approach: 2-3 hours of thrashing
-- First-time fix rate: 95% vs 40%
-- New bugs introduced: Near zero vs common

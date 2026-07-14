@@ -73,12 +73,6 @@ If your review does not cite Miller-assisted investigation and API-shape evidenc
 - Documentation complete?
 - No obvious bugs?
 
-**Impact Analysis (use Miller):**
-- **Inspect** key modified symbols — understand callers, callees, types with `inspect(target='<symbol>', depth=full)`
-- **Find references** to changed public APIs — verify no broken dependents with `trace(target='<symbol>')`
-- **List a file's symbols** on modified files — review structure before reading full content with `inspect(target='<file>')`
-- Use targeted Read only for specific sections, not entire files
-
 ## Output Format
 
 ### Findings

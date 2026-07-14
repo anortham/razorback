@@ -49,7 +49,7 @@ test('receiving-code-review routes architecture feedback through architecture-qu
 
   assert.match(
     skill,
-    /external architecture feedback is evaluated through `architecture-quality` before implementation/i,
+    /external architecture feedback is evaluated through `(?:razorback:)?architecture-quality` before implementation/i,
   );
 });
 

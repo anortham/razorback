@@ -1,11 +1,9 @@
 ---
 name: harvesting-debt
 description: >
-  Harvest every `razorback:` shortcut marker in the codebase into a debt ledger, so the
-  deliberate corners cut on the quick-fix tier get tracked instead of rotting into
-  "later means never". Use when the user says "razorback debt", "harvesting-debt",
-  "debt ledger", "what did we defer", "list the shortcuts", or "what did we mark to do
-  later". One-shot report, changes nothing.
+  Use when the user says "razorback debt", "harvesting-debt", "debt ledger",
+  "what did we defer", "list the shortcuts", or "what did we mark to do later" —
+  any request to account for deliberate shortcuts marked with `razorback:` comments.
 ---
 
 # Harvesting Debt
@@ -31,20 +29,22 @@ Swift). Example: `# razorback: global lock, per-account locks if throughput matt
 
 ## Scan
 
-Grep the repo for comment markers:
+Search the indexed workspace with Miller first:
+
+`search(query='razorback:', mode=text)`
+
+Miller's index already excludes vendored, generated, and tool-state content, and
+returns ranked hits with file:line — no exclusion flags needed. Keep only hits that
+are comment markers (`# razorback:` / `// razorback:`), not razorback's own skill
+cross-references (`razorback:<skill-name>` in prose).
+
+**Grep fallback** (Miller unavailable or index stale after `workspace refresh`):
 
 `grep -rnIE '(#|//) ?razorback:' .`
 
-`-I` skips binary files — without it, any binary whose bytes happen to match prints
-a useless `Binary file … matches` row.
-
-Exclude, at minimum:
-
-- `node_modules/`, `.git/`, and build output (`dist/`, `build/`, `target/`, `out/`) — vendored and generated noise.
-- **In the razorback repo itself:** `skills/`, `docs/`, `commands/`, `agents/`, `.memories/`. Razorback's own skill **cross-reference** syntax is `razorback:<skill-name>` (e.g. `razorback:writing-plans`), and those prose references would otherwise flood the ledger with rows that are not debt at all. The comment prefix filters most of it; excluding these directories filters the rest.
-- **Tool-state directories:** `.miller/` (Miller's index), `.razorback/` (sdd briefs and reports), `.claude/` (Claude Code worktrees, which contain both). These quote markers in reports and index the marker bytes in binary content, and none of them are source code. Grep traverses hidden directories by default, so they land in the ledger unless excluded.
-
-Example with exclusions:
+`-I` skips binary files — without it, any binary whose bytes happen to match
+(including Miller's own index) prints a useless `Binary file … matches` row.
+Full form with exclusions:
 
 ```
 grep -rnIE '(#|//) ?razorback:' . \
@@ -54,6 +54,12 @@ grep -rnIE '(#|//) ?razorback:' . \
   --exclude-dir=agents --exclude-dir=.memories \
   --exclude-dir=.miller --exclude-dir=.razorback --exclude-dir=.claude
 ```
+
+The `skills/`/`docs/`/`commands/`/`agents/`/`.memories/` exclusions matter only
+in the razorback repo itself, where prose skill cross-references
+(`razorback:<skill-name>`) would flood the ledger; the rest cut vendored, build,
+and tool-state noise (`.miller/`, `.razorback/`, `.claude/` quote markers in
+reports or index the marker bytes).
 
 Add comment prefixes your stack uses (`--`, `;`, `%`) if the codebase needs them.
 Each surviving hit is one ledger row.

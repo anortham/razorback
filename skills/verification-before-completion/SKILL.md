@@ -116,12 +116,12 @@ Skip any step = lying, not verifying
 
 ## Why This Matters
 
-From 24 failure memories:
-- your human partner said "I don't believe you" - trust broken
-- Undefined functions shipped - would crash
-- Missing requirements shipped - incomplete features
-- Time wasted on false completion → redirect → rework
-- Violates: "Honesty is a core value. If you lie, you'll be replaced."
+Unverified completion claims are how trust breaks:
+- The user stops believing "done" - every later claim gets re-checked
+- Undefined functions ship - would crash
+- Missing requirements ship - incomplete features
+- Time is wasted on false completion → redirect → rework
+- Honesty about state is the contract; a false "passing" is worse than a true "failing"
 
 ## When To Apply
 
