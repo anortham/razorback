@@ -1,6 +1,6 @@
 ---
 name: subagent-driven-development
-description: Execute an implementation plan by dispatching fresh subagents (sequentially or in parallel) with inline review by the lead. Primary delegated execution path whenever the harness can launch subagents.
+description: Use when executing an approved implementation plan in the current session and the harness can launch subagents. Falls back to razorback:executing-plans for single-task, separate-session, or no-delegation runs.
 ---
 
 # Subagent-Driven Development
@@ -11,8 +11,9 @@ Execute a plan by dispatching fresh subagents per task, with the lead doing inli
 
 **Dispatch mechanism:**
 - **Claude Code:** `Agent` tool (one call per subagent; multiple calls in one turn run in parallel).
+- **Copilot CLI:** `task(agent_type="general-purpose", …)` (one call per subagent; multiple calls in one turn run in parallel). Poll with `read_agent` / `list_agents` (see `../using-razorback/references/copilot-tools.md`).
 - **opencode:** `Task` tool (one call per subagent; multiple calls in one turn run in parallel). The built-in `general` subagent is suitable for most implementer work; `@mention` also works for manual invocation.
-- **Codex:** `spawn_agent(agent_type="worker", message=<filled prompt>)` (one call per subagent; multiple calls in one turn run in parallel). Keep the returned agent ID, `send_input(target=<agent-id>, message=...)` feeds follow-ups (the closest thing to Claude Code's resume), `wait_agent(targets=[<agent-id>])` blocks until the agent finishes, and `close_agent(target=<agent-id>)` frees the slot. Requires `multi_agent = true` in `~/.codex/config.toml` (see `skills/using-razorback/references/codex-tools.md`).
+- **Codex:** `spawn_agent(agent_type="worker", message=<filled prompt>)` (one call per subagent; multiple calls in one turn run in parallel). Keep the returned agent ID, `send_input(target=<agent-id>, message=...)` feeds follow-ups (the closest thing to Claude Code's resume), `wait_agent(targets=[<agent-id>])` blocks until the agent finishes, and `close_agent(target=<agent-id>)` frees the slot. Requires `multi_agent = true` in `~/.codex/config.toml` (see `../using-razorback/references/codex-tools.md`).
 - **Gemini CLI:** `invoke_agent(agent_name="generalist", prompt=<filled prompt>)` (parallel by default; set `wait_for_previous: true` only when you need a call serialized behind earlier ones). Resume is not available — route fix rounds via a fresh `invoke_agent` call with the fix prompt and prior-task context. Subagents cannot recursively dispatch other subagents, so all worker dispatch happens from the lead session.
 - **Explicit Cursor/Composer delegation from another harness:** use `razorback:cursor-agent`, which owns the Cursor CLI invocation. The current lead still owns planning, review, fix routing, and final verification; Cursor Agent is only the implementation worker.
 
@@ -25,18 +26,19 @@ before dispatch.
 ```dot
 digraph when_to_use {
     "Have implementation plan?" [shape=diamond];
+    "Same session + can dispatch subagents?" [shape=diamond];
     "Tasks mostly independent?" [shape=diamond];
-    "Stay in this session?" [shape=diamond];
-    "subagent-driven-development" [shape=box style=filled fillcolor=lightgreen];
+    "subagent-driven-development (parallel batches)" [shape=box style=filled fillcolor=lightgreen];
+    "subagent-driven-development (serialized lanes)" [shape=box style=filled fillcolor=lightgreen];
     "executing-plans" [shape=box];
-    "Manual execution or brainstorm first" [shape=box];
+    "Brainstorm / write the plan first" [shape=box];
 
-    "Have implementation plan?" -> "Tasks mostly independent?" [label="yes"];
-    "Have implementation plan?" -> "Manual execution or brainstorm first" [label="no"];
-    "Tasks mostly independent?" -> "Stay in this session?" [label="yes"];
-    "Tasks mostly independent?" -> "Manual execution or brainstorm first" [label="no - tightly coupled"];
-    "Stay in this session?" -> "subagent-driven-development" [label="yes"];
-    "Stay in this session?" -> "executing-plans" [label="no - parallel session"];
+    "Have implementation plan?" -> "Same session + can dispatch subagents?" [label="yes"];
+    "Have implementation plan?" -> "Brainstorm / write the plan first" [label="no"];
+    "Same session + can dispatch subagents?" -> "Tasks mostly independent?" [label="yes"];
+    "Same session + can dispatch subagents?" -> "executing-plans" [label="no - separate session or no delegation"];
+    "Tasks mostly independent?" -> "subagent-driven-development (parallel batches)" [label="yes"];
+    "Tasks mostly independent?" -> "subagent-driven-development (serialized lanes)" [label="no - tightly coupled: dispatch one at a time"];
 }
 ```
 
@@ -47,9 +49,9 @@ digraph when_to_use {
 - Faster iteration (no human-in-loop between tasks)
 
 **Harness-specific follow-up behavior:**
-- Claude Code can resume an existing implementer for fix rounds
+- Claude Code can resume an existing implementer for fix rounds (`SendMessage` to the stored agent ID/name)
 - Codex can use `send_input` on the stored worker for fix rounds
-- OpenCode and Gemini CLI use fresh dispatches with fix context because resume is not available
+- OpenCode, Copilot CLI, and Gemini CLI use fresh dispatches with fix context because resume is not available
 - The execution model stays the same across harnesses: dispatch per task, inline review by lead, parallel fan-out only when files do not overlap
 
 ## The Process
@@ -201,9 +203,9 @@ Fix rounds keep the same commit mode unless the lead explicitly changes it.
 
 Large task text, reports, and diffs should move as files instead of pasted prompt content. This keeps the lead context small and makes recovery after compaction concrete.
 
-- **Task brief:** before dispatching an implementer, run `skills/subagent-driven-development/scripts/task-brief PLAN_FILE N`. It writes `task-N-brief.md` under `.razorback/sdd` and prints the path. The dispatch prompt should point the implementer at that brief as the source of requirements.
+- **Task brief:** before dispatching an implementer, run `./scripts/task-brief PLAN_FILE N`. It writes `task-N-brief.md` under `.razorback/sdd` and prints the path. The dispatch prompt should point the implementer at that brief as the source of requirements.
 - **Report file:** name the implementer's report file after the brief (`task-N-report.md`) and put it under `.razorback/sdd`. The implementer writes the full report there, then returns only status, commits, one-line test summary, and concerns.
-- **Review package:** when a focused diff helps the lead inline review, run `skills/subagent-driven-development/scripts/review-package BASE HEAD`. The lead reads the generated package; do not dispatch a reviewer subagent. No reviewer subagents means the lead still owns spec compliance and code quality.
+- **Review package:** when a focused diff helps the lead inline review, run `./scripts/review-package BASE HEAD`. The lead reads the generated package; do not dispatch a reviewer subagent. No reviewer subagents means the lead still owns spec compliance and code quality.
 - **Fix rounds:** append fix reports and test evidence to the same report file. Re-review the updated diff/report before approving the task.
 
 ## Durable Progress
@@ -218,7 +220,7 @@ Conversation memory does not survive every long run. Track task completion in `.
 
 Per-harness state to keep after dispatch:
 
-- **Claude Code:** save the **agent ID** returned by the dispatch so you can resume the subagent for fixes (preserves its orientation context).
+- **Claude Code:** save the **agent ID (or name)** returned by the dispatch so you can resume the subagent for fixes (preserves its orientation context). Resume = send a follow-up message to that agent with the `SendMessage` tool; older builds exposed this as a `resume` parameter on the Agent tool.
 - **opencode:** the Task tool does not expose persistent resume, so fixes go to a fresh subagent with fix context included (see Step 4).
 - **Codex:** save the **agent ID** returned by `spawn_agent` so you can `send_input` for follow-ups, `wait_agent` for completion, and `close_agent` when the task is done. `send_input` is Codex's closest analogue to Claude Code's resume, and the worker keeps its orientation context between messages.
 
@@ -227,15 +229,16 @@ If the subagent asks questions, answer completely before letting it proceed.
 ### Parallel Dispatch (Independent Tasks)
 
 When the plan marks a safe batch with 2+ eligible tasks and the harness supports
-subagents, dispatch the whole batch together. A safe batch with 2+ eligible tasks
-dispatches together. Serializing a safe batch requires a recorded dependency or
-tool limitation.
+subagents, dispatch the whole batch together. Serializing a safe batch requires
+a recorded dependency or tool limitation.
 
 Per harness, that means:
 
 - **Claude Code:** make multiple `Agent` tool calls in a single turn. They run concurrently and you review each as it reports back.
+- **Copilot CLI:** make multiple `task` calls in a single turn; poll with `read_agent` / `list_agents` and review each as it completes.
 - **opencode:** make multiple `Task` tool calls in a single turn (or in the TUI, @mention the `general` subagent concurrently). Child sessions run in parallel; navigate with `session_child_*` keybinds.
 - **Codex:** make multiple `spawn_agent` calls in a single turn. Each returns its own agent ID. Use `wait_agent(targets=[<agent-id>])` per agent, or pass multiple IDs at once, when you need a given implementer's output before proceeding with its review.
+- **Gemini CLI:** make multiple `invoke_agent(agent_name="generalist", …)` calls — parallel by default; use `wait_for_previous: true` only for a call that must serialize behind earlier ones.
 
 Assign file ownership per subagent to prevent collisions. If tasks are tightly
 coupled (same files, shared state, ordering dependency), dispatch sequentially
@@ -310,7 +313,7 @@ Either way, the review is a single pass by the lead. Never collapse the loop to 
 
 When review finds issues, route the fix back to an implementer with the reviewer findings.
 
-**Claude Code (prefer resume):** Use `Agent(resume: "<agent-id>")` with the prompt from `./fix-prompt.md`. The resumed subagent keeps its orientation context — files read, decisions made, tests written — and goes straight to the fix instead of re-reading the codebase.
+**Claude Code (prefer resume):** Send the filled `./fix-prompt.md` to the stored implementer via `SendMessage` (agent ID or name); on older builds this was `Agent(resume: "<agent-id>")` — use whichever continuation mechanism the harness exposes. The resumed subagent keeps its orientation context — files read, decisions made, tests written — and goes straight to the fix instead of re-reading the codebase.
 
 **opencode (dispatch fresh with context):** The Task tool doesn't expose persistent resume. Dispatch a fresh implementer via the Task tool (or @mention `general`) using `./fix-prompt.md` plus:
 - The original task text
@@ -354,7 +357,7 @@ When all tasks are approved and marked complete:
 
 ## Blockers
 
-The authoritative taxonomy is `skills/using-razorback/references/blocker-taxonomy.md`. Consult it before stopping.
+The authoritative taxonomy is `../using-razorback/references/blocker-taxonomy.md` (in the razorback plugin). Consult it before stopping.
 
 **Bias rules:**
 - When in doubt, press on and flag. A line in the morning report is cheaper than a false wake-up.
@@ -518,9 +521,11 @@ Done.
 - Skip the re-review after a fix
 - Dispatch a separate reviewer subagent when the lead can review inline
 - Approve work from an implementer who cannot show Miller-first orientation
+- Pause for user input between tasks - the plan is approved, run it to completion. Stops are governed by the blocker taxonomy. If you can reason through a plan-consistent path, keep moving and log the choice.
+
+**Fix-round routing (positive rules, not prohibitions):**
 - **On Claude Code, prefer resume for iterations 1-3** (the implementer has full context). Use fresh-dispatch-with-reframed-context for iteration 4 only, after 3 resume attempts failed. The 4th attempt's value is the reframing, not the freshness.
 - **On Codex, prefer `send_input` on the stored agent ID for iterations 1-3** (same reasoning, the worker keeps its orientation context). Use `close_agent` + fresh `spawn_agent` with reframed context for iteration 4.
-- Never pause for user input between tasks - the plan is approved, run it to completion. Stops are governed by the blocker taxonomy. If you can reason through a plan-consistent path, keep moving and log the choice.
 
 **If the subagent asks questions:**
 - Answer clearly and completely
@@ -549,5 +554,5 @@ Done.
 - **razorback:executing-plans** — Use for parallel-session, single-agent, or no-delegation execution
 
 **Codex-specific:**
-- Requires `multi_agent = true` in `~/.codex/config.toml` (see `skills/using-razorback/references/codex-tools.md`). Without it, `spawn_agent` / `send_input` / `wait_agent` / `close_agent` are not available.
+- Requires `multi_agent = true` in `~/.codex/config.toml` (see `../using-razorback/references/codex-tools.md`). Without it, `spawn_agent` / `send_input` / `wait_agent` / `close_agent` are not available.
 - **`close_agent(target=<agent-id>)` MUST be called** when the worker is no longer needed, after a task's review is approved and you're not going to `send_input` again, or after the 4th-iteration flag-and-continue. Codex has a bounded agent-slot pool; leaking slots starves later dispatches in the same run.

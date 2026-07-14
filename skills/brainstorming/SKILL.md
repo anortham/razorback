@@ -46,19 +46,21 @@ Every project goes through this process. A todo list, a single-function utility,
 
 **Lightweight** (design agreed, moderate task, same-session):
 1. **Explore project context** — use Miller to orient, check recent commits
-2. **Summarize agreed design with acceptance criteria** - present for user confirmation
+2. **Summarize agreed design with acceptance criteria** - present for user confirmation. Note the approved module/interface shape, or `No Architecture Impact` for mechanical work.
 3. **Write design doc** - save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit. Include acceptance criteria checklist; this is the implementer's spec.
 4. **Spec self-review** - quick inline check for placeholders, contradictions, ambiguity, scope (see below)
 5. **User reviews written spec** - ask user to review the spec file before proceeding
-6. **Dispatch implementer directly** - see "Lightweight Implementation" section below
+6. **Create isolated workspace** - **REQUIRED SUB-SKILL:** razorback:using-git-worktrees (skip only with explicit user consent for small same-session work on a plain feature branch)
+7. **Dispatch implementer directly** - see "Lightweight Implementation" section below
 
 **Fast path** (design agreed, large or multi-session task):
 1. **Explore project context** — use Miller to orient, check recent commits
-2. **Summarize agreed design** - present concrete summary for user confirmation
+2. **Summarize agreed design** - present concrete summary for user confirmation. Note the approved module/interface shape, or `No Architecture Impact` for mechanical work — writing-plans copies this into the plan's Architecture Quality header.
 3. **Write design doc** - save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit
 4. **Spec self-review** - quick inline check for placeholders, contradictions, ambiguity, scope (see below)
 5. **User reviews written spec** - ask user to review the spec file before proceeding
-6. **Transition to implementation** - invoke writing-plans skill
+6. **Create isolated workspace** - **REQUIRED SUB-SKILL:** razorback:using-git-worktrees (the plan is then written and executed in that worktree)
+7. **Transition to implementation** - invoke writing-plans skill
 
 **Full process** (requirements unclear or multiple approaches):
 1. **Explore project context** — use Miller to orient on the relevant codebase area, check recent commits
@@ -71,7 +73,8 @@ Every project goes through this process. A todo list, a single-function utility,
 8. **Spec self-review** - quick inline check for placeholders, contradictions, ambiguity, scope (see below)
 9. **Doubt pass (conditional)** - if architecture-quality rated the risk medium/high, run the Doubt Pass from `razorback:cross-model-convergence` and fold surviving objections into the spec. This is lead work inside the flow, not a user gate.
 10. **User reviews written spec** - ask user to review the spec file before proceeding
-11. **Transition to implementation** - invoke writing-plans skill to create implementation plan
+11. **Create isolated workspace** - **REQUIRED SUB-SKILL:** razorback:using-git-worktrees (the plan is then written and executed in that worktree)
+12. **Transition to implementation** - invoke writing-plans skill to create implementation plan
 
 ## Process Flow
 
@@ -92,14 +95,13 @@ digraph brainstorming {
     "Spec self-review\n(fix inline)" [shape=box];
     "Doubt pass\n(if architecture risk medium/high)" [shape=box];
     "User reviews spec?" [shape=diamond];
+    "Create isolated workspace\n(using-git-worktrees)" [shape=box];
     "Invoke writing-plans skill" [shape=doublecircle];
     "Lightweight implementation" [shape=doublecircle];
 
-    "Design already agreed?" -> "Explore project context" [label="yes"];
-    "Design already agreed?" -> "Explore project context" [label="no (full process)"];
-
-    "Explore project context" -> "Summarize agreed design" [label="agreed"];
-    "Explore project context" -> "Visual questions ahead?" [label="unclear"];
+    "Explore project context" -> "Design already agreed?";
+    "Design already agreed?" -> "Summarize agreed design" [label="yes"];
+    "Design already agreed?" -> "Visual questions ahead?" [label="no (full process)"];
     "Visual questions ahead?" -> "Offer Visual Companion\n(own message, no other content)" [label="yes"];
     "Visual questions ahead?" -> "Ask clarifying questions" [label="no"];
     "Offer Visual Companion\n(own message, no other content)" -> "Ask clarifying questions";
@@ -115,7 +117,8 @@ digraph brainstorming {
     "Spec self-review\n(fix inline)" -> "Doubt pass\n(if architecture risk medium/high)";
     "Doubt pass\n(if architecture risk medium/high)" -> "User reviews spec?";
     "User reviews spec?" -> "Write design doc" [label="changes requested"];
-    "User reviews spec?" -> "Task moderate + same-session?" [label="approved"];
+    "User reviews spec?" -> "Create isolated workspace\n(using-git-worktrees)" [label="approved"];
+    "Create isolated workspace\n(using-git-worktrees)" -> "Task moderate + same-session?";
     "Task moderate + same-session?" -> "Lightweight implementation" [label="yes"];
     "Task moderate + same-session?" -> "Invoke writing-plans skill" [label="no"];
 }
@@ -171,8 +174,11 @@ After the spec review loop passes, ask the user to review the written spec befor
 
 Wait for the user's response. If they request changes, make them and re-run the spec review loop. Only proceed once the user approves.
 
+**Isolated workspace (all paths, after spec approval):**
+- **REQUIRED SUB-SKILL:** razorback:using-git-worktrees — set up the isolated workspace the implementation will run in. Skip only with explicit user consent (small same-session work on a plain feature branch).
+
 **Full/fast path → writing-plans:**
-- Invoke the writing-plans skill to create an implementation plan
+- Invoke the writing-plans skill (in the worktree) to create an implementation plan
 
 **Lightweight → direct implementation:**
 - See "Lightweight Implementation" below

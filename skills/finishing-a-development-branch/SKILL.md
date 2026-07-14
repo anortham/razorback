@@ -62,17 +62,26 @@ Fill the placeholders in `./morning-report-template.md` using the fields the cal
 
 Produce two renderings:
 - **Full report** — every section filled in, for `.memories/` and for review.
-- **PR summary** — status, What shipped, External review, Blockers, Next steps only. The Judgment calls section is not inlined in the PR description; the PR body points at the `.memories/` file instead (it lands in the PR via Step 6's commit).
+- **PR summary** — status, What shipped, External review, Blockers, Next steps only. The Judgment calls section is not inlined in the PR description; the PR body points at the `.memories/` file instead (committed in Step 4, so the link is live the moment the PR opens).
 
-### Step 4: Push branch
+### Step 4: Write full report + commit
+
+Write the full rendered report to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md`, where `<slug>` is a short kebab-case identifier for the plan (e.g. `autonomous-execution`). Committing it before the push means the PR includes the report from its first revision — no dead link in the PR body.
+
+```bash
+git add .memories/autonomous-run-YYYY-MM-DD-<slug>.md
+git commit -m "docs: autonomous run report for <plan name>"
+```
+
+### Step 5: Push branch
 
 ```bash
 git push -u origin <branch>
 ```
 
-If the push is rejected (branch already tracks a different remote, non-fast-forward, network failure), log the exact error in the report's `Blockers hit` section, set `Status: Blocked`, write the partial report to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md`, emit the terminal pointer, and exit. Do not retry with `--force`.
+If the push is rejected (branch already tracks a different remote, non-fast-forward, network failure), log the exact error in the report's `Blockers hit` section, set `Status: Blocked`, commit the updated report, emit the terminal pointer, and exit. Do not retry with `--force`.
 
-### Step 5: Create PR
+### Step 6: Create PR
 
 ```bash
 gh pr create \
@@ -81,21 +90,9 @@ gh pr create \
   --body "$(rendered_pr_summary)"
 ```
 
-If `gh` is not installed or the command fails (auth, network, repo not on origin), log the failure in `Blockers hit`, set `Status: Partial` (the branch was pushed but the PR was not created), write the report to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md`, emit the terminal pointer, and exit.
+If `gh` is not installed or the command fails (auth, network, repo not on origin), update the report with the failure in `Blockers hit` and `Status: Partial` (the branch was pushed but the PR was not created), commit and push the update, emit the terminal pointer, and exit.
 
 Capture the PR URL from `gh`'s output.
-
-### Step 6: Write full report + commit
-
-Write the full rendered report to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md`, where `<slug>` is a short kebab-case identifier for the plan (e.g. `autonomous-execution`).
-
-```bash
-git add .memories/autonomous-run-YYYY-MM-DD-<slug>.md
-git commit -m "docs: autonomous run report for <plan name>"
-git push
-```
-
-The extra push makes the `.memories/` file visible in the PR.
 
 ### Step 7: Emit terminal pointer
 
@@ -140,12 +137,17 @@ Stop. Don't proceed to Step 2.
 
 ### Step 2: Determine Base Branch
 
+`git merge-base` returns a commit SHA, not a branch name. Downstream steps need the branch **name** (`git checkout <base-branch>`, `gh pr create --base`), so resolve both values the same way Autonomous Step 2 does:
+
 ```bash
-# Try common base branches
-git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null
+if BASE_SHA=$(git merge-base HEAD main 2>/dev/null); then
+  BASE_BRANCH=main
+elif BASE_SHA=$(git merge-base HEAD master 2>/dev/null); then
+  BASE_BRANCH=master
+fi
 ```
 
-Or ask: "This branch split from main - is that correct?"
+If neither resolves, ask: "This branch split from main - is that correct?"
 
 ### Step 3: Present Options
 

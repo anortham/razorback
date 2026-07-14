@@ -118,8 +118,8 @@ These thoughts mean STOP—you're rationalizing:
 
 When executing implementation plans:
 
-- **2+ independent tasks (delegation available):** Use `razorback:subagent-driven-development` (fresh subagent per task, inline review by lead)
-- **1 task, tightly sequential work, or no delegation:** Use `razorback:executing-plans` (single agent, batch execution)
+- **2+ tasks (delegation available):** Use `razorback:subagent-driven-development` (fresh subagent per task — parallel batches when tasks are independent, serialized lanes when they are coupled; inline review by lead)
+- **1 task, separate-session execution, or no delegation:** Use `razorback:executing-plans` (single agent, batch execution)
 - **Ad-hoc parallel work (delegation available):** Use `razorback:dispatching-parallel-agents` (independent agent dispatch)
 - **Small, local, reversible fix (quick-fix criteria):** Use `razorback:fixing-small-issues` — triage first, fix on the current checkout, verify the affected scope only. No worktree, no baseline suite run.
 

@@ -11,11 +11,11 @@ Write implementation plans scaled to the situation. The right level of detail de
 
 **Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
 
-**Context:** This should be run in a dedicated worktree (created by brainstorming skill).
+**Context:** This should be run in a dedicated worktree — razorback:brainstorming sets one up (via razorback:using-git-worktrees) after spec approval. If you are not in one, run razorback:using-git-worktrees before writing the plan.
 
 **Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
 
-Once the plan is approved, razorback runs to completion; it stops only for real blockers (see `skills/using-razorback/references/blocker-taxonomy.md`). A blocker is real only when the agent cannot resolve it through reasonable plan-consistent judgment.
+Once the plan is approved, razorback runs to completion; it stops only for real blockers (see `../using-razorback/references/blocker-taxonomy.md` (in the razorback plugin)). A blocker is real only when the agent cannot resolve it through reasonable plan-consistent judgment.
 
 ## Plan Depth: Full vs. Light
 
@@ -80,6 +80,8 @@ You cannot write accurate file paths, line ranges, or implementation steps witho
 4. **Assess impact:** find references with Miller `trace` — find all callers before planning changes
 
 **Do NOT guess file paths, line numbers, symbol names, function signatures, config shapes, route names, CLI flags, or public contracts.** Use Miller to discover them. Plans with wrong paths or invented API shapes waste implementer time on dead ends.
+
+**External API staleness check:** For each task that codes against an external framework, library, or API where training knowledge could be stale (new-in-version features, unfamiliar dependencies, changed defaults), apply razorback:grounding-in-current-docs while planning: verify the exact surface and record it — or the doc URL — in the task itself so implementers don't code external APIs from memory.
 
 ## Bite-Sized Task Granularity (Full Plans)
 
@@ -321,7 +323,7 @@ parallel contract to a single row and copy the same fields into the task body.
 
 **Always (both plan types):**
 - Exact file paths
-- Reference relevant skills with @ syntax
+- Reference relevant skills by name with the `razorback:` prefix (never `@` file links — those force-load content and burn context)
 - DRY, YAGNI, TDD, frequent review-approved branch updates through the active commit mode
 - Tickable `- [ ]` acceptance criteria per task — execution flips these to `[x]` as a durable, in-document progress record
 

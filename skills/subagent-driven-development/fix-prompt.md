@@ -3,10 +3,14 @@
 Use this template when resuming the implementer subagent to fix review issues.
 The subagent already has full context from its implementation pass.
 
+On Claude Code, resume = `SendMessage` to the stored implementer's agent ID or
+name with this prompt as the message (older builds exposed a `resume` parameter
+on the Agent tool instead). On Codex, resume = `send_input(target=<agent-id>, …)`.
+
 ```
-Agent tool (resume: "<implementer-agent-id>"):
-  description: "Fix review issues for Task N"
-  prompt: |
+SendMessage (to: "<implementer-agent-id-or-name>"):
+  summary: "Fix review issues for Task N"
+  message: |
     The reviewer found issues with your implementation. Fix them.
 
     ## Review Findings
@@ -79,8 +83,9 @@ the section below.
 
 ## Reframed-Context Attempt (4th iteration)
 
-When the review loop has exhausted 3 resume attempts (Claude Code) or 3
-fresh-dispatch-with-fix-context attempts (opencode) and the task still fails review,
+When the review loop has exhausted 3 resume attempts (Claude Code), 3
+`send_input` attempts (Codex), or 3 fresh-dispatch-with-fix-context attempts
+(opencode / Copilot CLI / Gemini CLI) and the task still fails review,
 the 4th attempt is a **fresh subagent with reframed context** — not another resume.
 The prior implementer's chat context is gone; the fresh subagent starts from a clean
 slate with a different framing.

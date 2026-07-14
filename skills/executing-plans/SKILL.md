@@ -22,7 +22,7 @@ Load plan, review critically, execute all tasks, report when complete.
 ### Step 1: Load and Review Plan
 1. Read plan file
 2. Review critically: use Miller to check that the plan's file paths and symbol references are still valid against current code
-3. If you find a real blocker per `skills/using-razorback/references/blocker-taxonomy.md` (especially #3, plan-contradicting data, or #4, safety-critical ambiguity with no plan answer), stop and report
+3. If you find a real blocker per `../using-razorback/references/blocker-taxonomy.md` (in the razorback plugin) (especially #3, plan-contradicting data, or #4, safety-critical ambiguity with no plan answer), stop and report
 4. For any other design-quality questions, decide the plan-consistent answer and note it in your eventual report (file:line + reason)
 5. Create tasks (TaskCreate) and proceed
 
@@ -68,7 +68,7 @@ After all tasks complete and verified (and pre-merge review, if any, has run):
 
 ## Blockers
 
-The authoritative taxonomy is `skills/using-razorback/references/blocker-taxonomy.md`. Consult it before stopping.
+The authoritative taxonomy is `../using-razorback/references/blocker-taxonomy.md` (in the razorback plugin). Consult it before stopping.
 
 **Bias rules:**
 - When in doubt, press on and flag. A line in the morning report is cheaper than a false wake-up.
