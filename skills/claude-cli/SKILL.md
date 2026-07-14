@@ -1,6 +1,6 @@
 ---
 name: claude-cli
-description: Call the Claude Code CLI (`claude -p`) as a fresh Claude instance for second opinions, code review, and adversarial review. Use this skill whenever the user says "ask claude", "fresh claude review", "second opinion from another claude", "have another claude look at this", "delegate to a fresh claude", or any variation suggesting they want a second Claude instance's perspective. The value is a fresh session and independent prompt framing, not a different model.
+description: Use when the user says "ask claude", "fresh claude review", "second opinion from another claude", "have another claude look at this", "delegate to a fresh claude", or any variation naming Claude as the second perspective they want.
 ---
 
 # Claude CLI Assistant
@@ -9,9 +9,6 @@ Use the Claude Code CLI (`claude -p`) to get a second opinion, review code
 changes, or run adversarial security/correctness reviews from a fresh Claude
 instance. The value is a new session and an independent prompt, not a
 different underlying model.
-
-Do not use `--bare` in this skill. Current `claude -p --help` says bare mode
-skips OAuth and keychain auth reads, so the common Claude login path fails.
 
 ## Pre-flight Checklist
 
@@ -54,8 +51,9 @@ If the command exits non-zero or produces no JSON, the user is not logged in.
 Tell them to run `claude login` in a terminal.
 
 **Billing context**: See `references/programmatic-billing.md` for the
-interactive vs. programmatic billing split. Post-June 15, `claude -p`
-draws from a separate Agent SDK credit pool, not the general subscription.
+interactive vs. programmatic billing split. Since June 15, 2026, `claude -p`
+draws from a separate Agent SDK credit pool, not the general subscription
+(re-verify against current Anthropic billing docs before relying on this).
 
 ## Defaults
 
@@ -65,7 +63,7 @@ draws from a separate Agent SDK credit pool, not the general subscription.
 - **Fallback model**: `--fallback-model <model>` auto-falls back when the primary is overloaded or unavailable (works only with `--print`). Accepts a comma-separated list tried in order; the primary is re-tried at the start of each user turn. Fits razorback's autonomous-by-default flow; use it only when an explicit fallback is configured.
 - **Ephemeral**: `--no-session-persistence` so the review leaves no stored
   session behind (parity with codex's `--ephemeral`).
-- **No `--bare`**: bare mode reads auth strictly from `ANTHROPIC_API_KEY` or `apiKeyHelper` (not OAuth or keychain). The common razorback caller has OAuth, so this skill avoids `--bare` to keep normal logins working. If you have a guaranteed `ANTHROPIC_API_KEY` env in CI, `--bare` is fine.
+- **Do not use `--bare`**: bare mode reads auth strictly from `ANTHROPIC_API_KEY` or `apiKeyHelper` (not OAuth or keychain). The common razorback caller has OAuth, so this skill avoids `--bare` to keep normal logins working. If you have a guaranteed `ANTHROPIC_API_KEY` env in CI, `--bare` is fine.
 - **Output format**: `--output-format json` for structured returns; combine
   with `--json-schema` for schema-validated adversarial output.
 - **Stderr**: append `2>/dev/null` to suppress banner and status noise.
@@ -123,7 +121,7 @@ full model IDs. Add `--effort "$CLAUDE_EFFORT"` only when it is non-empty.
 For diff-based modes (Code Review, Adversarial Review), pick scope and
 execution mode before invoking Claude.
 
-**Scope** — user-passable arguments, default `--scope auto`:
+**Scope** — these are *skill arguments* the user passes to this skill, NOT `claude` CLI flags (never append them to the `claude -p` command). Default `--scope auto`:
 
 - `--scope auto`: working-tree if `git status --porcelain` is non-empty, else
   branch-vs-base
@@ -135,6 +133,8 @@ execution mode before invoking Claude.
 Resolve `$DIFF`, `$TARGET`, and `$RANGE` per scope:
 
 ```bash
+DIR="${DIR:-$(git rev-parse --show-toplevel)}"
+
 case "$SCOPE" in
   branch)
     BASE="${USER_BASE:-$(git -C "$DIR" merge-base HEAD main 2>/dev/null || git -C "$DIR" merge-base HEAD master 2>/dev/null)}"
@@ -209,7 +209,7 @@ gets two perspectives from two fresh starts.
 
 ### Code Review (read-only)
 
-The user wants a review of current changes. Single pass with Opus, standard
+The user wants a review of current changes. Single pass, standard
 review prompt (not adversarial framing).
 
 **Step 1: Apply Review Targeting**
@@ -234,9 +234,9 @@ $DIFF"
 
 **Step 3: Send to Claude**
 
-`--json-schema` takes a JSON string; inline the schema directly (the same
-schema is kept in this skill at `schemas/review-output.schema.json` for
-version control):
+`--json-schema` takes a JSON string; inline the schema directly (the canonical
+copy is `../codex-cli/schemas/review-output.schema.json` — all razorback
+reviewers share it):
 
 ```bash
 SCHEMA_JSON='{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","additionalProperties":false,"required":["verdict","summary","findings","next_steps"],"properties":{"verdict":{"type":"string","enum":["approve","needs-attention"]},"summary":{"type":"string","minLength":1},"findings":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["severity","title","body","file","line_start","line_end","confidence","recommendation"],"properties":{"severity":{"type":"string","enum":["critical","high","medium","low"]},"title":{"type":"string","minLength":1},"body":{"type":"string","minLength":1},"file":{"type":"string","minLength":1},"line_start":{"type":"integer","minimum":1},"line_end":{"type":"integer","minimum":1},"confidence":{"type":"number","minimum":0,"maximum":1},"recommendation":{"type":"string"}}}},"next_steps":{"type":"array","items":{"type":"string","minLength":1}}}}'
@@ -259,9 +259,18 @@ cd /path/to/project && claude -p \
 Same command shape as adversarial review but without the adversarial system
 prompt; the prompt body itself asks for a standard review.
 
-**After**: Parse the JSON, present findings, add your own assessment.
-Highlight agreements and disagreements. Call out anything the reviewer
-missed.
+**After**: Parse the output. `--output-format json` returns a **result
+envelope**, not the model response directly — the schema-conforming object is
+at `.structured_output` (with `.result` holding the same JSON as a string, and
+`.usage` / `.total_cost_usd` carrying cost data):
+
+```bash
+jq -e '.structured_output.findings[]' < output.json \
+  || jq -re '.result' < output.json | jq -e '.findings[]'
+```
+
+Present findings, add your own assessment. Highlight agreements and
+disagreements. Call out anything the reviewer missed.
 
 ### Adversarial Review (read-only + schema)
 
@@ -363,84 +372,25 @@ The baseline flags are: `-p`, `--no-session-persistence`,
 `--tools "Read,Bash"`, `--max-turns 15`, `--max-budget-usd 5.00`,
 `${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"}`, `--system-prompt-file`. Add `--effort "$CLAUDE_EFFORT"` when the environment sets it, and `--fallback-model "$CLAUDE_FALLBACK_MODEL"` for autonomous runs that should survive an overload.
 
-No `--bare` flag is used. Current Claude help says bare mode skips OAuth and
-keychain auth reads, so it is a trap for the common login path.
-
 The `--json-schema` flag tells Claude to return JSON matching the review
 schema (verdict, summary, findings with severity/file/line/confidence, next
 steps). `--max-turns` and `--max-budget-usd` bound cost and time.
 
-**After**: Parse the JSON output. Present findings grouped by severity
-(critical first). For each finding, show the file, lines, and
+**After**: Parse the result envelope (`.structured_output`, fallback
+`.result | fromjson` — see the Code Review section). Present findings grouped
+by severity (critical first). For each finding, show the file, lines, and
 recommendation. Add your own assessment of each finding: do you agree? Is
 the confidence warranted? Then give your overall take on the verdict.
 
 ## Adversarial Prompt Template
 
-The adversarial system prompt is kept in this skill at
-`adversarial-prompt.txt` for version control. At invocation time it can be
-either read from that file (if you know the skill path) or materialized from
-the inlined copy below via `mktemp + heredoc`. The template:
-
-```
-You are Claude performing an adversarial software review.
-Your job is to break confidence in the change, not to validate it.
-
-Target: {{TARGET_LABEL}}
-User focus: {{USER_FOCUS}}
-
-OPERATING STANCE:
-Default to skepticism. Assume the change can fail in subtle, high-cost, or
-user-visible ways until evidence says otherwise. Do not give credit for good
-intent, partial fixes, or likely follow-up work. If something only works on
-the happy path, treat that as a real weakness.
-
-ATTACK SURFACE (prioritize expensive, dangerous, or hard-to-detect failures):
-- Auth, permissions, tenant isolation, and trust boundaries
-- Data loss, corruption, duplication, and irreversible state changes
-- Rollback safety, retries, partial failure, and idempotency gaps
-- Race conditions, ordering assumptions, stale state, and re-entrancy
-- Empty-state, null, timeout, and degraded dependency behavior
-- Version skew, schema drift, migration hazards, and compatibility regressions
-- Observability gaps that would hide failure or make recovery harder
-
-REVIEW METHOD:
-Actively try to disprove the change. Look for violated invariants, missing
-guards, unhandled failure paths, and assumptions that stop being true under
-stress. Trace how bad inputs, retries, concurrent actions, or partially
-completed operations move through the code. If the user supplied a focus area,
-weight it heavily, but still report any other material issue you can defend.
-Use Read to inspect files and Bash for read-only investigation (grep, git log,
-diff). Do not modify files.
-
-FINDING BAR:
-Report only material findings. No style feedback, naming feedback, low-value
-cleanup, or speculative concerns without evidence. Each finding must answer:
-1. What can go wrong?
-2. Why is this code path vulnerable?
-3. What is the likely impact?
-4. What concrete change would reduce the risk?
-
-CALIBRATION:
-Prefer one strong finding over several weak ones. Do not dilute serious issues
-with filler. If the change looks safe, say so directly and return no findings.
-
-GROUNDING:
-Every finding must be defensible from the provided context. Do not invent
-files, lines, code paths, or runtime behavior you cannot support. If a
-conclusion depends on an inference, state that explicitly and keep the
-confidence honest.
-
-Return JSON matching the provided schema.
-
-REPOSITORY CONTEXT:
-{{REVIEW_INPUT}}
-```
-
-The only Claude-specific adaptation is the REVIEW METHOD line referencing
-`Read` and `Bash` (Claude's native tool names) instead of generic shell
-primitives. Attack-surface categories, finding bar, calibration, and
-grounding rules are identical to codex-cli's template.
+The canonical adversarial system prompt lives in this skill at
+`./adversarial-prompt.txt` (version-controlled). The invocation above
+materializes the same content via `mktemp + heredoc`; read it from the file
+instead when you know the skill path. The only Claude-specific adaptation is
+the REVIEW METHOD line referencing `Read` and `Bash` (Claude's native tool
+names); attack-surface categories, finding bar, calibration, and grounding
+rules are identical to codex-cli's template.
 
 ## Resuming a Session
 
@@ -476,14 +426,12 @@ cd ~/source/other-project && claude -p --no-session-persistence \
 
 **Self-review with razorback skills loaded:** if you want the reviewer to apply razorback's Miller-first review checklist itself, add `--plugin-dir <path-to-razorback>` so the reviewer session loads the same skills your main session uses. Without it, the reviewer sees only the project's `CLAUDE.md`.
 
-Do not use `--bare` for adversarial review unless you have a guaranteed `ANTHROPIC_API_KEY`. A working reviewer with a fresh prompt beats a broken "pure" invocation.
-
 ## Critical Evaluation
 
 A fresh Claude is a peer, not an authority. The review's value comes from
 **session freshness** and independent prompt framing, not from the reviewer
 being a different or smarter model. The author instance and the reviewer
-instance may be the same Opus build.
+instance may be the same model build.
 
 Because this skill does not use `--bare`, the reviewer still sees project
 context such as `CLAUDE.md`, hooks, plugins, and MCP config. Factor that into
@@ -493,8 +441,8 @@ how much independence you assign the review.
   something you know is wrong, say so directly with evidence. Same model
   means same knowledge cutoff and same systematic blind spots; fresh
   context doesn't make those go away.
-- **Research disagreements.** Check the code, not vibes. Two Opus instances
-  can still both be wrong in correlated ways.
+- **Research disagreements.** Check the code, not vibes. Two instances of
+  the same model can still both be wrong in correlated ways.
 - **Don't defer.** Evaluate suggestions critically. The point of a second
   opinion is two perspectives, not rubber-stamping.
 - **Adversarial findings need validation.** In adversarial mode the
@@ -550,10 +498,10 @@ think it's wrong, and your evidence.
 ## Quick Reference
 
 Inherit the current Claude default unless the user or environment selects a
-model. This skill avoids `--bare` for OAuth/keychain users; CI with
-`ANTHROPIC_API_KEY` can use it.
+model.
 
-See `references/command-parity.md` before assuming a command exists in both Claude and Codex.
+Claude and Codex CLIs do not share a command set — probe with `--help` before
+assuming a command that exists in one exists in the other.
 
 All non-piped patterns must include `< /dev/null` (bash) or `< NUL` (Windows cmd/PowerShell) to prevent `claude -p` from blocking on stdin EOF — see the Defaults section.
 

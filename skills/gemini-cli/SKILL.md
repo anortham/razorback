@@ -1,6 +1,6 @@
 ---
 name: gemini-cli
-description: Call Google's Gemini CLI as an assistant for second opinions, task delegation, code review, web research, and codebase analysis. Use this skill whenever the user says "ask gemini", "get gemini's take", "have gemini look at this", "delegate to gemini", "run gemini", "gemini review", or any variation suggesting they want Gemini's perspective or help. Also trigger when the user wants current web information (Gemini has Google Search built in), codebase architecture analysis, or a fresh take from a different model.
+description: Use when the user says "ask gemini", "get gemini's take", "have gemini look at this", "delegate to gemini", "run gemini", "gemini review", or any variation naming Gemini/Google as the perspective they want, and when the task needs current web information (Gemini has Google Search built in).
 ---
 
 # Gemini Assistant
@@ -16,6 +16,7 @@ Use the Gemini CLI (`gemini`) to get a second opinion, delegate work, request co
 - **Non-interactive mode**: always pass the prompt via `-p, --prompt "…"`. Gemini's positional `[query..]` runs in interactive mode by default and relies on TTY auto-detection to switch to headless — that detection is unreliable when invoked from harness tools, especially on Windows. `-p` is the documented headless-mode flag and removes the ambiguity.
 - **Timeout**: Always set the Bash tool's `timeout` parameter — minimum 600000ms (10 min) for simple queries, 1200000ms (20 min) for delegation/refactoring tasks, 1800000ms (30 min) when Gemini is doing deep analysis or itself calling out to another model. Err generous — a single timeout wastes more time and tokens than a longer wait. (Gemini 0.43 has no native `--timeout` flag — rely on the Bash tool's `timeout`.)
 - **Working directory**: Gemini operates on whatever directory it's launched from — it has no `-C` flag like Codex. If the target code isn't in the current working directory, **always `cd` to the target directory first** using `cd /path/to/project && gemini ...`. Without this, Gemini will waste its entire session trying to find the files.
+- **Read-only mode**: `--approval-mode plan` auto-approves read tools and blocks write/edit tools at the CLI layer. Use it for any review or analysis run that needs tool access but must not modify files — it is the enforcement mechanism, not the prompt. (This is what `razorback:pre-merge-review` uses for the gemini reviewer.)
 - **Forceful prompts**: Gemini sometimes presents plans and asks for confirmation even in yolo mode. Use directive language: "Apply now", "Start immediately", "Do this without asking for confirmation."
 
 For command snippets below, optionally set `GEMINI_MODEL` before invoking:
@@ -32,7 +33,7 @@ Gemini choose its configured default.
 For Code Review on diff-based work, pick scope and execution mode before
 invoking Gemini.
 
-**Scope** — user-passable arguments, default `--scope auto`:
+**Scope** — these are *skill arguments* the user passes to this skill, NOT `gemini` CLI flags (never append them to the `gemini` command). Default `--scope auto`:
 
 - `--scope auto`: working-tree if `git status --porcelain` is non-empty, else
   branch-vs-base
@@ -209,9 +210,9 @@ echo "This is Claude following up. I disagree with [X] because [evidence]. What'
 
 ## Error Handling
 
-- **Rate limits**: Free tier is 60 req/min, 1000/day. Gemini auto-retries with backoff. If you hit limits, switch to the project policy's lower-cost tier for lower-priority tasks or wait.
+- **Rate limits**: Free-tier caps are 60 req/min, 1000/day (as of gemini-cli 0.46.0, 2026-07 — re-verify before relying on exact numbers). Gemini auto-retries with backoff. If you hit limits, switch to the project policy's lower-cost tier for lower-priority tasks or wait.
 - **Command failures**: Check with `gemini --version` to verify auth. Use `--debug` for verbose error info.
-- **Sandbox mode**: If the task needs isolation, add `--sandbox`. Use risky modes only when the user request or plan explicitly authorizes them; otherwise treat the risky mode as blocker taxonomy #2.
+- **Sandbox mode**: `--sandbox` adds process isolation and is the safe choice when a delegated task should not touch the host. Risky modes are the ones that widen write authority (`--yolo`, `--approval-mode yolo`); use those only when the user request or plan explicitly authorizes them; otherwise treat the risky mode as blocker taxonomy #2 (see `../using-razorback/references/blocker-taxonomy.md`).
 - If output contains warnings or partial results during an approved run, classify the result under the plan and blocker taxonomy. Use usable partial output with a logged limitation, retry once when the failure is tool-shaped, or stop only for a real blocker. For ad-hoc Gemini use outside an approved run, summarize the limitation and ask one specific question.
 
 ## Quick Reference
