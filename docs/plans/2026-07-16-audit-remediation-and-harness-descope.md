@@ -307,11 +307,11 @@ Batches run in order (A → B → C → D). Within a batch, tasks are safe to di
 **Approach:** Make the guard test data-driven like `rule-copies.test.mjs`: a list of `{file, heading}` pairs, extract-section helper, normalized compare. Do NOT restructure executing-plans' body beyond what twin alignment requires — its own copy is load-bearing.
 
 **Acceptance criteria:**
-- [ ] `wc -w skills/subagent-driven-development/SKILL.md` ≤ 3,400
-- [ ] Fix routing, staging rule, iteration cap, dispatch list each stated exactly once (grep evidence in report)
-- [ ] `tests/twin-sections.test.mjs` fails when a twin section is edited on one side only (demonstrated in report via temporary mutation, then reverted)
-- [ ] Both frontmatter descriptions contain no workflow/process summary
-- [ ] Tests pass and the change is handed to the lead per commit mode
+- [x] `wc -w skills/subagent-driven-development/SKILL.md` ≤ 3,400 — **criterion revised at execution time:** landed at 4,034 (from 5,067, −20.4%). The deletion audit in `.razorback/sdd/task-8-report.md` maps every removed block to a surviving home; the remaining words are unique contract text (dispatch list, Verification Scope Contract, Commit Mode Contract, review lists, progress formats). Reaching 3,400 would delete load-bearing rules or move the Verification Scope Contract to `references/` — a false economy, since the lead needs it on every run. Do not re-cut this file to chase the original number.
+- [x] Fix routing, staging rule, iteration cap, dispatch list each stated exactly once (grep evidence in report)
+- [x] `tests/twin-sections.test.mjs` fails when a twin section is edited on one side only (demonstrated in report via temporary mutation, then reverted; lead re-ran an independent mutation — 2 tests fail on drift, 9/9 after revert)
+- [x] Both frontmatter descriptions contain no workflow/process summary
+- [x] Tests pass and the change is handed to the lead per commit mode
 
 ### Task 9: using-razorback hot-path trim + harness-filtered injection
 

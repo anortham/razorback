@@ -1,6 +1,6 @@
 ---
 name: executing-plans
-description: Use when you have a written implementation plan to execute in a separate session with review checkpoints, or as single-agent fallback when subagent-driven-development is not appropriate
+description: Use when executing a written implementation plan single-agent — separate-session, single-task, or no-delegation runs.
 ---
 
 # Executing Plans
