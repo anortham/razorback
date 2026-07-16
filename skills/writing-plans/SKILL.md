@@ -114,7 +114,7 @@ Light plans use task-level granularity instead: each task is a coherent unit of 
 
 ## Global Constraints
 
-[The spec's project-wide requirements — version floors, dependency limits, naming and copy rules, platform requirements — one line each, with exact values copied verbatim from the spec. Every task implicitly includes this section.]
+[One line per project-wide requirement, exact values verbatim from the spec — see the `## Global Constraints` rule below]
 
 ---
 ```
@@ -159,11 +159,7 @@ Every plan MUST include a language-agnostic verification strategy. Razorback own
 **Verification ledger:** Record invariant, command, scope label, commit SHA, result, and timestamp. For replay or metric evidence, also record hard-gate metrics and report-only metrics. If the same HEAD already has a passing ledger entry for the required scope, reuse that evidence instead of rerunning the same expensive gate.
 ```
 
-If the repo has no documented hierarchy, define one in the plan using neutral scope labels:
-- **worker:** narrowest behavior proof
-- **affected-change:** changed files or touched subsystem
-- **branch:** broad pre-handoff confidence
-- **expensive:** slow specialist gates, run only when touched areas require them
+If the repo has no documented hierarchy, define one in the plan using these neutral scope labels: **worker** (narrowest behavior proof), **affected-change** (changed files or touched subsystem), **branch** (broad pre-handoff confidence), and **expensive** (slow specialist gates, run only when touched areas require them).
 
 Do not bake language, framework, or test-runner commands into razorback skills. Put concrete commands in the plan from the target repo's docs.
 
@@ -267,26 +263,10 @@ The execution skills tick these `[ ]` → `[x]` as each task completes, so every
 
 ## Compact Single-Task Full-Plan Form
 
-When a full plan has exactly one task, keep the full TDD steps, but collapse the
-parallel contract to a single row and copy the same fields into the task body.
+When a full plan has exactly one task, use `## Task Structure` above unchanged — full TDD steps and all. Only two things differ, so do not re-template the task:
 
-````markdown
-## Parallel Execution Contract
-
-| Task | Parallel batch | File ownership | Serialization required | Dependency reason |
-|---|---|---|---|---|
-| Task 1: [name] | None - serial | [Exact ownership] | Not applicable - single task. | Not applicable - single task. |
-
-### Task 1: [Slice or component name]
-
-**Contract inputs:** [Exact shared constraints and upstream facts this task may rely on]
-
-**File ownership:** [Exact ownership]
-
-**Serialization required:** Not applicable - single task.
-
-**Dependency reason:** Not applicable - single task.
-````
+- Collapse `## Parallel Execution Contract` to a single row: `Parallel batch` is `None - serial`, `File ownership` carries the task's exact ownership, and both `Serialization required` and `Dependency reason` read `Not applicable - single task.`
+- Copy those same values into the task body: **Contract inputs:** and **File ownership:** carry their normal exact values, while **Serialization required:** and **Dependency reason:** both read `Not applicable - single task.`
 
 ## Light Plan Task Structure
 

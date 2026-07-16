@@ -394,10 +394,10 @@ Batches run in order (A → B → C → D). Within a batch, tasks are safe to di
 **Approach:** For each consolidation, diff-check that no unique rule text was lost (every deleted line's content must exist elsewhere in the file or be a pure restatement — list them in the report).
 
 **Acceptance criteria:**
-- [ ] systematic-debugging has exactly one stop-block; dispatching-parallel-agents states don't-use criteria once; writing-plans has two task templates; brainstorming has no linear-pipeline digraph
-- [ ] brainstorming description ≤ 500 chars, triggers only
-- [ ] No unique rule lost (deletion audit in report)
-- [ ] Tests pass and the change is handed to the lead per commit mode
+- [x] systematic-debugging has exactly one stop-block; dispatching-parallel-agents states don't-use criteria once; writing-plans has two task templates; brainstorming has no linear-pipeline digraph — **note:** the compact single-task form kept its own `## Compact Single-Task Full-Plan Form` heading containing only a two-bullet note (no template block); the heading is load-bearing for `tests/codex-parallelism-contract.test.mjs`'s `section()` scoping, which is what makes the field assertions read the note instead of the whole file
+- [x] brainstorming description ≤ 500 chars, triggers only (290 chars)
+- [x] No unique rule lost (deletion audit in report)
+- [x] Tests pass and the change is handed to the lead per commit mode — lead also applied the worker-proposed scoped assert in `tests/codex-parallelism-contract.test.mjs` (closes a HEAD-parity mutation gap; verified by mutation: strip-values now fails, 141/141 after revert)
 
 ---
 

@@ -35,7 +35,7 @@ Everything in the instruction-tier list is *not* required — plugin-tier hosts 
 - [ ] **Hook config** — `hooks/hooks-<host>.json` if the host's schema differs from `hooks/hooks.json`
 - [ ] **Tools reference** — `skills/using-razorback/references/<host>-tools.md` mapping Claude Code tool names to the host's, only if the host cannot inject its own mapping
 - [ ] **using-razorback access paragraph** — an "In `<host>`:" entry under `## How to Access Skills`, plus a `## Platform Adaptation` bullet if a tools reference exists
-- [ ] **Dispatch-mechanism rows** — `skills/subagent-driven-development/SKILL.md` (Dispatch mechanism, Parallel Dispatch, Harness-specific follow-up behavior), `skills/dispatching-parallel-agents/SKILL.md` dispatch table, `skills/requesting-code-review/SKILL.md` Mode 2 table, `skills/subagent-driven-development/fix-prompt.md` resume-vs-fresh-dispatch list
+- [ ] **Dispatch-mechanism rows** — `skills/subagent-driven-development/SKILL.md` (Dispatch mechanism, Parallel Dispatch, Harness-specific follow-up behavior) is the canonical list; `skills/dispatching-parallel-agents/SKILL.md` points at it and needs no row. Also update `skills/requesting-code-review/SKILL.md` Mode 2 table and `skills/subagent-driven-development/fix-prompt.md` resume-vs-fresh-dispatch list
 - [ ] **`CLAUDE.md`** — harness-split table row, Project Structure entry, Execution Model bootstrap-mechanics bullet
 - [ ] **`README.md`** — Requirements line, Install section, Updating section, After Installation bootstrap list
 - [ ] **Tests** — a manifest guard test (model on `tests/codex-plugin-manifest.test.mjs`); a hook test if a `session-start` branch was added (model on `tests/subagent-hook.test.mjs`)

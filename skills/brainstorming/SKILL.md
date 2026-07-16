@@ -1,6 +1,6 @@
 ---
 name: brainstorming
-description: "You MUST use this before any creative work - creating features, building components, adding functionality, or changing designed behavior. Small defect repairs and tweaks triage through razorback:fixing-small-issues first. Explores user intent, requirements and design before implementation."
+description: "Use when starting any creative work - creating a feature, building a component, adding functionality, or changing designed behavior - before writing code or invoking any implementation skill. Small defect repairs and tweaks triage through razorback:fixing-small-issues first."
 ---
 
 # Brainstorming Ideas Into Designs
@@ -75,54 +75,6 @@ Every project goes through this process. A todo list, a single-function utility,
 10. **User reviews written spec** - ask user to review the spec file before proceeding
 11. **Create isolated workspace** - **REQUIRED SUB-SKILL:** razorback:using-git-worktrees. Move the design doc into the worktree and commit it there as the branch's first commit (untracked files do NOT follow into a new worktree); the plan is then written and executed in that worktree.
 12. **Transition to implementation** - invoke writing-plans skill to create implementation plan
-
-## Process Flow
-
-```dot
-digraph brainstorming {
-    "Design already agreed?" [shape=diamond];
-    "Task moderate + same-session?" [shape=diamond];
-    "Explore project context" [shape=box];
-    "Run architecture-quality gate\n(or note No Architecture Impact)" [shape=box];
-    "Summarize agreed design" [shape=box];
-    "Visual questions ahead?" [shape=diamond];
-    "Offer Visual Companion\n(own message, no other content)" [shape=box];
-    "Ask clarifying questions" [shape=box];
-    "Propose 2-3 approaches" [shape=box];
-    "Present design sections" [shape=box];
-    "User approves design?" [shape=diamond];
-    "Write design doc" [shape=box];
-    "Spec self-review\n(fix inline)" [shape=box];
-    "Doubt pass\n(if architecture risk medium/high)" [shape=box];
-    "User reviews spec?" [shape=diamond];
-    "Create isolated workspace\n(using-git-worktrees)" [shape=box];
-    "Invoke writing-plans skill" [shape=doublecircle];
-    "Lightweight implementation" [shape=doublecircle];
-
-    "Explore project context" -> "Design already agreed?";
-    "Design already agreed?" -> "Summarize agreed design" [label="yes"];
-    "Design already agreed?" -> "Visual questions ahead?" [label="no (full process)"];
-    "Visual questions ahead?" -> "Offer Visual Companion\n(own message, no other content)" [label="yes"];
-    "Visual questions ahead?" -> "Ask clarifying questions" [label="no"];
-    "Offer Visual Companion\n(own message, no other content)" -> "Ask clarifying questions";
-    "Ask clarifying questions" -> "Propose 2-3 approaches";
-    "Propose 2-3 approaches" -> "Run architecture-quality gate\n(or note No Architecture Impact)";
-    "Run architecture-quality gate\n(or note No Architecture Impact)" -> "Present design sections";
-    "Present design sections" -> "User approves design?";
-    "Summarize agreed design" -> "User approves design?";
-
-    "User approves design?" -> "Present design sections" [label="no, revise"];
-    "User approves design?" -> "Write design doc" [label="yes"];
-    "Write design doc" -> "Spec self-review\n(fix inline)";
-    "Spec self-review\n(fix inline)" -> "Doubt pass\n(if architecture risk medium/high)";
-    "Doubt pass\n(if architecture risk medium/high)" -> "User reviews spec?";
-    "User reviews spec?" -> "Write design doc" [label="changes requested"];
-    "User reviews spec?" -> "Create isolated workspace\n(using-git-worktrees)" [label="approved"];
-    "Create isolated workspace\n(using-git-worktrees)" -> "Task moderate + same-session?";
-    "Task moderate + same-session?" -> "Lightweight implementation" [label="yes"];
-    "Task moderate + same-session?" -> "Invoke writing-plans skill" [label="no"];
-}
-```
 
 **Terminal states:** Either invoke writing-plans (full/fast path) or proceed to lightweight implementation (see below). These are the only two exits from brainstorming.
 

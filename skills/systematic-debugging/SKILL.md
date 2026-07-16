@@ -223,48 +223,30 @@ You MUST complete each phase before proceeding to the next.
 
    This is NOT a failed hypothesis - this is a wrong architecture.
 
-## Red Flags - STOP and Follow Process
+## Red Flags - STOP and Return to Phase 1
 
-If you catch yourself thinking:
-- "Quick fix for now, investigate later"
-- "Just try changing X and see if it works"
-- "Add multiple changes, run tests"
-- "Skip the test, I'll manually verify"
-- "It's probably X, let me fix that"
-- "I don't fully understand but this might work"
-- "Pattern says X but I'll adapt it differently"
-- "Here are the main problems: [lists fixes without investigation]"
-- Proposing solutions before tracing data flow
-- **"One more fix attempt" (when already tried 2+)**
-- **Each fix reveals new problem in different place**
+Every row below — whether it is your own thought or a redirection from the user — means the same thing: **STOP. Return to Phase 1.**
 
-**ALL of these mean: STOP. Return to Phase 1.**
-
-**If 3+ fixes failed:** the problem is structural, not local. Stop patching and question the architecture with razorback:architecture-quality.
-
-## Signals You're Doing It Wrong
-
-**Watch for these redirections:**
-- "Is that not happening?" - You assumed without verifying
-- "Will it show us...?" - You should have added evidence gathering
-- "Stop guessing" - You're proposing fixes without understanding
-- "Ultra-think this" - Question fundamentals, not just symptoms
-- "We're stuck?" (frustrated) - Your approach isn't working
-
-**When you see these:** STOP. Return to Phase 1.
-
-## Common Rationalizations
-
-| Excuse | Reality |
+| Signal | Reality |
 |--------|---------|
 | "Issue is simple, don't need process" | Simple issues have root causes too. Process is fast for simple bugs. |
-| "Emergency, no time for process" | Systematic debugging is FASTER than guess-and-check thrashing. |
-| "Just try this first, then investigate" | First fix sets the pattern. Do it right from the start. |
-| "I'll write test after confirming fix works" | Untested fixes don't stick. Test first proves it. |
-| "Multiple fixes at once saves time" | Can't isolate what worked. Causes new bugs. |
-| "Reference too long, I'll adapt the pattern" | Partial understanding guarantees bugs. Read it completely. |
-| "I see the problem, let me fix it" | Seeing symptoms ≠ understanding root cause. |
-| "One more fix attempt" (after 2+ failures) | 3+ failures = architectural problem. Question pattern, don't fix again. |
+| "Emergency, no time for process" / "Quick fix for now, investigate later" | Systematic debugging is FASTER than guess-and-check thrashing. The "later" investigation never happens. |
+| "Just try changing X and see if it works" / "Just try this first, then investigate" | First fix sets the pattern. Do it right from the start. |
+| "It's probably X, let me fix that" / "I see the problem, let me fix it" | Seeing symptoms ≠ understanding root cause. |
+| "Here are the main problems: [lists fixes without investigation]" — proposing solutions before tracing data flow | Fixes proposed before investigation are guesses wearing a diagnosis. |
+| "Add multiple changes, run tests" / "Multiple fixes at once saves time" | Can't isolate what worked. Causes new bugs. |
+| "Skip the test, I'll manually verify" / "I'll write test after confirming fix works" | Untested fixes don't stick. Test first proves it. |
+| "Pattern says X but I'll adapt it differently" / "Reference too long, I'll adapt the pattern" | Partial understanding guarantees bugs. Read the reference completely. |
+| "I don't fully understand but this might work" | Not understanding IS the finding. Investigate it, don't route around it. |
+| **"One more fix attempt" (after 2+ failures)** | 3+ failures = architectural problem. Question the pattern, don't fix again. |
+| **Each fix reveals a new problem in a different place** | The coupling is the bug, not the symptom you just patched. |
+| User asks "Is that not happening?" | You assumed without verifying. |
+| User asks "Will it show us...?" | You should have added evidence gathering. |
+| User says "Stop guessing" | You're proposing fixes without understanding. |
+| User says "Ultra-think this" | Question fundamentals, not just symptoms. |
+| User asks "We're stuck?" (frustrated) | Your approach isn't working. |
+
+**If 3+ fixes failed:** the problem is structural, not local. Stop patching and question the architecture with razorback:architecture-quality.
 
 ## Quick Reference
 
