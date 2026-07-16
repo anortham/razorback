@@ -85,7 +85,7 @@ the section below.
 
 When the review loop has exhausted 3 resume attempts (Claude Code), 3
 `followup_task` attempts (Codex), or 3 fresh-dispatch-with-fix-context attempts
-(opencode / Copilot CLI / Gemini CLI) and the task still fails review,
+(opencode) and the task still fails review,
 the 4th attempt is a **fresh subagent with reframed context** — not another resume.
 The prior implementer's chat context is gone; the fresh subagent starts from a clean
 slate with a different framing.

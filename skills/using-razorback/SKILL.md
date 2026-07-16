@@ -19,11 +19,11 @@ This is not negotiable. This is not optional. You cannot rationalize your way ou
 
 Razorback skills override default system prompt behavior, but **user instructions always take precedence**:
 
-1. **User's explicit instructions** (AGENTS.md, CLAUDE.md, GEMINI.md, direct requests) - highest priority
+1. **User's explicit instructions** (AGENTS.md, CLAUDE.md, direct requests) - highest priority
 2. **Razorback skills** - override default system behavior where they conflict
 3. **Default system prompt** - lowest priority
 
-If AGENTS.md, CLAUDE.md, GEMINI.md, or the user says "don't use TDD" and a skill says "always use TDD," follow the user's instructions. The user is in control.
+If AGENTS.md, CLAUDE.md, or the user says "don't use TDD" and a skill says "always use TDD," follow the user's instructions. The user is in control.
 
 ## Project Policy Discovery
 
@@ -44,10 +44,6 @@ environment explicitly selects a model for the run.
 
 **In OpenCode:** Use the native `skill` tool. Skills auto-register via the razorback plugin.
 
-**In Copilot CLI:** Use the `skill` tool. Skills are auto-discovered from installed plugins. The `skill` tool works the same as Claude Code's `Skill` tool.
-
-**In Gemini CLI:** Skills activate via the `activate_skill` tool. Gemini loads skill metadata at session start and activates the full content on demand.
-
 **In other environments:** Check your platform's documentation for how skills are loaded.
 
 ## Platform Adaptation
@@ -55,8 +51,6 @@ environment explicitly selects a model for the run.
 Skills use Claude Code tool names. On non-Claude-Code platforms, substitute the equivalent:
 
 - **Codex:** see `references/codex-tools.md` (Task→spawn_agent, TodoWrite→update_plan, etc.)
-- **Copilot CLI:** see `references/copilot-tools.md` (Read→view, Edit→edit, Task→task, etc.)
-- **Gemini CLI:** see `references/gemini-tools.md` — loaded automatically via `GEMINI.md` (Read→read_file, Edit→replace, Task→`invoke_agent` with `generalist`, etc.)
 - **OpenCode:** tool mapping is injected automatically by the razorback plugin bootstrap (Task→opencode's Task tool, TodoWrite→todowrite, etc.)
 
 # Using Skills
@@ -123,7 +117,7 @@ When executing implementation plans:
 - **Ad-hoc parallel work (delegation available):** Use `razorback:dispatching-parallel-agents` (independent agent dispatch)
 - **Small, local, reversible fix (quick-fix criteria):** Use `razorback:fixing-small-issues` — triage first, fix on the current checkout, verify the affected scope only. No worktree, no baseline suite run.
 
-`subagent-driven-development` is the delegated execution path across Claude Code, Cursor, Codex, OpenCode, Copilot CLI, and Gemini CLI. If the current session cannot delegate (e.g., already running as a subagent — Gemini blocks recursion), fall back to `executing-plans`. The lead does inline review (spec compliance + code quality) either way.
+`subagent-driven-development` is the delegated execution path across Claude Code, Cursor, Codex, and OpenCode. If the current session cannot delegate (e.g., it is already running as a subagent), fall back to `executing-plans`. The lead does inline review (spec compliance + code quality) either way.
 
 ## Skill Priority
 

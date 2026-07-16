@@ -11,10 +11,8 @@ Execute a plan by dispatching fresh subagents per task, with the lead doing inli
 
 **Dispatch mechanism:**
 - **Claude Code:** `Agent` tool (one call per subagent; multiple calls in one turn run in parallel).
-- **Copilot CLI:** `task(agent_type="general-purpose", …)` (one call per subagent; multiple calls in one turn run in parallel). Poll with `read_agent` / `list_agents` (see `../using-razorback/references/copilot-tools.md`).
 - **opencode:** `Task` tool (one call per subagent; multiple calls in one turn run in parallel). The built-in `general` subagent is suitable for most implementer work; `@mention` also works for manual invocation.
 - **Codex:** `spawn_agent(task_name="task-N-<slug>", message=<filled prompt>)` (one call per subagent; multiple calls in one turn run in parallel). Keep the returned agent ID, `followup_task(target=<agent-id>, message=...)` feeds follow-ups (the closest thing to Claude Code's resume), and `wait_agent(timeout_ms=...)` blocks until agent completion. Surface verified on codex 0.144.3 — trust the live tool list over these names (see `../using-razorback/references/codex-tools.md`).
-- **Gemini CLI:** `invoke_agent(agent_name="generalist", prompt=<filled prompt>)` (parallel by default; set `wait_for_previous: true` only when you need a call serialized behind earlier ones). Resume is not available — route fix rounds via a fresh `invoke_agent` call with the fix prompt and prior-task context. Subagents cannot recursively dispatch other subagents, so all worker dispatch happens from the lead session.
 - **Explicit Cursor/Composer delegation from another harness:** use `razorback:cursor-agent`, which owns the Cursor CLI invocation. The current lead still owns planning, review, fix routing, and final verification; Cursor Agent is only the implementation worker.
 
 Use the harness default model unless the user, environment, or lead explicitly
@@ -51,7 +49,7 @@ digraph when_to_use {
 **Harness-specific follow-up behavior:**
 - Claude Code can resume an existing implementer for fix rounds (`SendMessage` to the stored agent ID/name)
 - Codex can use `followup_task` on the stored worker for fix rounds
-- OpenCode, Copilot CLI, and Gemini CLI use fresh dispatches with fix context because resume is not available
+- OpenCode uses fresh dispatches with fix context because resume is not available
 - The execution model stays the same across harnesses: dispatch per task, inline review by lead, parallel fan-out only when files do not overlap
 
 ## The Process
@@ -237,10 +235,8 @@ a recorded dependency or tool limitation.
 Per harness, that means:
 
 - **Claude Code:** make multiple `Agent` tool calls in a single turn. They run concurrently and you review each as it reports back.
-- **Copilot CLI:** make multiple `task` calls in a single turn; poll with `read_agent` / `list_agents` and review each as it completes.
 - **opencode:** make multiple `Task` tool calls in a single turn (or in the TUI, @mention the `general` subagent concurrently). Child sessions run in parallel; navigate with `session_child_*` keybinds.
 - **Codex:** make multiple `spawn_agent` calls in a single turn. Each returns its own agent ID. Use `wait_agent(timeout_ms=...)` to block until completion, then `list_agents` to see per-agent state when you need a given implementer's output before proceeding with its review.
-- **Gemini CLI:** make multiple `invoke_agent(agent_name="generalist", …)` calls — parallel by default; use `wait_for_previous: true` only for a call that must serialize behind earlier ones.
 
 Assign file ownership per subagent to prevent collisions. If tasks are tightly
 coupled (same files, shared state, ordering dependency), dispatch sequentially
@@ -333,7 +329,7 @@ changes it. `parallel-lead-commit` fix rounds still do not commit directly.
 
 ## Step 4a: Pre-merge external review (if chosen)
 
-If the reviewer choice propagated from `writing-plans` (via the execution handoff) is `codex`, `gemini`, or `claude`:
+If the reviewer choice propagated from `writing-plans` (via the execution handoff) is `codex` or `claude`:
 
 **First**, ensure the verification ledger has a passing `branch-gate` entry for the current HEAD. If it does not, run the branch-gate scope now and record the result. `pre-merge-review` requires this as a precondition; do not skip it.
 

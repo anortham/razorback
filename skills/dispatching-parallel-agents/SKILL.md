@@ -82,8 +82,6 @@ Make all dispatch calls in a single turn so they run concurrently. The dispatch 
 | **Claude Code / Cursor** | `Agent` tool — one call per agent, multiple calls in one turn run in parallel |
 | **Codex** | `spawn_agent(task_name=…, message=…)` — collect agent IDs, `wait_agent(timeout_ms=…)` for completion, `list_agents` for state (surface verified on codex 0.144.3; trust the live tool list) |
 | **OpenCode** | `Task` tool — one call per agent, multiple calls in one turn run in parallel |
-| **Copilot CLI** | `task(agent_type="general-purpose", …)` — poll with `read_agent` / `list_agents` |
-| **Gemini CLI** | `invoke_agent(agent_name="generalist", prompt=…)` — parallel by default |
 
 Example (Claude Code):
 

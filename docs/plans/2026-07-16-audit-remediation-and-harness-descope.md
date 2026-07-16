@@ -153,11 +153,11 @@ Batches run in order (A → B → C → D). Within a batch, tasks are safe to di
 **Approach:** Grep-driven minimal edits as in Task 2. In SDD, delete the Gemini bullet from Dispatch mechanism, Parallel Dispatch, and follow-up-behavior lists; leave the Claude Code / Codex / OpenCode / Copilot text otherwise intact except Copilot rows, which are removed (Copilot is no longer a dispatch-documented harness).
 
 **Acceptance criteria:**
-- [ ] `grep -ri 'gemini' skills/using-razorback skills/subagent-driven-development skills/dispatching-parallel-agents skills/executing-plans skills/requesting-code-review CLAUDE.md README.md` → no hits
-- [ ] Copilot appears in owned files only as an instruction-tier mention (CLAUDE.md/README) — no dispatch rows, no hook claims, no access-instructions paragraph
-- [ ] `docs/adding-a-harness.md` exists with the file checklist and tier vocabulary
-- [ ] Residual-grep allowlist for the branch gate is recorded in the task report (expected remnants: `docs/plans/`, `.memories/`, `skills/cursor-agent/` if any)
-- [ ] Tests pass and the change is handed to the lead per commit mode
+- [x] `grep -ri 'gemini' skills/using-razorback skills/subagent-driven-development skills/dispatching-parallel-agents skills/executing-plans skills/requesting-code-review CLAUDE.md README.md` → no hits
+- [x] Copilot appears in owned files only as an instruction-tier mention (CLAUDE.md/README) — no dispatch rows, no hook claims, no access-instructions paragraph
+- [x] `docs/adding-a-harness.md` exists with the file checklist and tier vocabulary
+- [x] Residual-grep allowlist for the branch gate is recorded in the task report (expected remnants: `docs/plans/`, `.memories/`, `skills/cursor-agent/` if any)
+- [x] Tests pass and the change is handed to the lead per commit mode
 
 ---
 
