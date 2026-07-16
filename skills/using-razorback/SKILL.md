@@ -1,93 +1,25 @@
 ---
 name: using-razorback
-description: Use when starting any conversation - establishes how to find and use skills, requiring Skill tool invocation before ANY response including clarifying questions
+description: Use when starting any conversation, before any response or action including clarifying questions.
 ---
 
 <SUBAGENT-STOP>
 If you were dispatched as a subagent to execute a specific task, skip this skill.
 </SUBAGENT-STOP>
 
+## The Rule
+
 <EXTREMELY-IMPORTANT>
-If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke the skill.
+If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke that skill BEFORE any response or action — including clarifying questions.
 
 IF A SKILL APPLIES TO YOUR TASK, YOU DO NOT HAVE A CHOICE. YOU MUST USE IT.
 
 This is not negotiable. This is not optional. You cannot rationalize your way out of this.
 </EXTREMELY-IMPORTANT>
 
-## Instruction Priority
+Announce each invocation: "Using [skill] to [purpose]". Create a task per checklist item the skill carries. If an invoked skill turns out to be wrong, drop it.
 
-Razorback skills override default system prompt behavior, but **user instructions always take precedence**:
-
-1. **User's explicit instructions** (AGENTS.md, CLAUDE.md, direct requests) - highest priority
-2. **Razorback skills** - override default system behavior where they conflict
-3. **Default system prompt** - lowest priority
-
-If AGENTS.md, CLAUDE.md, or the user says "don't use TDD" and a skill says "always use TDD," follow the user's instructions. The user is in control.
-
-## Project Policy Discovery
-
-Before planning or dispatching subagents, use the active project instructions and
-the approved plan as the policy source.
-
-Razorback does not require a separate project-policy file or model table. Model
-choice is left to the lead agent and harness defaults unless the user or
-environment explicitly selects a model for the run.
-
-## How to Access Skills
-
-**In Claude Code:** Use the `Skill` tool. When you invoke a skill, its content is loaded and presented to you—follow it directly. Never use the Read tool on skill files.
-
-**In Cursor:** Use the `Skill` tool. Skills auto-register via the razorback plugin, the same way they do in Claude Code.
-
-**In Codex (CLI or desktop app):** Skills are discovered natively from `~/.agents/skills/`. When a skill applies, follow its SKILL.md content directly. No separate loading tool.
-
-**In OpenCode:** Use the native `skill` tool. Skills auto-register via the razorback plugin.
-
-**In other environments:** Check your platform's documentation for how skills are loaded.
-
-## Platform Adaptation
-
-Skills use Claude Code tool names. On non-Claude-Code platforms, substitute the equivalent:
-
-- **Codex:** see `references/codex-tools.md` (Task→spawn_agent, TodoWrite→update_plan, etc.)
-- **OpenCode:** tool mapping is injected automatically by the razorback plugin bootstrap (Task→opencode's Task tool, TodoWrite→todowrite, etc.)
-
-# Using Skills
-
-## The Rule
-
-**Invoke relevant or requested skills BEFORE any response or action.** Even a 1% chance a skill might apply means that you should invoke the skill to check. If an invoked skill turns out to be wrong for the situation, you don't need to use it.
-
-```dot
-digraph skill_flow {
-    "User message received" [shape=doublecircle];
-    "About to EnterPlanMode?" [shape=doublecircle];
-    "Already brainstormed?" [shape=diamond];
-    "Invoke brainstorming skill" [shape=box];
-    "Might any skill apply?" [shape=diamond];
-    "Invoke Skill tool" [shape=box];
-    "Announce: 'Using [skill] to [purpose]'" [shape=box];
-    "Has checklist?" [shape=diamond];
-    "Create task per checklist item" [shape=box];
-    "Follow skill exactly" [shape=box];
-    "Respond (including clarifications)" [shape=doublecircle];
-
-    "About to EnterPlanMode?" -> "Already brainstormed?";
-    "Already brainstormed?" -> "Invoke brainstorming skill" [label="no"];
-    "Already brainstormed?" -> "Might any skill apply?" [label="yes"];
-    "Invoke brainstorming skill" -> "Might any skill apply?";
-
-    "User message received" -> "Might any skill apply?";
-    "Might any skill apply?" -> "Invoke Skill tool" [label="yes, even 1%"];
-    "Might any skill apply?" -> "Respond (including clarifications)" [label="definitely not"];
-    "Invoke Skill tool" -> "Announce: 'Using [skill] to [purpose]'";
-    "Announce: 'Using [skill] to [purpose]'" -> "Has checklist?";
-    "Has checklist?" -> "Create task per checklist item" [label="yes"];
-    "Has checklist?" -> "Follow skill exactly" [label="no"];
-    "Create task per checklist item" -> "Follow skill exactly";
-}
-```
+Before you EnterPlanMode, ask whether this work has been brainstormed. If not, invoke `razorback:brainstorming` first.
 
 ## Red Flags
 
@@ -97,45 +29,61 @@ These thoughts mean STOP—you're rationalizing:
 |---------|---------|
 | "This is just a simple question" | Questions are tasks. Check for skills. |
 | "I need more context first" | Skill check comes BEFORE clarifying questions. |
-| "Let me explore the codebase first" | Skills tell you HOW to explore. Check first. |
-| "I can check git/files quickly" | Files lack conversation context. Check for skills. |
-| "Let me gather information first" | Skills tell you HOW to gather information. |
-| "This doesn't need a formal skill" | If a skill exists, use it. |
-| "I remember this skill" | Skills evolve. Read current version. |
-| "This doesn't count as a task" | Action = task. Check for skills. |
+| "Let me explore the codebase / check git first" | Skills tell you HOW to explore. Check first. |
 | "The skill is overkill" | Simple things become complex. Use it. |
 | "I'll just do this one thing first" | Check BEFORE doing anything. |
-| "This feels productive" | Undisciplined action wastes time. Skills prevent this. |
-| "I know what that means" | Knowing the concept ≠ using the skill. Invoke it. |
+| "I remember this skill" | Skills evolve. Read current version. |
+
+## Instruction Priority
+
+Razorback skills override default system prompt behavior, but **user instructions always take precedence**: user instructions (AGENTS.md, CLAUDE.md, direct requests) beat skills, which beat the system prompt. If the user says "don't use TDD" and a skill says "always use TDD," follow the user.
+
+## How to Access Skills
+
+<!-- harness:claude-code -->
+**In Claude Code:** Use the `Skill` tool — content is loaded and presented to you; follow it directly. Never Read skill files.
+<!-- /harness -->
+<!-- harness:cursor -->
+**In Cursor:** Use the `Skill` tool; skills auto-register via the razorback plugin.
+<!-- /harness -->
+<!-- harness:codex -->
+**In Codex (CLI or desktop app):** Skills are discovered natively from `~/.agents/skills/`; when one applies, follow its SKILL.md directly.
+<!-- /harness -->
+<!-- harness:opencode -->
+**In OpenCode:** Use the native `skill` tool; skills auto-register via the razorback plugin.
+<!-- /harness -->
+
+**In other environments:** Check your platform's docs for skill loading.
+
+## Platform Adaptation
+
+Skills use Claude Code tool names; substitute your platform's equivalent.
+
+<!-- harness:codex -->
+- **Codex:** see `references/codex-tools.md` (Task→spawn_agent, TodoWrite→update_plan, etc.)
+<!-- /harness -->
+<!-- harness:opencode -->
+- **OpenCode:** mapping is injected by the razorback plugin bootstrap (Task→opencode's Task tool, TodoWrite→todowrite, etc.)
+<!-- /harness -->
 
 ## Execution Model
 
-When executing implementation plans:
+Executing an implementation plan:
 
-- **2+ tasks (delegation available):** Use `razorback:subagent-driven-development` (fresh subagent per task — parallel batches when tasks are independent, serialized lanes when they are coupled; inline review by lead)
-- **1 task, separate-session execution, or no delegation:** Use `razorback:executing-plans` (single agent, batch execution)
-- **Ad-hoc parallel work (delegation available):** Use `razorback:dispatching-parallel-agents` (independent agent dispatch)
-- **Small, local, reversible fix (quick-fix criteria):** Use `razorback:fixing-small-issues` — triage first, fix on the current checkout, verify the affected scope only. No worktree, no baseline suite run.
+- **2+ tasks:** `razorback:subagent-driven-development` — fresh subagent per task; parallel batches when tasks are independent, serialized lanes when coupled.
+- **1 task, separate session, or no delegation:** `razorback:executing-plans` — single agent, batch execution.
+- **Ad-hoc parallel work:** `razorback:dispatching-parallel-agents` — independent agent dispatch.
+- **Small, local, reversible fix:** `razorback:fixing-small-issues` — triage first, fix on the current checkout, verify the affected scope only. No worktree, no baseline suite run.
 
-`subagent-driven-development` is the delegated execution path across Claude Code, Cursor, Codex, and OpenCode. If the current session cannot delegate (e.g., it is already running as a subagent), fall back to `executing-plans`. The lead does inline review (spec compliance + code quality) either way.
+`subagent-driven-development` is the delegated path on every plugin-tier harness. If this session cannot delegate (e.g. it is already a subagent), fall back to `executing-plans`. The lead reviews inline (spec compliance + code quality) either way.
 
 ## Skill Priority
 
-When multiple skills could apply, use this order:
-
-1. **Process skills first** (brainstorming, debugging) - these determine HOW to approach the task
-2. **Domain skills second** - these guide execution
-
-"Let's build X" → brainstorming first, then domain-specific skills.
-"Fix this bug" → debugging first, then domain-specific skills.
+Process skills first (brainstorming, debugging) — they set HOW to approach the task. Domain skills second — they guide execution. "Let's build X" → brainstorming first. "Fix this bug" → debugging first.
 
 ## Skill Types
 
-**Rigid** (TDD, debugging): Follow exactly. Don't adapt away discipline.
-
-**Flexible** (patterns): Adapt principles to context.
-
-The skill itself tells you which.
+**Rigid** (TDD, debugging): follow exactly, never adapt away discipline. **Flexible** (patterns): adapt to context. The skill tells you which.
 
 ## User Instructions
 

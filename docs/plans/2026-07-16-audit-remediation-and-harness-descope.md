@@ -337,11 +337,11 @@ Batches run in order (A → B → C → D). Within a batch, tasks are safe to di
 **Approach:** Bash marker-stripping must be a small awk/sed block with a test: feed the current SKILL.md through the filter for each branch and assert (1) valid JSON output, (2) own-harness paragraph present, (3) other-harness paragraphs absent, (4) toolchain table intact. Keep the existing printf-not-heredoc workaround and JSON escaping untouched.
 
 **Acceptance criteria:**
-- [ ] `wc -w skills/using-razorback/SKILL.md` ≤ 950; anti-rationalization Red Flags table still present (CLAUDE.md What-Not-to-Change)
-- [ ] `CLAUDE_PLUGIN_ROOT=x bash hooks/session-start` output: valid JSON, contains Claude Code access text, contains zero `In Codex`/`In OpenCode`/`In Cursor` paragraphs, contains the full Miller table
-- [ ] File on disk still documents all 4 harnesses (for native-discovery readers)
-- [ ] Hook test covers both branches + fallback; `npm test` green
-- [ ] Tests pass and the change is handed to the lead per commit mode
+- [x] `wc -w skills/using-razorback/SKILL.md` ≤ 950 (landed 949); anti-rationalization Red Flags table still present at 6 rows, one per family (CLAUDE.md What-Not-to-Change)
+- [x] `CLAUDE_PLUGIN_ROOT=x bash hooks/session-start` output: valid JSON, contains Claude Code access text, contains zero `In Codex`/`In OpenCode`/`In Cursor` paragraphs, contains the full Miller table (lead re-verified live)
+- [x] File on disk still documents all 4 harnesses (for native-discovery readers) — fallback branch injects all 4 unfiltered
+- [x] Hook test covers both branches + fallback (17 tests, red-phase + fail-open evidence); `npm test` green
+- [x] Tests pass and the change is handed to the lead per commit mode
 
 ### Task 10: writing-skills trim + description fixes
 

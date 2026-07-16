@@ -23,8 +23,36 @@ escape_for_json() {
     printf '%s' "$s"
 }
 
-using_razorback_escaped=$(escape_for_json "$using_razorback_content")
-session_context="<EXTREMELY_IMPORTANT>\nYou have razorback.\n\n**Below is the full content of your 'razorback:using-razorback' skill - your introduction to using skills. For all other skills, use the 'Skill' tool:**\n\n${using_razorback_escaped}\n</EXTREMELY_IMPORTANT>"
+# Drop the harness blocks that belong to other harnesses. SKILL.md marks each
+# harness-specific paragraph with <!-- harness:<id> --> ... <!-- /harness -->.
+# Fails open: an unmarked file, an awk failure, or an empty result all yield the
+# full unfiltered content, so a filter bug can never inject an empty payload.
+filter_harness_blocks() {
+    local keep="$1" content="$2" filtered
+    filtered=$(printf '%s\n' "$content" | awk -v keep="$keep" '
+        /^<!-- harness:[a-z-]+ -->$/ {
+            id = $0
+            sub(/^<!-- harness:/, "", id)
+            sub(/ -->$/, "", id)
+            skip = (id != keep)
+            next
+        }
+        /^<!-- \/harness -->$/ { skip = 0; next }
+        !skip
+    ' 2>/dev/null) || { printf '%s' "$content"; return 0; }
+
+    if [ -z "$filtered" ]; then
+        printf '%s' "$content"
+        return 0
+    fi
+    printf '%s' "$filtered"
+}
+
+build_session_context() {
+    local escaped
+    escaped=$(escape_for_json "$1")
+    printf '%s' "<EXTREMELY_IMPORTANT>\nYou have razorback.\n\n**Below is the full content of your 'razorback:using-razorback' skill - your introduction to using skills. For all other skills, use the 'Skill' tool:**\n\n${escaped}\n</EXTREMELY_IMPORTANT>"
+}
 
 # Output context injection as JSON.
 # Cursor hooks expect additional_context (snake_case).
@@ -33,16 +61,22 @@ session_context="<EXTREMELY_IMPORTANT>\nYou have razorback.\n\n**Below is the fu
 # Claude Code reads BOTH additional_context and hookSpecificOutput without
 # deduplication, so we must emit only the field the current platform consumes.
 #
+# A known platform gets only its own harness blocks; the unknown-platform
+# fallback gets every harness, since we cannot tell which one is reading.
+#
 # Uses printf instead of heredoc to work around bash 5.3+ heredoc hang.
 # See: https://github.com/obra/superpowers/issues/571
 if [ -n "${CURSOR_PLUGIN_ROOT:-}" ]; then
   # Cursor sets CURSOR_PLUGIN_ROOT (may also set CLAUDE_PLUGIN_ROOT)
+  session_context=$(build_session_context "$(filter_harness_blocks cursor "$using_razorback_content")")
   printf '{\n  "additional_context": "%s"\n}\n' "$session_context"
 elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ]; then
   # Claude Code sets CLAUDE_PLUGIN_ROOT
+  session_context=$(build_session_context "$(filter_harness_blocks claude-code "$using_razorback_content")")
   printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "SessionStart",\n    "additionalContext": "%s"\n  }\n}\n' "$session_context"
 else
   # unknown platform fallback -- SDK standard format
+  session_context=$(build_session_context "$using_razorback_content")
   printf '{\n  "additionalContext": "%s"\n}\n' "$session_context"
 fi
 
