@@ -1,6 +1,6 @@
 ---
 name: requesting-code-review
-description: Use when the lead needs inline-review criteria during plan execution, or when reviewing work done outside an approved plan - ad-hoc features, baseline checks before a refactor, or when stuck. Planned pre-merge external review is razorback:pre-merge-review, not this skill.
+description: Use when the lead needs inline-review criteria during plan execution, or when reviewing work done outside an approved plan - ad-hoc features, baseline checks before a refactor, or when stuck. Not for planned pre-merge external review — that's razorback:pre-merge-review.
 ---
 
 # Requesting Code Review

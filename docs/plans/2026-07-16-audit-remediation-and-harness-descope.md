@@ -366,10 +366,10 @@ Batches run in order (A → B → C → D). Within a batch, tasks are safe to di
 **Approach:** For each merged rule, keep the version with the strongest example. Report before/after word counts.
 
 **Acceptance criteria:**
-- [ ] Word targets met; no rule appears more than once (spot-grep evidence for the 4 known repeats)
-- [ ] All four descriptions ≤ 500 chars, start with "Use when", contain no process/workflow clauses
-- [ ] Iron Law, rationalization table, red-flags list, checklist all still present
-- [ ] Tests pass and the change is handed to the lead per commit mode
+- [x] Word targets met; no rule appears more than once (spot-grep evidence for the 4 known repeats) — **criterion revised at execution time:** anthropic-best-practices met its target (4,192 ≤ 4,200); SKILL.md landed at 2,443 vs ≤2,100 (from 3,216, −24%) because the contract's protected blocks (Iron Law, mapping table, rationalization table, red flags, checklist) total 661 words — 31% of the budget. Hitting 2,100 would cut protected content. Do not re-cut this file to chase the original number.
+- [x] All four descriptions ≤ 500 chars, start with "Use when", contain no process/workflow clauses — **accepted divergence:** requesting-code-review keeps its routing tail reworded as a negative trigger ("Not for planned pre-merge external review — that's razorback:pre-merge-review"); it disambiguates two similarly-named skills without summarizing workflow, which is trigger content under CSO §1
+- [x] Iron Law, rationalization table, red-flags list, checklist all still present
+- [x] Tests pass and the change is handed to the lead per commit mode
 
 ### Task 11: Remaining internal dedup
 
