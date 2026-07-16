@@ -186,10 +186,10 @@ Batches run in order (A → B → C → D). Within a batch, tasks are safe to di
 **Approach:** Edit `instruction-tier.md` first (canonical), then mirror in `subagent-toolchain.md` and `using-razorback/SKILL.md`, then run the sync script and verify byte-identity via `npm test`. Net growth of `subagent-toolchain.md` must stay under +60 words (hot-path budget).
 
 **Acceptance criteria:**
-- [ ] All three sources + all five host copies list the 10 search modes, 3 inspect depths, and 9 tools (adds `patterns`, `content`)
-- [ ] `node scripts/check-rule-copies.mjs` clean; `npm test` green
-- [ ] `wc -w skills/using-razorback/references/subagent-toolchain.md` ≤ 347 (287 + 60)
-- [ ] Tests pass and the change is handed to the lead per commit mode
+- [x] All three sources + all five host copies list the 10 search modes, 3 inspect depths, and 9 tools (adds `patterns`, `content`)
+- [x] `node scripts/check-rule-copies.mjs` clean; `npm test` green
+- [x] `wc -w skills/using-razorback/references/subagent-toolchain.md` ≤ 347 (287 + 60) — landed at 344
+- [x] Tests pass and the change is handed to the lead per commit mode
 
 ### Task 5: Verified drift-bug fixes
 
