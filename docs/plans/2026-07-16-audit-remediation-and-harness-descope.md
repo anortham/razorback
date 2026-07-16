@@ -426,10 +426,10 @@ Batches run in order (A → B → C → D). Within a batch, tasks are safe to di
 **Approach:** Insertions only — no restructuring beyond the sentence being added to.
 
 **Acceptance criteria:**
-- [ ] `grep -n 'impact(' skills/fixing-small-issues/SKILL.md skills/systematic-debugging/SKILL.md` → hits at Step 4 and Phase 4 respectively
-- [ ] verification-before-completion Common Failures rows carry Miller verification hooks
-- [ ] root-cause-tracing names `content` with grep as fallback
-- [ ] Tests pass and the change is handed to the lead per commit mode
+- [x] `grep -n 'impact(' skills/fixing-small-issues/SKILL.md skills/systematic-debugging/SKILL.md` → hits at Step 4 and Phase 4 respectively
+- [x] verification-before-completion Common Failures rows carry Miller verification hooks (4th "How to verify" column; 5 code-verifiable rows carry Miller calls, the other 4 carry their real non-Miller check)
+- [x] root-cause-tracing names `content` with grep as fallback (worker also fixed the capture command's redirection order — `> file 2>&1` — so stderr stack traces land in the file)
+- [x] Tests pass and the change is handed to the lead per commit mode
 
 ### Task 13: Miller insertions — review surfaces + mapping parity
 

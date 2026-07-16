@@ -39,17 +39,17 @@ Skip any step = lying, not verifying
 
 ## Common Failures
 
-| Claim | Requires | Not Sufficient |
-|-------|----------|----------------|
-| Tests pass | Test command output or ledger entry for current HEAD and required scope: 0 failures | Stale run, wrong scope, "should pass" |
-| Linter clean | Linter output: 0 errors | Partial check, extrapolation |
-| Build succeeds | Build command: exit 0 | Linter passing, logs look good |
-| Bug fixed | Original symptom passes at worker scope | Code changed, assumed fixed |
-| Regression test works | Red-green cycle verified | Test passes once |
-| Agent completed | VCS diff shows changes | Agent reports "success" |
-| Requirements met | Line-by-line checklist against the plan or spec | Tests passing alone |
-| Architecture decision followed | Approved architecture visible in the diff, ADR note, or verified implementation | "Looks aligned", verbal recall |
-| Review finding fixed | Fresh verification at the affected scope shows the specific reviewer finding no longer reproduces | Code changed, assumed fixed |
+| Claim | Requires | Not Sufficient | How to verify |
+|-------|----------|----------------|---------------|
+| Tests pass | Test command output or ledger entry for current HEAD and required scope: 0 failures | Stale run, wrong scope, "should pass" | Long output: capture to a file, then Miller `content(operation='import', path='<file>')` + `content(operation='search', query='<failure>')` — never paste the whole run |
+| Linter clean | Linter output: 0 errors | Partial check, extrapolation | Read the output |
+| Build succeeds | Build command: exit 0 | Linter passing, logs look good | Long build logs: Miller `content(...)` import, then search for the failure |
+| Bug fixed | Original symptom passes at worker scope | Code changed, assumed fixed | Re-run the original repro |
+| Regression test works | Red-green cycle verified | Test passes once | Revert the fix, watch it fail |
+| Agent completed | VCS diff shows changes | Agent reports "success" | Read the diff |
+| Requirements met | Line-by-line checklist against the plan or spec | Tests passing alone | Miller `inspect(target)` each symbol the requirement names — the code, not the claim |
+| Architecture decision followed | Approved architecture visible in the diff, ADR note, or verified implementation | "Looks aligned", verbal recall | Miller `trace(target)` the boundary it must respect; `impact(target)` for what the change actually reaches |
+| Review finding fixed | Fresh verification at the affected scope shows the specific reviewer finding no longer reproduces | Code changed, assumed fixed | Miller `inspect(target, depth=full)` the fixed symbol and read the body |
 
 ## Tool-Assisted Verification
 

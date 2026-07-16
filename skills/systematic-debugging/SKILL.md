@@ -187,6 +187,7 @@ You MUST complete each phase before proceeding to the next.
    - Use the `razorback:test-driven-development` skill for writing proper failing tests
 
 2. **Implement Single Fix**
+   - Before writing the fix, assess the blast radius: Miller `impact(target='<symbol being changed>')` returns the impacted symbols plus the likely tests
    - Address the root cause identified
    - ONE change at a time
    - No "while I'm here" improvements
