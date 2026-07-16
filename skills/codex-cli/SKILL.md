@@ -134,7 +134,9 @@ change.
 **Step 3: Send with structured output**
 
 Codex's `--output-schema` flag takes a file path, so point it straight at the
-canonical schema this skill ships — no temp file needed:
+canonical schema this skill ships — no temp file needed. `$SKILL_DIR`
+throughout this skill is the skill's own base directory, announced when the
+skill loads — substitute it before running any command:
 
 ```bash
 TEMPLATE=$(cat "$SKILL_DIR/adversarial-prompt.txt")

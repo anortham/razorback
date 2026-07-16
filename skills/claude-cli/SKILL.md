@@ -183,7 +183,9 @@ $DIFF"
 
 **Step 3: Send to Claude**
 
-`--json-schema` takes a JSON string. Read it from the canonical schema file
+`--json-schema` takes a JSON string. `$SKILL_DIR` throughout this skill is the
+skill's own base directory, announced when the skill loads — substitute it
+before running any command. Read the JSON string from the canonical schema file
 (`$SKILL_DIR/../codex-cli/schemas/review-output.schema.json` — all razorback
 reviewers share it), stripping the `$schema` key: claude 2.1.209's validator
 rejects it (`no schema with key or ref …`) before the run starts. The canonical
