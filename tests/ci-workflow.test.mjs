@@ -60,24 +60,14 @@ test('CI workflow gates v* tags on the tag matching the manifest version', () =>
     /if:\s*github\.ref_type == 'tag'/,
     'the tag-version gate must be guarded by `if: github.ref_type == \'tag\'`'
   );
-  assert.match(
-    workflow,
-    /jq -r \.version package\.json/,
-    'the tag gate must read the manifest version from package.json'
-  );
-  assert.match(
-    workflow,
-    /\$\{GITHUB_REF_NAME#v\}/,
-    'the tag gate must strip the leading `v` from the tag name'
-  );
 
-  // Scope the failure assertion to the gate step itself, so an `exit 1`
+  // Scope the command assertion to the gate step itself, so a matching command
   // elsewhere in the workflow could never satisfy this test.
   const gateStep = workflow.slice(workflow.indexOf("if: github.ref_type == 'tag'"));
   assert.match(
     gateStep,
-    /exit 1/,
-    'the tag gate must fail the run when the tag and manifest version disagree'
+    /run:\s*\.\/scripts\/bump-version\.sh --check "\$\{GITHUB_REF_NAME#v\}"$/m,
+    'the tag gate must run `--check "${GITHUB_REF_NAME#v}"` so every declared manifest is pinned to the tag'
   );
 });
 

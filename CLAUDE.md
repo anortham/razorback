@@ -135,6 +135,7 @@ Once a plan is approved, razorback's execution skills run to completion without 
 Razorback now has five version-bearing manifests (`package.json`, `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/marketplace.json`). Keep them in sync with `./scripts/bump-version.sh`:
 
 - `--check` reports current versions and detects drift
+- `--check <version>` also requires the agreed version to equal `<version>`; CI passes the git tag on tag builds so manifests that went stale together cannot ship
 - `--audit` runs `--check` plus grep-scans the repo for undeclared version references
 - `<new-version>` bumps all five in one pass
 

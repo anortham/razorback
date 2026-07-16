@@ -238,9 +238,13 @@ Razorback ships five version-bearing manifests (`package.json`, `.claude-plugin/
 
 ```bash
 ./scripts/bump-version.sh --check          # detect drift
+./scripts/bump-version.sh --check 1.2.3    # also require the agreed version to equal 1.2.3
 ./scripts/bump-version.sh --audit          # check + scan for undeclared version references
 ./scripts/bump-version.sh <new-version>    # bump all five in one pass
 ```
+
+CI runs `--check "${GITHUB_REF_NAME#v}"` on `v*` tag builds. Drift detection alone
+cannot catch manifests that went stale together; comparing against the tag can.
 
 ## License
 

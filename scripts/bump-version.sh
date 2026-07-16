@@ -4,9 +4,10 @@
 # with drift detection and repo-wide audit for missed files.
 #
 # Usage:
-#   bump-version.sh <new-version>   Bump all declared files to new version
-#   bump-version.sh --check         Report current versions (detect drift)
-#   bump-version.sh --audit         Check + grep repo for old version strings
+#   bump-version.sh <new-version>       Bump all declared files to new version
+#   bump-version.sh --check             Report current versions (detect drift)
+#   bump-version.sh --check <version>   Also require the agreed version to equal <version>
+#   bump-version.sh --audit             Check + grep repo for old version strings
 #
 set -euo pipefail
 
@@ -54,6 +55,7 @@ audit_excludes() {
 # --- commands ---
 
 cmd_check() {
+  local expected="${1:-}"
   local has_drift=0
   local versions=()
 
@@ -86,6 +88,18 @@ cmd_check() {
     has_drift=1
   else
     echo "All declared files are in sync at ${versions[0]}"
+  fi
+
+  # Mutual agreement cannot catch manifests that went stale together. When an
+  # expected version is supplied (release tags pass one), the agreed version is
+  # compared against that external truth.
+  if [[ -n "$expected" && "$has_drift" -eq 0 ]]; then
+    if [[ "${versions[0]}" != "$expected" ]]; then
+      echo "VERSION MISMATCH — declared files are at ${versions[0]}, expected $expected"
+      has_drift=1
+    else
+      echo "Declared version matches expected $expected"
+    fi
   fi
 
   return $has_drift
@@ -203,17 +217,18 @@ cmd_bump() {
 
 case "${1:-}" in
   --check)
-    cmd_check
+    cmd_check "${2:-}"
     ;;
   --audit)
     cmd_audit
     ;;
   --help|-h|"")
-    echo "Usage: bump-version.sh <new-version> | --check | --audit"
+    echo "Usage: bump-version.sh <new-version> | --check [expected-version] | --audit"
     echo ""
-    echo "  <new-version>  Bump all declared files to the given version"
-    echo "  --check        Show current versions, detect drift"
-    echo "  --audit        Check + scan repo for undeclared version references"
+    echo "  <new-version>       Bump all declared files to the given version"
+    echo "  --check             Show current versions, detect drift"
+    echo "  --check <version>   Also require the agreed version to equal <version>"
+    echo "  --audit             Check + scan repo for undeclared version references"
     exit 0
     ;;
   --*)

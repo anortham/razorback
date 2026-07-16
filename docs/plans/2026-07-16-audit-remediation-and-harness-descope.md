@@ -244,10 +244,10 @@ Batches run in order (A → B → C → D). Within a batch, tasks are safe to di
 **Approach:** Follow the existing option-parsing style in `bump-version.sh`. Add a test case to the existing version-script test file if one exercises `--check` (search `tests/` for `bump-version`); extend it with an expected-version mismatch case.
 
 **Acceptance criteria:**
-- [ ] `./scripts/bump-version.sh --check 0.22.0` exits 0; `--check 9.9.9` exits non-zero with a clear message
-- [ ] `test.yml` runs the tag-equality check on tag refs only
-- [ ] `git ls-files | grep -i ds_store` → empty; `.gitignore` covers `.DS_Store`
-- [ ] Tests pass and the change is handed to the lead per commit mode
+- [x] `./scripts/bump-version.sh --check 0.22.0` exits 0; `--check 9.9.9` exits non-zero with a clear message (mutation-tested)
+- [x] `test.yml` runs the tag-equality check on tag refs only — replaced a pre-existing package.json-only jq gate with the strictly-stronger 5-manifest form
+- [x] `git ls-files | grep -i ds_store` → empty; `.gitignore` covers `.DS_Store` — **criterion was already true:** audit finding was stale (.DS_Store never tracked in any commit; ignored since before this branch); no untrack action existed to take
+- [x] Tests pass and the change is handed to the lead per commit mode
 
 ---
 
