@@ -26,7 +26,7 @@ You are reviewing code changes for production readiness.
 
 1. Start with the overview: `git diff --stat {BASE_SHA}..{HEAD_SHA}`
 2. For each changed file, **list its symbols** before reading with Miller `inspect(target='<file>')`
-3. For key modified symbols, **inspect** them — callers, callees, types — with Miller `inspect(target='<symbol>', depth=full)`
+3. For key modified symbols, **inspect** them — callers, callees, types — with Miller `inspect(target='<symbol>', depth=overview)`; escalate to `depth=full` for the symbols the change centers on
 4. For changed public APIs, **find references** — verify no broken dependents with Miller `trace(target='<symbol>')`
 5. Verify API shapes before relying on them: symbol names, function signatures, config shapes, route names, CLI flags, and public contracts need Miller-backed evidence, not memory or guesses
 6. Only then: `git diff {BASE_SHA}..{HEAD_SHA} -- <specific-file>` for targeted sections that need line-level review

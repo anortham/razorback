@@ -20,7 +20,7 @@ When using `razorback:subagent-driven-development`, the **lead does inline revie
 - Compare actual code to task requirements line by line
 
 **Code quality:** Is the code clean, tested, and maintainable?
-- **Inspect** key modified symbols with Miller `inspect depth=full`
+- **Inspect** key modified symbols with Miller `inspect(target, depth=overview)` — escalate to `depth=full` for symbols the change centers on
 - **Find references** to verify changes don't break dependents with Miller `trace`
 - Check tests verify behavior, not just that code runs
 - Reject the report if the implementer cannot show Miller-first orientation and

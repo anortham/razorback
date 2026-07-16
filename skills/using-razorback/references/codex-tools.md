@@ -91,7 +91,7 @@ For single-task or tightly sequential work, use `executing-plans` even when dele
 ### External model CLI waiting
 
 When using a skill that launches another model through a CLI, such as
-`cursor-agent -p`, `claude -p`, `codex exec`, or `gemini -p`, run it as a
+`cursor-agent -p`, `claude -p`, or `codex exec`, run it as a
 foreground command and let it finish. The lead model should not narrate elapsed
 time, guess why the external model is slow, or do repeated status checks just
 because the command is still running.
@@ -110,10 +110,14 @@ Razorback assumes Miller MCP is available. The exploration directives in skill b
 Use these Miller tools by capability:
 
 - Orient: `context(query)`
-- Search: `search(query, mode=auto|text|symbol|file|content)`
-- List file symbols or inspect a symbol: `inspect(target, depth=summary|full)`
+- Search: `search(query, mode=auto|text|symbol|file|markers|content|source|external|web|all-text)`
+- List a file's symbols before reading it whole: `inspect(target='<file>')`
+- Inspect a symbol: `inspect(target='<symbol>', depth=summary|overview|full)` — `overview` for the first read, `full` only when editing it
 - Find references/call paths: `trace(target)`
 - Assess blast radius: `impact(target)`
+- Code-shape facts (routes, config keys, doc structure): `patterns(...)`
+- Large text (logs, CI output, web imports) without full-file reads: `content(...)`
+- Rename/edit a symbol safely: `edit(operation, target)`
 - Manage indexing: `workspace(...)`
 
 See the capability → tool mapping table in `using-razorback`'s "Your Toolchain" section. Install and configure Miller before using razorback for real work.

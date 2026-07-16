@@ -24,6 +24,21 @@ Task tool (general-purpose):
     | Scope | Focused enough for a single plan — not covering multiple independent subsystems |
     | YAGNI | Unrequested features, over-engineering |
 
+    ## Check Scope Against Code Reality with Miller
+
+    Scope and YAGNI are judgments about the actual codebase, not about the spec in
+    isolation. Verify before flagging — or approving:
+
+    - Every file path or module the spec names resolves — Miller `search(query='<path>', mode=file)`
+    - Every symbol the spec builds on exists — Miller `inspect(target='<symbol>', depth=overview)`
+    - Flag every API the spec invents. A function signature, config key, route, or
+      CLI flag that Miller cannot find means the spec assumes code that is not there
+    - Before accepting a requirement as new work, search for it — Miller
+      `search(query='<capability>')`. A capability that already exists is scope
+      creep worth flagging, not a feature to build twice
+
+    Do not read whole files to check this.
+
     ## Calibration
 
     **Only flag issues that would cause real problems during implementation planning.**

@@ -73,7 +73,7 @@ digraph tdd_cycle {
 
 Before writing any test, understand what you're testing:
 
-1. **Inspect** the function/module to test — understand interface, callers, types, existing behavior with Miller `inspect depth=full`
+1. **Inspect** the function/module to test — understand interface, callers, types, existing behavior with Miller `inspect(target, depth=overview)`; escalate to `depth=full` when you are about to change the code under test
 2. **Orient** on the test area — find existing test patterns and conventions in the codebase with Miller `context`
 
 This prevents writing tests against wrong assumptions about the API. Skip only if you just wrote the code being tested.

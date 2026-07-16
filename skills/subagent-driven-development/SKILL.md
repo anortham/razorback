@@ -211,7 +211,7 @@ When the implementer reports completion, the lead does a single inline review co
 - Is the code clean, tested, and maintainable?
 - Do tests assert on meaningful values (not just "code ran without crashing")?
 - Code smells: duplication, tight coupling, unclear names, missing error paths?
-- **Inspect** key new/modified symbols to check callers, callees, and types with Miller `inspect depth=full`.
+- **Inspect** key new/modified symbols to check callers, callees, and types with Miller `inspect(target, depth=overview)` — escalate to `depth=full` for the symbols the task centers on.
 - **Find references** to verify API changes don't break dependents with Miller `trace`.
 
 **Review cap: 3 iterations.** This is the one statement of the cap — every other

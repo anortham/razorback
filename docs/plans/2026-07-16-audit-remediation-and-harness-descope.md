@@ -454,11 +454,11 @@ Batches run in order (A → B → C → D). Within a batch, tasks are safe to di
 **Approach:** Mechanical, grep-driven. Report the full list of normalized sites.
 
 **Acceptance criteria:**
-- [ ] `grep -rn 'inspect depth=full' skills/ agents/` → zero bare-word hits
-- [ ] Both document-reviewer prompts name Miller tools inline with signatures
-- [ ] `depth=overview` appears as the first-read guidance in every owned review recipe
-- [ ] `codex-tools.md` enumerates all 9 Miller tools
-- [ ] Tests pass and the change is handed to the lead per commit mode
+- [x] `grep -rn 'inspect depth=full' skills/ agents/` → zero bare-word hits — **plan mismatch found at execution time:** 11 sites existed, not 7; the worker fixed the 4 inside its ownership and correctly reported the other 7 (in systematic-debugging, verification-before-completion, writing-plans, executing-plans, pre-merge-review ×2) instead of crossing ownership lines. The lead normalized those 7 in a follow-up commit: form-normalized to `inspect(target, depth=full)` where the symbol is being edited or is the bug at issue, `depth=overview` + escalation where the site is a first read (pre-merge-review ×2, writing-plans orientation)
+- [x] Both document-reviewer prompts name Miller tools inline with signatures
+- [x] `depth=overview` appears as the first-read guidance in every owned review recipe
+- [x] `codex-tools.md` enumerates all 9 Miller tools (worker also corrected the drifted `search` mode list and added `overview` to the depth enum — parity fixes adjacent to the assigned rows)
+- [x] Tests pass and the change is handed to the lead per commit mode
 
 ---
 
