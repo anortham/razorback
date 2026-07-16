@@ -136,8 +136,8 @@ test('every branch carries the full Miller toolchain table', () => {
   const tableRows = [
     /\| \*\*Orient\*\* .* \| `context\(query\)` \|/,
     /`search\(query, mode=auto\\\|text\\\|symbol\\\|file\\\|markers\\\|content\\\|source\\\|external\\\|web\\\|all-text\)`/,
-    /\| `inspect\(path\)` \|/,
-    /`inspect\(symbol, depth=summary\\\|overview\\\|full\)`/,
+    /\| `inspect\(target='<file>'\)` \|/,
+    /`inspect\(target='<symbol>', depth=summary\\\|overview\\\|full\)`/,
     /\| `trace\(target\)` \|/,
     /\| `impact\(target\)` \|/,
     /\| `patterns\(\.\.\.\)` \|/,
