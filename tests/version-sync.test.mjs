@@ -16,8 +16,8 @@ test('every version-bearing manifest in .version-bump.json matches package.json'
   const config = readJson('.version-bump.json');
 
   assert.equal(Array.isArray(config.files), true);
-  // Six version-bearing manifests as documented in CLAUDE.md / README.md.
-  assert.equal(config.files.length, 6);
+  // Five version-bearing manifests as documented in CLAUDE.md / README.md.
+  assert.equal(config.files.length, 5);
 
   for (const entry of config.files) {
     const manifest = readJson(entry.path);

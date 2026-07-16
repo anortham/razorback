@@ -31,6 +31,7 @@ const COPIES = [
   ['.windsurf/rules/razorback.md', trim],
   ['.clinerules/razorback.md', trim],
   ['.kiro/steering/razorback.md', stripFrontmatter],
+  ['.github/copilot-instructions.md', trim],
 ];
 
 // Load-bearing rules that must appear verbatim in EVERY invariant source below.

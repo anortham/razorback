@@ -6,3 +6,6 @@
 .julieignore
 .miller/
 .codex/config.toml
+
+# razorback SDD working-tree scratch
+.razorback/
