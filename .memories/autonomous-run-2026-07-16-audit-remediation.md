@@ -3,7 +3,7 @@
 **Status:** Complete
 **Plan:** docs/plans/2026-07-16-audit-remediation-and-harness-descope.md
 **Branch:** worktree-audit-fixes-2026-07
-**PR:** pending — filled in after PR creation
+**PR:** https://github.com/anortham/razorback/pull/7
 **Duration:** ~6h 15m (2026-07-16 08:36 – 14:49 UTC-5, one session with mid-run compaction)
 **Phases:** 4/4 complete (Batches A–D) + pre-merge review
 **Tasks:** 13/13 complete
@@ -56,7 +56,7 @@
 
 ## Next steps
 
-- Review PR: pending — filled in after PR creation
+- Review PR: https://github.com/anortham/razorback/pull/7
 - Optional: `brew uninstall bash` if you don't want Homebrew bash 5.3 (installed by a fix worker for the patsub red-green demo; nothing depends on it).
 - Deferred follow-ups recorded in the plan's Out of Scope section: all Cursor work; AGENTS.md Windows symlink hazard; OpenCode plugin Miller-coverage audit; version bump/release after merge.
 - Smaller residue noted during execution, not plan-scoped: no test guards the 4+1 harness story or the reviewer enumeration; claude-cli retains a ~100-word `--bare` repetition; Miller `inspect` on markdown files returns only code-block properties (tooling observation for Miller, not razorback).
