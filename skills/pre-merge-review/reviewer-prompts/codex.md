@@ -1,6 +1,12 @@
 # Reviewer Prompt: codex
 
-Invocation instructions for running `codex` as the pre-merge adversarial reviewer. Background on codex's adversarial-review mode lives in the bundled `razorback:codex-cli` skill. This file is self-contained — the schema is inlined below and written to a temp file at invocation time, so no knowledge of the razorback install path is required.
+Invocation instructions for running `codex` as the pre-merge adversarial reviewer. Background on codex's adversarial-review mode lives in the bundled `razorback:codex-cli` skill.
+
+Paths below are relative to this file (`skills/pre-merge-review/reviewer-prompts/`) inside the razorback plugin — the same convention the blocker-taxonomy reference below uses. Set `RAZORBACK_DIR` to the plugin root if you need absolute paths:
+
+```bash
+REVIEWER_PROMPTS_DIR="$RAZORBACK_DIR/skills/pre-merge-review/reviewer-prompts"
+```
 
 ## Preconditions
 
@@ -10,7 +16,7 @@ Invocation instructions for running `codex` as the pre-merge adversarial reviewe
 
 ## Build the adversarial prompt
 
-Use the adversarial prompt template shown at the bottom of this file (the canonical source of this prompt is `skills/codex-cli/SKILL.md` "Adversarial Prompt Template" in the razorback plugin). Substitute:
+Read the canonical adversarial prompt template at `$REVIEWER_PROMPTS_DIR/../../codex-cli/adversarial-prompt.txt` in the razorback plugin. Substitute:
 
 - `{{TARGET_LABEL}}` ← `$FILE_STAT` plus a short description, e.g. `"branch <name>: N files changed, base..HEAD"`.
 - `{{USER_FOCUS}}` ← `$USER_FOCUS` if set during execution handoff, otherwise `"none specified"`.
@@ -20,41 +26,10 @@ The template instructs codex to default to skepticism, prioritize high-impact at
 
 ## Invocation
 
-Codex's `--output-schema` flag takes a file path, so we materialize the inlined schema to a temp file before invoking:
+Codex's `--output-schema` flag takes a file path, so point it straight at the canonical schema file — no temp copy needed:
 
 ```bash
-SCHEMA_FILE=$(mktemp) && trap 'rm -f "$SCHEMA_FILE"' EXIT
-cat > "$SCHEMA_FILE" <<'SCHEMA_EOF'
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "additionalProperties": false,
-  "required": ["verdict", "summary", "findings", "next_steps"],
-  "properties": {
-    "verdict": { "type": "string", "enum": ["approve", "needs-attention"] },
-    "summary": { "type": "string", "minLength": 1 },
-    "findings": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["severity", "title", "body", "file", "line_start", "line_end", "confidence", "recommendation"],
-        "properties": {
-          "severity": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
-          "title": { "type": "string", "minLength": 1 },
-          "body": { "type": "string", "minLength": 1 },
-          "file": { "type": "string", "minLength": 1 },
-          "line_start": { "type": "integer", "minimum": 1 },
-          "line_end": { "type": "integer", "minimum": 1 },
-          "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
-          "recommendation": { "type": "string" }
-        }
-      }
-    },
-    "next_steps": { "type": "array", "items": { "type": "string", "minLength": 1 } }
-  }
-}
-SCHEMA_EOF
+SCHEMA_FILE="$REVIEWER_PROMPTS_DIR/../../codex-cli/schemas/review-output.schema.json"
 
 CODEX_MODEL="${RAZORBACK_CODEX_REVIEW_MODEL:-}"  # empty = inherit global default
 
@@ -73,7 +48,7 @@ Flag rationale:
 - `--color never` — clean non-interactive output suitable for piping into `jq`.
 - `-s read-only` — sandbox policy that blocks file writes at the CLI layer. This is what actually enforces "the reviewer never edits code"; the prompt's read-only instruction is backup, not the mechanism.
 - `${CODEX_MODEL:+-m "$CODEX_MODEL"}` — explicit model override from `RAZORBACK_CODEX_REVIEW_MODEL`. When unset, the expansion is empty and codex uses its configured default.
-- `--output-schema` — forces codex to return JSON conforming to the shared review-output schema. The same schema is inlined in `reviewer-prompts/claude.md` so both reviewers target identical shape.
+- `--output-schema` — forces codex to return JSON conforming to the shared review-output schema. `reviewer-prompts/claude.md` reads the same canonical file (minus the `$schema` key, which claude's validator rejects), so both reviewers target an identical shape.
 - `-` — read the prompt from stdin (which is the piped `$ADVERSARIAL_PROMPT_WITH_DIFF`).
 - `2>/dev/null` — drop codex's session banner and transcript noise; the JSON lands on stdout.
 
@@ -83,7 +58,7 @@ Flag rationale:
 
 ## Expected output format
 
-JSON conforming to the schema inlined above:
+JSON conforming to the canonical schema:
 
 ```json
 {
@@ -141,57 +116,4 @@ If a schema-valid partial output exists despite the failure, use it and proceed 
 
 ## Adversarial prompt template
 
-Inlined here so this file is self-contained. This is the same template quoted in the bundled `razorback:codex-cli` skill (`skills/codex-cli/SKILL.md` "Adversarial Prompt Template") — if you change one, mirror the other.
-
-```
-You are Codex performing an adversarial software review.
-Your job is to break confidence in the change, not to validate it.
-
-Target: {{TARGET_LABEL}}
-User focus: {{USER_FOCUS}}
-
-OPERATING STANCE:
-Default to skepticism. Assume the change can fail in subtle, high-cost, or
-user-visible ways until evidence says otherwise. Do not give credit for good
-intent, partial fixes, or likely follow-up work. If something only works on
-the happy path, treat that as a real weakness.
-
-ATTACK SURFACE (prioritize expensive, dangerous, or hard-to-detect failures):
-- Auth, permissions, tenant isolation, and trust boundaries
-- Data loss, corruption, duplication, and irreversible state changes
-- Rollback safety, retries, partial failure, and idempotency gaps
-- Race conditions, ordering assumptions, stale state, and re-entrancy
-- Empty-state, null, timeout, and degraded dependency behavior
-- Version skew, schema drift, migration hazards, and compatibility regressions
-- Observability gaps that would hide failure or make recovery harder
-
-REVIEW METHOD:
-Actively try to disprove the change. Look for violated invariants, missing
-guards, unhandled failure paths, and assumptions that stop being true under
-stress. Trace how bad inputs, retries, concurrent actions, or partially
-completed operations move through the code. If the user supplied a focus area,
-weight it heavily, but still report any other material issue you can defend.
-
-FINDING BAR:
-Report only material findings. No style feedback, naming feedback, low-value
-cleanup, or speculative concerns without evidence. Each finding must answer:
-1. What can go wrong?
-2. Why is this code path vulnerable?
-3. What is the likely impact?
-4. What concrete change would reduce the risk?
-
-CALIBRATION:
-Prefer one strong finding over several weak ones. Do not dilute serious issues
-with filler. If the change looks safe, say so directly and return no findings.
-
-GROUNDING:
-Every finding must be defensible from the provided context. Do not invent
-files, lines, code paths, or runtime behavior you cannot support. If a
-conclusion depends on an inference, state that explicitly and keep the
-confidence honest.
-
-Return JSON matching the provided schema.
-
-REPOSITORY CONTEXT:
-{{REVIEW_INPUT}}
-```
+The canonical template is `$REVIEWER_PROMPTS_DIR/../../codex-cli/adversarial-prompt.txt` in the razorback plugin — read it at dispatch time and substitute the placeholders as described under "Build the adversarial prompt" above. It is the Codex variant of a deliberate pair; `skills/claude-cli/adversarial-prompt.txt` differs only in the model name and a REVIEW METHOD line naming Claude's `Read`/`Bash` tools.

@@ -122,66 +122,11 @@ full model IDs. Add `--effort "$CLAUDE_EFFORT"` only when it is non-empty.
 
 ## Review Targeting
 
-For diff-based modes (Code Review, Adversarial Review), pick scope and
-execution mode before invoking Claude.
-
-**Scope** — these are *skill arguments* the user passes to this skill, NOT `claude` CLI flags (never append them to the `claude -p` command). Default `--scope auto`:
-
-- `--scope auto`: working-tree if `git status --porcelain` is non-empty, else
-  branch-vs-base
-- `--scope working-tree`: staged + unstaged changes
-- `--scope branch`: current branch vs base ref
-- `--base <ref>`: explicit base for branch scope (default: `main`, fall back
-  to `master`)
-
-Resolve `$DIFF`, `$TARGET`, and `$RANGE` per scope:
-
-```bash
-DIR="${DIR:-$(git rev-parse --show-toplevel)}"
-
-case "$SCOPE" in
-  branch)
-    BASE="${USER_BASE:-$(git -C "$DIR" merge-base HEAD main 2>/dev/null || git -C "$DIR" merge-base HEAD master 2>/dev/null)}"
-    DIFF=$(git -C "$DIR" diff "$BASE..HEAD" --no-ext-diff)
-    TARGET=$(git -C "$DIR" log --oneline "$BASE..HEAD")
-    RANGE="$BASE..HEAD"
-    ;;
-  working-tree)
-    DIFF=$(git -C "$DIR" diff --cached --no-ext-diff && git -C "$DIR" diff --no-ext-diff)
-    TARGET=$(git -C "$DIR" diff --stat HEAD)
-    RANGE=""
-    ;;
-  auto|*)
-    if [ -n "$(git -C "$DIR" status --porcelain)" ]; then
-      DIFF=$(git -C "$DIR" diff --cached --no-ext-diff && git -C "$DIR" diff --no-ext-diff)
-      TARGET=$(git -C "$DIR" diff --stat HEAD)
-      RANGE=""
-    else
-      BASE="${USER_BASE:-$(git -C "$DIR" merge-base HEAD main 2>/dev/null || git -C "$DIR" merge-base HEAD master 2>/dev/null)}"
-      DIFF=$(git -C "$DIR" diff "$BASE..HEAD" --no-ext-diff)
-      TARGET=$(git -C "$DIR" log --oneline "$BASE..HEAD")
-      RANGE="$BASE..HEAD"
-    fi
-    ;;
-esac
-```
-
-**Execution mode** — peek at diff size first:
-
-```bash
-SHORTSTAT=$(git -C "$DIR" diff --shortstat $RANGE)
-```
-
-Decide:
-
-- **Tiny** (≤ 2 files, < ~200 lines): foreground. Return the result inline.
-- **Anything else, or unclear**: launch with
-  `Bash({command: ..., run_in_background: true})`. Tell the user "Claude review
-  running in the background; escalation-tier review on a large diff can take 2-5
-  minutes" and use `Monitor` on the returned shell ID to fetch output later.
-
-`--wait` forces foreground; `--background` forces background. Otherwise apply
-the heuristic and announce the chosen mode in one sentence.
+Scope selection (`--scope auto|working-tree|branch`, `--base <ref>`) and the
+foreground/background sizing heuristic are shared across razorback's reviewer
+skills: load `review-targeting.md` from razorback's using-razorback references
+when selecting scope. It resolves `$DIFF`, `$TARGET`, and `$RANGE`; read
+"the reviewer" there as `claude -p`.
 
 ## Task Routing
 
@@ -238,13 +183,15 @@ $DIFF"
 
 **Step 3: Send to Claude**
 
-`--json-schema` takes a JSON string; inline the schema directly (the canonical
-copy is `../codex-cli/schemas/review-output.schema.json` — all razorback
-reviewers share it). Strip the `$schema` key for claude: 2.1.209's validator
-rejects it (`no schema with key or ref …`) before the run starts:
+`--json-schema` takes a JSON string. Read it from the canonical schema file
+(`$SKILL_DIR/../codex-cli/schemas/review-output.schema.json` — all razorback
+reviewers share it), stripping the `$schema` key: claude 2.1.209's validator
+rejects it (`no schema with key or ref …`) before the run starts. The canonical
+file keeps `$schema` for other reviewers, so strip it here rather than editing
+the file:
 
 ```bash
-SCHEMA_JSON='{"type":"object","additionalProperties":false,"required":["verdict","summary","findings","next_steps"],"properties":{"verdict":{"type":"string","enum":["approve","needs-attention"]},"summary":{"type":"string","minLength":1},"findings":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["severity","title","body","file","line_start","line_end","confidence","recommendation"],"properties":{"severity":{"type":"string","enum":["critical","high","medium","low"]},"title":{"type":"string","minLength":1},"body":{"type":"string","minLength":1},"file":{"type":"string","minLength":1},"line_start":{"type":"integer","minimum":1},"line_end":{"type":"integer","minimum":1},"confidence":{"type":"number","minimum":0,"maximum":1},"recommendation":{"type":"string"}}}},"next_steps":{"type":"array","items":{"type":"string","minLength":1}}}}'
+SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")
 
 cd /path/to/project && claude -p \
   --no-session-persistence \
@@ -288,76 +235,20 @@ confidence in the change.
 
 **Step 1: Apply Review Targeting** (same as Code Review)
 
-**Step 2: Build the user prompt** with the diff and any focus text.
-Substitute `{{TARGET_LABEL}}`, `{{USER_FOCUS}}`, and `{{REVIEW_INPUT}}` into
-a copy of `adversarial-prompt.txt` if you want to inline them, or pass them
-through the user-prompt string and let the system-prompt-file supply the
-operating stance.
+**Step 2: Build the user prompt** with the diff and any focus text. Pass
+`{{TARGET_LABEL}}`, `{{USER_FOCUS}}`, and `{{REVIEW_INPUT}}` through the
+user-prompt string and let the system-prompt-file supply the operating stance.
+To substitute them into the prompt itself instead, `sed` a temp copy of
+`adversarial-prompt.txt` and point `--system-prompt-file` at that copy.
 
 **Step 3: Send with structured output and the adversarial system prompt**
 
-Inline the schema as a string; materialize the adversarial prompt to a temp
-file from the canonical content inlined in this skill's "Adversarial Prompt
-Template" section below:
+Read the schema from the canonical file (stripping `$schema`, as in Code
+Review) and point `--system-prompt-file` straight at this skill's canonical
+`adversarial-prompt.txt` — no temp file needed:
 
 ```bash
-SCHEMA_JSON='{"type":"object","additionalProperties":false,"required":["verdict","summary","findings","next_steps"],"properties":{"verdict":{"type":"string","enum":["approve","needs-attention"]},"summary":{"type":"string","minLength":1},"findings":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["severity","title","body","file","line_start","line_end","confidence","recommendation"],"properties":{"severity":{"type":"string","enum":["critical","high","medium","low"]},"title":{"type":"string","minLength":1},"body":{"type":"string","minLength":1},"file":{"type":"string","minLength":1},"line_start":{"type":"integer","minimum":1},"line_end":{"type":"integer","minimum":1},"confidence":{"type":"number","minimum":0,"maximum":1},"recommendation":{"type":"string"}}}},"next_steps":{"type":"array","items":{"type":"string","minLength":1}}}}'
-
-PROMPT_FILE=$(mktemp) && trap 'rm -f "$PROMPT_FILE"' EXIT
-cat > "$PROMPT_FILE" <<'PROMPT_EOF'
-You are Claude performing an adversarial software review.
-Your job is to break confidence in the change, not to validate it.
-
-Target: {{TARGET_LABEL}}
-User focus: {{USER_FOCUS}}
-
-OPERATING STANCE:
-Default to skepticism. Assume the change can fail in subtle, high-cost, or
-user-visible ways until evidence says otherwise. Do not give credit for good
-intent, partial fixes, or likely follow-up work. If something only works on
-the happy path, treat that as a real weakness.
-
-ATTACK SURFACE (prioritize expensive, dangerous, or hard-to-detect failures):
-- Auth, permissions, tenant isolation, and trust boundaries
-- Data loss, corruption, duplication, and irreversible state changes
-- Rollback safety, retries, partial failure, and idempotency gaps
-- Race conditions, ordering assumptions, stale state, and re-entrancy
-- Empty-state, null, timeout, and degraded dependency behavior
-- Version skew, schema drift, migration hazards, and compatibility regressions
-- Observability gaps that would hide failure or make recovery harder
-
-REVIEW METHOD:
-Actively try to disprove the change. Look for violated invariants, missing
-guards, unhandled failure paths, and assumptions that stop being true under
-stress. Trace how bad inputs, retries, concurrent actions, or partially
-completed operations move through the code. If the user supplied a focus area,
-weight it heavily, but still report any other material issue you can defend.
-Use Read to inspect files and Bash for read-only investigation (grep, git log,
-diff). Do not modify files.
-
-FINDING BAR:
-Report only material findings. No style feedback, naming feedback, low-value
-cleanup, or speculative concerns without evidence. Each finding must answer:
-1. What can go wrong?
-2. Why is this code path vulnerable?
-3. What is the likely impact?
-4. What concrete change would reduce the risk?
-
-CALIBRATION:
-Prefer one strong finding over several weak ones. Do not dilute serious issues
-with filler. If the change looks safe, say so directly and return no findings.
-
-GROUNDING:
-Every finding must be defensible from the provided context. Do not invent
-files, lines, code paths, or runtime behavior you cannot support. If a
-conclusion depends on an inference, state that explicitly and keep the
-confidence honest.
-
-Return JSON matching the provided schema.
-
-REPOSITORY CONTEXT:
-{{REVIEW_INPUT}}
-PROMPT_EOF
+SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")
 
 cd /path/to/project && claude -p \
   --no-session-persistence \
@@ -370,15 +261,10 @@ cd /path/to/project && claude -p \
   ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} \
   ${CLAUDE_EFFORT:+--effort "$CLAUDE_EFFORT"} \
   ${CLAUDE_FALLBACK_MODEL:+--fallback-model "$CLAUDE_FALLBACK_MODEL"} \
-  --system-prompt-file "$PROMPT_FILE" \
+  --system-prompt-file "$SKILL_DIR/adversarial-prompt.txt" \
   "$DIFF_AND_CONTEXT" \
   < /dev/null 2>/dev/null
 ```
-
-The baseline flags are: `-p`, `--no-session-persistence`,
-`--dangerously-skip-permissions`, `--output-format json`, `--json-schema`,
-`--tools "Read,Grep,Glob"`, `--strict-mcp-config`, `--max-turns 15`, `--max-budget-usd 5.00`,
-`${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"}`, `--system-prompt-file`. Add `--effort "$CLAUDE_EFFORT"` when the environment sets it, and `--fallback-model "$CLAUDE_FALLBACK_MODEL"` for autonomous runs that should survive an overload.
 
 The `--json-schema` flag tells Claude to return JSON matching the review
 schema (verdict, summary, findings with severity/file/line/confidence, next
@@ -393,12 +279,12 @@ the confidence warranted? Then give your overall take on the verdict.
 ## Adversarial Prompt Template
 
 The canonical adversarial system prompt lives in this skill at
-`./adversarial-prompt.txt` (version-controlled). The invocation above
-materializes the same content via `mktemp + heredoc`; read it from the file
-instead when you know the skill path. The only Claude-specific adaptation is
-the REVIEW METHOD line referencing `Read` and `Bash` (Claude's native tool
-names); attack-surface categories, finding bar, calibration, and grounding
-rules are identical to codex-cli's template.
+`./adversarial-prompt.txt` (version-controlled) and is passed directly via
+`--system-prompt-file` in the invocation above. It is the Claude variant of a
+deliberate pair: the only Claude-specific adaptation is the REVIEW METHOD line
+referencing `Read` and `Bash` (Claude's native tool names). Attack-surface
+categories, finding bar, calibration, and grounding rules are identical to
+`../codex-cli/adversarial-prompt.txt`; keep the two in sync when editing either.
 
 ## Resuming a Session
 
@@ -486,12 +372,10 @@ think it's wrong, and your evidence.
   timeout.
 - **Empty output**: if stdout is empty, check stderr (remove `2>/dev/null`
   temporarily) for error messages.
-- **Windows hang (no output for many minutes)**: `claude -p` blocks waiting
-  for stdin EOF when stdin is an open pipe, even with a prompt argument. On
-  Windows (Git Bash via a harness Bash tool, cmd, PowerShell) stdin can stay
-  open with no producer, so the run never starts. Always add `< /dev/null`
-  (bash) or `< NUL` (cmd/PowerShell) to non-piped invocations. If you've
-  already triggered the hang, kill the process — it will not recover.
+- **Windows hang (no output for many minutes)**: the stdin-EOF block described
+  under Defaults ("Always redirect stdin"). The run never starts, so there is
+  no partial output to salvage — kill the process, it will not recover, then
+  re-run with the redirect in place.
 - **Flag missing from `--help`**: `--max-turns`, `--system-prompt-file`, and
   `--append-system-prompt-file` are hidden from help output but still
   supported. Verify with a missing-argument probe (`claude -p --max-turns`
@@ -511,13 +395,11 @@ model.
 Claude and Codex CLIs do not share a command set — probe with `--help` before
 assuming a command that exists in one exists in the other.
 
-All non-piped patterns must include `< /dev/null` (bash) or `< NUL` (Windows cmd/PowerShell) to prevent `claude -p` from blocking on stdin EOF — see the Defaults section.
-
 | Use case | Mode | Command pattern |
 |---|---|---|
 | Second opinion | read-only | `cd dir && claude -p --no-session-persistence --dangerously-skip-permissions --tools "Read,Grep,Glob" --strict-mcp-config ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} "prompt" < /dev/null 2>/dev/null` |
-| Code review | read-only + schema | Add `--output-format json --json-schema "$SCHEMA_JSON" --max-turns 15 --max-budget-usd 5.00` (inline schema as a string; see Code Review section). Scope/sizing per Review Targeting. |
-| Adversarial review | read-only + schema + system prompt | Add `--system-prompt-file "$PROMPT_FILE"` (temp file materialized from the Adversarial Prompt Template) to the code-review pattern. Scope/sizing per Review Targeting. |
+| Code review | read-only + schema | Add `--output-format json --json-schema "$SCHEMA_JSON" --max-turns 15 --max-budget-usd 5.00`, where `SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")`. Scope/sizing per Review Targeting. |
+| Adversarial review | read-only + schema + system prompt | Add `--system-prompt-file "$SKILL_DIR/adversarial-prompt.txt"` to the code-review pattern. Scope/sizing per Review Targeting. |
 | Resume session | persistent | Drop `--no-session-persistence`, use `claude -r "prompt" < /dev/null 2>/dev/null` |
 | Apply explicit effort | any | Add `--effort "$CLAUDE_EFFORT"` (low/medium/high/xhigh/max) when the environment sets it |
 | Survive overload | autonomous | Add `--fallback-model "$CLAUDE_FALLBACK_MODEL"` so the run doesn't hard-fail on capacity |

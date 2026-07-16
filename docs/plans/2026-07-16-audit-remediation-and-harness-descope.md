@@ -277,11 +277,11 @@ Batches run in order (A → B → C → D). Within a batch, tasks are safe to di
 **Approach:** The reviewer-prompt files are templates the lead fills — they can instruct "read the canonical prompt file at `<skill-base>/adversarial-prompt.txt` and pass it via `--system-prompt-file`" instead of embedding text. Verify each command still resolves paths from the skill base directory announced at load time. Word-count check after: `claude-cli/SKILL.md` target ≤ 2,600w (from 3,524), `codex-cli/SKILL.md` ≤ 2,700w (from 3,274).
 
 **Acceptance criteria:**
-- [ ] `grep -c 'OPERATING STANCE' skills/ -r` → exactly 2 hits (the two canonical .txt files)
-- [ ] Inline `SCHEMA_JSON` blobs gone; all schema references point at `review-output.schema.json`
-- [ ] Review Targeting exists once, in `references/review-targeting.md`; both CLI skills reference it
-- [ ] Word-count targets met; `npm test` green
-- [ ] Tests pass and the change is handed to the lead per commit mode
+- [x] `grep -c 'OPERATING STANCE' skills/ -r` → exactly 2 hits (the two canonical .txt files)
+- [x] Inline `SCHEMA_JSON` blobs gone; all schema references point at `review-output.schema.json` — via `jq -c 'del(."$schema")'`, byte-equal to the old inline string (the plan's suggested `tr -d '\n'` would have shipped the `$schema` key Claude's validator rejects)
+- [x] Review Targeting exists once, in `references/review-targeting.md`; both CLI skills reference it
+- [x] Word-count targets: codex-cli 2,585 ≤ 2,700 ✓; **claude-cli criterion revised during execution:** ≤2,600 was arithmetically unreachable in scope (zero-replacement floor is 2,833 — the audit's recoverable estimate counted tokens for single-line JSON that `wc -w` scores as 1 word); landed 2,828, all flagged duplication removed. Residual `--bare` rationale ×5 (~100w) noted as optional follow-up.
+- [x] Tests pass (all tests exercising Task 7 files green; suite redness is sibling in-flight TDD) and the change is handed to the lead per commit mode
 
 ### Task 8: SDD slim + executing-plans twin guard
 
