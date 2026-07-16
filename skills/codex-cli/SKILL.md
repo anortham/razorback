@@ -139,10 +139,13 @@ throughout this skill is the skill's own base directory, announced when the
 skill loads — substitute it before running any command:
 
 ```bash
+# Split on the placeholders rather than ${//} substitution: bash >=5.2 expands
+# & and backslashes in a substitution's replacement text, which mangles diffs.
 TEMPLATE=$(cat "$SKILL_DIR/adversarial-prompt.txt")
-ADVERSARIAL_PROMPT=${TEMPLATE//\{\{TARGET_LABEL\}\}/$TARGET}
-ADVERSARIAL_PROMPT=${ADVERSARIAL_PROMPT//\{\{USER_FOCUS\}\}/${FOCUS:-none specified}}
-ADVERSARIAL_PROMPT=${ADVERSARIAL_PROMPT//\{\{REVIEW_INPUT\}\}/$DIFF}
+HEAD=${TEMPLATE%%'{{TARGET_LABEL}}'*};  REST=${TEMPLATE#*'{{TARGET_LABEL}}'}
+MID=${REST%%'{{USER_FOCUS}}'*};         REST=${REST#*'{{USER_FOCUS}}'}
+TAIL=${REST%%'{{REVIEW_INPUT}}'*}
+ADVERSARIAL_PROMPT="${HEAD}${TARGET}${MID}${FOCUS:-none specified}${TAIL}${DIFF}"
 
 RESULT_FILE=$(mktemp) && trap 'rm -f "$RESULT_FILE"' EXIT
 echo "$ADVERSARIAL_PROMPT" | codex exec --ephemeral --color never \
