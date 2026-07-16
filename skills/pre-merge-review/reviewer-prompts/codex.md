@@ -2,11 +2,7 @@
 
 Invocation instructions for running `codex` as the pre-merge adversarial reviewer. Background on codex's adversarial-review mode lives in the bundled `razorback:codex-cli` skill.
 
-Paths below are relative to this file (`skills/pre-merge-review/reviewer-prompts/`) inside the razorback plugin — the same convention the blocker-taxonomy reference below uses. Set `RAZORBACK_DIR` to the plugin root if you need absolute paths:
-
-```bash
-REVIEWER_PROMPTS_DIR="$RAZORBACK_DIR/skills/pre-merge-review/reviewer-prompts"
-```
+Bare relative paths below (like the blocker-taxonomy reference) are relative to this file's directory, `skills/pre-merge-review/reviewer-prompts/` inside the razorback plugin. `$SKILL_DIR` is the pre-merge-review skill's own base directory, announced when the skill loads — substitute it before running any command.
 
 ## Preconditions
 
@@ -16,7 +12,7 @@ REVIEWER_PROMPTS_DIR="$RAZORBACK_DIR/skills/pre-merge-review/reviewer-prompts"
 
 ## Build the adversarial prompt
 
-Read the canonical adversarial prompt template at `$REVIEWER_PROMPTS_DIR/../../codex-cli/adversarial-prompt.txt` in the razorback plugin. Substitute:
+Read the canonical adversarial prompt template at `$SKILL_DIR/../codex-cli/adversarial-prompt.txt` in the razorback plugin. Substitute:
 
 - `{{TARGET_LABEL}}` ← `$FILE_STAT` plus a short description, e.g. `"branch <name>: N files changed, base..HEAD"`.
 - `{{USER_FOCUS}}` ← `$USER_FOCUS` if set during execution handoff, otherwise `"none specified"`.
@@ -29,7 +25,7 @@ The template instructs codex to default to skepticism, prioritize high-impact at
 Codex's `--output-schema` flag takes a file path, so point it straight at the canonical schema file — no temp copy needed:
 
 ```bash
-SCHEMA_FILE="$REVIEWER_PROMPTS_DIR/../../codex-cli/schemas/review-output.schema.json"
+SCHEMA_FILE="$SKILL_DIR/../codex-cli/schemas/review-output.schema.json"
 
 CODEX_MODEL="${RAZORBACK_CODEX_REVIEW_MODEL:-}"  # empty = inherit global default
 
@@ -116,4 +112,4 @@ If a schema-valid partial output exists despite the failure, use it and proceed 
 
 ## Adversarial prompt template
 
-The canonical template is `$REVIEWER_PROMPTS_DIR/../../codex-cli/adversarial-prompt.txt` in the razorback plugin — read it at dispatch time and substitute the placeholders as described under "Build the adversarial prompt" above. It is the Codex variant of a deliberate pair; `skills/claude-cli/adversarial-prompt.txt` differs only in the model name and a REVIEW METHOD line naming Claude's `Read`/`Bash` tools.
+The canonical template is `$SKILL_DIR/../codex-cli/adversarial-prompt.txt` in the razorback plugin — read it at dispatch time and substitute the placeholders as described under "Build the adversarial prompt" above. It is the Codex variant of a deliberate pair; `skills/claude-cli/adversarial-prompt.txt` differs only in the model name and a REVIEW METHOD line naming Claude's `Read`/`Bash` tools.

@@ -2,11 +2,7 @@
 
 Invocation instructions for running `claude -p` as the pre-merge adversarial reviewer. Background on claude-cli's adversarial-review mode lives in the bundled `razorback:claude-cli` skill.
 
-Paths below are relative to this file (`skills/pre-merge-review/reviewer-prompts/`) inside the razorback plugin — the same convention the blocker-taxonomy reference below uses. Set `RAZORBACK_DIR` to the plugin root if you need absolute paths:
-
-```bash
-REVIEWER_PROMPTS_DIR="$RAZORBACK_DIR/skills/pre-merge-review/reviewer-prompts"
-```
+Bare relative paths below (like the blocker-taxonomy reference) are relative to this file's directory, `skills/pre-merge-review/reviewer-prompts/` inside the razorback plugin. `$SKILL_DIR` is the pre-merge-review skill's own base directory, announced when the skill loads — substitute it before running any command.
 
 ## Preconditions
 
@@ -40,8 +36,8 @@ Claude's `--json-schema` takes a string and `--system-prompt-file` takes a file 
 The claude-side schema string must NOT contain a `$schema` key — claude 2.1.209's validator rejects it (`no schema with key or ref "https://json-schema.org/draft/2020-12/schema"`) before the run starts. The canonical schema file keeps `$schema` for other reviewers, so strip it at read time rather than editing the file.
 
 ```bash
-SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$REVIEWER_PROMPTS_DIR/../../codex-cli/schemas/review-output.schema.json")
-PROMPT_FILE="$REVIEWER_PROMPTS_DIR/../../claude-cli/adversarial-prompt.txt"
+SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")
+PROMPT_FILE="$SKILL_DIR/../claude-cli/adversarial-prompt.txt"
 
 CLAUDE_MODEL="${RAZORBACK_CLAUDE_REVIEW_MODEL:-}"
 
