@@ -53,8 +53,10 @@ test('subagent-start injects the Miller-first ruleset', () => {
   assert.match(additionalContext, /Do not infer or invent API shapes\./);
   assert.match(additionalContext, /When Miller cannot prove a shape/);
   // Capability table entries.
-  assert.match(additionalContext, /inspect\(symbol, depth=full\)/);
+  assert.match(additionalContext, /inspect\(target='<symbol>', depth=summary\\\|overview\\\|full\)/);
   assert.match(additionalContext, /impact\(target\)/);
+  assert.match(additionalContext, /patterns\(\.\.\.\)/);
+  assert.match(additionalContext, /content\(\.\.\.\)/);
   // Subagent-specific worktree-state reporting requirement.
   assert.match(additionalContext, /worktree/i);
   assert.match(additionalContext, /path, branch, commit, (and )?dirty state/i);

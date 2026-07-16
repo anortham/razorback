@@ -90,6 +90,15 @@ async function gitInit(directory: string) {
 **Critical:** Use `console.error()` in tests (not logger - may not show)
 
 **Run and capture:**
+
+Test and CI runs are large. Capture the run to a file, then read it through Miller's content corpus — import once, search for the marker, and read a bounded window around each hit instead of pulling the whole run into context:
+
+```bash
+npm test > /tmp/debug-run.log 2>&1
+```
+Then: `content(operation='import', path='/tmp/debug-run.log')`, `content(operation='search', query='DEBUG git init')`, `content(operation='read', source_id='<id from the hit>', line=<n>)`.
+
+Without Miller, pipe through grep:
 ```bash
 npm test 2>&1 | grep 'DEBUG git init'
 ```

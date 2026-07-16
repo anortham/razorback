@@ -1,6 +1,6 @@
 ---
 name: executing-plans
-description: Use when you have a written implementation plan to execute in a separate session with review checkpoints, or as single-agent fallback when subagent-driven-development is not appropriate
+description: Use when executing a written implementation plan single-agent — separate-session, single-task, or no-delegation runs.
 ---
 
 # Executing Plans
@@ -11,7 +11,7 @@ Load plan, review critically, execute all tasks, report when complete.
 
 **When to use this vs. subagent-driven-development:** Use this skill for single-task plans, tightly sequential work, separate-session execution, or any run where delegation is unavailable. For plans with 2+ independent tasks in the same session, prefer `razorback:subagent-driven-development` for parallel execution with inline review.
 
-**Inputs from `writing-plans`:** plan path, `reviewer_choice` (`none` / `codex` / `gemini` / `claude`, default `none`), and verification strategy. These propagate via the execution handoff and gate Step 3 below.
+**Inputs from `writing-plans`:** plan path, `reviewer_choice` (`none` / `codex` / `claude`, default `none`), and verification strategy. These propagate via the execution handoff and gate Step 3 below.
 
 **Architecture Quality:** The plan's `architecture-quality` output is authoritative. Preserve the approved architecture, do not redesign locally, and report a plan mismatch if code reality contradicts it.
 
@@ -32,7 +32,7 @@ For each task:
 1. Mark as in_progress
 2. **Orient before coding:** Use Miller to understand the area before making changes
    - **Orient** — token-budgeted codebase orientation with `context`
-   - **Inspect** the symbol to modify — callers, callees, types — before touching it with `inspect depth=full`
+   - **Inspect** the symbol to modify — callers, callees, types — before touching it with `inspect(target, depth=full)` (symbols you are editing earn `full`)
    - **Find references** — check all references before changing any symbol with `trace`
    - **List a file's symbols** before reading full content with `inspect`
    - **Prove API shapes** — use Miller evidence for symbol names, function signatures, config shapes, route names, CLI flags, and public contracts before relying on them
@@ -44,7 +44,7 @@ For each task:
 
 ### Step 3: Pre-merge external review (if chosen)
 
-If the `reviewer_choice` propagated from `writing-plans` is one of `codex`, `gemini`, or `claude`:
+If the `reviewer_choice` propagated from `writing-plans` is one of `codex` or `claude`:
 
 **First**, ensure the verification ledger has a passing `branch-gate` entry for the current HEAD. If it does not, run the branch-gate scope now and record the result. `pre-merge-review` requires this as a precondition.
 
@@ -123,5 +123,5 @@ On a resumed run, orient before continuing:
 **Required workflow skills:**
 - **razorback:using-git-worktrees** - Set up isolated workspace before starting. Skip only with explicit user consent (small, single-session work where a feature branch is sufficient).
 - **razorback:writing-plans** - Creates the plan this skill executes; propagates `reviewer_choice` and verification strategy as inputs.
-- **razorback:pre-merge-review** - Invoked at Step 3 when `reviewer_choice` is `codex` / `gemini` / `claude`. Skipped if the choice is `none`.
+- **razorback:pre-merge-review** - Invoked at Step 3 when `reviewer_choice` is `codex` / `claude`. Skipped if the choice is `none`.
 - **razorback:finishing-a-development-branch** - Complete development after all tasks (and pre-merge review, if any)

@@ -1,20 +1,18 @@
 ---
 name: subagent-driven-development
-description: Use when executing an approved implementation plan in the current session and the harness can launch subagents. Falls back to razorback:executing-plans for single-task, separate-session, or no-delegation runs.
+description: Use when executing an approved implementation plan in the current session and the harness can launch subagents.
 ---
 
 # Subagent-Driven Development
 
-Execute a plan by dispatching fresh subagents per task, with the lead doing inline review (spec compliance + code quality) after each task. Independent tasks can be dispatched in parallel; tightly coupled tasks run sequentially. Commit mode decides whether the worker commits directly or hands the approved diff back to the lead. For fixes, dispatch a fresh implementer with the fix prompt and prior-task context.
+Execute a plan by dispatching fresh subagents per task, with the lead doing inline review (spec compliance + code quality) after each task. Independent tasks can be dispatched in parallel; tightly coupled tasks run sequentially. Commit mode decides whether the worker commits directly or hands the approved diff back to the lead.
 
 **Core principle:** Fresh subagent per task + inline review by lead + parallel fan-out when tasks are independent = high quality without wasted ceremony.
 
 **Dispatch mechanism:**
 - **Claude Code:** `Agent` tool (one call per subagent; multiple calls in one turn run in parallel).
-- **Copilot CLI:** `task(agent_type="general-purpose", …)` (one call per subagent; multiple calls in one turn run in parallel). Poll with `read_agent` / `list_agents` (see `../using-razorback/references/copilot-tools.md`).
 - **opencode:** `Task` tool (one call per subagent; multiple calls in one turn run in parallel). The built-in `general` subagent is suitable for most implementer work; `@mention` also works for manual invocation.
 - **Codex:** `spawn_agent(task_name="task-N-<slug>", message=<filled prompt>)` (one call per subagent; multiple calls in one turn run in parallel). Keep the returned agent ID, `followup_task(target=<agent-id>, message=...)` feeds follow-ups (the closest thing to Claude Code's resume), and `wait_agent(timeout_ms=...)` blocks until agent completion. Surface verified on codex 0.144.3 — trust the live tool list over these names (see `../using-razorback/references/codex-tools.md`).
-- **Gemini CLI:** `invoke_agent(agent_name="generalist", prompt=<filled prompt>)` (parallel by default; set `wait_for_previous: true` only when you need a call serialized behind earlier ones). Resume is not available — route fix rounds via a fresh `invoke_agent` call with the fix prompt and prior-task context. Subagents cannot recursively dispatch other subagents, so all worker dispatch happens from the lead session.
 - **Explicit Cursor/Composer delegation from another harness:** use `razorback:cursor-agent`, which owns the Cursor CLI invocation. The current lead still owns planning, review, fix routing, and final verification; Cursor Agent is only the implementation worker.
 
 Use the harness default model unless the user, environment, or lead explicitly
@@ -42,57 +40,7 @@ digraph when_to_use {
 }
 ```
 
-**vs. Executing Plans (parallel session):**
-- Same session (no context switch)
-- Fresh subagent per task (no context pollution)
-- Lead does inline review after each task (one pass, no reviewer subagents)
-- Faster iteration (no human-in-loop between tasks)
-
-**Harness-specific follow-up behavior:**
-- Claude Code can resume an existing implementer for fix rounds (`SendMessage` to the stored agent ID/name)
-- Codex can use `followup_task` on the stored worker for fix rounds
-- OpenCode, Copilot CLI, and Gemini CLI use fresh dispatches with fix context because resume is not available
-- The execution model stays the same across harnesses: dispatch per task, inline review by lead, parallel fan-out only when files do not overlap
-
-## The Process
-
-```dot
-digraph process {
-    rankdir=TB;
-
-    subgraph cluster_per_task {
-        label="Per Task";
-        "Dispatch implementer subagent (./implementer-prompt.md)" [shape=box];
-        "Implementer asks questions?" [shape=diamond];
-        "Answer questions, provide context" [shape=box];
-        "Implementer implements, tests, honors commit mode, reports" [shape=box];
-        "Lead: inline review (spec + quality)" [shape=box];
-        "Issues found?" [shape=diamond];
-        "Resume implementer with findings (./fix-prompt.md)" [shape=box];
-        "Mark task complete (TaskUpdate)" [shape=box];
-    }
-
-    "Read plan, extract tasks, create tasks via TaskCreate" [shape=box];
-    "More tasks remain?" [shape=diamond];
-    "Lead: final verification" [shape=box];
-    "Use razorback:finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
-
-    "Read plan, extract tasks, create tasks via TaskCreate" -> "Dispatch implementer subagent (./implementer-prompt.md)";
-    "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer asks questions?";
-    "Implementer asks questions?" -> "Answer questions, provide context" [label="yes"];
-    "Answer questions, provide context" -> "Dispatch implementer subagent (./implementer-prompt.md)";
-    "Implementer asks questions?" -> "Implementer implements, tests, honors commit mode, reports" [label="no"];
-    "Implementer implements, tests, honors commit mode, reports" -> "Lead: inline review (spec + quality)";
-    "Lead: inline review (spec + quality)" -> "Issues found?";
-    "Issues found?" -> "Resume implementer with findings (./fix-prompt.md)" [label="yes"];
-    "Resume implementer with findings (./fix-prompt.md)" -> "Lead: inline review (spec + quality)" [label="re-review"];
-    "Issues found?" -> "Mark task complete (TaskUpdate)" [label="no, approved"];
-    "Mark task complete (TaskUpdate)" -> "More tasks remain?";
-    "More tasks remain?" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
-    "More tasks remain?" -> "Lead: final verification" [label="no"];
-    "Lead: final verification" -> "Use razorback:finishing-a-development-branch";
-}
-```
+Fix-round follow-up mechanics are per-harness — see Step 4.
 
 ## Step 1: Extract Tasks from the Plan
 
@@ -106,7 +54,7 @@ cat "$(git rev-parse --show-toplevel)/.razorback/sdd/progress.md" 2>/dev/null ||
 
 Tasks listed there as complete **with a named commit** are DONE. Do not re-dispatch them; verify the named commit with `git log` if needed, then resume at the first incomplete task.
 
-Treat any completion line whose commit SHA is missing, `pending`, or absent from `git log` as **INCOMPLETE** — this is the `parallel-lead-commit` crash window. Run `git status`, inspect the working tree for that task's owned files, and either re-review and commit the approved edits (scoped to owned files) or re-dispatch the task. Never skip a task whose completion record has no verifiable commit.
+Treat any completion line whose commit SHA is missing, `pending`, or absent from `git log` as **INCOMPLETE** — this is the `parallel-lead-commit` crash window. Run `git status`, inspect the working tree for that task's owned files, and either re-review and commit the approved edits (staging per the Commit Mode Contract) or re-dispatch the task. Never skip a task whose completion record has no verifiable commit.
 
 Before dispatching, orient yourself on the codebase with Miller:
 - **Orient** around the areas the plan touches with `context`
@@ -185,17 +133,11 @@ Every dispatch chooses one commit mode and copies it into the worker prompt:
   `git add` or `git commit`. The lead stages and commits after inline review to
   avoid Git index races between concurrent workers.
 
-**Lead staging (`parallel-lead-commit`):** tick the task's acceptance-criteria
-checkboxes before staging, then stage the reviewed task's owned files plus the
-plan file — `git add <owned paths> <plan file>` then commit. Never `git add -A`,
-`git add .`, or `git commit -a`: sibling workers in the same batch may have
-unreviewed, in-flight edits in the shared working tree, and a broad stage would
-sweep them into the wrong commit and bypass inline review. **Commit before you
-record:** the lead creates the commit first, then writes the durable-progress
-line with the real commit SHA (see Durable Progress). Never mark a
-`parallel-lead-commit` task complete while its commit is still pending — that
-record has no verifiable commit and a crash in that window strands the approved
-work.
+**Lead staging (`parallel-lead-commit`):** this is the one statement of the staging rule — every other mention in this skill points here.
+
+Tick the task's acceptance-criteria checkboxes before staging, then stage the reviewed task's owned files plus the plan file — `git add <owned paths> <plan file>` then commit. Never `git add -A`, `git add .`, or `git commit -a`: sibling workers in the same batch may have unreviewed, in-flight edits in the shared working tree, and a broad stage would sweep them into the wrong commit and bypass inline review.
+
+**Commit before you record:** create the commit first, then write the durable-progress line with the real commit SHA (see Durable Progress). Never mark a `parallel-lead-commit` task complete while its commit is still pending — that record has no verifiable commit and a crash in that window strands the approved work.
 
 Fix rounds keep the same commit mode unless the lead explicitly changes it.
 
@@ -220,32 +162,23 @@ Conversation memory does not survive every long run. Track task completion in `.
   - `parallel-lead-commit`: after the **lead** stages the owned files and commits, `Task N: complete (parallel-lead-commit, Lead inline review clean, lead commit <sha7>)`. Do not write this line while the commit is still pending; the lead commits first, then records the SHA.
 - The ledger is git-ignored working-tree scratch. `git clean -fdx` deletes it; if that happens, recover from `git log` and checked plan boxes.
 
-Per-harness state to keep after dispatch:
-
-- **Claude Code:** save the **agent ID (or name)** returned by the dispatch so you can resume the subagent for fixes (preserves its orientation context). Resume = send a follow-up message to that agent with the `SendMessage` tool; older builds exposed this as a `resume` parameter on the Agent tool.
-- **opencode:** the Task tool does not expose persistent resume, so fixes go to a fresh subagent with fix context included (see Step 4).
-- **Codex:** save the **agent ID** returned by `spawn_agent` so you can `followup_task` for follow-ups and `wait_agent` for completion. `followup_task` is Codex's closest analogue to Claude Code's resume, and the worker keeps its orientation context between messages.
-
-If the subagent asks questions, answer completely before letting it proceed.
+**Save the agent ID (or name) returned by every dispatch.** Step 4 needs it to
+route fixes back to the worker that holds the orientation context. On opencode
+there is nothing to save — the Task tool exposes no persistent resume.
 
 ### Parallel Dispatch (Independent Tasks)
 
-When the plan marks a safe batch with 2+ eligible tasks and the harness supports
-subagents, dispatch the whole batch together. Serializing a safe batch requires
-a recorded dependency or tool limitation.
+Dispatch a safe batch (Step 1's Parallel Execution Contract) as one dispatch call per task in a single turn, using that harness's **Dispatch mechanism** (top of this skill).
 
-Per harness, that means:
+Parallel-specific semantics:
 
-- **Claude Code:** make multiple `Agent` tool calls in a single turn. They run concurrently and you review each as it reports back.
-- **Copilot CLI:** make multiple `task` calls in a single turn; poll with `read_agent` / `list_agents` and review each as it completes.
-- **opencode:** make multiple `Task` tool calls in a single turn (or in the TUI, @mention the `general` subagent concurrently). Child sessions run in parallel; navigate with `session_child_*` keybinds.
-- **Codex:** make multiple `spawn_agent` calls in a single turn. Each returns its own agent ID. Use `wait_agent(timeout_ms=...)` to block until completion, then `list_agents` to see per-agent state when you need a given implementer's output before proceeding with its review.
-- **Gemini CLI:** make multiple `invoke_agent(agent_name="generalist", …)` calls — parallel by default; use `wait_for_previous: true` only for a call that must serialize behind earlier ones.
+- **opencode:** child sessions run in parallel; navigate with `session_child_*` keybinds.
+- **Codex:** `wait_agent(timeout_ms=...)` blocks until completion; `list_agents` shows per-agent state when you need a given implementer's output before proceeding with its review.
 
-Assign file ownership per subagent to prevent collisions. If tasks are tightly
-coupled (same files, shared state, ordering dependency), dispatch sequentially
-instead — one subagent at a time, lead reviews, then next — and record the
-dependency or tool limitation in the plan's `Dependency reason`.
+Assign file ownership per subagent to prevent collisions. Tightly coupled tasks
+(same files, shared state, ordering dependency) dispatch sequentially instead —
+one subagent at a time, lead reviews, then next — with the dependency or tool
+limitation recorded in the plan's `Dependency reason`.
 
 Reviews still happen inline per-task. Do not batch reviews — a failing task shouldn't block review of the ones that passed.
 
@@ -278,18 +211,14 @@ When the implementer reports completion, the lead does a single inline review co
 - Is the code clean, tested, and maintainable?
 - Do tests assert on meaningful values (not just "code ran without crashing")?
 - Code smells: duplication, tight coupling, unclear names, missing error paths?
-- **Inspect** key new/modified symbols to check callers, callees, and types with Miller `inspect depth=full`.
+- **Inspect** key new/modified symbols to check callers, callees, and types with Miller `inspect(target, depth=overview)` — escalate to `depth=full` for the symbols the task centers on.
 - **Find references** to verify API changes don't break dependents with Miller `trace`.
 
-**Review cap: 3 iterations.**
+**Review cap: 3 iterations.** This is the one statement of the cap — every other
+mention in this skill points here. Three fix attempts per task (routing
+mechanism per harness: Step 4). If the 3rd iteration still fails:
 
-- On Claude Code: 3 resume-the-implementer attempts using `./fix-prompt.md`.
-- On Codex: 3 `followup_task(...)` follow-ups on the stored worker.
-- On OpenCode: 3 fresh-dispatch-with-fix-context attempts.
-
-If the 3rd iteration still fails:
-
-1. Dispatch a **fresh implementer with reframed context** using `./fix-prompt.md`'s "Reframed-Context Attempt" section — different framing (different ownership, explicit plan disambiguation, simpler decomposition, or a prior-commit pointer so the fresh agent can read what was tried without rediscovering it).
+1. Dispatch a **fresh implementer with reframed context** using `./fix-prompt.md`'s "Reframed-Context Attempt" section — different framing (different ownership, explicit plan disambiguation, simpler decomposition, or a prior-commit pointer so the fresh agent can read what was tried without rediscovering it). The 4th attempt's value is the reframing, not the freshness.
 2. If the fresh attempt also fails, flag the task in the morning report's "Blockers hit" section and continue with remaining tasks.
 3. Escalate to the user only if the failure matches blocker taxonomy #5 (unresolvable test failures blocking the whole plan).
 
@@ -309,11 +238,13 @@ Spec compliance checking earns its keep when the plan leaves room for misinterpr
 
 Either way, the review is a single pass by the lead. Never collapse the loop to skip re-reviewing after a fix.
 
-**When the review passes (approved):** for `parallel-lead-commit`, the lead first ticks that task's acceptance-criteria checkboxes in the plan file (`[ ]` → `[x]`), then stages the reviewed task's owned files plus the plan file and commits (the approved worker report shows `commit SHA: none - parallel-lead-commit`; the lead owns staging and commit). Then write the durable-progress line with the real commit SHA. For either mode, mark the task complete (`TaskUpdate`) so the plan document records progress alongside the TaskList. This is fast bookkeeping — never a stop or a review gate; move straight to the next task or parallel dispatch.
+**When the review passes (approved):** for `parallel-lead-commit`, the lead stages and commits per the Commit Mode Contract's lead-staging rule (the approved worker report shows `commit SHA: none - parallel-lead-commit`). For either mode, mark the task complete (`TaskUpdate`) so the plan document records progress alongside the TaskList. This is fast bookkeeping — never a stop or a review gate; move straight to the next task or parallel dispatch.
 
 ## Step 4: Fixes
 
-When review finds issues, route the fix back to an implementer with the reviewer findings.
+When review finds issues, route the fix back to an implementer with the reviewer
+findings. This is the one statement of fix-round routing — every other mention in
+this skill points here.
 
 **Claude Code (prefer resume):** Send the filled `./fix-prompt.md` to the stored implementer via `SendMessage` (agent ID or name); on older builds this was `Agent(resume: "<agent-id>")` — use whichever continuation mechanism the harness exposes. The resumed subagent keeps its orientation context — files read, decisions made, tests written — and goes straight to the fix instead of re-reading the codebase.
 
@@ -322,18 +253,15 @@ When review finds issues, route the fix back to an implementer with the reviewer
 - A pointer to the commit(s) the prior implementer produced (so the fresh subagent can `git show` or read the files instead of rediscovering them)
 - The reviewer findings
 
-**Codex (prefer followup_task):** Call `followup_task(target=<stored agent-id>, message=<filled fix-prompt.md>)` on the existing worker for iterations 1-3. The worker keeps its orientation context and behaves like a Claude Code resume. For iteration 4 (reframed-context attempt), spawn a fresh worker with `spawn_agent(task_name="task-N-retry", message=<filled fix-prompt.md with the Reframed-Context Attempt section + prior-commit SHAs>)`. If the stored agent ID is gone (session restart, compaction), fall back to a fresh `spawn_agent` with the prior-commit pointer, same shape as the opencode branch above.
+**Codex (prefer followup_task):** Call `followup_task(target=<stored agent-id>, message=<filled fix-prompt.md>)` on the existing worker. The worker keeps its orientation context and behaves like a Claude Code resume; for iteration 4, `spawn_agent(task_name="task-N-retry", message=<filled fix-prompt.md with the Reframed-Context Attempt section + prior-commit SHAs>)`.
 
-Either way, re-review after the fix. Iteration cap applies: 3 resume / `followup_task` / fresh-dispatch attempts, then a 4th attempt with reframed context, then flag-and-continue (see "Review cap" in Step 3).
+Prefer the context-preserving path (resume / `followup_task`) for iterations 1-3; the 4th attempt is a fresh dispatch with reframed context. Dispatch fresh earlier only when the subagent is unreachable (session error, context limit, stored ID lost to a session restart), the prior implementer's context is genuinely stale (another task modified the same files), or the fix needs a fundamentally different approach — always with the prior-commit pointer.
 
-**When to dispatch fresh on Claude Code (or Codex):** the subagent is unreachable (session error, context limit), the prior implementer's context is genuinely stale (another task modified the same files), or the fix needs a fundamentally different approach.
-
-The original commit mode still applies during fixes unless the lead explicitly
-changes it. `parallel-lead-commit` fix rounds still do not commit directly.
+Re-review after every fix. The iteration cap is stated in Step 3 ("Review cap"); the commit mode is unchanged by a fix round (Commit Mode Contract).
 
 ## Step 4a: Pre-merge external review (if chosen)
 
-If the reviewer choice propagated from `writing-plans` (via the execution handoff) is `codex`, `gemini`, or `claude`:
+If the reviewer choice propagated from `writing-plans` (via the execution handoff) is `codex` or `claude`:
 
 **First**, ensure the verification ledger has a passing `branch-gate` entry for the current HEAD. If it does not, run the branch-gate scope now and record the result. `pre-merge-review` requires this as a precondition; do not skip it.
 
@@ -395,7 +323,7 @@ On detecting a resumed run (post-compaction note, mismatch between expected and 
 2. Read the plan file, noting which acceptance-criteria checkboxes are already `[x]`.
 3. Check the TaskList for completed / in-progress / pending tasks.
 4. `git log --oneline <base>..HEAD` — verify what is actually committed.
-5. Reconcile `parallel-lead-commit` gaps: for any progress line marked complete whose commit SHA is missing, `pending`, or absent from `git log`, run `git status` and inspect the working tree for that task's owned files. If approved edits are uncommitted, re-review and commit them (scoped to owned files) before advancing; if nothing is there, treat the task as incomplete and re-dispatch. Do not trust a completion record that has no verifiable commit.
+5. Reconcile `parallel-lead-commit` gaps: for any progress line marked complete whose commit SHA is missing, `pending`, or absent from `git log`, run `git status` and inspect the working tree for that task's owned files. If approved edits are uncommitted, re-review and commit them (staging per the Commit Mode Contract) before advancing; if nothing is there, treat the task as incomplete and re-dispatch. Do not trust a completion record that has no verifiable commit.
 6. Identify the next incomplete task and resume execution.
 
 This sequence runs only on resumed runs. A fresh run dispatches directly into Step 1 (Extract Tasks from the Plan). Subagent IDs from the prior session cannot be resumed post-compaction — treat any needed fix as a fresh dispatch with prior-commit context.
@@ -409,103 +337,17 @@ This sequence runs only on resumed runs. A fresh run dispatches directly into St
 ## Example Workflow
 
 ```
-You: I'm using Subagent-Driven Development to execute this plan.
-
-[Read plan file once: docs/plans/feature-plan.md]
-[orient on "hook installation recovery"]
-[Extract all 5 tasks with full text and context]
-[TaskCreate for each task]
-
---- Task 1: Hook installation script ---
-
-[Dispatch implementer subagent with full task text + context + Miller directives]
-[Save agent ID: impl-a1b2]
-
-Implementer (impl-a1b2): "Before I begin — should the hook be installed at user or system level?"
-
-You: "User level (~/.config/razorback/hooks/)."
-
-Implementer: "Got it. Implementing now..."
-[Later] Implementer reports:
-  - Implemented install-hook command
-  - Added tests, 5/5 passing
-  - Committed (SHA abc123)
-  Status: DONE
-
-[Lead inline review]
-[list symbols in install-hook.ts to scan structure]
-[inspect installHook() to check flow]
-[Spec check: all requirements met, nothing extra]
-[Quality check: clean, well-tested, no smells]
-[Approved — TaskUpdate task 1 completed]
-
---- Task 2: Recovery modes ---
-
-[Dispatch implementer subagent. Save agent ID: impl-c3d4]
-Implementer: [No questions, proceeds]
-Implementer reports:
-  - Added verify/repair modes
-  - Worker-scope verification passing
-  - Committed (SHA def456)
-  Status: DONE
-
-[Lead inline review]
-[list symbols in recovery.ts]
-[inspect verifyMode(), repairMode()]
-[Spec check: MISSING — progress reporting ("report every 100 items")]
-[Spec check: EXTRA — --json flag not requested]
-[Quality check: magic number 100 hard-coded]
-
-[Resume impl-c3d4 with ./fix-prompt.md:]
-  "Three issues:
-   1. Spec: add progress reporting every 100 items (missing)
-   2. Spec: remove --json flag (not requested)
-   3. Quality: extract 100 into a PROGRESS_INTERVAL constant"
-
-Implementer (resumed): Progress reporting added, --json removed,
-  PROGRESS_INTERVAL extracted. Tests still passing. Committed (SHA ghi789).
-
-[Lead re-review]
-[Approved — TaskUpdate task 2 completed]
-
---- ...remaining tasks follow the same pattern... ---
-
-[After all tasks complete]
-[Lead final verification: branch-gate scope, plus any required specialist scopes]
-[Verification ledger updated]
-[Use razorback:finishing-a-development-branch]
-
-Done.
+[Read plan once; orient with Miller context; TaskCreate per task]
+[Task 2 of 5 — commit mode: serial-worker-commit]
+[Dispatch implementer with full task text + context + Miller directives. Save agent ID: impl-c3d4]
+Implementer reports: verify/repair modes added, worker-red-green passing, committed def456. DONE.
+[Lead inline review: inspect changed symbols]
+  Spec: MISSING progress reporting; EXTRA --json flag. Quality: magic number 100 hard-coded
+[Fix round 1 of 3 — resume impl-c3d4 with ./fix-prompt.md + the three findings]
+Implementer (resumed): all three addressed, tests passing, committed ghi789.
+[Lead re-review → approved. TaskUpdate task 2 completed. Remaining tasks follow the same pattern]
+[All tasks done: lead runs branch-gate scope, updates the ledger, then razorback:finishing-a-development-branch]
 ```
-
-## Advantages
-
-**vs. Manual execution:**
-- Subagents follow TDD naturally
-- Fresh context per task (no confusion)
-- Real blockers surface early without stopping the run for ordinary ambiguity
-
-**vs. Executing Plans:**
-- Same session (no handoff)
-- Continuous progress (no waiting)
-- Review checkpoints automatic
-
-**Efficiency gains:**
-- Lead curates exactly what context each subagent needs
-- No file reading overhead inside the subagent (lead provides full text)
-- Real blockers surface before work begins; ordinary ambiguity follows decide-and-note
-- Miller replaces Glob/Grep/Read chains (2-3 calls vs 5-8 for orientation)
-- Inline review by lead avoids spawning reviewer subagents (lower total token cost)
-
-**Quality gates:**
-- Inline review catches spec + quality issues in one pass
-- On Claude Code, resume-for-fix preserves the implementer's context; on opencode, fix-dispatch includes prior commits as context
-- Re-review loop ensures fixes actually work
-
-**Cost:**
-- Subagent invocations scale with plan complexity (one implementer per task, plus fix rounds)
-- Lead does more prep (extracting tasks, curating context, reviewing inline)
-- Catches issues early — cheaper than debugging later
 
 ## Red Flags
 
@@ -515,7 +357,7 @@ Done.
 - Proceed to the next task while any review has open issues
 - Dispatch parallel implementer subagents on overlapping files (conflicts)
 - Let parallel-batch workers race on `git add` or `git commit`
-- As the lead, stage a `parallel-lead-commit` task with `git add -A`, `git add .`, or `git commit -a` — sibling workers' in-flight edits get swept into the wrong commit. Stage only the reviewed task's owned files.
+- Stage a `parallel-lead-commit` task outside the Commit Mode Contract's lead-staging rule
 - Record a `parallel-lead-commit` task complete before its lead commit exists, or write its progress line without the real commit SHA
 - Make the subagent read the plan file (provide the full task text instead)
 - Skip scene-setting context (the subagent needs to know where the task fits)
@@ -525,21 +367,9 @@ Done.
 - Approve work from an implementer who cannot show Miller-first orientation
 - Pause for user input between tasks - the plan is approved, run it to completion. Stops are governed by the blocker taxonomy. If you can reason through a plan-consistent path, keep moving and log the choice.
 
-**Fix-round routing (positive rules, not prohibitions):**
-- **On Claude Code, prefer resume for iterations 1-3** (the implementer has full context). Use fresh-dispatch-with-reframed-context for iteration 4 only, after 3 resume attempts failed. The 4th attempt's value is the reframing, not the freshness.
-- **On Codex, prefer `followup_task` on the stored agent ID for iterations 1-3** (same reasoning, the worker keeps its orientation context). Use a fresh `spawn_agent` with reframed context for iteration 4.
+**If the subagent asks questions:** answer clearly and completely before letting it proceed; provide extra context if needed, and don't rush it into implementation.
 
-**If the subagent asks questions:**
-- Answer clearly and completely
-- Provide additional context if needed
-- Don't rush them into implementation
-
-**If review finds issues:**
-- Claude Code: resume the implementer subagent with `./fix-prompt.md` + reviewer findings
-- opencode: dispatch a fresh implementer with `./fix-prompt.md` + reviewer findings + pointer to prior commits
-- Codex: `followup_task(target=<agent-id>, ...)` on the stored worker with `./fix-prompt.md` + reviewer findings for iterations 1-3; fresh `spawn_agent` with reframed context for iteration 4
-- Re-review after the fix
-- Iteration cap: 3 resume / `followup_task` / fresh-dispatch attempts → 4th attempt with reframed-context (see `./fix-prompt.md`) → flag the task in the morning report and continue with remaining tasks. Escalate to the user only for blocker taxonomy #5.
+**If review finds issues:** route the fix per Step 4; the iteration cap is in Step 3 ("Review cap").
 
 ## Integration
 

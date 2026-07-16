@@ -1,6 +1,6 @@
 ---
 name: cross-model-convergence
-description: Use when the user wants two models to alternate finding, verifying, and fixing problems until none remain above an agreed bar — "have codex verify my findings and find more", "go back and forth until clean", "loop until you both agree there are no problems left", or when an audit should run to convergence under /loop or another goal-driven runner. Also use for a bounded pre-implementation Doubt Pass when a design decision needs adversarial challenge before building — architecture risk rated medium/high, or the user says "doubt this" / "challenge this decision".
+description: Use when the user wants two models to check each other's work until clean — "have codex verify my findings and find more", "go back and forth until clean", "loop until you both agree there are no problems left" — when an audit should run to convergence under /loop or another goal-driven runner, or when a design decision needs adversarial challenge before building: "doubt this", "challenge this decision", or architecture risk rated medium/high.
 ---
 
 # Cross-Model Convergence
@@ -11,14 +11,14 @@ The reviewer must be a different model from the lead. Calling your own model's C
 
 **Announce at start:** "I'm using the cross-model-convergence skill with [reviewer] on [problem class]."
 
-**REQUIRED SUB-SKILLS:** razorback:architecture-quality (Audit Mode), one reviewer channel (razorback:codex-cli, razorback:gemini-cli, razorback:claude-cli, or razorback:cursor-agent in read-only mode) pointing at a model that is not the lead, razorback:receiving-code-review, razorback:test-driven-development, razorback:verification-before-completion.
+**REQUIRED SUB-SKILLS:** razorback:architecture-quality (Audit Mode), one reviewer channel (razorback:codex-cli, razorback:claude-cli, or razorback:cursor-agent in read-only mode) pointing at a model that is not the lead, razorback:receiving-code-review, razorback:test-driven-development, razorback:verification-before-completion.
 
 ## Setup (Round 0)
 
 Write these down in the conversation before the first sweep. They cannot be changed mid-loop.
 
 - **Problem class:** default is architectural cleanup via `architecture-quality` Audit Mode. The user can name another class (security, error handling, dead code); the sweep method changes, the loop does not.
-- **Reviewer:** any external CLI skill whose model differs from the lead — codex-cli, gemini-cli, or claude-cli. A Claude lead defaults to codex-cli; a Codex lead picks claude-cli or gemini-cli. cursor-agent is eligible only when the user explicitly named Cursor for this run (its own skill gates on explicit user request); it reviews read-only (`--mode ask` with `--trust`, never `--force`).
+- **Reviewer:** any external CLI skill whose model differs from the lead — codex-cli or claude-cli. A Claude lead defaults to codex-cli; a Codex lead picks claude-cli. cursor-agent is eligible only when the user explicitly named Cursor for this run (its own skill gates on explicit user request); it reviews read-only (`--mode ask` with `--trust`, never `--force`).
 - **Severity floor** (the nitpick line). Defaults — a finding does NOT count when it is: pure style or naming with no maintainability impact; an unmeasured micro-optimization; `speculative` strength; blocked by a heuristic's "do not act when" line; or a churn-heavy rewrite with marginal benefit. Disputed-but-real items are not nitpicks; they go in the report.
 - **Round cap:** default 4 (initial audit + 3 fix rounds). The cap bounds *discovery*, not fixing of already-verified defects.
 

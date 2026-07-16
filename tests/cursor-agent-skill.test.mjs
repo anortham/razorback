@@ -62,7 +62,6 @@ test('Codex tool mapping tells leads not to busy-poll external model CLI runs', 
   assert.match(codexTools, /cursor-agent/i);
   assert.match(codexTools, /claude -p/i);
   assert.match(codexTools, /codex exec/i);
-  assert.match(codexTools, /gemini -p/i);
   assert.match(codexTools, /foreground command/i);
   assert.match(codexTools, /do not send speculative progress updates/i);
   assert.match(codexTools, /poll no\s+more often\s+than every 2 minutes/i);

@@ -7,11 +7,13 @@ Use Miller by capability, not by raw file reading:
 | Capability — do this BEFORE the raw-file reflex | Miller tool |
 |---|---|
 | **Orient** — token-budgeted bundle for a task or area | `context(query)` |
-| **Search** — find code by text, symbol, file/path, content, or concept | `search(query, mode=auto\|text\|symbol\|file\|content)` |
-| **List a file's symbols** before reading the whole file | `inspect(path)` |
-| **Inspect a symbol** (callers, callees, body) before modifying it | `inspect(symbol, depth=full)` |
+| **Search** — code by text, symbol, file/path, or concept; `markers` for TODO/FIXME audits, `source` for source bodies, `content` for docs/prose; also `external`, `web`, `all-text` | `search(query, mode=auto\|text\|symbol\|file\|markers\|content\|source\|external\|web\|all-text)` |
+| **List a file's symbols** before reading the whole file | `inspect(target='<file>')` |
+| **Inspect a symbol** — `overview` for the first read (bounded refs/callers/callees + body preview), `full` only when editing it | `inspect(target='<symbol>', depth=summary\|overview\|full)` |
 | **Find references** before changing a public API | `trace(target)` |
 | **Assess impact / blast radius** of a change | `impact(target)` |
+| **Code-shape facts** — routes, config keys, doc structure, pre-extracted across 36 languages | `patterns(...)` |
+| **Large text** — import, then search logs, CI output, web imports without full-file reads | `content(...)` |
 | **Rename / edit** a symbol safely | `edit(operation, target)` |
 | **Manage the workspace index** | `workspace(...)` |
 

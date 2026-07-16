@@ -18,7 +18,7 @@ Use template at `requesting-code-review/code-reviewer.md` with these placeholder
 
 Use Miller for impact analysis:
 
-- **Inspect** modified symbols to understand callers/callees/types with `inspect(target='<symbol>', depth=full)`
+- **Inspect** modified symbols to understand callers/callees/types with Miller `inspect(target='<symbol>', depth=overview)` — escalate to `depth=full` for the symbols the change centers on
 - **Find references** to verify changes don't break dependents with `trace(target='<symbol>')`
 - **List a file's symbols** to review structure without reading entire files with `inspect(target='<file>')`
 

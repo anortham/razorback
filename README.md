@@ -1,8 +1,10 @@
 # Razorback
 
-**Miller-powered development workflow for Claude Code, Cursor, Codex, OpenCode, Copilot CLI, and Gemini CLI.**
+**Miller-powered development workflow for Claude Code, Codex CLI / ChatGPT desktop app, and OpenCode.**
 
-Razorback is a skill set for every major coding-agent harness, diverged from [Superpowers](https://github.com/obra/superpowers) to add Miller MCP for token-efficient codebase orientation. Plan execution runs through `subagent-driven-development` on harnesses that support delegation, and `executing-plans` where delegation is unavailable.
+Razorback is a skill set for coding-agent harnesses, diverged from [Superpowers](https://github.com/obra/superpowers) to add Miller MCP for token-efficient codebase orientation. Plan execution runs through `subagent-driven-development` on harnesses that support delegation, and `executing-plans` where delegation is unavailable.
+
+**Supported harnesses.** Claude Code, Codex CLI / ChatGPT desktop app (rebranded from Codex), and OpenCode get the full plugin: skills, agents, bootstrap, and delegated execution. Cursor is **frozen** — its plugin support still works and is documented below, but it receives no new work. Copilot CLI is **instruction-tier**: it picks up razorback's Miller-first ruleset from `.github/copilot-instructions.md` and nothing else.
 
 ## Why?
 
@@ -11,11 +13,11 @@ AI-assisted development burns tokens on repetitive codebase exploration. Every a
 - **Miller MCP** routes all exploration through purpose-built tools — `search`, `context`, `inspect`, `trace`, `impact`, and `workspace` — that return targeted context in 1-2 calls instead of 5-8.
 - **Miller-first applies to every worker**: the lead, implementers, reviewers, and fix workers all orient with Miller before raw file reads.
 - **Parallel subagent dispatch with inline review by the lead** keeps the main agent's context clean while letting independent tasks move concurrently.
-- **Autonomous execution of approved plans** with optional pre-merge external review (codex / gemini / claude) and compaction-durable goldfish checkpoints; runs overnight without waking you for anything short of a real blocker
+- **Autonomous execution of approved plans** with optional pre-merge external review (codex / claude) and compaction-durable goldfish checkpoints; runs overnight without waking you for anything short of a real blocker
 
 ## Requirements
 
-- A supported harness: [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Cursor](https://cursor.sh), [Codex](https://openai.com/codex/), [OpenCode](https://opencode.ai), [Copilot CLI](https://github.com/github/copilot-cli), or [Gemini CLI](https://github.com/google-gemini/gemini-cli)
+- A supported harness: [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex CLI / ChatGPT desktop app](https://openai.com/codex/), or [OpenCode](https://opencode.ai) — plus frozen support for [Cursor](https://cursor.sh)
 - Miller MCP — hard requirement for code orientation and symbol-aware review; must be configured and indexing your workspace
 - [Goldfish MCP Server](https://github.com/anortham/goldfish) — hard requirement for persistent memory (checkpoints, briefs, recall); used for compaction-durable execution during long autonomous runs
 - For Codex: enable `multi_agent = true` in `~/.codex/config.toml` so parallel execution skills can dispatch subagents
@@ -44,7 +46,9 @@ git clone https://github.com/anortham/razorback.git
 claude --plugin-dir /path/to/razorback
 ```
 
-### Cursor
+### Cursor (frozen)
+
+Cursor support is frozen: it works as documented here, but receives no new development.
 
 Cursor has a plugin marketplace, but razorback isn't listed there yet. For now, clone and point Cursor at the local checkout via its plugin-load mechanism:
 
@@ -53,9 +57,11 @@ git clone https://github.com/anortham/razorback.git ~/path/to/razorback
 # Then in Cursor: add ~/path/to/razorback to your plugin paths
 ```
 
-The plugin manifest at `.cursor-plugin/plugin.json` declares skills, agents, commands, and hooks. Cursor marketplace submission is tracked as a follow-up — it will just be a one-liner when live.
+The plugin manifest at `.cursor-plugin/plugin.json` declares skills, agents, commands, and hooks.
 
-### Codex
+### Codex CLI / ChatGPT desktop app
+
+The ChatGPT desktop app was rebranded from Codex; both use the same install path below.
 
 Tell Codex:
 
@@ -79,28 +85,22 @@ Fetch and follow instructions from https://raw.githubusercontent.com/anortham/ra
 
 **Detailed docs:** [.opencode/INSTALL.md](.opencode/INSTALL.md)
 
-### Copilot CLI
+### Copilot CLI (instruction-tier)
+
+Copilot CLI gets the Miller-first ruleset only — no skills, no agents, no delegated execution. Copy razorback's instruction-tier ruleset into the repo you work in; Copilot reads that path natively:
 
 ```bash
-copilot plugin marketplace add anortham/razorback
-copilot plugin install razorback@razorback
+curl -fsSL https://raw.githubusercontent.com/anortham/razorback/refs/heads/main/.github/copilot-instructions.md \
+  -o .github/copilot-instructions.md
 ```
 
-Copilot CLI reads the same `.claude-plugin/marketplace.json` that Claude Code uses. Named plugin agents (like `razorback:code-reviewer`) are auto-discovered.
-
-### Gemini CLI
-
-```bash
-gemini extensions install https://github.com/anortham/razorback
-```
-
-Gemini loads `gemini-extension.json` + `GEMINI.md` at session start, which pulls in the `using-razorback` skill and the Gemini tool mapping. Subagent dispatch goes through Gemini's `invoke_agent` tool with the built-in `generalist` agent (parallel by default), so `subagent-driven-development` and `dispatching-parallel-agents` work the same way they do on the other harnesses.
+If the repo already has a `.github/copilot-instructions.md`, merge the ruleset in rather than overwriting.
 
 ### After Installation
 
 Once loaded, razorback works automatically. The bootstrap path varies by harness:
 
-1. **Session starts** — the `SessionStart` hook (Claude Code, Cursor), `messages.transform` (OpenCode), native skill discovery from the installed Codex plugin or fallback skills symlink (Codex), the `SessionStart` hook with `additionalContext` (Copilot CLI), or `GEMINI.md` includes (Gemini CLI) surfaces the `using-razorback` skill.
+1. **Session starts** — the `SessionStart` hook (Claude Code, Cursor), `messages.transform` (OpenCode), or native skill discovery from the installed Codex plugin or fallback skills symlink (Codex) surfaces the `using-razorback` skill.
 2. **You request work** — the agent checks for applicable skills before every response.
 3. **Skills guide the workflow** — brainstorming, planning, TDD, execution, review, and verification all route through Miller and the appropriate execution strategy for your harness.
 
@@ -109,7 +109,7 @@ No configuration needed beyond plugin installation (assuming Miller is already s
 ## Project Policy
 
 Razorback does not need a separate project-policy file. Use the active project
-instructions (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, or the harness equivalent)
+instructions (`AGENTS.md`, `CLAUDE.md`, or the harness equivalent)
 plus the approved plan.
 
 Razorback owns process contracts:
@@ -143,11 +143,11 @@ No harness auto-pulls new content on restart. You have to opt in to updates.
 
 **If installed from a local clone:** `git pull` the repo. Claude Code reloads plugin content on the next session start.
 
-### Cursor
+### Cursor (frozen)
 
-Until razorback lands in the Cursor marketplace, update by `git pull` in the local clone and restarting Cursor.
+Update by `git pull` in the local clone and restarting Cursor.
 
-### Codex
+### Codex CLI / ChatGPT desktop app
 
 For the preferred plugin install path and the local clone fallback, follow the update instructions in [.codex/INSTALL.md](.codex/INSTALL.md).
 
@@ -176,25 +176,17 @@ Then restart OpenCode.
 
 See [.opencode/INSTALL.md](.opencode/INSTALL.md) for more detail.
 
-### Copilot CLI
+### Copilot CLI (instruction-tier)
 
-```bash
-copilot plugin update razorback
-```
-
-### Gemini CLI
-
-```bash
-gemini extensions update razorback
-```
+Re-run the `curl` from the install section to refresh `.github/copilot-instructions.md`.
 
 ## Workflow
 
 The core process: brainstorm, plan, TDD, execute, review, finish.
 
 **Execution model (primary path depends on harness):**
-- **Autonomous by default:** once a plan is approved, execution runs to completion gated only by real blockers. A blocker is real only when the agent cannot resolve it through reasonable plan-consistent judgment. An optional pre-merge external review (codex / gemini / claude) runs before branch finish. See [autonomous-execution design](docs/plans/2026-04-18-autonomous-execution-design.md) for the rationale.
-- **2+ independent tasks (any harness):** `subagent-driven-development` dispatches fresh implementer subagents (in parallel when tasks are independent), and the lead does inline review (spec compliance + code quality) per task. On Gemini CLI, dispatch goes through `invoke_agent(agent_name="generalist", …)`.
+- **Autonomous by default:** once a plan is approved, execution runs to completion gated only by real blockers. A blocker is real only when the agent cannot resolve it through reasonable plan-consistent judgment. An optional pre-merge external review (codex / claude) runs before branch finish. See [autonomous-execution design](docs/plans/2026-04-18-autonomous-execution-design.md) for the rationale.
+- **2+ independent tasks (any plugin-tier harness):** `subagent-driven-development` dispatches fresh implementer subagents (in parallel when tasks are independent), and the lead does inline review (spec compliance + code quality) per task.
 - **1 task, tightly sequential work, or no delegation available:** `executing-plans` runs single-agent batch execution.
 - **Ad-hoc parallel work (delegation available):** `dispatching-parallel-agents` for independent tasks outside plans.
 - **Small, local, reversible fixes:** `fixing-small-issues` triages against objective criteria (≤ 2 files, ~20 lines, no contract changes) and fixes on the current checkout — no worktree, no baseline suite run, affected-scope verification only. Escalates to the standard flow the moment the fix outgrows the criteria.
@@ -224,12 +216,11 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 | using-git-worktrees | Isolated workspace setup |
 | writing-skills | Meta-skill for creating/editing skills |
 | **subagent-driven-development** | **Primary delegated plan execution: fresh implementer subagents, parallel when independent, inline review by lead** |
-| pre-merge-review | Optional external review (codex / gemini / claude) run before PR — verifies findings, dispatches fixes, emits morning-report block |
+| pre-merge-review | Optional external review (codex / claude) run before PR — verifies findings, dispatches fixes, emits morning-report block |
 | cross-model-convergence | Adversarial find → verify → fix loop between the lead and an external reviewer (default codex) until a double-clean round or the round cap; includes the pre-implementation Doubt Pass |
 | grounding-in-current-docs | Verify external framework/library/API behavior against current official docs when training knowledge may be stale |
 | codex-cli | Invokes `codex exec` for second opinions and adversarial review |
 | cursor-agent | Invokes Cursor Agent / Composer 2.5 Fast for bounded implementation while the current lead owns planning, review, and verification |
-| gemini-cli | Invokes `gemini` for second opinions and adversarial review |
 | claude-cli | Invokes `claude -p` for second opinions and adversarial review; omits `--bare` because it breaks OAuth auth |
 
 ## Prompt Templates
@@ -243,13 +234,17 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 
 ## Version management
 
-Razorback ships six version-bearing manifests (`package.json`, `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `gemini-extension.json`). Keep them in sync with:
+Razorback ships five version-bearing manifests (`package.json`, `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, `.cursor-plugin/plugin.json`, `.claude-plugin/marketplace.json`). Keep them in sync with:
 
 ```bash
 ./scripts/bump-version.sh --check          # detect drift
+./scripts/bump-version.sh --check 1.2.3    # also require the agreed version to equal 1.2.3
 ./scripts/bump-version.sh --audit          # check + scan for undeclared version references
-./scripts/bump-version.sh <new-version>    # bump all six in one pass
+./scripts/bump-version.sh <new-version>    # bump all five in one pass
 ```
+
+CI runs `--check "${GITHUB_REF_NAME#v}"` on `v*` tag builds. Drift detection alone
+cannot catch manifests that went stale together; comparing against the tag can.
 
 ## License
 

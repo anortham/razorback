@@ -20,7 +20,8 @@ test('writing-plans documents the compact single-task full-plan form', () => {
   const skill = read('skills/writing-plans/SKILL.md');
 
   assert.match(skill, /## Compact Single-Task Full-Plan Form/);
-  assert.match(skill, /Not applicable - single task\./);
+  const compact = section(skill, '## Compact Single-Task Full-Plan Form');
+  assert.match(compact, /Not applicable - single task\./);
 });
 
 test('writing-plans routes task completion through commit mode instead of direct commit only', () => {

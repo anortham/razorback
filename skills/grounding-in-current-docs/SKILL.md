@@ -12,7 +12,7 @@ Miller is the source of truth for the repo. This skill covers truth *outside* th
 Before writing code against an external API where your knowledge could be stale:
 
 1. **Check the repo first.** Miller `search` for existing usage of the same API in this codebase — working code already in the repo is the cheapest ground truth, and repo conventions win over docs.
-2. **Fetch the current official docs** for the specific feature with your harness's web tool (WebFetch on Claude Code, built-in Google Search on Gemini CLI, web search on Codex; prefer a token-efficient fetcher when one is available). Official source, not blog posts.
+2. **Fetch the current official docs** for the specific feature with your harness's web tool (WebFetch on Claude Code, web search on Codex; prefer a token-efficient fetcher when one is available). Official source, not blog posts.
 3. **Verify the exact surface:** name, signature/options, semantics, version gates, deprecation notes. When the verified behavior differs from common knowledge, cite the doc URL in the task notes or commit message.
 4. **Verify once per feature per session.** Record what you verified (Goldfish checkpoint or a note in the plan) instead of re-fetching.
 

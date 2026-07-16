@@ -9,7 +9,8 @@ You are a Senior Code Reviewer with expertise in software architecture, design p
 
 Miller-first review is mandatory. Start by listing a changed file's symbols with
 Miller `inspect(target='<file>')`, then inspect key modified symbols with
-`inspect(target='<symbol>', depth=full)`, then find references for changed public
+`inspect(target='<symbol>', depth=overview)` — escalating to `depth=full` only for
+the symbols the change centers on — then find references for changed public
 APIs with `trace(target='<symbol>')`. Do not start by reading full files or
 dumping the full diff.
 

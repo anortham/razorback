@@ -31,12 +31,21 @@ Swift). Example: `# razorback: global lock, per-account locks if throughput matt
 
 Search the indexed workspace with Miller first:
 
-`search(query='razorback:', mode=text)`
+`search(query='razorback:', regions=comment)`
+
+`regions=comment` restricts hits to comment regions, which is where the markers
+live — it does the "keep only real markers" filtering for you. Note that
+`mode=markers` does **not** apply here: it audits a fixed vocabulary (TODO, FIXME,
+HACK, XXX) and rejects any other query, including `razorback:`.
+
+**Text fallback** — `search(query='razorback:', mode=text)` searches every region.
+Use it when a marker sits somewhere `regions=comment` cannot see it (the marker
+string in prose or docs, or a language whose comments the index does not region-tag).
+It returns razorback's own skill cross-references (`razorback:<skill-name>` in prose)
+too, so keep only hits that are comment markers (`# razorback:` / `// razorback:`).
 
 Miller's index already excludes vendored, generated, and tool-state content, and
-returns ranked hits with file:line — no exclusion flags needed. Keep only hits that
-are comment markers (`# razorback:` / `// razorback:`), not razorback's own skill
-cross-references (`razorback:<skill-name>` in prose).
+returns ranked hits with file:line — no exclusion flags needed.
 
 **Grep fallback** (Miller unavailable or index stale after `workspace refresh`):
 

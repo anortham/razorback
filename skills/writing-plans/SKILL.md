@@ -75,9 +75,10 @@ Every step must contain the actual content an engineer needs. These are **plan f
 You cannot write accurate file paths, line ranges, or implementation steps without understanding the code. Before writing any task:
 
 1. **Orient on the area:** Miller `context` — returns token-budgeted context with pivots and neighbors
-2. **Inspect key symbols:** Miller `inspect depth=full` — shows callers, callees, types, children
+2. **Inspect key symbols:** Miller `inspect(target, depth=overview)` — bounded callers, callees, body preview; escalate to `depth=full` for symbols the plan will modify
 3. **Find exact locations:** list a file's symbols with Miller `inspect` — get file structure with line numbers for `Modify:` references
-4. **Assess impact:** find references with Miller `trace` — find all callers before planning changes
+4. **Assess impact:** Miller `impact(target)` — impacted symbols plus the likely tests, so the plan's Verification Strategy names real commands
+5. **Find references:** Miller `trace(target)` — every caller before planning a change to a public API
 
 **Do NOT guess file paths, line numbers, symbol names, function signatures, config shapes, route names, CLI flags, or public contracts.** Use Miller to discover them. Plans with wrong paths or invented API shapes waste implementer time on dead ends.
 
@@ -113,7 +114,7 @@ Light plans use task-level granularity instead: each task is a coherent unit of 
 
 ## Global Constraints
 
-[The spec's project-wide requirements — version floors, dependency limits, naming and copy rules, platform requirements — one line each, with exact values copied verbatim from the spec. Every task implicitly includes this section.]
+[One line per project-wide requirement, exact values verbatim from the spec — see the `## Global Constraints` rule below]
 
 ---
 ```
@@ -158,11 +159,7 @@ Every plan MUST include a language-agnostic verification strategy. Razorback own
 **Verification ledger:** Record invariant, command, scope label, commit SHA, result, and timestamp. For replay or metric evidence, also record hard-gate metrics and report-only metrics. If the same HEAD already has a passing ledger entry for the required scope, reuse that evidence instead of rerunning the same expensive gate.
 ```
 
-If the repo has no documented hierarchy, define one in the plan using neutral scope labels:
-- **worker:** narrowest behavior proof
-- **affected-change:** changed files or touched subsystem
-- **branch:** broad pre-handoff confidence
-- **expensive:** slow specialist gates, run only when touched areas require them
+If the repo has no documented hierarchy, define one in the plan using these neutral scope labels: **worker** (narrowest behavior proof), **affected-change** (changed files or touched subsystem), **branch** (broad pre-handoff confidence), and **expensive** (slow specialist gates, run only when touched areas require them).
 
 Do not bake language, framework, or test-runner commands into razorback skills. Put concrete commands in the plan from the target repo's docs.
 
@@ -266,26 +263,10 @@ The execution skills tick these `[ ]` → `[x]` as each task completes, so every
 
 ## Compact Single-Task Full-Plan Form
 
-When a full plan has exactly one task, keep the full TDD steps, but collapse the
-parallel contract to a single row and copy the same fields into the task body.
+When a full plan has exactly one task, use `## Task Structure` above unchanged — full TDD steps and all. Only two things differ, so do not re-template the task:
 
-````markdown
-## Parallel Execution Contract
-
-| Task | Parallel batch | File ownership | Serialization required | Dependency reason |
-|---|---|---|---|---|
-| Task 1: [name] | None - serial | [Exact ownership] | Not applicable - single task. | Not applicable - single task. |
-
-### Task 1: [Slice or component name]
-
-**Contract inputs:** [Exact shared constraints and upstream facts this task may rely on]
-
-**File ownership:** [Exact ownership]
-
-**Serialization required:** Not applicable - single task.
-
-**Dependency reason:** Not applicable - single task.
-````
+- Collapse `## Parallel Execution Contract` to a single row: `Parallel batch` is `None - serial`, `File ownership` carries the task's exact ownership, and both `Serialization required` and `Dependency reason` read `Not applicable - single task.`
+- Copy those same values into the task body: **Contract inputs:** and **File ownership:** carry their normal exact values, while **Serialization required:** and **Dependency reason:** both read `Not applicable - single task.`
 
 ## Light Plan Task Structure
 
@@ -341,9 +322,9 @@ parallel contract to a single row and copy the same fields into the task body.
 
 If the user requests changes, revise the plan, re-run the self-review, re-save, and re-ask for approval. Brainstorming gates the spec; writing-plans gates the plan. This is the last human stop before autonomous execution.
 
-**Step 3, capture the reviewer choice without prompting.** The default reviewer choice is `none`. If the approval message already named a choice (e.g. "approved, run it, pre-merge codex review", "approved, no external review") or the saved spec explicitly requested a reviewer, set `reviewer_choice` to `codex`, `gemini`, or `claude` as requested. Do not ask a separate reviewer-choice question after approval.
+**Step 3, capture the reviewer choice without prompting.** The default reviewer choice is `none`. If the approval message already named a choice (e.g. "approved, run it, pre-merge codex review", "approved, no external review") or the saved spec explicitly requested a reviewer, set `reviewer_choice` to `codex` or `claude` as requested. Do not ask a separate reviewer-choice question after approval.
 
-**Step 4, invoke the execution skill immediately.** After approval, announce which execution skill will run and invoke it, passing the plan path, the reviewer choice (`none` / `codex` / `gemini` / `claude`), and verification strategy:
+**Step 4, invoke the execution skill immediately.** After approval, announce which execution skill will run and invoke it, passing the plan path, the reviewer choice (`none` / `codex` / `claude`), and verification strategy:
 
 - **When subagent delegation is available:** `razorback:subagent-driven-development`
 - **For single-task, tightly-sequential, or no-delegation plans:** `razorback:executing-plans`

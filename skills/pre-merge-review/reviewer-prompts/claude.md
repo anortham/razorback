@@ -1,6 +1,8 @@
 # Reviewer Prompt: claude
 
-Invocation instructions for running `claude -p` as the pre-merge adversarial reviewer. Background on claude-cli's adversarial-review mode lives in the bundled `razorback:claude-cli` skill. This file is self-contained; both the schema JSON and the adversarial system prompt are inlined below, so no knowledge of the razorback install path is required.
+Invocation instructions for running `claude -p` as the pre-merge adversarial reviewer. Background on claude-cli's adversarial-review mode lives in the bundled `razorback:claude-cli` skill.
+
+Bare relative paths below (like the blocker-taxonomy reference) are relative to this file's directory, `skills/pre-merge-review/reviewer-prompts/` inside the razorback plugin. `$SKILL_DIR` is the pre-merge-review skill's own base directory, announced when the skill loads — substitute it before running any command.
 
 ## Preconditions
 
@@ -11,7 +13,7 @@ Invocation instructions for running `claude -p` as the pre-merge adversarial rev
 
 ## Build the user prompt
 
-The adversarial system prompt (loaded via `--system-prompt-file`) supplies the operating stance, attack-surface categories, finding bar, calibration, and grounding rules. The user prompt therefore carries only the target-specific context; the same three inputs codex and gemini get:
+The adversarial system prompt (loaded via `--system-prompt-file`) supplies the operating stance, attack-surface categories, finding bar, calibration, and grounding rules. The user prompt therefore carries only the target-specific context; the same three inputs codex gets:
 
 ```bash
 DIFF_AND_CONTEXT="Target: $FILE_STAT (branch <name>: base..HEAD)
@@ -29,68 +31,13 @@ If the plan path is short and likely to orient the reviewer, append it ("Plan: d
 
 ## Invocation
 
-Claude's `--json-schema` takes a string and `--system-prompt-file` takes a file path. Inline the schema as a string; materialize the adversarial prompt to a temp file. Do not add `--bare`; current Claude help says bare mode skips OAuth and keychain auth reads.
+Claude's `--json-schema` takes a string and `--system-prompt-file` takes a file path. Read the schema from the canonical file; point `--system-prompt-file` straight at claude-cli's canonical adversarial prompt. Do not add `--bare`; current Claude help says bare mode skips OAuth and keychain auth reads.
 
-The claude-side schema string must NOT contain a `$schema` key — claude 2.1.209's validator rejects it (`no schema with key or ref "https://json-schema.org/draft/2020-12/schema"`) before the run starts. The canonical schema file keeps `$schema` for other reviewers; strip it here.
+The claude-side schema string must NOT contain a `$schema` key — claude 2.1.209's validator rejects it (`no schema with key or ref "https://json-schema.org/draft/2020-12/schema"`) before the run starts. The canonical schema file keeps `$schema` for other reviewers, so strip it at read time rather than editing the file.
 
 ```bash
-SCHEMA_JSON='{"type":"object","additionalProperties":false,"required":["verdict","summary","findings","next_steps"],"properties":{"verdict":{"type":"string","enum":["approve","needs-attention"]},"summary":{"type":"string","minLength":1},"findings":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["severity","title","body","file","line_start","line_end","confidence","recommendation"],"properties":{"severity":{"type":"string","enum":["critical","high","medium","low"]},"title":{"type":"string","minLength":1},"body":{"type":"string","minLength":1},"file":{"type":"string","minLength":1},"line_start":{"type":"integer","minimum":1},"line_end":{"type":"integer","minimum":1},"confidence":{"type":"number","minimum":0,"maximum":1},"recommendation":{"type":"string"}}}},"next_steps":{"type":"array","items":{"type":"string","minLength":1}}}}'
-
-PROMPT_FILE=$(mktemp) && trap 'rm -f "$PROMPT_FILE"' EXIT
-cat > "$PROMPT_FILE" <<'PROMPT_EOF'
-You are Claude performing an adversarial software review.
-Your job is to break confidence in the change, not to validate it.
-
-Target: {{TARGET_LABEL}}
-User focus: {{USER_FOCUS}}
-
-OPERATING STANCE:
-Default to skepticism. Assume the change can fail in subtle, high-cost, or
-user-visible ways until evidence says otherwise. Do not give credit for good
-intent, partial fixes, or likely follow-up work. If something only works on
-the happy path, treat that as a real weakness.
-
-ATTACK SURFACE (prioritize expensive, dangerous, or hard-to-detect failures):
-- Auth, permissions, tenant isolation, and trust boundaries
-- Data loss, corruption, duplication, and irreversible state changes
-- Rollback safety, retries, partial failure, and idempotency gaps
-- Race conditions, ordering assumptions, stale state, and re-entrancy
-- Empty-state, null, timeout, and degraded dependency behavior
-- Version skew, schema drift, migration hazards, and compatibility regressions
-- Observability gaps that would hide failure or make recovery harder
-
-REVIEW METHOD:
-Actively try to disprove the change. Look for violated invariants, missing
-guards, unhandled failure paths, and assumptions that stop being true under
-stress. Trace how bad inputs, retries, concurrent actions, or partially
-completed operations move through the code. If the user supplied a focus area,
-weight it heavily, but still report any other material issue you can defend.
-Use Read to inspect files and Bash for read-only investigation (grep, git log,
-diff). Do not modify files.
-
-FINDING BAR:
-Report only material findings. No style feedback, naming feedback, low-value
-cleanup, or speculative concerns without evidence. Each finding must answer:
-1. What can go wrong?
-2. Why is this code path vulnerable?
-3. What is the likely impact?
-4. What concrete change would reduce the risk?
-
-CALIBRATION:
-Prefer one strong finding over several weak ones. Do not dilute serious issues
-with filler. If the change looks safe, say so directly and return no findings.
-
-GROUNDING:
-Every finding must be defensible from the provided context. Do not invent
-files, lines, code paths, or runtime behavior you cannot support. If a
-conclusion depends on an inference, state that explicitly and keep the
-confidence honest.
-
-Return JSON matching the provided schema.
-
-REPOSITORY CONTEXT:
-{{REVIEW_INPUT}}
-PROMPT_EOF
+SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")
+PROMPT_FILE="$SKILL_DIR/../claude-cli/adversarial-prompt.txt"
 
 CLAUDE_MODEL="${RAZORBACK_CLAUDE_REVIEW_MODEL:-}"
 
@@ -122,7 +69,7 @@ Flag rationale:
 - `--strict-mcp-config` - drops MCP servers inherited from user/project settings, which can carry write-capable tools into an otherwise read-only allowlist.
 - `--max-turns 15 --max-budget-usd 5.00` - bounded cost/time. Raise only if a run legitimately needs more.
 - `--model "$CLAUDE_MODEL"` - explicit model override when `CLAUDE_MODEL` is set. The review's value is a fresh session and prompt framing, not model superiority.
-- `--system-prompt-file` - loads the adversarial operating stance from the temp file built above. The canonical source for that prompt is `skills/claude-cli/adversarial-prompt.txt` in the razorback plugin; update both in sync.
+- `--system-prompt-file` - loads the adversarial operating stance directly from the canonical `skills/claude-cli/adversarial-prompt.txt` in the razorback plugin. No copy is made, so there is nothing to keep in sync.
 
 **Timeout:** at least `600000` ms (10 min). Large diffs can take minutes.
 

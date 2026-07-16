@@ -16,6 +16,7 @@ const COPIES = [
   '.windsurf/rules/razorback.md',
   '.clinerules/razorback.md',
   '.kiro/steering/razorback.md',
+  '.github/copilot-instructions.md',
 ];
 
 function runChecker(targetRoot) {
@@ -57,6 +58,15 @@ test('checker fails when a host copy drifts from the canonical body', () => {
   const result = runChecker(dir);
   assert.equal(result.status, 1, 'expected exit 1 for a drifted copy');
   assert.match(result.stderr, /\.clinerules\/razorback\.md/);
+});
+
+test('checker fails when the copilot host copy drifts from the canonical body', () => {
+  const dir = makeFixture();
+  edit(dir, '.github/copilot-instructions.md', (text) => `${text}\nDrifted line.\n`);
+
+  const result = runChecker(dir);
+  assert.equal(result.status, 1, 'expected exit 1 for a drifted copy');
+  assert.match(result.stderr, /\.github\/copilot-instructions\.md/);
 });
 
 test('checker fails when a rule invariant is missing from SKILL.md', () => {

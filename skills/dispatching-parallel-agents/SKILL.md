@@ -17,24 +17,6 @@ When you have multiple unrelated failures (different test files, different subsy
 
 ## When to Use
 
-```dot
-digraph when_to_use {
-    "Multiple failures?" [shape=diamond];
-    "Are they independent?" [shape=diamond];
-    "Single agent investigates all" [shape=box];
-    "One agent per problem domain" [shape=box];
-    "Can they work in parallel?" [shape=diamond];
-    "Sequential agents" [shape=box];
-    "Parallel dispatch" [shape=box];
-
-    "Multiple failures?" -> "Are they independent?" [label="yes"];
-    "Are they independent?" -> "Single agent investigates all" [label="no - related"];
-    "Are they independent?" -> "Can they work in parallel?" [label="yes"];
-    "Can they work in parallel?" -> "Parallel dispatch" [label="yes"];
-    "Can they work in parallel?" -> "Sequential agents" [label="no - shared state"];
-}
-```
-
 **Use when:**
 - 3+ test files failing with different root causes
 - Multiple subsystems broken independently
@@ -42,9 +24,10 @@ digraph when_to_use {
 - No shared state between investigations
 
 **Don't use when:**
-- Failures are related (fix one might fix others)
+- Failures are related (fix one might fix others) — investigate them together in a single agent first
 - Need to understand full system state
-- Agents would interfere with each other
+- Exploratory debugging — you don't know what's broken yet
+- Agents would interfere with each other (editing the same files, using the same resources) — dispatch them sequentially instead
 
 ## The Pattern
 
@@ -75,15 +58,9 @@ Each agent gets:
 
 ### 3. Dispatch in Parallel
 
-Make all dispatch calls in a single turn so they run concurrently. The dispatch tool differs per harness:
+Make all dispatch calls in a single turn so they run concurrently. The dispatch tool differs per harness — use the **Dispatch mechanism** list in `razorback:subagent-driven-development`, plus its **Parallel Dispatch** notes for the per-harness completion and state calls. Ad-hoc dispatch uses the same mechanism as plan execution; only the task source differs.
 
-| Harness | Dispatch call |
-|---------|---------------|
-| **Claude Code / Cursor** | `Agent` tool — one call per agent, multiple calls in one turn run in parallel |
-| **Codex** | `spawn_agent(task_name=…, message=…)` — collect agent IDs, `wait_agent(timeout_ms=…)` for completion, `list_agents` for state (surface verified on codex 0.144.3; trust the live tool list) |
-| **OpenCode** | `Task` tool — one call per agent, multiple calls in one turn run in parallel |
-| **Copilot CLI** | `task(agent_type="general-purpose", …)` — poll with `read_agent` / `list_agents` |
-| **Gemini CLI** | `invoke_agent(agent_name="generalist", prompt=…)` — parallel by default |
+One addition for ad-hoc dispatch: **Cursor** dispatches with the `Agent` tool exactly as Claude Code does. SDD's list covers Cursor only as a delegation target via `razorback:cursor-agent`.
 
 Example (Claude Code):
 
@@ -97,10 +74,11 @@ Agent("Fix tool-approval-race-conditions.test.ts failures")
 ### 4. Review and Integrate
 
 When agents return:
-- Read each summary
-- Verify fixes don't conflict
-- Run the project-defined integration or branch verification scope
-- Integrate all changes
+- **Review each summary** — understand what each agent changed
+- **Check for conflicts** — did agents edit the same code? Do the fixes contradict each other?
+- **Run the project-defined integration or branch verification scope** — verify the fixes work together, not just individually
+- **Spot check** — agents can make systematic errors; don't trust the summaries alone
+- **Integrate all changes**
 
 Model choice is left to the lead agent and the harness default unless the user or
 environment explicitly requests an override. If a lane has hidden invariants,
@@ -148,18 +126,3 @@ Return: Summary of what you found and what you fixed.
 
 **❌ Vague output:** "Fix it" - you don't know what changed
 **✅ Specific:** "Return summary of root cause and changes"
-
-## When NOT to Use
-
-**Related failures:** Fixing one might fix others - investigate together first
-**Need full context:** Understanding requires seeing entire system
-**Exploratory debugging:** You don't know what's broken yet
-**Shared state:** Agents would interfere (editing same files, using same resources)
-
-## Verification
-
-After agents return:
-1. **Review each summary** - Understand what changed
-2. **Check for conflicts** - Did agents edit same code?
-3. **Run the required project-defined scope** - Verify all fixes work together
-4. **Spot check** - Agents can make systematic errors

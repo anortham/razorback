@@ -65,7 +65,8 @@ Lead inline review — spec compliance for Task N:
     2. **Find references** to verify the implementation connects to the rest of the codebase
        (Miller `trace(target='<symbol>')`)
     3. **Inspect a symbol** to understand its context if behavior is unclear
-       (Miller `inspect(target='<symbol>', depth=full)`)
+       (Miller `inspect(target='<symbol>', depth=overview)` — escalate to
+       `depth=full` only for the symbol the question centers on)
 
     Only use Read for specific sections identified by the symbol listing. Do NOT read entire files.
 

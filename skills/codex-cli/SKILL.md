@@ -32,66 +32,11 @@ models.
 
 ## Review Targeting
 
-For diff-based modes (Code Review, Adversarial Review), pick scope and
-execution mode before invoking Codex.
-
-**Scope** — these are *skill arguments* the user passes to this skill, NOT `codex` CLI flags (never append them to the `codex exec` command). Default `--scope auto`:
-
-- `--scope auto`: working-tree if `git status --porcelain` is non-empty, else
-  branch-vs-base
-- `--scope working-tree`: staged + unstaged changes
-- `--scope branch`: current branch vs base ref
-- `--base <ref>`: explicit base for branch scope (default: `main`, fall back
-  to `master`)
-
-Resolve `$DIFF`, `$TARGET`, and `$RANGE` per scope:
-
-```bash
-DIR="${DIR:-$(git rev-parse --show-toplevel)}"
-
-case "$SCOPE" in
-  branch)
-    BASE="${USER_BASE:-$(git -C "$DIR" merge-base HEAD main 2>/dev/null || git -C "$DIR" merge-base HEAD master 2>/dev/null)}"
-    DIFF=$(git -C "$DIR" diff "$BASE..HEAD" --no-ext-diff)
-    TARGET=$(git -C "$DIR" log --oneline "$BASE..HEAD")
-    RANGE="$BASE..HEAD"
-    ;;
-  working-tree)
-    DIFF=$(git -C "$DIR" diff --cached --no-ext-diff && git -C "$DIR" diff --no-ext-diff)
-    TARGET=$(git -C "$DIR" diff --stat HEAD)
-    RANGE=""
-    ;;
-  auto|*)
-    if [ -n "$(git -C "$DIR" status --porcelain)" ]; then
-      DIFF=$(git -C "$DIR" diff --cached --no-ext-diff && git -C "$DIR" diff --no-ext-diff)
-      TARGET=$(git -C "$DIR" diff --stat HEAD)
-      RANGE=""
-    else
-      BASE="${USER_BASE:-$(git -C "$DIR" merge-base HEAD main 2>/dev/null || git -C "$DIR" merge-base HEAD master 2>/dev/null)}"
-      DIFF=$(git -C "$DIR" diff "$BASE..HEAD" --no-ext-diff)
-      TARGET=$(git -C "$DIR" log --oneline "$BASE..HEAD")
-      RANGE="$BASE..HEAD"
-    fi
-    ;;
-esac
-```
-
-**Execution mode** — peek at diff size first:
-
-```bash
-SHORTSTAT=$(git -C "$DIR" diff --shortstat $RANGE)
-```
-
-Decide:
-
-- **Tiny** (≤ 2 files, < ~200 lines): foreground. Return the result inline.
-- **Anything else, or unclear**: launch with
-  `Bash({command: ..., run_in_background: true})`. Tell the user "Codex review
-  running in the background; escalation-tier review on a large diff can take
-  minutes" and use `Monitor` on the returned shell ID to fetch output later.
-
-`--wait` forces foreground; `--background` forces background. Otherwise apply
-the heuristic and announce the chosen mode in one sentence.
+Scope selection (`--scope auto|working-tree|branch`, `--base <ref>`) and the
+foreground/background sizing heuristic are shared across razorback's reviewer
+skills: load `review-targeting.md` from razorback's using-razorback references
+when selecting scope. It resolves `$DIFF`, `$TARGET`, and `$RANGE`; read
+"the reviewer" there as `codex exec`.
 
 ## Task Routing
 
@@ -135,7 +80,7 @@ codex exec --color never -C /path/to/project -s read-only \
 cat /tmp/review.txt
 ```
 
-For the unified-prompt path (consistent with claude-cli / gemini-cli reviewers), continue with the steps below.
+For the unified-prompt path (consistent with the claude-cli reviewer), continue with the steps below.
 
 **Step 1: Apply Review Targeting**
 
@@ -181,56 +126,32 @@ change.
 
 **Step 1: Apply Review Targeting** (same as Code Review)
 
-**Step 2: Build the adversarial prompt** using the template below, substituting
-`{{TARGET_LABEL}}` with the diff stat, `{{USER_FOCUS}}` with any focus text
-(or "none specified"), and `{{REVIEW_INPUT}}` with the full diff.
+**Step 2: Build the adversarial prompt** from this skill's canonical
+`adversarial-prompt.txt`, substituting `{{TARGET_LABEL}}` with the diff stat,
+`{{USER_FOCUS}}` with any focus text (or "none specified"), and
+`{{REVIEW_INPUT}}` with the full diff.
 
 **Step 3: Send with structured output**
 
-Codex's `--output-schema` flag takes a file path. Write the canonical schema
-(kept in this skill at `schemas/review-output.schema.json` for version control)
-to a temp file at invocation time — the content is inlined below so no knowledge
-of the razorback install path is required:
+Codex's `--output-schema` flag takes a file path, so point it straight at the
+canonical schema this skill ships — no temp file needed. `$SKILL_DIR`
+throughout this skill is the skill's own base directory, announced when the
+skill loads — substitute it before running any command:
 
 ```bash
-SCHEMA_FILE=$(mktemp) && trap 'rm -f "$SCHEMA_FILE"' EXIT
-cat > "$SCHEMA_FILE" <<'SCHEMA_EOF'
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "additionalProperties": false,
-  "required": ["verdict", "summary", "findings", "next_steps"],
-  "properties": {
-    "verdict": { "type": "string", "enum": ["approve", "needs-attention"] },
-    "summary": { "type": "string", "minLength": 1 },
-    "findings": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["severity", "title", "body", "file", "line_start", "line_end", "confidence", "recommendation"],
-        "properties": {
-          "severity": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
-          "title": { "type": "string", "minLength": 1 },
-          "body": { "type": "string", "minLength": 1 },
-          "file": { "type": "string", "minLength": 1 },
-          "line_start": { "type": "integer", "minimum": 1 },
-          "line_end": { "type": "integer", "minimum": 1 },
-          "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
-          "recommendation": { "type": "string" }
-        }
-      }
-    },
-    "next_steps": { "type": "array", "items": { "type": "string", "minLength": 1 } }
-  }
-}
-SCHEMA_EOF
+# Split on the placeholders rather than ${//} substitution: bash >=5.2 expands
+# & and backslashes in a substitution's replacement text, which mangles diffs.
+TEMPLATE=$(cat "$SKILL_DIR/adversarial-prompt.txt")
+HEAD=${TEMPLATE%%'{{TARGET_LABEL}}'*};  REST=${TEMPLATE#*'{{TARGET_LABEL}}'}
+MID=${REST%%'{{USER_FOCUS}}'*};         REST=${REST#*'{{USER_FOCUS}}'}
+TAIL=${REST%%'{{REVIEW_INPUT}}'*}
+ADVERSARIAL_PROMPT="${HEAD}${TARGET}${MID}${FOCUS:-none specified}${TAIL}${DIFF}"
 
 RESULT_FILE=$(mktemp) && trap 'rm -f "$RESULT_FILE"' EXIT
 echo "$ADVERSARIAL_PROMPT" | codex exec --ephemeral --color never \
   -s read-only \
   -C /path/to/project \
-  --output-schema "$SCHEMA_FILE" \
+  --output-schema "$SKILL_DIR/schemas/review-output.schema.json" \
   -o "$RESULT_FILE" \
   - \
   2>/dev/null
@@ -277,61 +198,15 @@ improvable. If Codex made a mess, say so and offer to fix it.
 
 ## Adversarial Prompt Template
 
-Use this template for adversarial reviews. Replace the `{{placeholders}}` with
-actual values at runtime.
+The canonical adversarial prompt lives in this skill at
+`./adversarial-prompt.txt` (version-controlled). Read it and replace the
+`{{TARGET_LABEL}}`, `{{USER_FOCUS}}`, and `{{REVIEW_INPUT}}` placeholders at
+runtime, as the Adversarial Review invocation above does.
 
-```
-You are Codex performing an adversarial software review.
-Your job is to break confidence in the change, not to validate it.
-
-Target: {{TARGET_LABEL}}
-User focus: {{USER_FOCUS}}
-
-OPERATING STANCE:
-Default to skepticism. Assume the change can fail in subtle, high-cost, or
-user-visible ways until evidence says otherwise. Do not give credit for good
-intent, partial fixes, or likely follow-up work. If something only works on
-the happy path, treat that as a real weakness.
-
-ATTACK SURFACE (prioritize expensive, dangerous, or hard-to-detect failures):
-- Auth, permissions, tenant isolation, and trust boundaries
-- Data loss, corruption, duplication, and irreversible state changes
-- Rollback safety, retries, partial failure, and idempotency gaps
-- Race conditions, ordering assumptions, stale state, and re-entrancy
-- Empty-state, null, timeout, and degraded dependency behavior
-- Version skew, schema drift, migration hazards, and compatibility regressions
-- Observability gaps that would hide failure or make recovery harder
-
-REVIEW METHOD:
-Actively try to disprove the change. Look for violated invariants, missing
-guards, unhandled failure paths, and assumptions that stop being true under
-stress. Trace how bad inputs, retries, concurrent actions, or partially
-completed operations move through the code. If the user supplied a focus area,
-weight it heavily, but still report any other material issue you can defend.
-
-FINDING BAR:
-Report only material findings. No style feedback, naming feedback, low-value
-cleanup, or speculative concerns without evidence. Each finding must answer:
-1. What can go wrong?
-2. Why is this code path vulnerable?
-3. What is the likely impact?
-4. What concrete change would reduce the risk?
-
-CALIBRATION:
-Prefer one strong finding over several weak ones. Do not dilute serious issues
-with filler. If the change looks safe, say so directly and return no findings.
-
-GROUNDING:
-Every finding must be defensible from the provided context. Do not invent
-files, lines, code paths, or runtime behavior you cannot support. If a
-conclusion depends on an inference, state that explicitly and keep the
-confidence honest.
-
-Return JSON matching the provided schema.
-
-REPOSITORY CONTEXT:
-{{REVIEW_INPUT}}
-```
+It is the Codex variant of a deliberate pair: `../claude-cli/adversarial-prompt.txt`
+is identical except for the model name and a REVIEW METHOD line naming Claude's
+`Read`/`Bash` tools. Attack-surface categories, finding bar, calibration, and
+grounding rules match; keep the two in sync when editing either.
 
 ## Resuming a Codex Session
 
@@ -427,7 +302,7 @@ On **Windows**, if codex's sandbox fails to spawn (`CreateProcessAsUserW failed:
 | Code review (unified prompt) | read-only | Pipe diff: `echo "$PROMPT" \| codex exec --ephemeral --color never -s read-only -C dir - 2>/dev/null` (scope/sizing per Review Targeting) |
 | Code review (codex-native scope) | read-only | `codex exec -C dir -s read-only review --uncommitted -o /tmp/review.txt "focus" < /dev/null 2>/dev/null` (or `--base <branch>` / `--commit <sha>`; exec-level flags like `-C`/`-s` go BEFORE `review`) |
 | Goal tracking | interactive only | `/goal` sets or views a long-running objective; the `goals` feature is stable and enabled by default as of codex 0.143 |
-| Adversarial review | read-only + schema | Add `--output-schema "$SCHEMA_FILE"` where `$SCHEMA_FILE` is a temp file materialized from the inlined schema (see Adversarial Review section). Scope/sizing per Review Targeting. |
+| Adversarial review | read-only + schema | Add `--output-schema "$SKILL_DIR/schemas/review-output.schema.json"` and build the prompt from `$SKILL_DIR/adversarial-prompt.txt` (see Adversarial Review section). Scope/sizing per Review Targeting. |
 | Delegate (complex) | workspace-write | `codex exec --ephemeral --color never --sandbox workspace-write -C dir "prompt" < /dev/null 2>/dev/null` (no `-a` — removed from `exec` in codex 0.143; replaces the deprecated `--full-auto`; add `--add-dir <DIR>` for extra writable dirs) |
 | Truly fresh reviewer | read-only + isolated | Add `--ignore-user-config --ignore-rules` to skip project AGENTS.md and execpolicy `.rules` |
 | Clean output capture | any | Add `-o <file>` to write the agent's last message to a file instead of mixing it with stderr/banner output |

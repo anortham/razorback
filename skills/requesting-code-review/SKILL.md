@@ -1,6 +1,6 @@
 ---
 name: requesting-code-review
-description: Use when the lead needs inline-review criteria during plan execution, or when reviewing work done outside an approved plan - ad-hoc features, baseline checks before a refactor, or when stuck. Planned pre-merge external review is razorback:pre-merge-review, not this skill.
+description: Use when the lead needs inline-review criteria during plan execution, or when reviewing work done outside an approved plan - ad-hoc features, baseline checks before a refactor, or when stuck. Not for planned pre-merge external review — that's razorback:pre-merge-review.
 ---
 
 # Requesting Code Review
@@ -20,7 +20,7 @@ When using `razorback:subagent-driven-development`, the **lead does inline revie
 - Compare actual code to task requirements line by line
 
 **Code quality:** Is the code clean, tested, and maintainable?
-- **Inspect** key modified symbols with Miller `inspect depth=full`
+- **Inspect** key modified symbols with Miller `inspect(target, depth=overview)` — escalate to `depth=full` for symbols the change centers on
 - **Find references** to verify changes don't break dependents with Miller `trace`
 - Check tests verify behavior, not just that code runs
 - Reject the report if the implementer cannot show Miller-first orientation and
@@ -59,12 +59,10 @@ HEAD_SHA=$(git rev-parse HEAD)
 |---------|---------------|
 | Claude Code | `Agent(subagent_type="razorback:code-reviewer", prompt=<filled template>)` |
 | Cursor | Same as Claude Code (plugin agents exposed through the Skill tool's agent discovery) |
-| Copilot CLI | `task(agent_type="razorback:code-reviewer", …)` — plugin agents auto-discovered |
 | Codex | `spawn_agent(task_name="code-review", message=<see two-file note below>)` |
 | OpenCode | `Task` tool with `general` subagent (message built as in the two-file note below) |
-| Gemini CLI | `invoke_agent(agent_name="generalist", prompt=<see two-file note below>)` — same concatenation pattern as Codex / OpenCode. Drop a custom `.gemini/agents/code-reviewer.md` into the target repo if you want a named reviewer agent instead. |
 
-**Two-file note (Codex / OpenCode / Gemini CLI inline-prompt harnesses):** The reviewer uses two files. `agents/code-reviewer.md` holds the reviewer's system-prompt body (its behavioral spec). `requesting-code-review/code-reviewer.md` is the task template with placeholders (`{WHAT_WAS_IMPLEMENTED}`, `{PLAN_OR_REQUIREMENTS}`, `{BASE_SHA}`, `{HEAD_SHA}`, `{DESCRIPTION}`). On Claude Code / Cursor / Copilot CLI the agent discovery wires these together automatically. On Codex, OpenCode, and Gemini CLI, build the dispatch message by concatenating: (1) `agents/code-reviewer.md` body (strip the frontmatter), then (2) the filled-in `requesting-code-review/code-reviewer.md` template. Send that as the subagent's task message (Codex `spawn_agent` `message`, OpenCode `Task` prompt, or Gemini `invoke_agent` `prompt`).
+**Two-file note (Codex / OpenCode inline-prompt harnesses):** The reviewer uses two files. `agents/code-reviewer.md` holds the reviewer's system-prompt body (its behavioral spec). `requesting-code-review/code-reviewer.md` is the task template with placeholders (`{WHAT_WAS_IMPLEMENTED}`, `{PLAN_OR_REQUIREMENTS}`, `{BASE_SHA}`, `{HEAD_SHA}`, `{DESCRIPTION}`). On Claude Code / Cursor the agent discovery wires these together automatically. On Codex and OpenCode, build the dispatch message by concatenating: (1) `agents/code-reviewer.md` body (strip the frontmatter), then (2) the filled-in `requesting-code-review/code-reviewer.md` template. Send that as the subagent's task message (Codex `spawn_agent` `message` or OpenCode `Task` prompt).
 
 **Placeholders:**
 - `{WHAT_WAS_IMPLEMENTED}` - What you just built

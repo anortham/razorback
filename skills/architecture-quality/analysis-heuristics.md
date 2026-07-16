@@ -8,7 +8,7 @@ Each heuristic's `Find it` line names the Miller calls that gather its evidence.
 
 Smell: the module mostly forwards calls, renames values, or wraps behavior with no local policy.
 
-Find it: `inspect(symbol, depth=full)` shows a body that only forwards; `trace(symbol)` shows callers gaining nothing from the layer.
+Find it: `inspect(target='<symbol>', depth=full)` shows a body that only forwards; `trace(target='<symbol>')` shows callers gaining nothing from the layer.
 
 Evidence: deleting it does not shrink caller burden and usually just removes a layer of ceremony.
 
@@ -32,7 +32,7 @@ Tests: shared behavior should be tested once through the shared interface, not c
 
 Smell: callers need to know implementation details, or a helper exposes the wrong amount of behavior.
 
-Find it: `inspect(symbol)` for the interface shape; `trace(symbol)` for what every caller is forced to know.
+Find it: `inspect(target='<symbol>')` for the interface shape; `trace(target='<symbol>')` for what every caller is forced to know.
 
 Evidence: the API shape leaks storage, transport, or orchestration details that callers should not own.
 
@@ -104,7 +104,7 @@ Tests: value objects or typed wrappers should be tested at their interface, wher
 
 Smell: the code was split into many tiny pieces, but the pieces did not buy any leverage.
 
-Find it: `inspect(path)` listing many tiny symbols in one file; `trace` showing chains of single-caller hops.
+Find it: `inspect(target='<file>')` listing many tiny symbols in one file; `trace` showing chains of single-caller hops.
 
 Evidence: caller code gets longer, the number of seams grows, and no complexity actually disappeared.
 

@@ -61,6 +61,7 @@ tune the numeric thresholds; the criteria themselves are not optional.
 
 ## Step 4: Verify the affected scope only
 
+- Compute the affected scope first: Miller `impact(target='<changed symbol>')` returns the impacted symbols plus the likely tests — run those.
 - Run the targeted test(s) and reconfirm the original symptom is gone. razorback:verification-before-completion applies in full — evidence, not "should work."
 - The full suite is NOT part of this tier. The full suite runs at the branch gate
   (CI or pre-merge), not in the inner loop.
@@ -72,7 +73,7 @@ tune the numeric thresholds; the criteria themselves are not optional.
 Objective, checked continuously while fixing:
 
 - The change needs a **3rd source file** or **~2× the line budget**
-- The root cause lands in **shared or public code** (API, schema, shared state, security boundary)
+- The root cause lands in **shared or public code** (API, schema, shared state, security boundary) — check it: Miller `trace(target)` for references, `impact(target)` for blast radius
 - A **second fix attempt fails**
 - The fix requires a **dependency change or a new module**
 

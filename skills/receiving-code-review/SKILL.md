@@ -1,6 +1,6 @@
 ---
 name: receiving-code-review
-description: Use when receiving code review feedback, before implementing suggestions, especially if feedback seems unclear or technically questionable - requires technical rigor and verification, not performative agreement or blind implementation
+description: Use when receiving code review feedback, before implementing suggestions, especially if feedback seems unclear or technically questionable
 ---
 
 # Code Review Reception
@@ -82,7 +82,7 @@ BEFORE implementing:
   3. Check: Reason for current implementation?
   4. Check: Works on all platforms/versions?
   5. Check: Does reviewer understand full context?
-  6. Check: Inspect the symbol to understand full context of the code being discussed with Miller `inspect depth=full`
+  6. Check: Inspect the symbol being discussed with Miller `inspect(target, depth=overview)` — escalate to `depth=full` for the symbol the feedback centers on
   7. Check: Find references to verify suggested changes won't break callers with Miller `trace`
 
 IF suggestion seems wrong:

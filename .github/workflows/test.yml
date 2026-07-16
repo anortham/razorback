@@ -29,11 +29,4 @@ jobs:
       # release to the tag so a stale-but-consistent version cannot ship.
       - name: Verify tag matches manifest version
         if: github.ref_type == 'tag'
-        run: |
-          manifest_version="$(jq -r .version package.json)"
-          tag_version="${GITHUB_REF_NAME#v}"
-          if [ "$manifest_version" != "$tag_version" ]; then
-            echo "tag ${GITHUB_REF_NAME} does not match manifest version ${manifest_version}" >&2
-            exit 1
-          fi
-          echo "tag ${GITHUB_REF_NAME} matches manifest version ${manifest_version}"
+        run: ./scripts/bump-version.sh --check "${GITHUB_REF_NAME#v}"
