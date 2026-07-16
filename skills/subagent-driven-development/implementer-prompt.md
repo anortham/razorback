@@ -37,6 +37,9 @@ Agent tool (general-purpose):
     - Your task requires a destructive action not authorized by the plan
     - The code state contradicts a load-bearing plan assumption
     - There's a safety-critical ambiguity (security, data integrity, billing, auth) with no plan answer
+    - Test failures are unresolvable — repeated fix attempts do not converge and no further strategy is available
+
+    `skills/using-razorback/references/blocker-taxonomy.md` is authoritative; these five mirror it.
 
     Otherwise, make the call, note it, and proceed.
 

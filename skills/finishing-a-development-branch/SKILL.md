@@ -160,14 +160,27 @@ Stop. Don't proceed to Step 2.
 `git merge-base` returns a commit SHA, not a branch name. Downstream steps need the branch **name** (`git checkout <base-branch>`, `gh pr create --base`), so resolve both values the same way Autonomous Step 2 does:
 
 ```bash
-if BASE_SHA=$(git merge-base HEAD main 2>/dev/null); then
+# Prefer an explicit base from the plan/user, then the remote's default branch,
+# then main/master. Merge-base-with-main alone is wrong for repos whose PRs
+# target another branch (develop, release/*) — main almost always shares history.
+if [ -n "$PLAN_BASE" ]; then
+  BASE_BRANCH="$PLAN_BASE"
+elif DEFAULT_REF=$(git symbolic-ref --quiet refs/remotes/origin/HEAD 2>/dev/null); then
+  BASE_BRANCH="${DEFAULT_REF#refs/remotes/origin/}"
+elif git show-ref --verify --quiet refs/heads/main; then
   BASE_BRANCH=main
-elif BASE_SHA=$(git merge-base HEAD master 2>/dev/null); then
+elif git show-ref --verify --quiet refs/heads/master; then
   BASE_BRANCH=master
+fi
+
+if [ -z "$BASE_BRANCH" ] || ! BASE_SHA=$(git merge-base HEAD "$BASE_BRANCH" 2>/dev/null); then
+  echo "Cannot determine base branch/merge-base." >&2
+  # Interactive Mode: nothing resolved, so ask the user instead of guessing.
+  # Do NOT proceed to Step 3 until the base branch is confirmed.
 fi
 ```
 
-If neither resolves, ask: "This branch split from main - is that correct?"
+If nothing resolves, ask: "This branch split from main - is that correct?"
 
 ### Step 3: Present Options
 

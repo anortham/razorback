@@ -77,7 +77,8 @@ You cannot write accurate file paths, line ranges, or implementation steps witho
 1. **Orient on the area:** Miller `context` — returns token-budgeted context with pivots and neighbors
 2. **Inspect key symbols:** Miller `inspect depth=full` — shows callers, callees, types, children
 3. **Find exact locations:** list a file's symbols with Miller `inspect` — get file structure with line numbers for `Modify:` references
-4. **Assess impact:** find references with Miller `trace` — find all callers before planning changes
+4. **Assess impact:** Miller `impact(target)` — impacted symbols plus the likely tests, so the plan's Verification Strategy names real commands
+5. **Find references:** Miller `trace(target)` — every caller before planning a change to a public API
 
 **Do NOT guess file paths, line numbers, symbol names, function signatures, config shapes, route names, CLI flags, or public contracts.** Use Miller to discover them. Plans with wrong paths or invented API shapes waste implementer time on dead ends.
 

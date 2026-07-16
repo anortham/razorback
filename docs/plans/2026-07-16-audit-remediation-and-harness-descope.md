@@ -214,11 +214,11 @@ Batches run in order (A → B → C → D). Within a batch, tasks are safe to di
 **Approach:** Inspect each site with Miller (`search(query='<section heading>', mode=content)`) to confirm current line positions post-Batch-A before editing.
 
 **Acceptance criteria:**
-- [ ] Both finishing-a-development-branch modes resolve `$BASE_BRANCH` identically (diff of the two script blocks differs only in the interactive fallback question)
-- [ ] `grep -n 'Assess impact' skills/writing-plans/SKILL.md` names `impact`, not `trace`
-- [ ] Implementer prompt lists 5 blocker items + taxonomy pointer
-- [ ] `grep -n 'mode=markers' skills/harvesting-debt/SKILL.md` hits
-- [ ] Tests pass and the change is handed to the lead per commit mode
+- [x] Both finishing-a-development-branch modes resolve `$BASE_BRANCH` identically (diff of the two script blocks differs only in the interactive fallback question)
+- [x] `grep -n 'Assess impact' skills/writing-plans/SKILL.md` names `impact`, not `trace`
+- [x] Implementer prompt lists 5 blocker items + taxonomy pointer
+- [x] ~~`grep -n 'mode=markers' skills/harvesting-debt/SKILL.md` hits~~ **Criterion revised during execution:** live Miller probes proved `mode=markers` is a closed TODO/FIXME/HACK/XXX vocabulary that rejects `razorback:`. Landed `regions=comment` as the primary (verified working), `mode=text` as fallback, plus an inline note that `mode=markers` does not apply — which satisfies this fix's actual intent (comment-scoped marker sweep).
+- [x] Tests pass and the change is handed to the lead per commit mode
 
 ### Task 6: CI tag gate + repo hygiene
 
