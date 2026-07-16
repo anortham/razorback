@@ -75,7 +75,7 @@ Every step must contain the actual content an engineer needs. These are **plan f
 You cannot write accurate file paths, line ranges, or implementation steps without understanding the code. Before writing any task:
 
 1. **Orient on the area:** Miller `context` — returns token-budgeted context with pivots and neighbors
-2. **Inspect key symbols:** Miller `inspect depth=full` — shows callers, callees, types, children
+2. **Inspect key symbols:** Miller `inspect(target, depth=overview)` — bounded callers, callees, body preview; escalate to `depth=full` for symbols the plan will modify
 3. **Find exact locations:** list a file's symbols with Miller `inspect` — get file structure with line numbers for `Modify:` references
 4. **Assess impact:** Miller `impact(target)` — impacted symbols plus the likely tests, so the plan's Verification Strategy names real commands
 5. **Find references:** Miller `trace(target)` — every caller before planning a change to a public API

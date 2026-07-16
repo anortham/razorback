@@ -55,7 +55,7 @@ Skip any step = lying, not verifying
 
 **Use Miller to verify code changes:**
 - **Find references** to all modified/new symbols — verify nothing is broken with `trace`
-- **Inspect** changed public APIs — confirm callers still work with `inspect depth=full`
+- **Inspect** changed public APIs — confirm callers still work with `inspect(target, depth=full)` (the symbol you changed earns `full`)
 - **Prove API shapes** — confirm symbol names, function signatures, config shapes, route names, CLI flags, and public contracts with Miller before claiming they are correct
 
 ## Red Flags - STOP

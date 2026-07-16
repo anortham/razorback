@@ -144,7 +144,7 @@ Summary of the four classifications:
 
 Verification always uses Miller:
 
-- **Inspect** the referenced symbol — check its callers, callees, types with `inspect depth=full`.
+- **Inspect** the referenced symbol — check its callers, callees, types with `inspect(target, depth=overview)`; escalate to `depth=full` only for the symbol the finding centers on.
 - **Find references** — check the full impact if the finding touches a public API with `trace`.
 - **List the file's symbols** — see the file structure without reading the whole file with `inspect`.
 

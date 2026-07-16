@@ -12,7 +12,7 @@ The code actually has the defect described. A caller, callee, edge case, or inva
 
 **Verify with Miller**:
 
-- **Inspect the referenced symbol** with `inspect depth=full` — confirm the symbol exists, check its callers/callees/types to see if the described path is real.
+- **Inspect the referenced symbol** with `inspect(target, depth=overview)` — confirm the symbol exists, check its callers/callees/types to see if the described path is real; escalate to `depth=full` only for the symbol the finding centers on.
 - **Find references** with `trace` — if the finding touches a public API or shared utility, check the full reference graph to size the impact.
 - **List the file's symbols** with `inspect` — scan the file's structure to confirm the reviewer is pointing at the right region.
 

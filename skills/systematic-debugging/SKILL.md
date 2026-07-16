@@ -120,7 +120,7 @@ You MUST complete each phase before proceeding to the next.
    - Fix at source, not at symptom
 
 **Use Miller for investigation:**
-- **Inspect** the buggy function — understand callers, callees, type flow with `inspect depth=full`
+- **Inspect** the buggy function — understand callers, callees, type flow with `inspect(target, depth=full)` (the symbol at issue earns `full`)
 - **Find references** — find all call sites that might trigger the bug with `trace`
 - **Orient** on the broader subsystem with `context`
 
@@ -144,7 +144,7 @@ You MUST complete each phase before proceeding to the next.
    - Don't assume "that can't matter"
 
 4. **Understand Dependencies**
-   - **Inspect** the broken function — see callers, callees, types, children with Miller `inspect depth=full`
+   - **Inspect** the broken function — see callers, callees, types, children with Miller `inspect(target, depth=full)`
    - What other components does this need?
    - What settings, config, environment?
    - What assumptions does it make?

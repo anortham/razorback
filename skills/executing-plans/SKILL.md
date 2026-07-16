@@ -32,7 +32,7 @@ For each task:
 1. Mark as in_progress
 2. **Orient before coding:** Use Miller to understand the area before making changes
    - **Orient** — token-budgeted codebase orientation with `context`
-   - **Inspect** the symbol to modify — callers, callees, types — before touching it with `inspect depth=full`
+   - **Inspect** the symbol to modify — callers, callees, types — before touching it with `inspect(target, depth=full)` (symbols you are editing earn `full`)
    - **Find references** — check all references before changing any symbol with `trace`
    - **List a file's symbols** before reading full content with `inspect`
    - **Prove API shapes** — use Miller evidence for symbol names, function signatures, config shapes, route names, CLI flags, and public contracts before relying on them
