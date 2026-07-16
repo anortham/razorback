@@ -135,7 +135,7 @@ codex exec --color never -C /path/to/project -s read-only \
 cat /tmp/review.txt
 ```
 
-For the unified-prompt path (consistent with claude-cli / gemini-cli reviewers), continue with the steps below.
+For the unified-prompt path (consistent with the claude-cli reviewer), continue with the steps below.
 
 **Step 1: Apply Review Targeting**
 

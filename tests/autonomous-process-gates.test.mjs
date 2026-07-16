@@ -58,7 +58,6 @@ test('supporting skills route autonomous uncertainty through blocker taxonomy', 
   const receivingReview = read('skills/receiving-code-review/SKILL.md');
   const debugging = read('skills/systematic-debugging/SKILL.md');
   const tdd = read('skills/test-driven-development/SKILL.md');
-  const gemini = read('skills/gemini-cli/SKILL.md');
 
   assert.doesNotMatch(receivingReview, /Should I \[investigate\/ask\/proceed\]\?/);
   assert.doesNotMatch(receivingReview, /Stop and discuss with your human partner first/);
@@ -72,7 +71,4 @@ test('supporting skills route autonomous uncertainty through blocker taxonomy', 
   assert.doesNotMatch(tdd, /Ask your human partner/);
   assert.doesNotMatch(tdd, /human partner's permission/i);
   assert.match(tdd, /planned exception/i);
-
-  assert.doesNotMatch(gemini, /ask the user what to do/i);
-  assert.match(gemini, /blocker taxonomy/i);
 });

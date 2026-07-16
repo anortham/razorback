@@ -11,7 +11,7 @@ Invocation instructions for running `claude -p` as the pre-merge adversarial rev
 
 ## Build the user prompt
 
-The adversarial system prompt (loaded via `--system-prompt-file`) supplies the operating stance, attack-surface categories, finding bar, calibration, and grounding rules. The user prompt therefore carries only the target-specific context; the same three inputs codex and gemini get:
+The adversarial system prompt (loaded via `--system-prompt-file`) supplies the operating stance, attack-surface categories, finding bar, calibration, and grounding rules. The user prompt therefore carries only the target-specific context; the same three inputs codex gets:
 
 ```bash
 DIFF_AND_CONTEXT="Target: $FILE_STAT (branch <name>: base..HEAD)

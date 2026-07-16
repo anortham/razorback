@@ -124,10 +124,10 @@ Batches run in order (A → B → C → D). Within a batch, tasks are safe to di
 **Approach:** `grep -n -i 'gemini\|copilot' <file>` per owned file; remove or rewrite each hit minimally. In `cross-model-convergence`, Gemini disappears as an example pairing — the skill's model-agnostic protocol stays. Where "second opinion" lists name models, the remaining set is codex/claude/cursor-agent (cursor-agent skill itself is untouched).
 
 **Acceptance criteria:**
-- [ ] `skills/gemini-cli/`, `gemini-tools.md`, `copilot-tools.md`, `reviewer-prompts/gemini.md` deleted
-- [ ] `grep -ri 'gemini' skills/pre-merge-review skills/writing-plans skills/cross-model-convergence skills/finishing-a-development-branch skills/grounding-in-current-docs skills/brainstorming skills/codex-cli skills/claude-cli` → no hits
-- [ ] Reviewer choice reads `none | codex | claude` everywhere in owned files
-- [ ] Tests pass and the change is handed to the lead per commit mode
+- [x] `skills/gemini-cli/`, `gemini-tools.md`, `copilot-tools.md`, `reviewer-prompts/gemini.md` deleted
+- [x] `grep -ri 'gemini' skills/pre-merge-review skills/writing-plans skills/cross-model-convergence skills/finishing-a-development-branch skills/grounding-in-current-docs skills/brainstorming skills/codex-cli skills/claude-cli` → no hits
+- [x] Reviewer choice reads `none | codex | claude` everywhere in owned files
+- [x] Tests pass and the change is handed to the lead per commit mode
 
 ### Task 3: Execution-skill descope + docs
 
