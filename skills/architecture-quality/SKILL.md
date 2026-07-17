@@ -7,7 +7,7 @@ description: Use when planning or reviewing non-trivial code changes, refactorin
 
 Use this skill before you plan or review non-trivial code changes. If the work is mechanical, fast exit. If it changes module boundaries, caller-facing interfaces, seams, adapters, or test surface, this skill must run. If the cleanup is itself the request — reduce complexity, remove duplication, clean up an area — with no specific change in flight, use Audit Mode.
 
-Read `architecture-language.md` for the shared vocabulary. Use `analysis-heuristics.md` when Gate Mode finds structural signals or Audit Mode is sweeping. Use `interface-design.md` when the interface shape has more than one plausible lane or the blast radius is medium/high.
+Read `architecture-language.md` for the shared vocabulary. Use `analysis-heuristics.md` when Gate Mode finds structural signals or Audit Mode is sweeping. Use `interface-design.md` when the interface shape has more than one plausible lane or the blast radius is medium/high. Use `deepening.md` when a refactor candidate is accepted, to classify its dependencies and choose the test strategy across the seam.
 
 The interface is the test surface. Tests should prove behavior through the caller-facing interface, not through private plumbing.
 
@@ -77,7 +77,7 @@ Candidates are approval-gated. Folding non-required candidates into the current 
 Use Audit Mode when the cleanup is itself the request — "reduce complexity," "find duplication," "clean up this area" — and no specific change is in flight. Audit Mode finds friction and emits candidates; it never implements during the sweep.
 
 1. **Read `docs/adr/` first.** Recorded decisions are not re-litigated. Surface a candidate that contradicts an ADR only when the friction is strong enough to justify reopening the decision, and flag the conflict on the candidate. If `docs/adr/` is absent or empty, note that and continue.
-2. **Scope the sweep.** Orient with Miller `context(query)` on the area the user named. If no area was named, start from the modules with the most callers (Miller `trace`/`impact` on the obvious entry points), and state what you scoped to — do not boil the whole repo.
+2. **Scope the sweep.** Orient with Miller `context(query)` on the area the user named. If no area was named, rank targets by two signals together: recent churn (`git log --oneline` over a meaningful window — deepening pays off where change keeps landing) and caller count (Miller `trace`/`impact` on the obvious entry points — blast radius). High-churn, high-caller modules first. State what you scoped to — do not boil the whole repo.
 3. **Hunt by smell, not by file.** Walk the heuristics in `analysis-heuristics.md`; each has a `Find it` line naming the Miller calls that gather its evidence. Apply the deletion test to every shallow-looking module.
 4. **Do not design interfaces during the sweep.** Finding friction and designing the fix are separate steps. Interface shape comes after a candidate is accepted, via `interface-design.md` when more than one lane is plausible.
 5. **Emit ranked candidates.** Use the Candidate Mode template. Order by strength and end with a top recommendation: the single candidate to tackle first and why.

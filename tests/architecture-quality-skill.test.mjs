@@ -102,3 +102,47 @@ test('interface design explains the decision dimensions', () => {
   assert.match(design, /blast radius/i);
   assert.match(design, /risk medium\/high/i);
 });
+
+test('interface design forces lane divergence and an opinionated recommendation', () => {
+  const design = read('skills/architecture-quality/interface-design.md');
+
+  assert.match(design, /opposing design constraint/i);
+  assert.match(design, /\*\*Minimal:\*\*/);
+  assert.match(design, /\*\*Flexible:\*\*/);
+  assert.match(design, /\*\*Common-caller:\*\*/);
+  assert.match(design, /\*\*Ports & adapters:\*\*/);
+  assert.match(design, /opinionated recommendation/i);
+  assert.match(design, /never a menu/i);
+});
+
+test('deepening classifies dependencies and replaces layered tests', () => {
+  const deepening = read('skills/architecture-quality/deepening.md');
+
+  assert.match(deepening, /\*\*In-process\*\*/);
+  assert.match(deepening, /\*\*Local-substitutable\*\*/);
+  assert.match(deepening, /\*\*Remote but owned\*\*/);
+  assert.match(deepening, /\*\*True external\*\*/);
+  assert.match(deepening, /one adapter at a seam is a hypothesis/i);
+  assert.match(deepening, /replace, don't layer/i);
+  assert.match(deepening, /delete them/i);
+  assert.match(deepening, /testing past the interface/i);
+
+  const skill = read('skills/architecture-quality/SKILL.md');
+  assert.match(skill, /deepening\.md/);
+});
+
+test('audit mode scopes the sweep by churn and caller count together', () => {
+  const skill = read('skills/architecture-quality/SKILL.md');
+
+  assert.match(skill, /recent churn/i);
+  assert.match(skill, /git log --oneline/);
+  assert.match(skill, /caller count/i);
+  assert.match(skill, /do not boil the whole repo/i);
+});
+
+test('architecture language distinguishes internal seams from the caller-facing interface', () => {
+  const language = read('skills/architecture-quality/architecture-language.md');
+
+  assert.match(language, /internal seams/i);
+  assert.match(language, /never part of the caller-facing interface/i);
+});
