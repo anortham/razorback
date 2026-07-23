@@ -283,10 +283,11 @@ the confidence warranted? Then give your overall take on the verdict.
 The canonical adversarial system prompt lives in this skill at
 `./adversarial-prompt.txt` (version-controlled) and is passed directly via
 `--system-prompt-file` in the invocation above. It is the Claude variant of a
-deliberate pair: the only Claude-specific adaptation is the REVIEW METHOD line
+deliberate trio: the only Claude-specific adaptation is the REVIEW METHOD line
 referencing `Read` and `Bash` (Claude's native tool names). Attack-surface
 categories, finding bar, calibration, and grounding rules are identical to
-`../codex-cli/adversarial-prompt.txt`; keep the two in sync when editing either.
+`../codex-cli/adversarial-prompt.txt` and `../grok-cli/adversarial-prompt.txt`;
+keep the three in sync when editing any.
 
 ## Resuming a Session
 

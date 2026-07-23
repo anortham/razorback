@@ -203,10 +203,11 @@ The canonical adversarial prompt lives in this skill at
 `{{TARGET_LABEL}}`, `{{USER_FOCUS}}`, and `{{REVIEW_INPUT}}` placeholders at
 runtime, as the Adversarial Review invocation above does.
 
-It is the Codex variant of a deliberate pair: `../claude-cli/adversarial-prompt.txt`
-is identical except for the model name and a REVIEW METHOD line naming Claude's
-`Read`/`Bash` tools. Attack-surface categories, finding bar, calibration, and
-grounding rules match; keep the two in sync when editing either.
+It is the Codex variant of a deliberate trio: `../claude-cli/adversarial-prompt.txt`
+and `../grok-cli/adversarial-prompt.txt` are identical except for the model name
+and the REVIEW METHOD phrasing (Claude's names its `Read`/`Bash` tools).
+Attack-surface categories, finding bar, calibration, and grounding rules match;
+keep the three in sync when editing any.
 
 ## Resuming a Codex Session
 
