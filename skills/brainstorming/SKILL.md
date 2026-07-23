@@ -15,6 +15,8 @@ Start by understanding the current project context, then ask questions one at a 
 Do NOT invoke any implementation skill, write any code, scaffold any project, or take any implementation action until you have a design and the user has approved it.
 </HARD-GATE>
 
+**One exception:** when a design question is empirical — settleable only by running code, not by more discussion — take the razorback:prototyping off-ramp: announce the question, get a one-line go-ahead, build the throwaway instrument, return here with the user's verdict. Prototype code is not implementation; the gate still bars all production code.
+
 ## Triage First: Is This Design Work?
 
 Before choosing a path, check the tier. A reported defect or a small tweak that meets the quick-fix criteria (≤ 2 source files, ~20 changed lines, no contract changes, reversible — see razorback:fixing-small-issues) is repair work, not design work: route it to razorback:fixing-small-issues instead of running this skill. Investigation happens there first; if the issue outgrows the criteria, it escalates back here with its evidence.
@@ -89,6 +91,7 @@ Every project goes through this process. A todo list, a single-function utility,
 - Prefer multiple choice questions when possible, but open-ended is fine too
 - Only one question per message - if a topic needs more exploration, break it into multiple messages
 - Focus on understanding: purpose, constraints, success criteria
+- When the dialogue loops on a question only running code can answer — the feel of a state model, the look of a page — stop arguing and take the razorback:prototyping off-ramp; record the verdict in the design when you return
 - Stop asking when you can state the purpose, constraints, and success criteria in your own words AND your last question produced no correction — then move to approaches. If you cannot state all three, you are not done asking.
 
 **Exploring approaches:**

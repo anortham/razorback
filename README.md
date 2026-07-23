@@ -202,6 +202,7 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 |-------|---------|
 | using-razorback | Entry point: skill routing, execution model, Miller toolchain |
 | brainstorming | Requirements exploration, design, approach selection |
+| prototyping | Throwaway-code off-ramp from brainstorming for empirical design questions: logic TUIs or UI variants, captured on a `prototype/<slug>` branch |
 | fixing-small-issues | Quick-fix tier: triage small defects/tweaks by objective criteria, fix in place, affected-scope verification |
 | architecture-quality | Architecture and interface quality checks for planning, review, and test surface decisions |
 | writing-plans | Implementation plans (full or light) with MCP-verified file paths |
