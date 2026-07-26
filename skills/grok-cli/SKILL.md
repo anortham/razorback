@@ -25,6 +25,11 @@ models.
 - **Headless single-turn**: `-p, --single <PROMPT>` prints the response to
   stdout and exits. For large prompts (an embedded diff), use
   `--prompt-file <PATH>` instead of passing the prompt as an argument.
+  `-p` and `--prompt-file` are **mutually exclusive** — each is a complete way
+  to supply the headless prompt. `-p` requires its own value, so
+  `grok -p --prompt-file FILE` fails with
+  `error: a value is required for '--single <PROMPT>' but none was supplied`
+  (exit 2). Use `grok --prompt-file FILE` with no `-p`.
 - **Non-interactive approvals**: headless `-p` does not open the TUI. For a
   delegate run that must apply changes, add `--always-approve` (auto-approve all
   tool executions) or `--permission-mode bypassPermissions`. For read-only
@@ -138,7 +143,7 @@ SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-
 PROMPT_FILE=$(mktemp) && trap 'rm -f "$PROMPT_FILE"' EXIT
 printf '%s' "$PROMPT" > "$PROMPT_FILE"
 
-grok -p --prompt-file "$PROMPT_FILE" \
+grok --prompt-file "$PROMPT_FILE" \
   --sandbox read-only \
   --cwd /path/to/project \
   --json-schema "$SCHEMA_JSON" \
@@ -147,6 +152,8 @@ grok -p --prompt-file "$PROMPT_FILE" \
   ${GROK_EFFORT:+--effort "$GROK_EFFORT"} \
   2>/dev/null < /dev/null
 ```
+
+No `-p` here — `--prompt-file` supplies the headless prompt on its own.
 
 **After**: `--output-format json` (implied by `--json-schema`) returns a
 **result envelope**, not the model response directly. The schema-conforming
@@ -196,7 +203,7 @@ PROMPT_FILE=$(mktemp) && RESULT_FILE=$(mktemp)
 trap 'rm -f "$PROMPT_FILE" "$RESULT_FILE"' EXIT
 printf '%s' "$ADVERSARIAL_PROMPT" > "$PROMPT_FILE"
 
-grok -p --prompt-file "$PROMPT_FILE" \
+grok --prompt-file "$PROMPT_FILE" \
   --sandbox read-only \
   --cwd /path/to/project \
   --json-schema "$SCHEMA_JSON" \
@@ -257,23 +264,37 @@ calibration, and grounding rules match; keep the three in sync when editing any.
 ## Resuming a Session
 
 Grok persists sessions by default — there is no `--ephemeral` /
-`--no-session-persistence` flag. To continue work:
+`--no-session-persistence` flag.
+
+`-c, --continue` is a **boolean flag** and `-r, --resume` takes only an optional
+session ID — neither accepts the prompt. A bare `grok -c "follow-up prompt"`
+treats the prompt as the positional argument that opens the **interactive TUI**,
+which hangs or errors (`Device not configured (os error 6)`) in a headless
+agent. Always pair resume with `-p` or `--prompt-file`:
 
 ```bash
 # Continue the most recent session for the current directory
-grok -c "follow-up prompt" 2>/dev/null < /dev/null
+grok -c -p "follow-up prompt" 2>/dev/null < /dev/null
 
 # Resume a specific session by ID (or the most recent if omitted)
-grok -r <SESSION_ID> "follow-up prompt" 2>/dev/null < /dev/null
+grok -r <SESSION_ID> -p "follow-up prompt" 2>/dev/null < /dev/null
 
 # Fork instead of reusing the original session id
-grok -r <SESSION_ID> --fork-session "follow-up prompt" 2>/dev/null < /dev/null
+grok -r <SESSION_ID> --fork-session -p "follow-up prompt" 2>/dev/null < /dev/null
+
+# Large follow-up prompt: swap -p for --prompt-file (never both)
+grok -c --prompt-file "$PROMPT_FILE" 2>/dev/null < /dev/null
 ```
 
-Use `grok sessions` to list, search, or restore sessions, and
-`grok export` to dump a transcript as Markdown. Use resume when you need a
-multi-turn conversation (e.g. iterating on a review or asking clarifying
-questions about findings).
+A resumed session keeps the sandbox profile it was created with. Passing a
+different `--sandbox` fails with `cannot resume this session under sandbox
+profile 'X' — it was created with 'Y'`. Omit `--sandbox` when resuming, or start
+a new session to change profile.
+
+Use `grok sessions list` (or `grok sessions search <query>`) to find sessions —
+bare `grok sessions` prints subcommand help, not a list. `grok export` dumps a
+transcript as Markdown. Use resume when you need a multi-turn conversation (e.g.
+iterating on a review or asking clarifying questions about findings).
 
 ## Cross-Project Usage
 
@@ -318,6 +339,15 @@ think it's wrong, and your evidence.
   you passed a name that isn't a built-in (`read-only`, `workspace`, `none`) and
   isn't defined in `~/.grok/sandbox.toml`. Use a built-in or define the profile.
   Grok refuses to start rather than run unsandboxed.
+- **`a value is required for '--single <PROMPT>'`** (exit 2, immediate): you
+  combined `-p` with `--prompt-file`. Drop `-p` — `--prompt-file` is a complete
+  prompt source on its own.
+- **`Device not configured (os error 6)`** or a hang: the invocation had no
+  headless prompt flag, so Grok tried to open the interactive TUI. Add `-p` or
+  `--prompt-file`. Most common with `grok -c "prompt"` / `grok -r <ID> "prompt"`.
+- **Resume sandbox mismatch**: `cannot resume this session under sandbox profile
+  'X' — it was created with 'Y'`. Omit `--sandbox` when resuming, or start a new
+  session.
 - **Max turns reached**: `Error: max turns reached` means `--max-turns` was too
   low for the reviewer to finish (bootstrap + review can burn several turns).
   Raise the cap (15 → 25) or shrink the context.
@@ -345,10 +375,10 @@ insurance against a harness holding stdin open.
 | Use case | Mode | Command pattern |
 |---|---|---|
 | Second opinion | read-only | `grok -p "prompt" --sandbox read-only --cwd dir 2>/dev/null < /dev/null` |
-| Code review | read-only + schema | Add `--prompt-file "$PROMPT_FILE" --json-schema "$SCHEMA_JSON" --max-turns 15`, where `SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")`. Scope/sizing per Review Targeting. |
+| Code review | read-only + schema | `grok --prompt-file "$PROMPT_FILE" --json-schema "$SCHEMA_JSON" --max-turns 15 --sandbox read-only --cwd dir` (no `-p`), where `SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")`. Scope/sizing per Review Targeting. |
 | Adversarial review | read-only + schema | Build the prompt from `$SKILL_DIR/adversarial-prompt.txt` (see Adversarial Review), then the code-review command. |
 | Delegate (complex) | workspace + approve | `grok -p "prompt" --sandbox workspace --always-approve --cwd dir 2>/dev/null < /dev/null` (add `-w` for an isolated worktree) |
 | Pre-flight / auth check | any | `grok models 2>/dev/null` (prints login state + model list) |
 | Apply explicit model/effort | any | Add `--model "$GROK_MODEL"` / `--effort "$GROK_EFFORT"` when set |
-| Resume session | persistent | `grok -c "prompt"` (most recent) or `grok -r <ID> "prompt"` (`--fork-session` to branch) |
+| Resume session | persistent | `grok -c -p "prompt"` (most recent) or `grok -r <ID> -p "prompt"` (`--fork-session` to branch). `-c`/`-r` never take the prompt — omit `-p` and you get the interactive TUI. Omit `--sandbox` on resume. |
 | Structured output shape | any | Envelope: `.structuredOutput` (parsed object), `.text` (JSON string), `.usage`, `.total_cost_usd` |
