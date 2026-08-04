@@ -30,11 +30,17 @@ models.
   `grok -p --prompt-file FILE` fails with
   `error: a value is required for '--single <PROMPT>' but none was supplied`
   (exit 2). Use `grok --prompt-file FILE` with no `-p`.
-- **Non-interactive approvals**: headless `-p` does not open the TUI. For a
-  delegate run that must apply changes, add `--always-approve` (auto-approve all
-  tool executions) or `--permission-mode bypassPermissions`. For read-only
-  review, `--sandbox read-only` is the enforcement — the sandbox blocks writes
-  regardless of approval mode.
+- **Non-interactive approvals (load-bearing)**: headless `-p` / `--prompt-file`
+  cannot show a permission prompt. Pass **`--always-approve`** (alias `--yolo`,
+  or `--permission-mode bypassPermissions`) on **every** headless tool-using
+  run — second opinion, review, adversarial, and delegate — not only on
+  delegate. Sandbox and approvals are orthogonal: `--sandbox read-only` still
+  kernel-blocks writes/network even with always-approve. Without always-approve,
+  any shell command outside Grok's small read-only allowlist (e.g.
+  `git worktree`, bare `echo`, compound non-allowlisted segments) is resolved as
+  `permission_cancelled`; that **cancels the entire turn** (successful parallel
+  reads are discarded), the process often exits **0**, and stdout is empty or
+  only the pre-tool sentence — looks like "died on multi-tool".
 - **Working directory**: `--cwd <CWD>` sets the root (Grok's equivalent of
   codex's `-C`). Defaults to the shell's cwd.
 - **Structured output**: `--json-schema '<SCHEMA JSON STRING>'` constrains the
@@ -93,12 +99,14 @@ No file changes needed.
 ```bash
 grok -p "Your prompt here" \
   --sandbox read-only \
+  --always-approve \
   --cwd /path/to/project \
   2>/dev/null < /dev/null
 ```
 
-Grok runs in the project directory and reads files on its own. If you need to
-point it at specific files, mention them by path in the prompt.
+`--always-approve` is required even though the sandbox is read-only (see
+Defaults). Grok runs in the project directory and reads files on its own. If
+you need to point it at specific files, mention them by path in the prompt.
 
 **After**: Show Grok's response, then add your own analysis. Where you agree,
 say so. Where you disagree, explain why with evidence. The user gets two
@@ -145,6 +153,7 @@ printf '%s' "$PROMPT" > "$PROMPT_FILE"
 
 grok --prompt-file "$PROMPT_FILE" \
   --sandbox read-only \
+  --always-approve \
   --cwd /path/to/project \
   --json-schema "$SCHEMA_JSON" \
   --max-turns 15 \
@@ -154,6 +163,7 @@ grok --prompt-file "$PROMPT_FILE" \
 ```
 
 No `-p` here — `--prompt-file` supplies the headless prompt on its own.
+Always include `--always-approve` with `--sandbox read-only` (see Defaults).
 
 **After**: `--output-format json` (implied by `--json-schema`) returns a
 **result envelope**, not the model response directly. The schema-conforming
@@ -205,6 +215,7 @@ printf '%s' "$ADVERSARIAL_PROMPT" > "$PROMPT_FILE"
 
 grok --prompt-file "$PROMPT_FILE" \
   --sandbox read-only \
+  --always-approve \
   --cwd /path/to/project \
   --json-schema "$SCHEMA_JSON" \
   --max-turns 15 \
@@ -214,6 +225,7 @@ grok --prompt-file "$PROMPT_FILE" \
 cat "$RESULT_FILE"
 ```
 
+Always include `--always-approve` with `--sandbox read-only` (see Defaults).
 The `--json-schema` flag tells Grok to return JSON matching the review schema
 (verdict, summary, findings with severity/file/line/confidence, next steps).
 
@@ -274,22 +286,23 @@ agent. Always pair resume with `-p` or `--prompt-file`:
 
 ```bash
 # Continue the most recent session for the current directory
-grok -c -p "follow-up prompt" 2>/dev/null < /dev/null
+grok -c -p "follow-up prompt" --always-approve 2>/dev/null < /dev/null
 
 # Resume a specific session by ID (or the most recent if omitted)
-grok -r <SESSION_ID> -p "follow-up prompt" 2>/dev/null < /dev/null
+grok -r <SESSION_ID> -p "follow-up prompt" --always-approve 2>/dev/null < /dev/null
 
 # Fork instead of reusing the original session id
-grok -r <SESSION_ID> --fork-session -p "follow-up prompt" 2>/dev/null < /dev/null
+grok -r <SESSION_ID> --fork-session -p "follow-up prompt" --always-approve 2>/dev/null < /dev/null
 
 # Large follow-up prompt: swap -p for --prompt-file (never both)
-grok -c --prompt-file "$PROMPT_FILE" 2>/dev/null < /dev/null
+grok -c --prompt-file "$PROMPT_FILE" --always-approve 2>/dev/null < /dev/null
 ```
 
 A resumed session keeps the sandbox profile it was created with. Passing a
 different `--sandbox` fails with `cannot resume this session under sandbox
 profile 'X' — it was created with 'Y'`. Omit `--sandbox` when resuming, or start
-a new session to change profile.
+a new session to change profile. Still pass `--always-approve` on headless
+resume so tool calls do not hit `permission_cancelled`.
 
 Use `grok sessions list` (or `grok sessions search <query>`) to find sessions —
 bare `grok sessions` prints subcommand help, not a list. `grok export` dumps a
@@ -304,7 +317,7 @@ confirm what it will load with `grok inspect`. To review a project other than
 cwd, point `--cwd` at it:
 
 ```bash
-grok -p "prompt" --sandbox read-only --cwd ~/source/other-project 2>/dev/null < /dev/null
+grok -p "prompt" --sandbox read-only --always-approve --cwd ~/source/other-project 2>/dev/null < /dev/null
 ```
 
 There is no `--ignore-user-config` equivalent to codex's; Grok inherits the
@@ -354,8 +367,19 @@ think it's wrong, and your evidence.
 - **Timeout**: large diffs can take 10-20+ minutes. Set generous Bash timeouts
   (1800000ms / 30 min). If it still times out, split the review into smaller
   chunks rather than retrying with the same timeout.
-- **Empty output**: if stdout is empty, check stderr (remove `2>/dev/null`
-  temporarily) for error messages.
+- **Empty / one-sentence truncated output (exit 0)**: almost always a headless
+  **permission cancel**, not a model crash. Session
+  `events.jsonl` shows `permission_resolved` → `decision: cancelled` on
+  `run_terminal_command` and `turn_ended` with
+  `cancellation_category: permission_cancelled`. Cause: missing
+  `--always-approve` while the model ran a non-allowlisted shell form (common
+  when it batches reads + bash in one turn). Fix: re-run with
+  `--always-approve` (keep `--sandbox read-only` for review). Do not "fix" by
+  only telling the model one-tool-per-turn unless the shell stays on the
+  allowlist.
+- **Empty output (other)**: if stdout is empty and the permission pattern above
+  does not match, check stderr (remove `2>/dev/null` temporarily) for error
+  messages.
 - **Grok not installed**: check with `grok --version`. Install per xAI's Grok
   CLI instructions if missing (the binary lives under `~/.grok/bin/grok`).
 
@@ -374,11 +398,11 @@ insurance against a harness holding stdin open.
 
 | Use case | Mode | Command pattern |
 |---|---|---|
-| Second opinion | read-only | `grok -p "prompt" --sandbox read-only --cwd dir 2>/dev/null < /dev/null` |
-| Code review | read-only + schema | `grok --prompt-file "$PROMPT_FILE" --json-schema "$SCHEMA_JSON" --max-turns 15 --sandbox read-only --cwd dir` (no `-p`), where `SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")`. Scope/sizing per Review Targeting. |
-| Adversarial review | read-only + schema | Build the prompt from `$SKILL_DIR/adversarial-prompt.txt` (see Adversarial Review), then the code-review command. |
+| Second opinion | read-only + approve | `grok -p "prompt" --sandbox read-only --always-approve --cwd dir 2>/dev/null < /dev/null` |
+| Code review | read-only + approve + schema | `grok --prompt-file "$PROMPT_FILE" --json-schema "$SCHEMA_JSON" --max-turns 15 --sandbox read-only --always-approve --cwd dir` (no `-p`), where `SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")`. Scope/sizing per Review Targeting. |
+| Adversarial review | read-only + approve + schema | Build the prompt from `$SKILL_DIR/adversarial-prompt.txt` (see Adversarial Review), then the code-review command. |
 | Delegate (complex) | workspace + approve | `grok -p "prompt" --sandbox workspace --always-approve --cwd dir 2>/dev/null < /dev/null` (add `-w` for an isolated worktree) |
 | Pre-flight / auth check | any | `grok models 2>/dev/null` (prints login state + model list) |
 | Apply explicit model/effort | any | Add `--model "$GROK_MODEL"` / `--effort "$GROK_EFFORT"` when set |
-| Resume session | persistent | `grok -c -p "prompt"` (most recent) or `grok -r <ID> -p "prompt"` (`--fork-session` to branch). `-c`/`-r` never take the prompt — omit `-p` and you get the interactive TUI. Omit `--sandbox` on resume. |
+| Resume session | persistent | `grok -c -p "prompt" --always-approve` (most recent) or `grok -r <ID> -p "prompt" --always-approve` (`--fork-session` to branch). `-c`/`-r` never take the prompt — omit `-p` and you get the interactive TUI. Omit `--sandbox` on resume; still pass `--always-approve`. |
 | Structured output shape | any | Envelope: `.structuredOutput` (parsed object), `.text` (JSON string), `.usage`, `.total_cost_usd` |
