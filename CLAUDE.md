@@ -138,6 +138,9 @@ Razorback now has five version-bearing manifests (`package.json`, `.claude-plugi
 - `--check <version>` also requires the agreed version to equal `<version>`; CI passes the git tag on tag builds so manifests that went stale together cannot ship
 - `--audit` runs `--check` plus grep-scans the repo for undeclared version references
 - `<new-version>` bumps all five in one pass
+- `--release [version]` publishes the GitHub release for tag `v<version>` (defaults to the agreed manifest version); `--dry-run` prints the title and notes without publishing, `--notes-file PATH` substitutes hand-written notes
+
+The release step is the last one in the sequence: bump → commit `release: X.Y.Z <summary>` → `git tag -a vX.Y.Z` → `git push --follow-tags` → `--release`. The commit subject becomes the release title and its body becomes the release notes, so write the release commit message as the changelog entry. `--release` verifies the tagged commit's own manifests declare the version, so an older tag can be back-filled safely.
 
 The `.version-bump.json` config drives the script. `.memories/` and `docs/plans/` are excluded from the audit because they freeze the version string at time of writing.
 

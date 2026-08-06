@@ -248,6 +248,31 @@ Razorback ships five version-bearing manifests (`package.json`, `.claude-plugin/
 CI runs `--check "${GITHUB_REF_NAME#v}"` on `v*` tag builds. Drift detection alone
 cannot catch manifests that went stale together; comparing against the tag can.
 
+### Releasing
+
+```bash
+./scripts/bump-version.sh 1.2.3            # 1. bump the five manifests
+git commit -am "release: 1.2.3 <summary>"  # 2. the subject becomes the release title
+git tag -a v1.2.3 -m "release: 1.2.3"      # 3. tag it
+git push --follow-tags                     # 4. push commit + tag
+./scripts/bump-version.sh --release        # 5. publish the GitHub release
+```
+
+`--release` defaults to the version the manifests declare. It refuses to publish
+unless the tag exists locally and on `origin`, the tagged commit's own manifests
+declare that version, the working tree is clean, and no release exists for the tag
+yet. Older tags can be back-filled by naming the version — the Latest badge stays
+with the newest tag.
+
+Notes are generated from the tagged commit's body (trailers stripped) plus one
+bullet per commit back to the previous tag. `release.excludeSubjects` in
+`.version-bump.json` drops noise subjects from the bullet list.
+
+```bash
+./scripts/bump-version.sh --release --dry-run              # print title + notes, publish nothing
+./scripts/bump-version.sh --release 1.2.3 --notes-file X   # publish hand-written notes instead
+```
+
 ## License
 
 MIT (diverged from Superpowers, also MIT)

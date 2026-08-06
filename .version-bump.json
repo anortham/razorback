@@ -19,5 +19,11 @@
       ".version-bump.json",
       "scripts/bump-version.sh"
     ]
+  },
+  "release": {
+    "excludeSubjects": [
+      "^chore: record ",
+      "^chore\\(memory\\): "
+    ]
   }
 }
