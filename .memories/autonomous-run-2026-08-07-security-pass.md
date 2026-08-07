@@ -3,7 +3,7 @@
 **Status:** Complete
 **Plan:** docs/plans/2026-08-07-security-pass.md (design: docs/plans/2026-08-07-security-pass-design.md)
 **Branch:** worktree-security-pass
-**PR:** pending — filled in after PR creation
+**PR:** https://github.com/anortham/razorback/pull/10
 **Duration:** ~40m (design commit 13:44Z → final fix commit 14:20Z)
 **Phases:** 1/1 complete
 **Tasks:** 5/5 complete
@@ -57,6 +57,6 @@
 - Total: 14 files, +641/-42 (plus `.memories/` checkpoints)
 
 ## Next steps
-- Review PR: pending — filled in after PR creation
+- Review PR: https://github.com/anortham/razorback/pull/10
 - Decide whether to bump the version and release (manifests are at 0.26.2; the security pass is unreleased until then)
 - Follow-up candidates recorded during review: isolated credential-free reviewer checkout + malicious-diff test fixtures; verify a claude `--safe-mode`-style flag against the real CLI before adopting; add an `## External model policy` block to razorback's own CLAUDE.md (dogfood)
