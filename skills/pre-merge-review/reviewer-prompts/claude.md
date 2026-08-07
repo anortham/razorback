@@ -116,3 +116,17 @@ If a schema-valid partial output exists despite the failure (budget or turn cap 
 **Not a blocker:**
 
 - **Timeout (Bash-level)** - first raise the Bash tool's timeout and re-run. Splitting the diff breaks cross-file reasoning and is a last resort. Only if generous timeouts also fail does this become a blocker (taxonomy #1 - service unavailable).
+
+## Security pass
+
+When the run includes the dedicated security pass, run `claude -p` a second time with the validated baseline flags unchanged — same schema string, same read-only allowlist, same caps, same model handling, same timeout. The only change is that `--system-prompt-file` points at the canonical security prompt in the razorback plugin:
+
+```bash
+PROMPT_FILE="$SKILL_DIR/../security-review/security-adversarial-prompt.txt"
+```
+
+Build `$DIFF_AND_CONTEXT` exactly as under "Build the user prompt". Capture stdout to a second file, `claude-output-security.json`, so the general pass's `claude-output.json` is preserved.
+
+Parse rules, cost notes, and error handling are identical to the general pass: apply the Parsing section's envelope shape check, empty-findings rule, and single-retry rule to `claude-output-security.json`, and render the cost line from the same envelope fields.
+
+**A security-pass failure is reviewer unavailability.** The same triggers and the same blocker protocol from Error handling apply: stop the run, do NOT push, do NOT create a PR, emit a partial morning report with `Status: Blocked` and the specific failure in `Blockers hit`. Never silently skip the security pass.

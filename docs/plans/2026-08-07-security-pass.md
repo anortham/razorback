@@ -169,7 +169,7 @@ Commit mode: `parallel-lead-commit` — workers hand verified diffs to the lead;
 **Dependency reason:** None - safe parallel batch.
 
 **Acceptance criteria:**
-- [ ] Both files carry the `## Security pass` section with a resolvable prompt path and the blocker statement; `node --test tests/reviewer-prompt-assets.test.mjs` green.
+- [x] Both files carry the `## Security pass` section with a resolvable prompt path and the blocker statement; `node --test tests/reviewer-prompt-assets.test.mjs` green.
 
 ### Task 4: morning report + cross-ref
 
