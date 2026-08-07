@@ -406,10 +406,10 @@ New ledger line format for fix rounds: `Task <N>: fix round <R> (<X> addressed, 
 **What to build:** Script changes plus every call-site update in SKILL.md, implementer-prompt.md, and fix-prompt.md (grep `sdd-workspace\|task-brief\|review-package\|\.razorback/sdd` across the skill dir to find them all). `tests/sdd-workspace.test.mjs`: exit-2 on missing/nonexistent plan; two plans → two dirs; brief lands in its plan's dir; review package lands in its plan's dir; `.gitignore` self-ignores the tree.
 
 **Acceptance criteria:**
-- [ ] All three scripts implement the new signatures; all call sites in the three prose files updated (grep evidence in report)
-- [ ] Ledger identity header and resume check present; crash-window rule text unchanged
-- [ ] `tests/sdd-workspace.test.mjs` green; `tests/twin-sections.test.mjs` green
-- [ ] Worker-scope verification passes and the change is handed to the lead per commit mode
+- [x] All three scripts implement the new signatures; all call sites in the three prose files updated (grep evidence in report)
+- [x] Ledger identity header and resume check present; crash-window rule text unchanged
+- [x] `tests/sdd-workspace.test.mjs` green; `tests/twin-sections.test.mjs` green
+- [x] Worker-scope verification passes and the change is handed to the lead per commit mode
 
 ### Task 14: Brief-path dispatch
 

@@ -25,7 +25,7 @@ SendMessage (to: "<implementer-agent-id-or-name>"):
 
     [Exact files this task may modify during the fix]
 
-    Report file: [path under .razorback/sdd]
+    Report file: [path under the plan's workspace, .razorback/sdd/<plan-basename>/]
 
     ## What to Do
 

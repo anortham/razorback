@@ -46,11 +46,14 @@ Fix-round follow-up mechanics are per-harness — see Step 4.
 
 Read the plan file once. Extract every task with its full text and surrounding context. Create tracking tasks via `TaskCreate` so progress is visible.
 
-Check for durable progress before dispatching:
+Check for durable progress before dispatching. Resolve this plan's workspace, then read its ledger:
 
 ```bash
-cat "$(git rev-parse --show-toplevel)/.razorback/sdd/progress.md" 2>/dev/null || true
+ws=$("$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE)
+cat "$ws/progress.md" 2>/dev/null || true
 ```
+
+Trust the ledger only when its first line names this plan file (resume check: Durable Progress). A ledger that names a different plan — or a stray ledger at the old flat path — is another plan's: leave it in place and start fresh.
 
 Tasks listed there as complete **with a named commit** are DONE. Do not re-dispatch them; verify the named commit with `git log` if needed, then resume at the first incomplete task.
 
@@ -83,7 +86,7 @@ Use the template at `./implementer-prompt.md`. The spawn prompt MUST include:
 10. **API-shape evidence requirement** (the implementer must name the Miller evidence used for every symbol name, function signature, config shape, route name, CLI flag, or public contract they rely on)
 11. **Gate invariant requirement** (the implementer must state what each assigned test, replay, metric, or acceptance gate proves)
 12. **architecture-quality context** (the approved architecture, any `No Architecture Impact` note, and the plan mismatch rule)
-13. **Report file path** under `.razorback/sdd`, so the worker writes the full report to a file and returns only status, commits, test summary, and concerns
+13. **Report file path** under the plan's workspace (`.razorback/sdd/<plan-basename>/`), so the worker writes the full report to a file and returns only status, commits, test summary, and concerns
 
 ### Verification Scope Contract
 
@@ -147,16 +150,18 @@ Large task text, reports, and diffs should move as files instead of pasted promp
 
 The helper scripts live in this skill's own `scripts/` directory — NOT in the target repository. Resolve them from the skill's base directory (announced when the skill loads), e.g. `"$SKILL_DIR/scripts/task-brief"`.
 
-- **Task brief:** before dispatching an implementer, run `"$SKILL_DIR/scripts/task-brief" PLAN_FILE N`. It writes `task-N-brief.md` under `.razorback/sdd` (in the target repo) and prints the path. The dispatch prompt should point the implementer at that brief as the source of requirements.
-- **Report file:** name the implementer's report file after the brief (`task-N-report.md`) and put it under `.razorback/sdd`. The implementer writes the full report there, then returns only status, commits, one-line test summary, and concerns.
-- **Review package:** when a focused diff helps the lead inline review, run `"$SKILL_DIR/scripts/review-package" BASE HEAD`. The lead reads the generated package; do not dispatch a reviewer subagent. No reviewer subagents means the lead still owns spec compliance and code quality.
+- **Task brief:** before dispatching an implementer, run `"$SKILL_DIR/scripts/task-brief" PLAN_FILE N`. It writes `task-N-brief.md` under the plan's workspace (in the target repo) and prints the path. The dispatch prompt should point the implementer at that brief as the source of requirements.
+- **Report file:** name the implementer's report file after the brief (`task-N-report.md`) and put it under the plan's workspace. The implementer writes the full report there, then returns only status, commits, one-line test summary, and concerns.
+- **Review package:** when a focused diff helps the lead inline review, run `"$SKILL_DIR/scripts/review-package" PLAN_FILE BASE HEAD`. The lead reads the generated package; do not dispatch a reviewer subagent. No reviewer subagents means the lead still owns spec compliance and code quality.
 - **Fix rounds:** append fix reports and test evidence to the same report file. Re-review before approving the task; the re-review scope is stated in Step 4 ("Scoped Re-Review").
 
 ## Durable Progress
 
-Conversation memory does not survive every long run. Track task completion in `.razorback/sdd/progress.md` in addition to TaskList state and plan checkboxes.
+Conversation memory does not survive every long run. Track task completion in the plan's workspace ledger in addition to TaskList state and plan checkboxes.
 
-- At skill start, read `.razorback/sdd/progress.md` if it exists. Trust it with `git log` over stale recollection after compaction or resume.
+- Each plan owns a workspace: `"$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE` prints its git-ignored directory (`<repo-root>/.razorback/sdd/<plan-basename>/`) — home to every artifact for THIS plan: ledger, briefs, reports, review packages. Another plan's directory is never yours to read or write.
+- The ledger is `<workspace>/progress.md`. At skill start, read it if it exists. Trust it with `git log` over stale recollection after compaction or resume — but only when its first line names this plan file. This is the resume check: a ledger whose first line names a different plan file — or a stray ledger at the old flat path `.razorback/sdd/progress.md` — is another plan's progress. Leave it in place and start fresh.
+- Create the ledger with its identity as the first line: `# Razorback SDD ledger — plan: <plan file path>`.
 - Record a task complete only after its durable commit exists — the completion line always carries a real commit SHA:
   - `serial-worker-commit`: after the worker commit, `Task N: complete (commits <base7>..<head7>, Lead inline review clean)`.
   - `parallel-lead-commit`: after the **lead** stages the owned files and commits, `Task N: complete (parallel-lead-commit, Lead inline review clean, lead commit <sha7>)`. Do not write this line while the commit is still pending; the lead commits first, then records the SHA.
@@ -274,7 +279,7 @@ Prefer the context-preserving path (resume / `followup_task`) for iterations 1-3
 Re-review after every fix. This is the one statement of the re-review scope — every other mention in this skill points here.
 
 1. **Gate the fix report first.** It must name the covering tests, the exact command run, and the output. If any is missing, send the report back before re-reviewing — an evidence bounce is a report correction, not a new fix iteration.
-2. **Build the package from the fix base:** `"$SKILL_DIR/scripts/review-package" FIX_BASE HEAD`, where `FIX_BASE` is the head the previous review saw. The package then contains exactly the fix diff.
+2. **Build the package from the fix base:** `"$SKILL_DIR/scripts/review-package" PLAN_FILE FIX_BASE HEAD`, where `FIX_BASE` is the head the previous review saw. The package then contains exactly the fix diff.
 3. **Verdict every prior finding:** ADDRESSED or NOT ADDRESSED, each with file:line evidence. "Attempted" is not ADDRESSED.
 4. **Inspect the fix diff only for new breakage.** A fix round does not reopen the whole task.
 5. **Observations outside the fix diff never extend the loop.** Record each as a `minor (deferred)` ledger line (format: Durable Progress); Step 4a hands that list to the pre-merge reviewer.
@@ -307,7 +312,8 @@ After `pre-merge-review` returns, proceed to Step 5 (Complete → `razorback:fin
 When all tasks are approved and marked complete:
 
 1. **Final verification:** Run the plan's `branch-gate` scope, or reuse a passing verification-ledger entry for the same HEAD and scope. Add any `expensive-specialist` scopes required by touched areas. The branch-gate run includes the plan's declared Security scope commands (`security-secrets`, `security-deps` — `razorback:security-review`); `none declared` skips them and is rendered in the morning report.
-2. **Finish:** Use `razorback:finishing-a-development-branch`.
+2. **Clean up the workspace:** when the final review is clean (final verification passed, and Step 4a — if chosen — returned), delete this plan's workspace: `rm -rf <workspace>`. Git history is the record now. Sibling directories under `.razorback/sdd/` belong to other plans; leave them alone.
+3. **Finish:** Use `razorback:finishing-a-development-branch`.
 
 ## Blockers
 
@@ -347,7 +353,7 @@ On detecting a resumed run (post-compaction note, mismatch between expected and 
 2. Read the plan file, noting which acceptance-criteria checkboxes are already `[x]`.
 3. Check the TaskList for completed / in-progress / pending tasks.
 4. `git log --oneline <base>..HEAD` — verify what is actually committed.
-5. Reconcile `parallel-lead-commit` gaps: for any progress line marked complete whose commit SHA is missing, `pending`, or absent from `git log`, run `git status` and inspect the working tree for that task's owned files. If approved edits are uncommitted, re-review and commit them (staging per the Commit Mode Contract) before advancing; if nothing is there, treat the task as incomplete and re-dispatch. Do not trust a completion record that has no verifiable commit.
+5. Reconcile `parallel-lead-commit` gaps: re-read this plan's ledger (`<workspace>/progress.md`, identity and resume check per Durable Progress), then for any progress line marked complete whose commit SHA is missing, `pending`, or absent from `git log`, run `git status` and inspect the working tree for that task's owned files. If approved edits are uncommitted, re-review and commit them (staging per the Commit Mode Contract) before advancing; if nothing is there, treat the task as incomplete and re-dispatch. Do not trust a completion record that has no verifiable commit.
 6. Identify the next incomplete task and resume execution.
 
 This sequence runs only on resumed runs. A fresh run dispatches directly into Step 1 (Extract Tasks from the Plan). Subagent IDs from the prior session cannot be resumed post-compaction — treat any needed fix as a fresh dispatch with prior-commit context.
@@ -371,7 +377,7 @@ Implementer reports: verify/repair modes added, worker-red-green passing, commit
 Implementer (resumed): all three addressed, tests passing, committed ghi789.
 [Lead scoped re-review of def456..ghi789: 3/3 ADDRESSED → approved. Ledger: fix round 1 (3 addressed, 0 open)]
 [TaskUpdate task 2 completed. Remaining tasks follow the same pattern]
-[All tasks done: lead runs branch-gate scope, updates the ledger, then razorback:finishing-a-development-branch]
+[All tasks done: lead runs branch-gate scope, updates the ledger, deletes the plan workspace, then razorback:finishing-a-development-branch]
 ```
 
 ## Red Flags

@@ -113,7 +113,7 @@ Dispatch one implementer subagent:
     6. Report back
 
     Work from: [directory]
-    Report file: [path under .razorback/sdd]
+    Report file: [path under the plan's workspace, .razorback/sdd/<plan-basename>/]
 
     ## Verification Scope
 

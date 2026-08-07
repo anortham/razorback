@@ -64,7 +64,7 @@ test('subagent-driven-development defines artifact helpers and durable ledger', 
   }
 
   assert.match(read('skills/subagent-driven-development/scripts/sdd-workspace'), /\.razorback\/sdd/);
-  assert.match(read('skills/subagent-driven-development/scripts/task-brief'), /Default OUTFILE: <repo-root>\/\.razorback\/sdd\/task-<N>-brief\.md/);
+  assert.match(read('skills/subagent-driven-development/scripts/task-brief'), /Default OUTFILE: <repo-root>\/\.razorback\/sdd\/<plan-basename>\/task-<N>-brief\.md/);
   assert.match(read('skills/subagent-driven-development/scripts/review-package'), /git diff -U10/);
   assert.match(skill, /## File Handoffs/);
   assert.match(skill, /## Durable Progress/);
@@ -84,24 +84,10 @@ test('subagent-driven-development keeps SDD artifacts self-ignored and worktree-
     run('git', ['init', '-q', '-b', 'main', repoInput]);
     const repo = run('git', ['rev-parse', '--show-toplevel'], { cwd: repoInput }).trim();
 
-    const dir = run(workspaceScript, [], { cwd: repo }).trim();
-    assert.equal(dir, path.join(repo, '.razorback', 'sdd'));
-    assert.equal(fs.readFileSync(path.join(dir, '.gitignore'), 'utf8'), '*\n');
-
-    fs.writeFileSync(path.join(dir, 'artifact.md'), 'x\n');
-    assert.equal(run('git', ['status', '--porcelain'], { cwd: repo }), '');
-    run('git', ['add', '-A'], { cwd: repo });
-    assert.equal(run('git', ['diff', '--cached', '--name-only'], { cwd: repo }), '');
-
     fs.writeFileSync(
       path.join(repo, 'plan.md'),
       '# Plan\n\n## Task 1: First thing\n\nDo the first thing.\n'
     );
-
-    const briefOutput = run(taskBriefScript, ['plan.md', '1'], { cwd: repo });
-    const briefPath = briefOutput.match(/^wrote (.*): \d+ lines$/m)?.[1];
-    assert.ok(briefPath?.startsWith(dir + path.sep), `brief path should be under ${dir}`);
-
     const gitIdentity = [
       '-c', 'user.email=t@example.com',
       '-c', 'user.name=t',
@@ -109,20 +95,34 @@ test('subagent-driven-development keeps SDD artifacts self-ignored and worktree-
     ];
     run('git', ['add', 'plan.md'], { cwd: repo });
     run('git', [...gitIdentity, 'commit', '-qm', 'c1'], { cwd: repo });
+
+    const dir = run(workspaceScript, ['plan.md'], { cwd: repo }).trim();
+    assert.equal(dir, path.join(repo, '.razorback', 'sdd', 'plan'));
+    assert.equal(fs.readFileSync(path.join(repo, '.razorback', 'sdd', '.gitignore'), 'utf8'), '*\n');
+
+    fs.writeFileSync(path.join(dir, 'artifact.md'), 'x\n');
+    assert.equal(run('git', ['status', '--porcelain'], { cwd: repo }), '');
+    run('git', ['add', '-A'], { cwd: repo });
+    assert.equal(run('git', ['diff', '--cached', '--name-only'], { cwd: repo }), '');
+
+    const briefOutput = run(taskBriefScript, ['plan.md', '1'], { cwd: repo });
+    const briefPath = briefOutput.match(/^wrote (.*): \d+ lines$/m)?.[1];
+    assert.ok(briefPath?.startsWith(dir + path.sep), `brief path should be under ${dir}`);
+
     fs.writeFileSync(path.join(repo, 'f'), 'y\n');
     run('git', ['add', 'f'], { cwd: repo });
     run('git', [...gitIdentity, 'commit', '-qm', 'c2'], { cwd: repo });
 
-    const reviewOutput = run(reviewPackageScript, ['HEAD~1', 'HEAD'], { cwd: repo });
+    const reviewOutput = run(reviewPackageScript, ['plan.md', 'HEAD~1', 'HEAD'], { cwd: repo });
     const reviewPath = reviewOutput.match(/^wrote (.*): \d+.*$/m)?.[1];
     assert.ok(reviewPath?.startsWith(dir + path.sep), `review path should be under ${dir}`);
 
     const worktree = path.join(testRoot, 'wt');
     run('git', ['worktree', 'add', '-q', worktree, '-b', 'wt-feature'], { cwd: repo });
     const worktreeRoot = run('git', ['rev-parse', '--show-toplevel'], { cwd: worktree }).trim();
-    const worktreeDir = run(workspaceScript, [], { cwd: worktree }).trim();
+    const worktreeDir = run(workspaceScript, ['plan.md'], { cwd: worktree }).trim();
 
-    assert.equal(worktreeDir, path.join(worktreeRoot, '.razorback', 'sdd'));
+    assert.equal(worktreeDir, path.join(worktreeRoot, '.razorback', 'sdd', 'plan'));
     assert.notEqual(worktreeDir, dir);
 
     fs.writeFileSync(path.join(worktreeDir, 'artifact.md'), 'y\n');
