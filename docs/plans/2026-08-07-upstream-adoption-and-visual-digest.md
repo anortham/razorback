@@ -168,10 +168,10 @@ Batches run A → B → C → D. Within A and B, tasks dispatch together. Batch 
 **What to build:** Add the canonical block to security-review (placed with its other canonical blocks). In systematic-debugging, fix the example so no credential value reaches output, and add the Redact copy/pointer where the skill tells the agent to show command output. Extend the sync test with the new region pair.
 
 **Acceptance criteria:**
-- [ ] `grep -c 'REDACTED' skills/security-review/SKILL.md` ≥ 1; systematic-debugging carries the synced copy or a one-line pointer (pick whichever the sync-test pattern supports)
-- [ ] `grep -n 'env | grep IDENTITY' skills/systematic-debugging/SKILL.md` → no hits
-- [ ] Sync test fails when one copy drifts (verify by temporary mutation)
-- [ ] Worker-scope verification passes and the change is handed to the lead per commit mode
+- [x] `grep -c 'REDACTED' skills/security-review/SKILL.md` ≥ 1; systematic-debugging carries the synced copy (chosen over a pointer: the byte-compare mechanism needs a region, and the skill loads standalone)
+- [x] `grep -n 'env | grep IDENTITY' skills/systematic-debugging/SKILL.md` → no hits
+- [x] Sync test fails when one copy drifts (verified by temporary mutation)
+- [x] Worker-scope verification passes and the change is handed to the lead per commit mode
 
 ### Task 5: Harness-neutral prompt templates
 

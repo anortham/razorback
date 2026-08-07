@@ -94,7 +94,7 @@ You MUST complete each phase before proceeding to the next.
 
    # Layer 2: Build script
    echo "=== Env vars in build script: ==="
-   env | grep IDENTITY || echo "IDENTITY not in environment"
+   echo "IDENTITY: ${IDENTITY:+SET}${IDENTITY:-UNSET}"
 
    # Layer 3: Signing script
    echo "=== Keychain state: ==="
@@ -106,6 +106,12 @@ You MUST complete each phase before proceeding to the next.
    ```
 
    **This reveals:** Which layer fails (secrets → workflow ✓, workflow → build ✗)
+
+<!-- Canonical Redact rule: skills/security-review/SKILL.md — update all copies together. -->
+**Redact:**
+- Redact every secret in anything you show, quote, or send — write `<REDACTED>` in its place.
+- Build loops against env vars so the credential stays in the environment rather than in displayed output.
+- From captured artifacts, quote only the lines that carry the signal.
 
 5. **Trace Data Flow**
 

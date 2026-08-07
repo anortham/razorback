@@ -30,11 +30,23 @@ const ENFORCEMENT_POINTS = [
 const SECURITY_MARKER = '**Security:**';
 const CHECKLIST_LINE_COUNT = 5;
 
-function securityChecklist(text) {
+const REDACT_MARKER = '**Redact:**';
+const REDACT_LINE_COUNT = 3;
+const REDACT_COPY = 'skills/systematic-debugging/SKILL.md';
+
+function markerBlock(text, marker, lineCount) {
   const lines = text.split('\n');
-  const markerIndex = lines.indexOf(SECURITY_MARKER);
+  const markerIndex = lines.indexOf(marker);
   if (markerIndex === -1) return null;
-  return lines.slice(markerIndex + 1, markerIndex + 1 + CHECKLIST_LINE_COUNT).join('\n');
+  return lines.slice(markerIndex + 1, markerIndex + 1 + lineCount).join('\n');
+}
+
+function securityChecklist(text) {
+  return markerBlock(text, SECURITY_MARKER, CHECKLIST_LINE_COUNT);
+}
+
+function redactBlock(text) {
+  return markerBlock(text, REDACT_MARKER, REDACT_LINE_COUNT);
 }
 
 function hasProviderRow(text, skill, provider) {
@@ -80,6 +92,66 @@ test('both checklist copies stay byte-identical to the canonical home', () => {
       `${rel} security checklist drifted from ${CANONICAL_HOME} — update the ${CHECKLIST_LINE_COUNT} lines under "${SECURITY_MARKER}" to match the canonical home byte for byte`,
     );
   }
+});
+
+test('the canonical Redact block is three rule lines under the ## Redact section', () => {
+  const canonical = read(CANONICAL_HOME);
+  assert.ok(
+    canonical.includes('## Redact'),
+    `${CANONICAL_HOME} lost its "## Redact" section — restore the canonical three-rule redaction block alongside the other canonical blocks`,
+  );
+  const block = redactBlock(canonical);
+  assert.ok(
+    block !== null,
+    `${CANONICAL_HOME} lost its "${REDACT_MARKER}" marker line — restore the canonical three-rule redaction block under a bare "${REDACT_MARKER}" line`,
+  );
+  const lines = block.split('\n');
+  assert.equal(
+    lines.length,
+    REDACT_LINE_COUNT,
+    `${CANONICAL_HOME} Redact block must be exactly ${REDACT_LINE_COUNT} lines — a shorter block would let truncated copies pass the byte-compare`,
+  );
+  for (const line of lines) {
+    assert.match(
+      line,
+      /^- .+\.$/,
+      `${CANONICAL_HOME} Redact line "${line}" is not a "- …." rule — restore the three-rule shape or the extractor is comparing prose, not the block`,
+    );
+  }
+  assert.ok(
+    block.includes('<REDACTED>'),
+    `${CANONICAL_HOME} Redact block lost the \`<REDACTED>\` placeholder — restore the rule that names the exact replacement text`,
+  );
+});
+
+test('the systematic-debugging Redact copy stays byte-identical to the canonical home', () => {
+  const canonical = redactBlock(read(CANONICAL_HOME));
+  assert.ok(
+    canonical !== null,
+    `${CANONICAL_HOME} lost its "${REDACT_MARKER}" marker line — restore the canonical Redact block before comparing copies`,
+  );
+  const copy = redactBlock(read(REDACT_COPY));
+  assert.ok(
+    copy !== null,
+    `${REDACT_COPY} lost its "${REDACT_MARKER}" marker line — re-copy the Redact block from ${CANONICAL_HOME} (keep the canonical-home HTML comment directly above the marker)`,
+  );
+  assert.equal(
+    copy,
+    canonical,
+    `${REDACT_COPY} Redact block drifted from ${CANONICAL_HOME} — update the ${REDACT_LINE_COUNT} lines under "${REDACT_MARKER}" to match the canonical home byte for byte`,
+  );
+});
+
+test('the debugging instrumentation example never prints a credential value', () => {
+  const text = read(REDACT_COPY);
+  assert.ok(
+    !text.includes('env | grep IDENTITY'),
+    `${REDACT_COPY} reintroduced "env | grep IDENTITY" — that prints the credential value into agent-visible output; use the \${IDENTITY:+SET}\${IDENTITY:-UNSET} presence check instead`,
+  );
+  assert.ok(
+    text.includes('${IDENTITY:+SET}${IDENTITY:-UNSET}'),
+    `${REDACT_COPY} lost the \${IDENTITY:+SET}\${IDENTITY:-UNSET} presence check — the instrumentation example must show that a credential is present without its value`,
+  );
 });
 
 test('the writing-plans verification template keeps the exact Security scope field', () => {
