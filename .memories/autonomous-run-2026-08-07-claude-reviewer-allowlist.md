@@ -3,7 +3,7 @@
 **Status:** Complete
 **Plan:** docs/plans/2026-08-07-claude-reviewer-allowlist-drift.md
 **Branch:** worktree-claude-reviewer-allowlist
-**PR:** pending — filled in after PR creation
+**PR:** https://github.com/anortham/razorback/pull/8
 **Duration:** ~50m (single session, including the assessment that found the drift)
 **Phases:** 1/1 complete
 **Tasks:** 1/1 complete (one TDD slice: guards red → doc fixes → green)
@@ -53,7 +53,7 @@
 ```
 
 ## Next steps
-- Review PR: pending — filled in after PR creation
+- Review PR: https://github.com/anortham/razorback/pull/8
 - Confirm the stale active Goldfish brief ("Harness descope + 2026-07 audit remediation") can be marked complete.
 - Deferred follow-ups from the 2026-08-07 assessment are recorded in the plan's Context section: CI/DevOps PR reviewer, security lane at the branch gate, data-governance precondition for external-model skills, org rollout kit, example-command-vs-CLI-help linter, memories data-classification policy.
 - After merge: version bump + release is a separate approved action (`./scripts/bump-version.sh`).
