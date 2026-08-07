@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>README accuracy pass + GitHub Pages landing page</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page:      #f9f9f7;
+    --surface:   #fcfcfb;
+    --ink:       #0b0b0b;
+    --ink-2:     #52514e;
+    --muted:     #898781;
+    --hairline:  #e1e0d9;
+    --border:    rgba(11,11,11,0.10);
+    --accent:    #2a78d6;
+    --accent-track: #cde2fb;
+    --good:      #0ca30c;
+    --good-text: #006300;
+    --warning:   #fab219;
+    --serious:   #ec835a;
+    --critical:  #d03b3b;
+    --good-wash:    rgba(12,163,12,0.09);
+    --warn-wash:    rgba(250,178,25,0.14);
+    --accent-wash:  rgba(42,120,214,0.10);
+    --muted-wash:   rgba(137,135,129,0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page:      #0d0d0d;
+      --surface:   #1a1a19;
+      --ink:       #ffffff;
+      --ink-2:     #c3c2b7;
+      --muted:     #898781;
+      --hairline:  #2c2c2a;
+      --border:    rgba(255,255,255,0.10);
+      --accent:    #3987e5;
+      --accent-track: #104281;
+      --good-text: #0ca30c;
+      --good-wash:    rgba(12,163,12,0.16);
+      --warn-wash:    rgba(250,178,25,0.14);
+      --accent-wash:  rgba(57,135,229,0.16);
+      --muted-wash:   rgba(137,135,129,0.14);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page:      #0d0d0d;
+    --surface:   #1a1a19;
+    --ink:       #ffffff;
+    --ink-2:     #c3c2b7;
+    --muted:     #898781;
+    --hairline:  #2c2c2a;
+    --border:    rgba(255,255,255,0.10);
+    --accent:    #3987e5;
+    --accent-track: #104281;
+    --good-text: #0ca30c;
+    --good-wash:    rgba(12,163,12,0.16);
+    --warn-wash:    rgba(250,178,25,0.14);
+    --accent-wash:  rgba(57,135,229,0.16);
+    --muted-wash:   rgba(137,135,129,0.14);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .digest { max-width: 860px; margin: 0 auto; padding: 28px 24px; }
+
+  /* Status chips: icon + label, never color alone */
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 600; line-height: 1;
+    padding: 4px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .chip .ico { font-size: 11px; }
+  .chip.done       { background: var(--good-wash);   color: var(--good-text); }
+  .chip.inprogress { background: var(--accent-wash); color: var(--accent); }
+  .chip.queued     { background: var(--muted-wash);  color: var(--ink-2); }
+  .chip.revised    { background: var(--warn-wash);   color: var(--ink); }
+
+  /* Meter: track is a lighter step of the fill's own ramp; 4px rounded data end */
+  .meter { height: 10px; border-radius: 0 4px 4px 0; background: var(--accent-track); position: relative; overflow: hidden; }
+  .meter > i { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 0 4px 4px 0; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+
+  .digest header { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: end; margin-bottom: 8px; }
+  .digest h1 { font-size: 20px; font-weight: 650; }
+  .digest .goal { color: var(--ink-2); font-size: 14px; margin-top: 3px; max-width: 62ch; }
+  /* Hero figure / stat tile */
+  .digest .hprog { text-align: right; }
+  .digest .hprog .n { font-size: 26px; font-weight: 600; }
+  .digest .hprog .n small { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .digest .hprog .meter { width: 180px; margin-top: 6px; }
+
+  .digest .spine { position: relative; margin-top: 22px; padding-left: 30px; }
+  .digest .spine::before { content: ""; position: absolute; left: 9px; top: 6px; bottom: 6px; width: 2px; background: var(--hairline); }
+  .digest .stage { position: relative; margin-bottom: 26px; }
+  .digest .stage::before {
+    content: ""; position: absolute; left: -27px; top: 4px; width: 12px; height: 12px; border-radius: 50%;
+    background: var(--surface); border: 2px solid var(--muted);
+  }
+  .digest .stage.done::before { background: var(--good); border-color: var(--good); }
+  .digest .stage.now::before  { background: var(--accent); border-color: var(--accent); }
+  .digest .stage h2 { font-size: 15px; font-weight: 650; display: flex; align-items: baseline; gap: 10px; }
+  .digest .stage h2 .chip { position: relative; top: -1px; }
+  .digest .stage .why { font-size: 13px; color: var(--muted); margin: 1px 0 8px; }
+  .digest .trow {
+    display: grid; grid-template-columns: 120px 1fr; gap: 10px; align-items: baseline;
+    padding: 6px 0; border-top: 1px solid var(--hairline); font-size: 13.5px;
+  }
+  .digest .trow:first-of-type { border-top: 0; }
+  .digest .trow .st { font-size: 12px; font-weight: 600; }
+  .digest .trow .st.done { color: var(--good-text); }
+  .digest .trow .st.inprogress { color: var(--accent); }
+  .digest .trow .st.queued { color: var(--muted); }
+  .digest .trow .what b { color: var(--muted); margin-right: 4px; }
+  .digest .trow .what span { color: var(--ink-2); }
+  .digest .flag {
+    border-left: 3px solid var(--warning); background: var(--warn-wash);
+    border-radius: 0 8px 8px 0; padding: 9px 12px; margin: 8px 0; font-size: 13px;
+  }
+  .digest .flag b { font-weight: 650; }
+  .digest .flag p { color: var(--ink-2); margin-top: 2px; }
+  .digest .here {
+    display: inline-flex; gap: 8px; align-items: center; margin: 2px 0 8px;
+    font-size: 12.5px; font-weight: 650; color: var(--accent);
+  }
+  .digest .here::before { content: "▶"; font-size: 10px; }
+  .digest .remains { margin-top: 4px; padding: 12px 16px; font-size: 13.5px; color: var(--ink-2); }
+  .digest .remains b { color: var(--ink); }
+  .digest footer { margin-top: 14px; font-size: 13px; color: var(--muted); }
+  .digest .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--hairline); margin-top: 16px; }
+  .digest .tabs button {
+    appearance: none; border: 0; background: none; cursor: pointer;
+    font: 600 13.5px/1 system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--ink-2); padding: 10px 14px; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  .digest .tabs button.on { color: var(--accent); border-bottom-color: var(--accent); }
+  .digest .pane { display: none; }
+  .digest .pane.on { display: block; }
+  .digest .dec { padding: 14px 16px; margin: 12px 0 10px; }
+  .digest .dec h3 { font-size: 14px; font-weight: 650; display: flex; gap: 8px; align-items: baseline; }
+  .digest .dec .where { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .digest .dec p { font-size: 13.5px; color: var(--ink-2); margin-top: 4px; }
+  .digest .dec p b { color: var(--ink); }
+  .digest .rail h3 { font-size: 13px; font-weight: 650; margin: 14px 0 6px; }
+  .digest .rail li { margin: 0 0 7px 18px; font-size: 13.5px; color: var(--ink-2); }
+  .digest .rail li strong { color: var(--ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<section class="digest">
+
+  <header>
+    <div>
+      <h1>README accuracy pass + GitHub Pages landing page</h1>
+      <p class="goal">Bring the README back in line with v0.28.0, and publish one page that takes a coworker from nothing to a working setup.</p>
+    </div>
+    <div class="hprog">
+      <div class="n">0<small> / 2 parts</small></div>
+      <div class="meter" aria-label="0% complete"><i style="width:0%"></i></div>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="Digest sections">
+    <button class="on" data-pane="timeline">Timeline</button>
+    <button data-pane="decisions">Decisions</button>
+    <button data-pane="rails">Guardrails</button>
+  </nav>
+
+  <div class="pane on" id="timeline">
+    <div class="spine">
+
+      <div class="stage">
+        <h2>Part 1 — README accuracy pass <span class="chip queued"><span class="ico">○</span>0 / 5</span></h2>
+        <p class="why">v0.28.0 shipped 15 tasks and the README did not move with them. Fix in place; do not restructure.</p>
+        <div class="trow"><span class="st queued">○ Queued</span>
+          <span class="what"><b>1</b>harvesting-debt row <span>— the skill exists on disk and is absent from the table</span></span></div>
+        <div class="trow"><span class="st queued">○ Queued</span>
+          <span class="what"><b>2</b>Visual digest subsection <span>— the headline v0.28.0 feature is never mentioned</span></span></div>
+        <div class="trow"><span class="st queued">○ Queued</span>
+          <span class="what"><b>3</b>Templates table <span>— add sdd-workspace, task-brief, review-package</span></span></div>
+        <div class="trow"><span class="st queued">○ Queued</span>
+          <span class="what"><b>4</b>TDD reference <span>— writing-good-tests.md replaced testing-anti-patterns.md</span></span></div>
+        <div class="trow"><span class="st queued">○ Queued</span>
+          <span class="what"><b>5</b>Refresh two rows <span>— security-review and finishing-a-development-branch</span></span></div>
+      </div>
+
+      <div class="stage">
+        <h2>Part 2 — GitHub Pages landing page <span class="chip queued"><span class="ico">○</span>0 / 7</span></h2>
+        <p class="why">A repo README is poor first contact for someone deciding whether to adopt a workflow.</p>
+        <div class="trow"><span class="st queued">○ Queued</span>
+          <span class="what"><b>1</b>docs/site/index.html <span>— eight sections, hero through footer</span></span></div>
+        <div class="trow"><span class="st queued">○ Queued</span>
+          <span class="what"><b>2</b>docs/site/style.css <span>— Miller structure, razorback crimson, light and dark</span></span></div>
+        <div class="trow"><span class="st queued">○ Queued</span>
+          <span class="what"><b>3</b>docs/site/script.js <span>— install-tab switching, the only script</span></span></div>
+        <div class="trow"><span class="st queued">○ Queued</span>
+          <span class="what"><b>4</b>docs/site/404.html <span>— minimal, links home</span></span></div>
+        <div class="trow"><span class="st queued">○ Queued</span>
+          <span class="what"><b>5</b>docs/site/.nojekyll <span>— empty file, disables Jekyll processing</span></span></div>
+        <div class="trow"><span class="st queued">○ Queued</span>
+          <span class="what"><b>6</b>docs/site/assets/ <span>— razorback-small.svg copied from assets/</span></span></div>
+        <div class="trow"><span class="st queued">○ Queued</span>
+          <span class="what"><b>7</b>.github/workflows/pages.yml <span>— upload-pages-artifact scoped to docs/site</span></span></div>
+        <div class="flag"><b>⚠ Needs a human — cannot be automated.</b>
+          <p>GitHub Pages source must be set to &quot;GitHub Actions&quot; in the repository settings. The workflow cannot deploy until that is done, and an agent cannot change it.</p></div>
+      </div>
+
+    </div>
+
+    <div class="card remains"><b>Remaining:</b> both parts. They share no files, so they run in parallel with file ownership split between README.md and docs/site plus the workflow.</div>
+  </div>
+
+  <div class="pane" id="decisions">
+    <div class="card dec">
+      <h3>Landing page only, no generated skill reference <span class="where">Scope</span></h3>
+      <p>A generated per-skill reference would keep 26 skills from drifting, but it needs a build step. <b>Landed:</b> one hand-written page; everything deeper links back to GitHub. Do not add a framework or a generator later without revisiting this.</p>
+    </div>
+    <div class="card dec">
+      <h3>The full setup path lives on the page <span class="where">Content</span></h3>
+      <p>Miller and Goldfish are both hard requirements, and a coworker who installs razorback alone gets a broken experience. <b>Landed:</b> the page carries one ordered path — Node.js, Miller, Goldfish, razorback — with real commands. Do not demote this to a requirements list below the pitch.</p>
+    </div>
+    <div class="card dec">
+      <h3>Copy the Miller site mechanism exactly <span class="where">Build</span></h3>
+      <p>Miller already deploys hand-written files from <code>docs/site/</code> via <code>upload-pages-artifact</code>. <b>Landed:</b> same layout, same workflow shape. No Jekyll, no framework, no runtime dependency, so razorback stays a pure-content plugin. Only <code>docs/site</code> is uploaded, which keeps <code>docs/plans/</code> and <code>docs/specs/</code> unpublished.</p>
+    </div>
+    <div class="card dec">
+      <h3>Sibling look, own accent <span class="where">Design</span></h3>
+      <p>The two tools get pitched together, so the sites should read as a family. <b>Landed:</b> Miller's structural CSS conventions with razorback's own palette pulled from its logo — crimson <code>#B31B1B</code>, ink <code>#141418</code>, cream <code>#FFF4E0</code>. Not Miller's teal.</p>
+    </div>
+  </div>
+
+  <div class="pane" id="rails">
+    <div class="rail">
+      <h3>Never touch</h3>
+      <ul>
+        <li><strong>Skill content, hooks, manifests</strong> — this is a documentation change. No skill body, hook script, or version-bearing manifest moves.</li>
+        <li><strong>README structure</strong> — fix the five drifts in place. The README stays the reference document.</li>
+        <li><strong>docs/plans/ and docs/specs/ visibility</strong> — the workflow uploads only <code>docs/site</code>. Do not widen the upload path.</li>
+      </ul>
+      <h3>Held constant</h3>
+      <ul>
+        <li><strong>No build step</strong> — razorback installs with zero dependencies and stays that way.</li>
+        <li><strong>No external fetches</strong> — no CDN, no web font, no remote image. The logo is a local SVG.</li>
+        <li><strong>No inline event handlers</strong> — <code>script.js</code> is the only script on the page.</li>
+        <li><strong>Commands are copied, never invented</strong> — every command traces to this repo or the Miller README.</li>
+      </ul>
+      <h3>Verification gates</h3>
+      <ul>
+        <li><strong>Worker scope</strong> — <code>npm test</code> for the README part; render and read the page for the site part.</li>
+        <li><strong>Branch gate</strong> — full <code>npm test</code> (baseline 220 passing), plus a manual read of the page in light and dark at 360px and desktop width.</li>
+        <li><strong>Claim check</strong> — every skill row and every command is verified against its file, not recalled.</li>
+      </ul>
+    </div>
+  </div>
+
+  <footer>Digest of <a href="2026-08-07-docs-site-design.md">the full design document</a></footer>
+
+</section>
+<script>
+  document.querySelectorAll(".tabs button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("on"));
+      document.querySelectorAll(".pane").forEach(p => p.classList.remove("on"));
+      btn.classList.add("on");
+      document.getElementById(btn.dataset.pane).classList.add("on");
+    });
+  });
+</script>
+</body>
+</html>
