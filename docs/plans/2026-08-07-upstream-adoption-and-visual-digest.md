@@ -143,10 +143,10 @@ Batches run A → B → C → D. Within A and B, tasks dispatch together. Batch 
 **What to build:** (a) Move branch/path capture into Interactive Step 2 with a comment stating why (Step 4 changes branch and directory before Step 5 needs the values). (b) Rewrite Step 5 to use `$WORKTREE_PATH` / `$FEATURE_BRANCH` and add the provenance guard. (c) Replace the `gh`-only PR creation in Autonomous Step 6 with the ladder; update the failure protocol accordingly. Interactive Option 2 gets a one-line pointer to the same ladder.
 
 **Acceptance criteria:**
-- [ ] Interactive Step 5 contains no `git branch --show-current` invocation; it consumes Step 2's captured variables
-- [ ] Cleanup text restricts removal to `.claude/worktrees/` paths
-- [ ] Autonomous Step 6 names all four ladder rungs in order; PR-URL write-back still specified for the `gh` and forge-CLI rungs
-- [ ] Worker-scope verification passes and the change is handed to the lead per commit mode
+- [x] Interactive Step 5 contains no `git branch --show-current` invocation; it consumes Step 2's captured variables
+- [x] Cleanup text restricts removal to `.claude/worktrees/` paths
+- [x] Autonomous Step 6 names all four ladder rungs in order; PR-URL write-back still specified for the `gh` and forge-CLI rungs (Step 7 scoped to rungs 1–2)
+- [x] Worker-scope verification passes and the change is handed to the lead per commit mode
 
 ### Task 4: Redact rule + debugging example fix
 
