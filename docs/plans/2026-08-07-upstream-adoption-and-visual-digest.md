@@ -249,9 +249,9 @@ Batches run A → B → C → D. Within A and B, tasks dispatch together. Batch 
 **What to build:** For each whole-file assertion found: add an extract-region helper (heading → next same-level heading), assert within the region, and assert the region exists. Verify by mutation: deleting the guarded region must fail the test.
 
 **Acceptance criteria:**
-- [ ] Each rewritten assertion fails when its target region is deleted (demonstrated by temporary mutation, then reverted)
-- [ ] Report lists which assertions were whole-file (rewritten) and which were already scoped (untouched)
-- [ ] Worker-scope verification passes and the change is handed to the lead per commit mode
+- [x] Each rewritten assertion fails when its target region is deleted (demonstrated by temporary mutation, then reverted) — survey verdict: zero rewrites needed; mutation Demo A proved the existing scoped assertions already fail on region deletion
+- [x] Report lists which assertions were whole-file (rewritten) and which were already scoped (untouched)
+- [x] Worker-scope verification passes and the change is handed to the lead per commit mode
 
 ### Task 8: writing-skills additions
 
