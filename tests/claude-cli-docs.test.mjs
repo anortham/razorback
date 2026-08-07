@@ -83,6 +83,44 @@ test('claude invocation blocks pin the read-only allowlist', () => {
   }
 });
 
+function nonCanonicalToolsOccurrences(text) {
+  const lines = text.split('\n');
+  const occurrences = [];
+  lines.forEach((line, index) => {
+    for (const match of line.matchAll(/--tools "([^"]+)"/g)) {
+      if (match[1] === 'Read,Grep,Glob') continue;
+      const context = lines.slice(Math.max(0, index - 1), index + 1).join(' ');
+      if (/Do NOT treat/.test(context)) continue;
+      occurrences.push({ line: index + 1, value: match[1] });
+    }
+  });
+  return occurrences;
+}
+
+test('every documented claude --tools value pins the read-only allowlist, inline code included', () => {
+  for (const rel of CLAUDE_INVOCATION_DOCS) {
+    assert.deepEqual(
+      nonCanonicalToolsOccurrences(read(rel)),
+      [],
+      `${rel} documents a --tools value other than the canonical "Read,Grep,Glob" allowlist outside the "Do NOT treat" anti-pattern warning`,
+    );
+  }
+});
+
+test('the --tools scanner catches inline drift the fenced-block guard cannot see', () => {
+  const inlineDrift = 'Calls `claude -p --dangerously-skip-permissions --tools "Read,Write" --max-turns 15 …`.';
+  assert.deepEqual(nonCanonicalToolsOccurrences(inlineDrift), [{ line: 1, value: 'Read,Write' }]);
+
+  const historicalDrift = 'Calls `claude -p --tools "Read,Bash" --max-turns 15 …`.';
+  assert.deepEqual(nonCanonicalToolsOccurrences(historicalDrift), [{ line: 1, value: 'Read,Bash' }]);
+
+  const canonical = 'Calls `claude -p --tools "Read,Grep,Glob" --strict-mcp-config …`.';
+  assert.deepEqual(nonCanonicalToolsOccurrences(canonical), []);
+
+  const antiPattern = 'out of the session. Do NOT treat\n  `--tools "Read,Bash"` as read-only — an unrestricted Bash tool can write';
+  assert.deepEqual(nonCanonicalToolsOccurrences(antiPattern), []);
+});
+
 test('Read,Bash appears only in the documented anti-pattern warning', () => {
   for (const rel of ['skills/pre-merge-review/SKILL.md', 'skills/pre-merge-review/reviewer-prompts/claude.md']) {
     assert.doesNotMatch(
