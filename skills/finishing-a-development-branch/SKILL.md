@@ -84,6 +84,8 @@ git commit -m "docs: autonomous run report for <plan name>"
 
 This commit (and the Step 7 URL write-back) are metadata-only: they touch nothing outside `.memories/`, so the Step 1 branch-gate evidence carries over to the new HEAD. If anything outside `.memories/` changes after Step 1, the evidence is invalidated — re-run the branch gate before pushing.
 
+Every report mutation after this step updates the digest sibling's matching field and stages both files in the same commit — a committed digest that contradicts its markdown is worse than none.
+
 ### Step 5: Push branch
 
 ```bash
@@ -109,16 +111,16 @@ Capture the PR URL from `gh`'s output for Step 7.
 
 2. **Another forge CLI, if present** — `glab mr create` (GitLab) or `tea pr create` (Gitea/Forgejo), with the equivalent base/title/body arguments. Capture the PR URL it prints for Step 7.
 
-3. **The creation URL the forge printed on push** — many forges answer the Step 5 `git push` with a ready-made PR-creation URL. Record it in the report's `PR` field as `not created — open <creation-url>`, set `Status: Partial` (branch pushed; PR needs one click), commit and push the update, and emit the URL in the terminal pointer.
+3. **The creation URL the forge printed on push** — many forges answer the Step 5 `git push` with a ready-made PR-creation URL. Record it in the report's `PR` field as `not created — open <creation-url>`, set `Status: Partial` (branch pushed; PR needs one click), commit and push the update (both siblings, per Step 4), and emit the URL in the terminal pointer.
 
-4. **No rung worked** — update the report with the failure in `Blockers hit` and `Status: Partial` (the branch was pushed but the PR was not created), commit and push the update, emit the terminal pointer, and exit.
+4. **No rung worked** — update the report with the failure in `Blockers hit` and `Status: Partial` (the branch was pushed but the PR was not created), commit and push the update (both siblings, per Step 4), emit the terminal pointer, and exit.
 
 ### Step 7: Write the PR URL back into the report
 
-Applies to ladder rungs 1–2, which return the created PR's URL; rungs 3–4 already wrote their outcome in Step 6. Replace the `pending — filled in after PR creation` value in the committed report with the captured URL, then commit and push the update. This is a metadata-only commit; the branch-gate evidence still holds (see Step 4).
+Applies to ladder rungs 1–2, which return the created PR's URL; rungs 3–4 already wrote their outcome in Step 6. Replace the `pending — filled in after PR creation` value in the committed report with the captured URL, update the digest's `PR` field to match (per Step 4), then commit and push the update. This is a metadata-only commit; the branch-gate evidence still holds (see Step 4).
 
 ```bash
-git add .memories/autonomous-run-YYYY-MM-DD-<slug>.md
+git add .memories/autonomous-run-YYYY-MM-DD-<slug>.md .memories/autonomous-run-YYYY-MM-DD-<slug>.html
 git commit -m "docs: record PR URL in run report"
 git push
 ```

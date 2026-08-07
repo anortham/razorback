@@ -121,7 +121,16 @@ Summary card under the timeline, and the footer:
 
 ## Kit CSS
 
-Copy this block whole into each digest's `<head>`.
+Copy this CSP meta line into each digest's `<head>` above the style block. It
+keeps the inline style and the tab toggle working while blocking every network
+fetch, image, frame, and form action — even if markup slips in from a source
+document:
+
+```html
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+```
+
+Then copy this block whole into each digest's `<head>`.
 
 ```html
 <style>
@@ -310,4 +319,10 @@ The only script a digest carries — place it at the end of `<body>`:
   deleted together.
 - Inline the kit CSS above into each digest. No external fetches, no
   libraries; the tab toggle is the only script.
+- Document-derived text is data, never markup: HTML-escape `<`, `>`, `&`,
+  `"`, and `'` when composing digest content from a plan or report.
+- Links carry only relative repo paths or `https:` URLs already present in
+  the source document — never `javascript:` or any other scheme.
+- No event-handler attributes (`onclick`, `onload`, …) anywhere; the tab
+  toggle stays the only script.
 - Exactly one hero figure per digest.
