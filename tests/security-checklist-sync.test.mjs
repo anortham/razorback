@@ -193,6 +193,18 @@ test('the pre-merge orchestration keeps the dual-flagged dedupe vocabulary', () 
   );
 });
 
+test('the pre-merge policy gate rechecks the policy immediately before each pass', () => {
+  const text = read('skills/pre-merge-review/SKILL.md');
+  assert.ok(
+    text.includes('re-read the policy immediately before each pass'),
+    'skills/pre-merge-review/SKILL.md lost the per-pass policy recheck — restore "re-read the policy immediately before each pass" so a policy revoked while the general pass runs fails closed before the security pass receives the diff',
+  );
+  assert.ok(
+    !text.includes('applies once per review'),
+    'skills/pre-merge-review/SKILL.md reintroduced the once-per-review policy shortcut — one check for two dispatches means a policy revoked mid-run would still leak the diff to the second pass; recheck the policy immediately before each dispatch instead',
+  );
+});
+
 test('the morning report template renders the per-pass counts and the cost note', () => {
   const template = read('skills/finishing-a-development-branch/morning-report-template.md');
   for (const placeholder of ['{{general_findings_count}}', '{{security_findings_count}}', '{{cost_note}}']) {

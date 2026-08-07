@@ -104,7 +104,7 @@ verification evidence.
 
 ## Step 2: Dispatch the chosen reviewer
 
-Before the diff is sent, re-read the policy and apply the external-model policy check in razorback:security-review at dispatch time: the dispatched CLI's provider (`codex` → `openai`, `claude` → `anthropic`) must be allowed, and the reviewer must appear in `Reviewer choices permitted:`. A denial on either field means refuse this reviewer and name an allowed alternative. The policy gate applies once per review — both passes run on the same CLI, so the same provider decision covers them.
+Before the diff is sent, re-read the policy and apply the external-model policy check in razorback:security-review at dispatch time: the dispatched CLI's provider (`codex` → `openai`, `claude` → `anthropic`) must be allowed, and the reviewer must appear in `Reviewer choices permitted:`. A denial on either field means refuse this reviewer and name an allowed alternative. The policy gate applies per dispatch: re-read the policy immediately before each pass. Both passes use the same CLI, so both checks evaluate the same provider and reviewer — and a policy change between passes fails closed before the second dispatch. A denial follows the canonical procedure in razorback:security-review, including blocker taxonomy #4 on an autonomous run where the user chose this reviewer.
 
 When a reviewer is chosen, dispatch the chosen CLI **twice** against the same diff and the same shared schema:
 
