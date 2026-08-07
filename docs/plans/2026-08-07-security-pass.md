@@ -188,7 +188,7 @@ Commit mode: `parallel-lead-commit` — workers hand verified diffs to the lead;
 **Dependency reason:** None - safe parallel batch.
 
 **Acceptance criteria:**
-- [ ] Passes line byte-exact; pass-label and dual-flag annotations present; cross-ref paragraph placed; existing guards green (`node --test tests/security-checklist-sync.test.mjs`).
+- [x] Passes line byte-exact; pass-label and dual-flag annotations present; cross-ref paragraph placed; existing guards green (`node --test tests/security-checklist-sync.test.mjs`). (Accepted extra: `- **Cost:** {{cost_note}}` line — the template had no cost slot; Task 5 guards it.)
 
 ### Task 5: guard extensions
 
