@@ -3,7 +3,7 @@
 **Status:** Complete
 **Plan:** docs/plans/2026-08-07-security-lane.md (design: docs/plans/2026-08-07-security-lane-design.md)
 **Branch:** worktree-security-lane (stacked on worktree-claude-reviewer-allowlist / PR #8)
-**PR:** pending — filled in after PR creation
+**PR:** https://github.com/anortham/razorback/pull/9
 **Duration:** ~45m execution (brainstorm + design + plan earlier in the same session)
 **Phases:** 1/1 complete (Batch A + serial guard task + review fix round)
 **Tasks:** 7/7 complete
@@ -52,7 +52,7 @@
 ```
 
 ## Next steps
-- Review PR: pending — filled in after PR creation
+- Review PR: https://github.com/anortham/razorback/pull/9
 - Merge order: PR #8 (claude-reviewer-allowlist) first; this PR stacks on it and shows only the lane commits.
 - Dogfood follow-up: add an `## External model policy` block to razorback's own CLAUDE.md so this repo's runs stop rendering the no-policy note.
 - Hospital rollout: the policy block + Security scope field are the org-template pieces — a repo template carrying both is the next convention artifact.
