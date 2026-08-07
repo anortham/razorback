@@ -1,9 +1,9 @@
 ---
 id: harness-descope-2026-07-audit-remediation
 title: Harness descope + 2026-07 audit remediation
-status: active
+status: completed
 created: 2026-07-16T13:29:48.784Z
-updated: 2026-07-16T13:29:48.784Z
+updated: 2026-08-07T14:43:55.319Z
 tags:
   - harness-descope
   - audit
