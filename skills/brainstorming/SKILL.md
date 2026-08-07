@@ -91,8 +91,10 @@ Every project goes through this process. A todo list, a single-function utility,
 - Prefer multiple choice questions when possible, but open-ended is fine too
 - Only one question per message - if a topic needs more exploration, break it into multiple messages
 - Focus on understanding: purpose, constraints, success criteria
+- Finding facts is the agent's job: for any environment fact (what the repo contains, what a tool supports, what a config declares), use Miller or dispatch a subagent — never ask the user for something the repo can answer, and don't block the interview on the lookup; only questions downstream of that fact wait
+- Model the open design questions as a tree: a question is on the frontier when its prerequisites are settled
 - When the dialogue loops on a question only running code can answer — the feel of a state model, the look of a page — stop arguing and take the razorback:prototyping off-ramp; record the verdict in the design when you return
-- Stop asking when you can state the purpose, constraints, and success criteria in your own words AND your last question produced no correction — then move to approaches. If you cannot state all three, you are not done asking.
+- Stop asking when the frontier is empty AND you can state the purpose, constraints, and success criteria in your own words AND your last question produced no correction — then move to approaches. If you cannot state all three, you are not done asking.
 
 **Exploring approaches:**
 - Propose 2-3 different approaches with trade-offs
@@ -123,9 +125,9 @@ After writing the spec document, look at it with fresh eyes:
 Fix any issues inline. No need to re-review, just fix and move on.
 
 **User Review Gate:**
-After the spec review loop passes, ask the user to review the written spec before proceeding:
+After the spec review loop passes, write the spec's visual digest — `<design-doc>.html` beside the markdown, sibling basename, composed per the `razorback:using-razorback` skill's `references/digest-kit.md`. Digest generation is part of writing the spec, not a separate stop. Then ask the user to review the written spec before proceeding:
 
-> "Spec written and committed to `<path>`. Please review it and let me know if you want to make any changes before we start writing out the implementation plan."
+> "Spec written and committed to `<path>`, with a visual digest at `<design-doc>.html`. Please review it and let me know if you want to make any changes before we start writing out the implementation plan."
 
 Wait for the user's response. If they request changes, make them and re-run the spec review loop. Only proceed once the user approves.
 
@@ -153,7 +155,7 @@ For moderate, well-understood tasks executed in the same session. Skips writing-
 **If the task is a single coherent unit:** Dispatch one implementer using the prompt template from `razorback:subagent-driven-development`.
 
 ```
-Agent / Task tool:
+Dispatch one implementer subagent:
   description: "Implement [feature name]"
   prompt: |
     [Follow subagent-driven-development/implementer-prompt.md template]
@@ -186,6 +188,7 @@ If they agree to the companion, read the detailed guide before proceeding:
 
 - **One question at a time** - Don't overwhelm with multiple questions
 - **Guess, then ask** - Every question carries a falsifiable guess; expose your prior so one word can correct it
+- **Facts are the agent's job** - Fetch environment facts with Miller or a subagent; ask the user for decisions, not lookups
 - **Multiple choice preferred** - Easier to answer than open-ended when possible
 - **YAGNI ruthlessly** - Remove unnecessary features from all designs
 - **Explore alternatives** - Always propose 2-3 approaches before settling

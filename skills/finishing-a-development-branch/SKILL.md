@@ -68,20 +68,23 @@ Use `$BASE_SHA` for any `base..HEAD` range computation (e.g. `git diff --stat $B
 
 Fill the placeholders in `./morning-report-template.md` using the fields the caller accumulated during execution (plan name + path, branch name, phases complete/total, tasks complete/total, duration, judgment calls log, external review outcome, tests summary, blockers, files changed from `git diff --stat $BASE_SHA..HEAD`, next steps).
 
-Produce two renderings:
+Produce three renderings:
 - **Full report** — every section filled in, for `.memories/` and for review.
 - **PR summary** — status, What shipped, External review, Blockers, Next steps only. The Judgment calls section is not inlined in the PR description; the PR body points at the `.memories/` file instead (committed in Step 4, so the link is live the moment the PR opens).
+- **Report digest** — the full report's `.html` sibling (same basename), composed per the `razorback:using-razorback` skill's `references/digest-kit.md`. Rendering the digest is part of rendering the report, not a separate step.
 
 ### Step 4: Write full report + commit
 
-Write the full rendered report to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md`, where `<slug>` is a short kebab-case identifier for the plan (e.g. `autonomous-execution`). Committing it before the push means the PR includes the report from its first revision — no dead link in the PR body. The PR does not exist yet, so render `{{pr_url}}` as `pending — filled in after PR creation`; Step 7 writes the real URL back.
+Write the full rendered report to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md` and its digest to `.memories/autonomous-run-YYYY-MM-DD-<slug>.html`, where `<slug>` is a short kebab-case identifier for the plan (e.g. `autonomous-execution`). Committing them before the push means the PR includes the report from its first revision — no dead link in the PR body. The PR does not exist yet, so render `{{pr_url}}` as `pending — filled in after PR creation`; Step 7 writes the real URL back.
 
 ```bash
-git add .memories/autonomous-run-YYYY-MM-DD-<slug>.md
+git add .memories/autonomous-run-YYYY-MM-DD-<slug>.md .memories/autonomous-run-YYYY-MM-DD-<slug>.html
 git commit -m "docs: autonomous run report for <plan name>"
 ```
 
 This commit (and the Step 7 URL write-back) are metadata-only: they touch nothing outside `.memories/`, so the Step 1 branch-gate evidence carries over to the new HEAD. If anything outside `.memories/` changes after Step 1, the evidence is invalidated — re-run the branch gate before pushing.
+
+Every report mutation after this step updates the digest sibling's matching field and stages both files in the same commit — a committed digest that contradicts its markdown is worse than none.
 
 ### Step 5: Push branch
 
@@ -93,6 +96,10 @@ If the push is rejected (branch already tracks a different remote, non-fast-forw
 
 ### Step 6: Create PR
 
+Work down the forge ladder. Stop at the first rung that succeeds; a rung that is unavailable or fails (not installed, auth, network, repo not on origin) drops to the next.
+
+1. **`gh` (preferred — machine-readable URL for the Step 7 write-back):**
+
 ```bash
 gh pr create \
   --base "$BASE_BRANCH" \
@@ -100,16 +107,20 @@ gh pr create \
   --body "$(rendered_pr_summary)"
 ```
 
-If `gh` is not installed or the command fails (auth, network, repo not on origin), update the report with the failure in `Blockers hit` and `Status: Partial` (the branch was pushed but the PR was not created), commit and push the update, emit the terminal pointer, and exit.
+Capture the PR URL from `gh`'s output for Step 7.
 
-Capture the PR URL from `gh`'s output.
+2. **Another forge CLI, if present** — `glab mr create` (GitLab) or `tea pr create` (Gitea/Forgejo), with the equivalent base/title/body arguments. Capture the PR URL it prints for Step 7.
+
+3. **The creation URL the forge printed on push** — many forges answer the Step 5 `git push` with a ready-made PR-creation URL. Record it in the report's `PR` field as `not created — open <creation-url>`, set `Status: Partial` (branch pushed; PR needs one click), commit and push the update (both siblings, per Step 4), and emit the URL in the terminal pointer.
+
+4. **No rung worked** — update the report with the failure in `Blockers hit` and `Status: Partial` (the branch was pushed but the PR was not created), commit and push the update (both siblings, per Step 4), emit the terminal pointer, and exit.
 
 ### Step 7: Write the PR URL back into the report
 
-Replace the `pending — filled in after PR creation` value in the committed report with the captured URL, then commit and push the update. This is a metadata-only commit; the branch-gate evidence still holds (see Step 4).
+Applies to ladder rungs 1–2, which return the created PR's URL; rungs 3–4 already wrote their outcome in Step 6. Replace the `pending — filled in after PR creation` value in the committed report with the captured URL, update the digest's `PR` field to match (per Step 4), then commit and push the update. This is a metadata-only commit; the branch-gate evidence still holds (see Step 4).
 
 ```bash
-git add .memories/autonomous-run-YYYY-MM-DD-<slug>.md
+git add .memories/autonomous-run-YYYY-MM-DD-<slug>.md .memories/autonomous-run-YYYY-MM-DD-<slug>.html
 git commit -m "docs: record PR URL in run report"
 git push
 ```
@@ -119,14 +130,14 @@ git push
 One line, then exit:
 
 ```
-Done. PR: <url>. Report: .memories/autonomous-run-YYYY-MM-DD-<slug>.md
+Done. PR: <url>. Report: .memories/autonomous-run-YYYY-MM-DD-<slug>.md. Digest: .memories/autonomous-run-YYYY-MM-DD-<slug>.html
 ```
 
 ### Autonomous Mode rules
 
 - **Never merge.** Stopping at PR creation is the point; merge is a separate human (or agent) action after PR review.
 - **Never show a menu, never ask "which option".** Autonomous means no prompts.
-- **Never fall back to Interactive Mode mid-run.** If a step fails (push rejected, `gh` missing, remote mismatch), emit a partial report with `Status: Blocked` or `Status: Partial` as appropriate and let the user resolve from there.
+- **Never fall back to Interactive Mode mid-run.** If a step fails (push rejected, every forge-ladder rung failed, remote mismatch), emit a partial report with `Status: Blocked` or `Status: Partial` as appropriate and let the user resolve from there.
 - **Always write the report to `.memories/`**, even on blocked/partial outcomes — the report is the user's morning read regardless of outcome.
 
 ## Interactive Mode
@@ -162,6 +173,10 @@ Stop. Don't proceed to Step 2.
 `git merge-base` returns a commit SHA, not a branch name. Downstream steps need the branch **name** (`git checkout <base-branch>`, `gh pr create --base`), so resolve both values the same way Autonomous Step 2 does:
 
 ```bash
+# Capture now: Step 4 changes branch and directory before Step 5 needs these values.
+FEATURE_BRANCH=$(git branch --show-current)
+WORKTREE_PATH=$(git rev-parse --show-toplevel)
+
 # Prefer an explicit base from the plan/user, then the remote's default branch,
 # then main/master. Merge-base-with-main alone is wrong for repos whose PRs
 # target another branch (develop, release/*) — main almost always shares history.
@@ -241,6 +256,8 @@ EOF
 )"
 ```
 
+If `gh` is unavailable or fails, walk the same forge ladder as Autonomous Step 6 (forge CLI → push-printed creation URL).
+
 Then: Cleanup worktree (Step 5)
 
 #### Option 3: Keep As-Is
@@ -275,15 +292,21 @@ Then: Cleanup worktree (Step 5)
 
 **For Options 1, 2, 4:**
 
-Check if in worktree:
+Use `$WORKTREE_PATH` and `$FEATURE_BRANCH` captured in Step 2 — Step 4 already checked out the base branch, so re-deriving them here names the wrong branch and the cleanup silently no-ops.
+
+Check whether the captured path is a listed worktree:
 ```bash
-git worktree list | grep $(git branch --show-current)
+git worktree list | grep "$WORKTREE_PATH"
 ```
 
-If yes:
+If it is listed **and** the path lies under `.claude/worktrees/`:
 ```bash
-git worktree remove <worktree-path>
+git worktree remove "$WORKTREE_PATH"
 ```
+
+Then report: "Removed worktree $WORKTREE_PATH for branch $FEATURE_BRANCH."
+
+Provenance rule: a worktree anywhere else belongs to the host or the user. Leave it in place and report its path instead.
 
 **For Option 3:** Keep worktree.
 
@@ -322,7 +345,7 @@ git worktree remove <worktree-path>
 - Delete work without confirmation
 - Force-push without explicit request
 - Merge in autonomous mode — merge is always a separate human (or agent) action after PR review
-- Fall back to Interactive Mode mid-autonomous-run — if autonomous mode can't complete (e.g. `gh` not installed), emit a partial report with status `Blocked` and let the user resolve; don't prompt for an option
+- Fall back to Interactive Mode mid-autonomous-run — if autonomous mode can't complete (e.g. every forge-ladder rung fails), emit a partial report with status `Blocked` and let the user resolve; don't prompt for an option
 
 **Always:**
 - Verify tests before offering options (Interactive) or before pushing (Autonomous)

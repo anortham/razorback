@@ -29,7 +29,7 @@ Before writing any prototype code, announce: **"Prototyping to settle: <question
 
 ## Pick a Branch
 
-- **"Does this logic / state model feel right?"** → [LOGIC.md](LOGIC.md) — interactive terminal app over a pure, portable module.
+- **"Does this logic / state model feel right?"** → [LOGIC.md](LOGIC.md) — interactive shell over a pure, portable module; shell choice — TUI or single-file HTML — inside LOGIC.md.
 - **"What should this look like?"** → [UI.md](UI.md) — structurally different variants on a real route.
 
 Getting this wrong wastes the whole prototype. If genuinely ambiguous and the user is unreachable: a backend module → logic; a page or component → UI. State the assumption at the top of the prototype.

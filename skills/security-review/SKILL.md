@@ -79,6 +79,15 @@ These five questions are the canonical security checklist. They are duplicated v
 - New dependencies vetted (source, maintenance, known CVEs)?
 - No sensitive data written to logs or error messages?
 
+## Redact
+
+These three rules are the canonical redaction block. They are duplicated verbatim (test-guarded) at `skills/systematic-debugging/SKILL.md` (the evidence-gathering instrumentation step). If you edit the rules here, update that copy to match — the same convention the security checklist above uses.
+
+**Redact:**
+- Redact every secret in anything you show, quote, or send — write `<REDACTED>` in its place.
+- Build loops against env vars so the credential stays in the environment rather than in displayed output.
+- From captured artifacts, quote only the lines that carry the signal.
+
 ## Anti-Rationalization Table
 
 | Excuse | Reality |

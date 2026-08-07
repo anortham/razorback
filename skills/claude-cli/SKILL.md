@@ -116,7 +116,7 @@ CLAUDE_EFFORT="${RAZORBACK_CLAUDE_REVIEW_EFFORT:-}"  # low | medium | high | xhi
 ```
 
 Use the environment variables above only as explicit overrides. Otherwise let
-Claude choose its configured default. Claude Code's Agent tool uses short names
+Claude choose its configured default. Claude Code's `Agent` tool uses short names
 (`opus`, `sonnet`, `haiku`); the CLI's `--model` flag accepts both short and
 full model IDs. Add `--effort "$CLAUDE_EFFORT"` only when it is non-empty.
 

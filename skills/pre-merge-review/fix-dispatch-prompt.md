@@ -1,6 +1,6 @@
 # Fix Dispatch Prompt Template
 
-Use this template when routing a single verified finding from the external reviewer into the harness-native fix flow. On harnesses with delegation, dispatch a fresh `general-purpose` implementer worker. On no-delegation runs, use the same sections as an inline checklist. One worker dispatch per finding is the default; see the batching edge case at the bottom for when findings cluster on one file.
+Use this template when routing a single verified finding from the external reviewer into the harness-native fix flow. On harnesses with delegation, dispatch a fresh implementer worker. On no-delegation runs, use the same sections as an inline checklist. One worker dispatch per finding is the default; see the batching edge case at the bottom for when findings cluster on one file.
 
 The template mirrors the shape of `skills/subagent-driven-development/implementer-prompt.md` but is scoped to one finding — no multi-task list, no file ownership negotiation across tasks, just a targeted fix.
 

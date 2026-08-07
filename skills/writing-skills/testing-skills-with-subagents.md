@@ -181,6 +181,8 @@ For each new rationalization, add:
 
 ### 1. Explicit Negation in Rules
 
+Negation is earned by an observed rationalization in the RED run; everywhere else, state the positive target. (The Iron Law and the existing rationalization tables earned theirs — leave them as they are.)
+
 <Before>
 ```markdown
 Write code before test? Delete it.

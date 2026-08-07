@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Upstream Adoption and Visual Digest — Plan Digest</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<style>
+  :root {
+    color-scheme: light;
+    --page:      #f9f9f7;
+    --surface:   #fcfcfb;
+    --ink:       #0b0b0b;
+    --ink-2:     #52514e;
+    --muted:     #898781;
+    --hairline:  #e1e0d9;
+    --border:    rgba(11,11,11,0.10);
+    --accent:    #2a78d6;
+    --accent-track: #cde2fb;
+    --good:      #0ca30c;
+    --good-text: #006300;
+    --warning:   #fab219;
+    --serious:   #ec835a;
+    --critical:  #d03b3b;
+    --good-wash:    rgba(12,163,12,0.09);
+    --warn-wash:    rgba(250,178,25,0.14);
+    --accent-wash:  rgba(42,120,214,0.10);
+    --muted-wash:   rgba(137,135,129,0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page:      #0d0d0d;
+      --surface:   #1a1a19;
+      --ink:       #ffffff;
+      --ink-2:     #c3c2b7;
+      --muted:     #898781;
+      --hairline:  #2c2c2a;
+      --border:    rgba(255,255,255,0.10);
+      --accent:    #3987e5;
+      --accent-track: #104281;
+      --good-text: #0ca30c;
+      --good-wash:    rgba(12,163,12,0.16);
+      --warn-wash:    rgba(250,178,25,0.14);
+      --accent-wash:  rgba(57,135,229,0.16);
+      --muted-wash:   rgba(137,135,129,0.14);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page:      #0d0d0d;
+    --surface:   #1a1a19;
+    --ink:       #ffffff;
+    --ink-2:     #c3c2b7;
+    --muted:     #898781;
+    --hairline:  #2c2c2a;
+    --border:    rgba(255,255,255,0.10);
+    --accent:    #3987e5;
+    --accent-track: #104281;
+    --good-text: #0ca30c;
+    --good-wash:    rgba(12,163,12,0.16);
+    --warn-wash:    rgba(250,178,25,0.14);
+    --accent-wash:  rgba(57,135,229,0.16);
+    --muted-wash:   rgba(137,135,129,0.14);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .digest { max-width: 860px; margin: 0 auto; padding: 28px 24px; }
+
+  /* Status chips: icon + label, never color alone */
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 600; line-height: 1;
+    padding: 4px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .chip .ico { font-size: 11px; }
+  .chip.done       { background: var(--good-wash);   color: var(--good-text); }
+  .chip.inprogress { background: var(--accent-wash); color: var(--accent); }
+  .chip.queued     { background: var(--muted-wash);  color: var(--ink-2); }
+  .chip.revised    { background: var(--warn-wash);   color: var(--ink); }
+
+  /* Meter: track is a lighter step of the fill's own ramp; 4px rounded data end */
+  .meter { height: 10px; border-radius: 0 4px 4px 0; background: var(--accent-track); position: relative; overflow: hidden; }
+  .meter > i { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 0 4px 4px 0; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+
+  .digest header { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: end; margin-bottom: 8px; }
+  .digest h1 { font-size: 20px; font-weight: 650; }
+  .digest .goal { color: var(--ink-2); font-size: 14px; margin-top: 3px; max-width: 62ch; }
+  /* Hero figure / stat tile */
+  .digest .hprog { text-align: right; }
+  .digest .hprog .n { font-size: 26px; font-weight: 600; }
+  .digest .hprog .n small { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .digest .hprog .meter { width: 180px; margin-top: 6px; }
+
+  .digest .spine { position: relative; margin-top: 22px; padding-left: 30px; }
+  .digest .spine::before { content: ""; position: absolute; left: 9px; top: 6px; bottom: 6px; width: 2px; background: var(--hairline); }
+  .digest .stage { position: relative; margin-bottom: 26px; }
+  .digest .stage::before {
+    content: ""; position: absolute; left: -27px; top: 4px; width: 12px; height: 12px; border-radius: 50%;
+    background: var(--surface); border: 2px solid var(--muted);
+  }
+  .digest .stage.done::before { background: var(--good); border-color: var(--good); }
+  .digest .stage.now::before  { background: var(--accent); border-color: var(--accent); }
+  .digest .stage h2 { font-size: 15px; font-weight: 650; display: flex; align-items: baseline; gap: 10px; }
+  .digest .stage h2 .chip { position: relative; top: -1px; }
+  .digest .stage .why { font-size: 13px; color: var(--muted); margin: 1px 0 8px; }
+  .digest .trow {
+    display: grid; grid-template-columns: 120px 1fr; gap: 10px; align-items: baseline;
+    padding: 6px 0; border-top: 1px solid var(--hairline); font-size: 13.5px;
+  }
+  .digest .trow:first-of-type { border-top: 0; }
+  .digest .trow .st { font-size: 12px; font-weight: 600; }
+  .digest .trow .st.done { color: var(--good-text); }
+  .digest .trow .st.inprogress { color: var(--accent); }
+  .digest .trow .st.queued { color: var(--muted); }
+  .digest .trow .what b { color: var(--muted); margin-right: 4px; }
+  .digest .trow .what span { color: var(--ink-2); }
+  .digest .flag {
+    border-left: 3px solid var(--warning); background: var(--warn-wash);
+    border-radius: 0 8px 8px 0; padding: 9px 12px; margin: 8px 0; font-size: 13px;
+  }
+  .digest .flag b { font-weight: 650; }
+  .digest .flag p { color: var(--ink-2); margin-top: 2px; }
+  .digest .here {
+    display: inline-flex; gap: 8px; align-items: center; margin: 2px 0 8px;
+    font-size: 12.5px; font-weight: 650; color: var(--accent);
+  }
+  .digest .here::before { content: "▶"; font-size: 10px; }
+  .digest .remains { margin-top: 4px; padding: 12px 16px; font-size: 13.5px; color: var(--ink-2); }
+  .digest .remains b { color: var(--ink); }
+  .digest footer { margin-top: 14px; font-size: 13px; color: var(--muted); }
+  .digest .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--hairline); margin-top: 16px; }
+  .digest .tabs button {
+    appearance: none; border: 0; background: none; cursor: pointer;
+    font: 600 13.5px/1 system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--ink-2); padding: 10px 14px; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  .digest .tabs button.on { color: var(--accent); border-bottom-color: var(--accent); }
+  .digest .pane { display: none; }
+  .digest .pane.on { display: block; }
+  .digest .dec { padding: 14px 16px; margin: 12px 0 10px; }
+  .digest .dec h3 { font-size: 14px; font-weight: 650; display: flex; gap: 8px; align-items: baseline; }
+  .digest .dec .where { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .digest .dec p { font-size: 13.5px; color: var(--ink-2); margin-top: 4px; }
+  .digest .dec p b { color: var(--ink); }
+  .digest .rail h3 { font-size: 13px; font-weight: 650; margin: 14px 0 6px; }
+  .digest .rail li { margin: 0 0 7px 18px; font-size: 13.5px; color: var(--ink-2); }
+  .digest .rail li strong { color: var(--ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<section class="digest">
+  <header>
+    <div>
+      <h1>Upstream Adoption and Visual Digest</h1>
+      <p class="goal">Fix the five audit bugs, adopt the ranked upstream improvements from superpowers v6.2.0 and mattpocock/skills 1.2.3, and add the visual digest feature.</p>
+    </div>
+    <div class="hprog">
+      <div class="n">15<small> / 15 tasks</small></div>
+      <div class="meter" aria-label="100% complete"><i style="width:100%"></i></div>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="Digest sections">
+    <button class="on" data-pane="timeline">Timeline</button>
+    <button data-pane="decisions">Decisions</button>
+    <button data-pane="rails">Guardrails</button>
+  </nav>
+
+  <div class="pane on" id="timeline">
+    <div class="spine">
+      <div class="stage done">
+        <h2>Batch A — Bug fixes <span class="chip done"><span class="ico">✓</span>5 / 5</span></h2>
+        <p class="why">Independent fixes for the five comparative-audit bugs — dispatched in parallel.</p>
+        <div class="trow"><span class="st done">✓ Done</span>
+          <span class="what"><b>1</b>find-polluter fix <span>— `**/` patterns match nested and top-level files; empty case counts 0 · 034161b</span></span></div>
+        <div class="trow"><span class="st done">✓ Done</span>
+          <span class="what"><b>2</b>Windows-safe hook dispatch <span>— "shell": "bash" on both hook entries, shape-guarded · f3a7768</span></span></div>
+        <div class="trow"><span class="st done">✓ Done</span>
+          <span class="what"><b>3</b>finishing-branch fixes <span>— capture-before-checkout + four-rung forge ladder for PR creation · 599a1c2</span></span></div>
+        <div class="trow"><span class="st done">✓ Done</span>
+          <span class="what"><b>4</b>Redact rule <span>— canonical Redact block, synced copy in systematic-debugging, credential-safe example · 0c05b3c</span></span></div>
+        <div class="trow"><span class="st done">✓ Done</span>
+          <span class="what"><b>5</b>Harness-neutral prompts <span>— capability language at all dispatch sites, guard test added · e418e3e</span></span></div>
+      </div>
+
+      <div class="stage done">
+        <h2>Batch B — Content adoptions + kit <span class="chip done"><span class="ico">✓</span>6 / 6</span></h2>
+        <p class="why">Ranked upstream content plus the digest component kit this document is built from.</p>
+        <div class="trow"><span class="st done">✓ Done</span>
+          <span class="what"><b>6</b>writing-good-tests <span>— replaces testing-anti-patterns; falsifiability + mutation check · 393bec2</span></span></div>
+        <div class="trow"><span class="st done">✓ Done</span>
+          <span class="what"><b>7</b>Region-scoped guard assertions <span>— survey verdict: zero rewrites needed · d18207a</span></span></div>
+        <div class="flag"><b>⚠ Criterion revised — Task 7.</b>
+          <p>The planned rewrite found nothing to rewrite: both target test files were already region-scoped. A mutation demo proved deleting a guarded region already fails the suite, so the survey verdict satisfied the criterion.</p></div>
+        <div class="trow"><span class="st done">✓ Done</span>
+          <span class="what"><b>8</b>writing-skills additions <span>— no-op test, scoped negation rule, new template slots · c71d94e</span></span></div>
+        <div class="trow"><span class="st done">✓ Done</span>
+          <span class="what"><b>9</b>brainstorming refinements <span>— frontier-empty stop condition, facts-are-the-agent's-job rule · 0e24ab9</span></span></div>
+        <div class="trow"><span class="st done">✓ Done</span>
+          <span class="what"><b>10</b>prototyping HTML shell <span>— shell choice keyed to who renders the verdict · f4736db</span></span></div>
+        <div class="trow"><span class="st done">✓ Done</span>
+          <span class="what"><b>11</b>Digest component kit <span>— layout contract, kit CSS, authoring rules · 29fce73</span></span></div>
+      </div>
+
+      <div class="stage done">
+        <h2>Batch C — SDD lane <span class="chip done"><span class="ico">✓</span>3 / 3</span></h2>
+        <p class="why">Serialized lane — three tasks share the SDD files, dispatched in order 12 → 13 → 14.</p>
+        <div class="trow"><span class="st done">✓ Done</span>
+          <span class="what"><b>12</b>SDD fix-loop discipline <span>— scoped re-review, fix-report gate, cap adjudication, minor deferral · 624a77b</span></span></div>
+        <div class="trow"><span class="st done">✓ Done</span>
+          <span class="what"><b>13</b>Plan-scoped SDD workspace <span>— per-plan dirs, ledger identity header, resume check · c7628ec</span></span></div>
+        <div class="flag"><b>⚠ Fix round 1 — Task 13.</b>
+          <p>Review found the borrowed-superpowers guard still pinned the flat workspace contract. The guard was updated to the plan-scoped contract: 1 addressed, 0 open.</p></div>
+        <div class="trow"><span class="st done">✓ Done</span>
+          <span class="what"><b>14</b>Brief-path dispatch <span>— the brief file is the single source of task requirements · b9b5f7e</span></span></div>
+      </div>
+
+      <div class="stage done">
+        <h2>Batch D — Digest wiring <span class="chip done"><span class="ico">✓</span>1 / 1</span></h2>
+        <p class="why">Wire the digest into the three read moments — this document is the task's GREEN check.</p>
+        <div class="trow"><span class="st done">✓ Done</span>
+          <span class="what"><b>15</b>Wire the digest into the three read moments <span>— brainstorming, writing-plans, finishing-a-development-branch + guard test + this digest · 35a9050</span></span></div>
+      </div>
+    </div>
+
+    <div class="card remains"><b>Remaining:</b> Nothing — all 15 tasks landed. Follow-up actions (pre-merge review, PR, version bump) live outside this plan.</div>
+  </div>
+
+  <div class="pane" id="decisions">
+    <div class="card dec">
+      <h3>The digest is a model-authored view, not a markdown transform <span class="where">Task 11</span></h3>
+      <p>A mechanical transform would drag the whole document into HTML. <b>Landed:</b> a component kit (layout contract + CSS + authoring rules); the model composes each digest per document. The markdown stays canonical and agents never read the HTML — do not regenerate markdown from a digest.</p>
+    </div>
+    <div class="card dec">
+      <h3>Scope class renamed to .digest <span class="where">Task 11</span></h3>
+      <p>The prototype's variant-named .vB wrapper would leak prototype vocabulary into production files. <b>Landed:</b> every digest wraps in section class "digest" and the kit CSS is scoped under .digest; the guard test pins both. Do not reintroduce variant-named classes.</p>
+    </div>
+    <div class="card dec">
+      <h3>Cap adjudication replaces flag-and-continue <span class="where">Task 12</span></h3>
+      <p>The fix-loop cap had a single exit. <b>Landed:</b> at the cap (3 resumes + 1 reframed attempt) each open finding is ruled contested, real-but-deferred, or real-and-load-bearing → blocker stop; every ruling is a ledger entry; minor findings never enter the loop. The cap count itself is unchanged.</p>
+    </div>
+    <div class="card dec">
+      <h3>Plan-scoped SDD workspace <span class="where">Task 13</span></h3>
+      <p>The flat .razorback/sdd directory collided across concurrent plans. <b>Landed:</b> sdd-workspace takes the plan file and creates a per-plan directory; the ledger opens with an identity header; a ledger naming a different plan is left alone. This run keeps its live ledger at the old flat path — the layout applies to future runs.</p>
+    </div>
+    <div class="card dec">
+      <h3>Brief-path dispatch <span class="where">Task 14</span></h3>
+      <p>The implementer prompt said paste the full task text while File Handoffs said point at the brief. <b>Landed:</b> the brief file is the single source of task requirements; exact values live only in the brief; the lead records BASE with git rev-parse HEAD before dispatch, never HEAD~1.</p>
+    </div>
+  </div>
+
+  <div class="pane" id="rails">
+    <div class="rail">
+      <h3>Never touch</h3>
+      <ul>
+        <li><strong>Twin sections</strong> — the SDD ⟷ executing-plans Blockers / Checkpoints / Recovery pairs; every edit mirrors, preserving the encoded divergence, guarded by tests/twin-sections.test.mjs.</li>
+        <li><strong>Byte-pinned security block</strong> — the security checklist and its synced copies are byte-compared by the guard suite; edit only through the canonical home.</li>
+        <li><strong>Anti-rationalization tables</strong> — the Iron Law and the tables must not be weakened, along with Miller-first exploration and two-pass inline review.</li>
+      </ul>
+    </div>
+    <div class="rail">
+      <h3>Held constant</h3>
+      <ul>
+        <li><strong>Review cap</strong> — 3 resumes + 1 reframed attempt; the 4th attempt's value is the reframing.</li>
+        <li><strong>Crash-window rule</strong> — a completion line whose SHA is missing, pending, or absent from git log is INCOMPLETE.</li>
+      </ul>
+    </div>
+    <div class="rail">
+      <h3>Verification gates</h3>
+      <ul>
+        <li><strong>npm test</strong> — the guard suite; the worker red/green floor for every task.</li>
+        <li><strong>check-rule-copies + bump-version --check</strong> — the lead's affected-change scope after each batch.</li>
+        <li><strong>Branch gate</strong> — npm test + bump-version --audit + gitleaks detect (security-secrets scope) before push or PR.</li>
+      </ul>
+    </div>
+  </div>
+
+  <footer>Digest of <a href="2026-08-07-upstream-adoption-and-visual-digest.md">the full plan</a> — Batches A–C complete, Task 15 in progress.</footer>
+</section>
+<script>
+  document.querySelectorAll(".tabs button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("on"));
+      document.querySelectorAll(".pane").forEach(p => p.classList.remove("on"));
+      btn.classList.add("on");
+      document.getElementById(btn.dataset.pane).classList.add("on");
+    });
+  });
+</script>
+</body>
+</html>

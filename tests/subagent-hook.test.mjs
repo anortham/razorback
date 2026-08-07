@@ -119,6 +119,7 @@ test('hooks.json is valid JSON and registers both SessionStart and SubagentStart
 
   const entry = hooks.SubagentStart[0].hooks[0];
   assert.equal(entry.type, 'command');
+  assert.equal(entry.shell, 'bash');
   assert.equal(
     entry.command,
     '"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd" subagent-start',

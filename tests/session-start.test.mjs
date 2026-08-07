@@ -212,6 +212,14 @@ test('harness filtering fails open rather than injecting an empty payload', () =
   }
 });
 
+test('hooks.json dispatches session-start through bash with the unchanged polyglot command', () => {
+  const entry = JSON.parse(read('hooks/hooks.json')).hooks.SessionStart[0].hooks[0];
+
+  assert.equal(entry.type, 'command');
+  assert.equal(entry.shell, 'bash');
+  assert.equal(entry.command, '"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd" session-start');
+});
+
 test('hooks/session-start keeps its hardened bash contract', () => {
   const script = read('hooks/session-start');
 

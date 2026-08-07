@@ -5,7 +5,7 @@ The subagent already has full context from its implementation pass.
 
 On Claude Code, resume = `SendMessage` to the stored implementer's agent ID or
 name with this prompt as the message (older builds exposed a `resume` parameter
-on the Agent tool instead). On Codex, resume = `followup_task(target=<agent-id>, …)`.
+on the `Agent` tool instead). On Codex, resume = `followup_task(target=<agent-id>, …)`.
 
 ```
 SendMessage (to: "<implementer-agent-id-or-name>"):
@@ -25,7 +25,7 @@ SendMessage (to: "<implementer-agent-id-or-name>"):
 
     [Exact files this task may modify during the fix]
 
-    Report file: [path under .razorback/sdd]
+    Report file: [path under the plan's workspace, .razorback/sdd/<plan-basename>/]
 
     ## What to Do
 
@@ -69,6 +69,10 @@ SendMessage (to: "<implementer-agent-id-or-name>"):
 
     When done, report:
     - What you changed
+    - **Covering tests per finding** - for each finding you fixed, name the
+      test(s) that cover the fix, the exact command you ran, and the output.
+      The lead gates re-review on this evidence; a report without it comes
+      back to you unreviewed.
     - Verification invariant, scope label, command, commit SHA if any, result, and timestamp
     - **Miller calls used** - list the orient / inspect / find-references calls you made during the fix round
     - **API-shape evidence** - list the Miller evidence for any symbol names, function signatures, config shapes, route names, CLI flags, or public contracts you relied on
@@ -95,7 +99,7 @@ Context available to the fresh subagent:
 - **Prior commits (with SHAs)** — for reading (`git show <sha>`, `git log <base>..HEAD`),
   not as a baseline to extend. The fresh subagent can see what was tried without
   re-exploring the codebase.
-- **Original task text** — copied from the plan, the same shape as the first dispatch.
+- **The task's brief path** — the single source of task requirements (SKILL.md Step 2), the same shape as the first dispatch.
 - **All prior review-finding iterations** — rounds 1, 2, 3 of reviewer feedback, so
   the fresh subagent can see what kept failing.
 - **Reframing note from the lead** — an explicit statement of what to try differently.
@@ -112,11 +116,11 @@ Reframing examples (the lead picks one that fits the failure mode):
   separately."
 
 The fresh subagent still follows the standard review loop after its attempt:
-implementer reports -> lead does inline review -> if issues remain, the task is flagged
-in the morning report's "Blockers hit" section and the run continues with remaining
-tasks. Escalate to the user only if the failure matches blocker taxonomy #5
-(unresolvable test failures blocking the whole plan).
+implementer reports -> lead does inline review -> if issues remain, the lead
+adjudicates at the cap (SKILL.md Step 3, "Cap adjudication"): each open finding
+is ruled contested, real-but-deferred, or real-and-load-bearing, and only a
+load-bearing ruling stops the run (blocker taxonomy #5).
 
 The 4th attempt's value is the reframing, not the freshness. If the lead cannot
 articulate a reframe ("try harder" is not a reframe), skip the 4th attempt and go
-straight to flag-and-continue.
+straight to cap adjudication.

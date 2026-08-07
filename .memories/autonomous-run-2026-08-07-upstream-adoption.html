@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Autonomous Run — Upstream Adoption and Visual Digest</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<style>
+  :root {
+    color-scheme: light;
+    --page:      #f9f9f7;
+    --surface:   #fcfcfb;
+    --ink:       #0b0b0b;
+    --ink-2:     #52514e;
+    --muted:     #898781;
+    --hairline:  #e1e0d9;
+    --border:    rgba(11,11,11,0.10);
+    --accent:    #2a78d6;
+    --accent-track: #cde2fb;
+    --good:      #0ca30c;
+    --good-text: #006300;
+    --warning:   #fab219;
+    --serious:   #ec835a;
+    --critical:  #d03b3b;
+    --good-wash:    rgba(12,163,12,0.09);
+    --warn-wash:    rgba(250,178,25,0.14);
+    --accent-wash:  rgba(42,120,214,0.10);
+    --muted-wash:   rgba(137,135,129,0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page:      #0d0d0d;
+      --surface:   #1a1a19;
+      --ink:       #ffffff;
+      --ink-2:     #c3c2b7;
+      --muted:     #898781;
+      --hairline:  #2c2c2a;
+      --border:    rgba(255,255,255,0.10);
+      --accent:    #3987e5;
+      --accent-track: #104281;
+      --good-text: #0ca30c;
+      --good-wash:    rgba(12,163,12,0.16);
+      --warn-wash:    rgba(250,178,25,0.14);
+      --accent-wash:  rgba(57,135,229,0.16);
+      --muted-wash:   rgba(137,135,129,0.14);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page:      #0d0d0d;
+    --surface:   #1a1a19;
+    --ink:       #ffffff;
+    --ink-2:     #c3c2b7;
+    --muted:     #898781;
+    --hairline:  #2c2c2a;
+    --border:    rgba(255,255,255,0.10);
+    --accent:    #3987e5;
+    --accent-track: #104281;
+    --good-text: #0ca30c;
+    --good-wash:    rgba(12,163,12,0.16);
+    --warn-wash:    rgba(250,178,25,0.14);
+    --accent-wash:  rgba(57,135,229,0.16);
+    --muted-wash:   rgba(137,135,129,0.14);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .digest { max-width: 860px; margin: 0 auto; padding: 28px 24px; }
+
+  /* Status chips: icon + label, never color alone */
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 600; line-height: 1;
+    padding: 4px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .chip .ico { font-size: 11px; }
+  .chip.done       { background: var(--good-wash);   color: var(--good-text); }
+  .chip.inprogress { background: var(--accent-wash); color: var(--accent); }
+  .chip.queued     { background: var(--muted-wash);  color: var(--ink-2); }
+  .chip.revised    { background: var(--warn-wash);   color: var(--ink); }
+
+  /* Meter: track is a lighter step of the fill's own ramp; 4px rounded data end */
+  .meter { height: 10px; border-radius: 0 4px 4px 0; background: var(--accent-track); position: relative; overflow: hidden; }
+  .meter > i { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 0 4px 4px 0; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+
+  .digest header { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: end; margin-bottom: 8px; }
+  .digest h1 { font-size: 20px; font-weight: 650; }
+  .digest .goal { color: var(--ink-2); font-size: 14px; margin-top: 3px; max-width: 62ch; }
+  /* Hero figure / stat tile */
+  .digest .hprog { text-align: right; }
+  .digest .hprog .n { font-size: 26px; font-weight: 600; }
+  .digest .hprog .n small { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .digest .hprog .meter { width: 180px; margin-top: 6px; }
+
+  .digest .spine { position: relative; margin-top: 22px; padding-left: 30px; }
+  .digest .spine::before { content: ""; position: absolute; left: 9px; top: 6px; bottom: 6px; width: 2px; background: var(--hairline); }
+  .digest .stage { position: relative; margin-bottom: 26px; }
+  .digest .stage::before {
+    content: ""; position: absolute; left: -27px; top: 4px; width: 12px; height: 12px; border-radius: 50%;
+    background: var(--surface); border: 2px solid var(--muted);
+  }
+  .digest .stage.done::before { background: var(--good); border-color: var(--good); }
+  .digest .stage.now::before  { background: var(--accent); border-color: var(--accent); }
+  .digest .stage h2 { font-size: 15px; font-weight: 650; display: flex; align-items: baseline; gap: 10px; }
+  .digest .stage h2 .chip { position: relative; top: -1px; }
+  .digest .stage .why { font-size: 13px; color: var(--muted); margin: 1px 0 8px; }
+  .digest .trow {
+    display: grid; grid-template-columns: 120px 1fr; gap: 10px; align-items: baseline;
+    padding: 6px 0; border-top: 1px solid var(--hairline); font-size: 13.5px;
+  }
+  .digest .trow:first-of-type { border-top: 0; }
+  .digest .trow .st { font-size: 12px; font-weight: 600; }
+  .digest .trow .st.done { color: var(--good-text); }
+  .digest .trow .st.inprogress { color: var(--accent); }
+  .digest .trow .st.queued { color: var(--muted); }
+  .digest .trow .what b { color: var(--muted); margin-right: 4px; }
+  .digest .trow .what span { color: var(--ink-2); }
+  .digest .flag {
+    border-left: 3px solid var(--warning); background: var(--warn-wash);
+    border-radius: 0 8px 8px 0; padding: 9px 12px; margin: 8px 0; font-size: 13px;
+  }
+  .digest .flag b { font-weight: 650; }
+  .digest .flag p { color: var(--ink-2); margin-top: 2px; }
+  .digest .here {
+    display: inline-flex; gap: 8px; align-items: center; margin: 2px 0 8px;
+    font-size: 12.5px; font-weight: 650; color: var(--accent);
+  }
+  .digest .here::before { content: "▶"; font-size: 10px; }
+  .digest .remains { margin-top: 4px; padding: 12px 16px; font-size: 13.5px; color: var(--ink-2); }
+  .digest .remains b { color: var(--ink); }
+  .digest footer { margin-top: 14px; font-size: 13px; color: var(--muted); }
+  .digest .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--hairline); margin-top: 16px; }
+  .digest .tabs button {
+    appearance: none; border: 0; background: none; cursor: pointer;
+    font: 600 13.5px/1 system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--ink-2); padding: 10px 14px; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  .digest .tabs button.on { color: var(--accent); border-bottom-color: var(--accent); }
+  .digest .pane { display: none; }
+  .digest .pane.on { display: block; }
+  .digest .dec { padding: 14px 16px; margin: 12px 0 10px; }
+  .digest .dec h3 { font-size: 14px; font-weight: 650; display: flex; gap: 8px; align-items: baseline; }
+  .digest .dec .where { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .digest .dec p { font-size: 13.5px; color: var(--ink-2); margin-top: 4px; }
+  .digest .dec p b { color: var(--ink); }
+  .digest .rail h3 { font-size: 13px; font-weight: 650; margin: 14px 0 6px; }
+  .digest .rail li { margin: 0 0 7px 18px; font-size: 13.5px; color: var(--ink-2); }
+  .digest .rail li strong { color: var(--ink); font-weight: 600; }
+</style>
+</head>
+<body>
+<section class="digest">
+  <header>
+    <div>
+      <h1>Autonomous Run — Upstream Adoption and Visual Digest</h1>
+      <p class="goal">Overnight-style run report: five audit bugs fixed, ten upstream adoptions landed, the visual digest shipped, and a codex pre-merge review answered with three fix commits.</p>
+    </div>
+    <div class="hprog">
+      <div class="n">15<small> / 15 tasks</small></div>
+      <div class="meter" aria-label="100% complete"><i style="width:100%"></i></div>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="Digest sections">
+    <button class="on" data-pane="timeline">Timeline</button>
+    <button data-pane="decisions">Decisions</button>
+    <button data-pane="rails">Guardrails</button>
+  </nav>
+
+  <div class="pane on" id="timeline">
+    <div class="spine">
+      <div class="stage done">
+        <h2>Batch A — Bug fixes <span class="chip done"><span class="ico">✓</span>5 / 5</span></h2>
+        <p class="why">The five comparative-audit bugs, dispatched in parallel.</p>
+        <div class="trow"><span class="st done">✓ Done</span>
+          <span class="what"><b>A</b>find-polluter, hook dispatch, forge ladder, Redact rule, harness-neutral prompts <span>— 034161b · f3a7768 · 599a1c2 · 0c05b3c · e418e3e</span></span></div>
+      </div>
+
+      <div class="stage done">
+        <h2>Batch B — Adoptions + kit <span class="chip done"><span class="ico">✓</span>6 / 6</span></h2>
+        <p class="why">Ranked upstream content plus the digest component kit.</p>
+        <div class="trow"><span class="st done">✓ Done</span>
+          <span class="what"><b>B</b>writing-good-tests, guard survey, writing-skills, brainstorming, prototyping, digest kit <span>— 393bec2 · d18207a · c71d94e · 0e24ab9 · f4736db · 29fce73</span></span></div>
+        <div class="flag"><b>⚠ Criterion revised — Task 7.</b>
+          <p>The planned assertion rewrite found nothing to rewrite: both guard files were already correctly scoped. A mutation demo satisfied the criterion; the survey verdict is recorded in the plan.</p></div>
+      </div>
+
+      <div class="stage done">
+        <h2>Batch C — SDD lane <span class="chip done"><span class="ico">✓</span>3 / 3</span></h2>
+        <p class="why">Serialized: fix-loop discipline, plan-scoped workspace, brief-path dispatch.</p>
+        <div class="trow"><span class="st done">✓ Done</span>
+          <span class="what"><b>C</b>Scoped re-review + cap adjudication · plan-scoped workspace · brief-path dispatch <span>— 624a77b · c7628ec · b9b5f7e</span></span></div>
+        <div class="flag"><b>⚠ Fix round 1 — Task 13.</b>
+          <p>The borrowed-superpowers guard still pinned the flat workspace contract (a plan gap). Ruled a contract update: 4 sites updated, no assertion weakened.</p></div>
+      </div>
+
+      <div class="stage done">
+        <h2>Batch D — Digest wiring <span class="chip done"><span class="ico">✓</span>1 / 1</span></h2>
+        <p class="why">The digest now generates at all three read moments; the plan's own digest was the GREEN check.</p>
+        <div class="trow"><span class="st done">✓ Done</span>
+          <span class="what"><b>D</b>brainstorming + writing-plans + morning report wiring, guard test, dogfood digest <span>— 35a9050 · settled 50053ec</span></span></div>
+      </div>
+
+      <div class="stage done">
+        <h2>Pre-merge review — codex <span class="chip done"><span class="ico">✓</span>5 fixed</span></h2>
+        <p class="why">General + security passes over the full branch diff: 7 findings after dedupe.</p>
+        <div class="trow"><span class="st done">✓ Done</span>
+          <span class="what"><b>R</b>Credential-echo leak · digest lifecycle + CSP hardening · severity-preserving deferrals + symlink rejection <span>— 5e6b6da · 49a24f7 · 6ba013b</span></span></div>
+        <div class="flag"><b>⚠ One finding left for you.</b>
+          <p>Workspace basename collision (dual-flagged): real, but the fix is a naming-contract change — see Decisions.</p></div>
+      </div>
+    </div>
+
+    <div class="card remains"><b>PR:</b> <a href="https://github.com/anortham/razorback/pull/11">anortham/razorback#11</a>. <b>Out of scope by design:</b> version bump and release run after merge.</div>
+  </div>
+
+  <div class="pane" id="decisions">
+    <div class="card dec">
+      <h3>Guard surveys beat blind rewrites <span class="where">Task 7</span></h3>
+      <p>Both target test files already implemented the upstream region-scoping technique. <b>Landed:</b> a zero-rewrite verdict with mutation evidence, recorded in the plan — no assertion churn for its own sake.</p>
+    </div>
+    <div class="card dec">
+      <h3>Out-of-diff review findings keep their severity <span class="where">Review fix</span></h3>
+      <p>The landed re-review rule relabeled everything outside the fix diff "minor". <b>Landed:</b> observations carry observed severity; Critical/Important ones are adjudicated at the cap. Do not restore the blanket label.</p>
+    </div>
+    <div class="card dec">
+      <h3>The workspace defends its own boundary <span class="where">Review fix</span></h3>
+      <p>sdd-workspace now rejects pre-planted symlink escapes with a physical-path check, and Step 5 re-resolves the path before <code>rm -rf</code>. <b>Landed:</b> guard test pins the rejection.</p>
+    </div>
+    <div class="card dec">
+      <h3>Digests are hardened views <span class="where">Review fix</span></h3>
+      <p>The kit now ships a CSP meta line and escaping/link rules, and every post-commit report mutation updates the digest sibling in the same commit. <b>Landed:</b> a committed digest can no longer contradict its markdown.</p>
+    </div>
+    <div class="card dec">
+      <h3>Flagged for you: workspace key shape <span class="where">Review</span></h3>
+      <p>Two plans sharing a filename in different directories would share one workspace dir. <b>Open:</b> readable basename (current) vs path-derived slug — a naming-contract change; recommended as a follow-up decision, not patched mid-review.</p>
+    </div>
+  </div>
+
+  <div class="pane" id="rails">
+    <div class="rail">
+      <h3>Never touch</h3>
+      <ul>
+        <li><strong>Twin sections</strong> — Blockers/Checkpoints/Recovery stay byte-locked across the execution skills.</li>
+        <li><strong>The byte-pinned security checklist</strong> — synced across its copies by guard test.</li>
+        <li><strong>Anti-rationalization tables</strong> — intentional, test-guarded duplication.</li>
+      </ul>
+    </div>
+    <div class="rail">
+      <h3>Held constant</h3>
+      <ul>
+        <li><strong>Review cap 3 + reframed 4th</strong> — the 4th attempt's value is the reframing.</li>
+        <li><strong>Crash-window rule</strong> — no completion record without a verifiable commit.</li>
+        <li><strong>Model-invoked skills</strong> — no user-invoked axis.</li>
+      </ul>
+    </div>
+    <div class="rail">
+      <h3>Verification gates</h3>
+      <ul>
+        <li><strong>Branch gate at 6ba013b</strong> — npm test 220/220; version audit clean at 0.27.0; rule copies in sync.</li>
+        <li><strong>Security scope</strong> — gitleaks absent on this machine (skipped, recorded); security-deps: none declared.</li>
+      </ul>
+    </div>
+  </div>
+
+  <footer>Digest of <a href="autonomous-run-2026-08-07-upstream-adoption.md">the full run report</a></footer>
+</section>
+<script>
+  document.querySelectorAll(".tabs button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("on"));
+      document.querySelectorAll(".pane").forEach(p => p.classList.remove("on"));
+      btn.classList.add("on");
+      document.getElementById(btn.dataset.pane).classList.add("on");
+    });
+  });
+</script>
+</body>
+</html>
