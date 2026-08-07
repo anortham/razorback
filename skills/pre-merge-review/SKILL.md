@@ -7,7 +7,7 @@ description: Use after all tasks are complete and branch verification passes, be
 
 ## Overview
 
-Run a fresh, isolated external reviewer (codex / claude) against the full branch diff after all tasks are done and the plan's branch-gate verification scope is green, then route verified findings through razorback's own fix flow. The lead verifies every finding against the code with Miller, classifies it (real-bug / real-improvement / false-positive / out-of-scope), fixes what's real, dismisses what isn't (with a written reason), and flags what needs human judgment. Single pass, no round-two review after fixes. The output is a summary block that slots into the morning report's External review section, so the user sees exactly what the reviewer said, what the lead did with it, and why.
+Run a fresh, isolated external reviewer (codex / claude) against the full branch diff after all tasks are done and the plan's branch-gate verification scope is green, then route verified findings through razorback's own fix flow. The review is two passes of the same reviewer CLI, both against the full branch diff: a **general adversarial pass**, then a **dedicated security pass** driven by a security-only prompt. The lead verifies every finding against the code with Miller, classifies it (real-bug / real-improvement / false-positive / out-of-scope), fixes what's real, dismisses what isn't (with a written reason), and flags what needs human judgment. Each pass runs once — no round-two review after fixes. The output is a summary block that slots into the morning report's External review section, so the user sees exactly what the reviewer said, what the lead did with it, and why.
 
 ## When to invoke
 
@@ -36,8 +36,8 @@ digraph pre_merge_review {
 
     "Reviewer choice (codex/claude)" [shape=box];
     "Step 1: Build diff + context" [shape=box];
-    "Step 2: Dispatch chosen reviewer (adversarial, read-only)" [shape=box];
-    "Step 3: Parse findings (schema JSON for codex, result envelope for claude)" [shape=box];
+    "Step 2: Dispatch chosen reviewer twice (general pass + security pass, read-only)" [shape=box];
+    "Step 3: Parse both pass outputs into one merged list (schema JSON for codex, result envelope for claude)" [shape=box];
     "Any findings?" [shape=diamond];
     "Step 4: Lead verifies each finding with Miller" [shape=box];
     "Classify: real-bug / real-improvement / false-positive / out-of-scope" [shape=box];
@@ -50,9 +50,9 @@ digraph pre_merge_review {
     "Blocker per taxonomy (stop + report)" [shape=box style=filled fillcolor=lightpink];
 
     "Reviewer choice (codex/claude)" -> "Step 1: Build diff + context";
-    "Step 1: Build diff + context" -> "Step 2: Dispatch chosen reviewer (adversarial, read-only)";
-    "Step 2: Dispatch chosen reviewer (adversarial, read-only)" -> "Step 3: Parse findings (schema JSON for codex, result envelope for claude)";
-    "Step 3: Parse findings (schema JSON for codex, result envelope for claude)" -> "Any findings?";
+    "Step 1: Build diff + context" -> "Step 2: Dispatch chosen reviewer twice (general pass + security pass, read-only)";
+    "Step 2: Dispatch chosen reviewer twice (general pass + security pass, read-only)" -> "Step 3: Parse both pass outputs into one merged list (schema JSON for codex, result envelope for claude)";
+    "Step 3: Parse both pass outputs into one merged list (schema JSON for codex, result envelope for claude)" -> "Any findings?";
     "Any findings?" -> "Step 7: Emit summary block for morning report" [label="no"];
     "Any findings?" -> "Step 4: Lead verifies each finding with Miller" [label="yes"];
     "Step 4: Lead verifies each finding with Miller" -> "Classify: real-bug / real-improvement / false-positive / out-of-scope";
@@ -104,9 +104,14 @@ verification evidence.
 
 ## Step 2: Dispatch the chosen reviewer
 
-Before the diff is sent, re-read the policy and apply the external-model policy check in razorback:security-review at dispatch time: the dispatched CLI's provider (`codex` → `openai`, `claude` → `anthropic`) must be allowed, and the reviewer must appear in `Reviewer choices permitted:`. A denial on either field means refuse this reviewer and name an allowed alternative.
+Before the diff is sent, re-read the policy and apply the external-model policy check in razorback:security-review at dispatch time: the dispatched CLI's provider (`codex` → `openai`, `claude` → `anthropic`) must be allowed, and the reviewer must appear in `Reviewer choices permitted:`. A denial on either field means refuse this reviewer and name an allowed alternative. The policy gate applies per dispatch: re-read the policy immediately before each pass. Both passes use the same CLI, so both checks evaluate the same provider and reviewer — and a policy change between passes fails closed before the second dispatch. A denial follows the canonical procedure in razorback:security-review, including blocker taxonomy #4 on an autonomous run where the user chose this reviewer.
 
-Select the prompt file based on the reviewer choice and invoke the matching reviewer-cli skill. Each file contains a complete runnable invocation. Both invocations run the reviewer in adversarial mode with read-only tool access — the reviewer never edits code.
+When a reviewer is chosen, dispatch the chosen CLI **twice** against the same diff and the same shared schema:
+
+1. **General pass** — the existing adversarial prompt wiring in the chosen reviewer-prompts file below.
+2. **Security pass** — the canonical security-only prompt at `../security-review/security-adversarial-prompt.txt` (in the razorback plugin), dispatched per the `## Security pass` section of the chosen reviewer-prompts file. Follow that section for the runnable invocation — do not construct the security-pass command here.
+
+Select the prompt file based on the reviewer choice and invoke the matching reviewer-cli skill. Each file contains a complete runnable invocation for each pass. Every invocation runs the reviewer in adversarial mode with read-only tool access — the reviewer never edits code.
 
 - **codex** → follow [`reviewer-prompts/codex.md`](reviewer-prompts/codex.md). Calls `codex exec --ephemeral --color never --output-schema …` with the shared JSON schema. Background on codex's adversarial-review mode lives in the bundled `razorback:codex-cli` skill.
 - **claude** → follow [`reviewer-prompts/claude.md`](reviewer-prompts/claude.md). Calls `claude -p --no-session-persistence --dangerously-skip-permissions --output-format json --json-schema … --tools "Read,Grep,Glob" --strict-mcp-config --max-turns 15 --max-budget-usd 5.00 --system-prompt-file …`. The reviewer-prompts file reads the canonical schema and claude-cli's canonical adversarial prompt from the plugin at dispatch time; `razorback:claude-cli` has the background treatment.
@@ -115,24 +120,24 @@ Both target the shared output schema defined canonically at `../codex-cli/schema
 
 ## Step 3: Parse findings
 
-Two paths, because each CLI's output shape differs.
+Two parse paths, because each CLI's output shape differs — and two outputs per review, because each pass writes its own output file. Both files live in `$OUT_DIR`, the private temp directory the reviewer-prompts invocation creates outside the worktree. Apply the chosen CLI's rules below to both pass outputs.
 
 **codex (strict schema, no envelope):** `--output-schema` makes the CLI enforce the JSON schema directly on stdout. Validate the array shape, then iterate — a clean review has `findings: []`, and `jq -e '.findings[]'` exits 4 on a valid empty array, which would misread success as a parse failure.
 
 ```bash
-jq -e '.findings | type == "array"' < reviewer-output.json >/dev/null   # shape check
-jq '.findings[]?' < reviewer-output.json                                # iterate; empty = clean review
+jq -e '.findings | type == "array"' < "$OUT_DIR/codex-output.json" >/dev/null   # shape check
+jq '.findings[]?' < "$OUT_DIR/codex-output.json"                                # iterate; empty = clean review
 ```
 
 **claude (result envelope):** `--output-format json` wraps the response in a result envelope: `{type, subtype, result, structured_output, usage, total_cost_usd, …}`. With `--json-schema`, the parsed object lands in `.structured_output`; `.result` holds the same JSON as a string.
 
 ```bash
-jq -e '.structured_output.findings | type == "array"' < claude-output.json >/dev/null \
-  || jq -re '.result' < claude-output.json | jq -e '.findings | type == "array"' >/dev/null
-jq '.structured_output.findings[]?' < claude-output.json   # iterate; empty = clean review
+jq -e '.structured_output.findings | type == "array"' < "$OUT_DIR/claude-output.json" >/dev/null \
+  || jq -re '.result' < "$OUT_DIR/claude-output.json" | jq -e '.findings | type == "array"' >/dev/null
+jq '.structured_output.findings[]?' < "$OUT_DIR/claude-output.json"   # iterate; empty = clean review
 ```
 
-After Step 3, both reviewer paths produce the same in-memory list of normalized findings. For cost tracking in the morning report's per-reviewer section: claude surfaces `.total_cost_usd` and `.usage.{input_tokens,output_tokens}` in its envelope; codex does not surface per-request token counts in its JSON output, so note the absence for codex rather than faking a number.
+After Step 3, both reviewer paths produce **one merged list** of normalized findings covering both passes. Tag each finding with the pass that produced it (`general` / `security`) — the tag carries into classification and the morning report. For cost tracking in the morning report's per-reviewer section: claude surfaces `.total_cost_usd` and `.usage.{input_tokens,output_tokens}` in each pass's envelope — sum the two invocations; codex does not surface per-request token counts in its JSON output, so note the absence for codex rather than faking a number.
 
 ## Step 4: Verify findings
 
@@ -144,6 +149,8 @@ Summary of the four classifications:
 - **real-improvement** — not a bug, but a legitimate quality improvement (naming, coupling, missed edge case that matters). Fix is recommended unless it expands scope beyond the plan.
 - **false-positive** — reviewer misread the code, invented a path, or flagged an intentional pattern. Dismiss with a written reason.
 - **out-of-scope** — real finding, outside the plan's scope. Dismiss with "out of scope, filed as follow-up" (or equivalent specific reason).
+
+Dedupe rule: when both passes flag the same defect (same file, same lines, same root issue), collapse them into one finding and note it as `dual-flagged`. Dual-flagging is a confidence signal for classification — two independent prompts saw the same problem — never double-counted work: classify once, fix once, count once.
 
 Verification always uses Miller:
 
@@ -181,7 +188,8 @@ If verification passes, proceed to Step 7.
 Produce a structured block that slots into the External review section of `../finishing-a-development-branch/morning-report-template.md`. The template's External review section already defines these placeholders — fill them:
 
 - `{{reviewer}}` — one of `codex`, `claude`.
-- `{{findings_total}}` — count of findings returned by the reviewer (before classification).
+- `{{general_findings_count}}` / `{{security_findings_count}}` — per-pass counts of findings as each pass returned them, rendered on the template's **Passes** line (`general N / security M`).
+- `{{findings_total}}` — combined count across both passes after the Step 4 dedupe (a `dual-flagged` finding counts once), before classification.
 - `{{findings_fixed_count}}` — count of verified findings that were fixed.
 - `{{fix_commit_shas}}` — comma-separated short SHAs of the fix commits.
   - Per-fixed-finding sub-block: short title + short summary of the fix.
@@ -190,7 +198,7 @@ Produce a structured block that slots into the External review section of `../fi
 - `{{findings_flagged_count}}` — count of real findings left for human judgment.
   - Per-flagged-finding sub-block: short title + **why uncertain** (required).
 
-Append a one-line cost note per reviewer: claude from `.total_cost_usd` and `.usage` ("claude used N in / M out tokens, $X.XX"). Codex does not surface per-request token counts — note the absence rather than faking a number.
+Append a one-line cost note per reviewer, summed across both pass invocations: claude from `.total_cost_usd` and `.usage` ("claude used N in / M out tokens, $X.XX"). Codex does not surface per-request token counts — note the absence rather than faking a number.
 
 The caller (`executing-plans` Step 3 or `subagent-driven-development` Step 4a) takes this block and hands it forward to `finishing-a-development-branch`, which renders it into the PR description (summary form) and the full worktree report.
 
@@ -198,11 +206,11 @@ The caller (`executing-plans` Step 3 or `subagent-driven-development` Step 4a) t
 
 **Never:**
 
-- **Loop external review.** Single pass only. No "review, fix, re-review" cycle. Leftover real findings that the lead cannot fix get flagged for human judgment and the PR proceeds.
+- **Loop external review.** Each pass runs once. No "review, fix, re-review" cycle for the general pass or the security pass. Leftover real findings that the lead cannot fix get flagged for human judgment and the PR proceeds.
 - **Let the reviewer edit code.** Reviewers are read-only, each via its CLI's real mechanism: codex runs under `-s read-only` (sandbox blocks writes), claude pins `--tools "Read,Grep,Glob" --strict-mcp-config` (no write-capable tool in the set). Delegated fixes route through fresh implementer workers, and no-delegation runs fix inline under the same Miller-first checklist.
 - **Silently dismiss findings.** Every dismissal requires a written reason in the morning report so the user can override on PR review. Silent dismissals defeat the whole point of running an external reviewer.
 - **Skip verification after fixes.** Every fix invalidates prior affected scopes. Run the required project-defined verification scope, or reuse a ledger entry only when it covers the current HEAD and required scope. Never push a branch whose most recent verification does not include the fix commits.
-- **Ship a PR without the reviewer the user requested.** Reviewer unavailability (auth, rate limit, budget/turn cap with no usable partial output, empty stdout, schema violation persisting after one retry) is a **blocker**, not a silent downgrade. Stop the run, do NOT push, do NOT create a PR, emit a partial morning report with `Status: Blocked` and the specific failure in `Blockers hit`, and exit. The user chose this reviewer for the run; quietly skipping the review turns an explicit request into an implicit "never mind".
+- **Ship a PR without the reviewer the user requested.** Reviewer unavailability in **either pass** (auth, rate limit, budget/turn cap with no usable partial output, empty stdout, schema violation persisting after one retry) is a **blocker**, not a silent downgrade — the same triggers and the same protocol apply to the general pass and the security pass. Skipping the security pass when a reviewer is chosen is this same red flag: half a review is a silent downgrade. Stop the run, do NOT push, do NOT create a PR, emit a partial morning report with `Status: Blocked` and the specific failure in `Blockers hit`, and exit. The user chose this reviewer for the run; quietly skipping the review — or one of its passes — turns an explicit request into an implicit "never mind".
 
 ## Integration
 

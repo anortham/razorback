@@ -31,17 +31,19 @@ Placeholders use {{double-brace}} syntax.
 
 ## External review ({{reviewer}}, adversarial)
 <!-- reviewer is one of: codex | claude | none. If "none", replace this whole section with: "External review: none (not requested for this run)." -->
+- **Passes:** general {{general_findings_count}} / security {{security_findings_count}}
 
 - **Findings:** {{findings_total}}
 - **Verified real, fixed:** {{findings_fixed_count}} (commits: {{fix_commit_shas}})
-  - {{verified_finding_summary}} <!-- e.g. "missing null check in parseReviewOutput — fixed in abc1234" -->
+  - {{verified_finding_summary}} <!-- prefix each finding title with its pass label, e.g. "[general] missing null check in parseReviewOutput — fixed in abc1234" or "[security] path traversal in loadReport — fixed in def5678"; a finding raised by both passes is labeled "[general+security]" -->
   <!-- repeat for each verified + fixed finding -->
 - **Dismissed:** {{findings_dismissed_count}}
-  - {{dismissed_finding_summary}} — {{dismissal_reason}} <!-- e.g. "suggested renaming `id` to `identifier` — dismissed, matches project convention" -->
+  - {{dismissed_finding_summary}} — {{dismissal_reason}} <!-- pass label on the title, e.g. "[general] suggested renaming `id` to `identifier` — dismissed, matches project convention" -->
   <!-- repeat for each dismissed finding -->
 - **Flagged for your review:** {{findings_flagged_count}}
-  - {{flagged_finding_summary}} — {{why_uncertain}} <!-- e.g. "reviewer flagged token-scope widening — requires architectural call, leaving for human review" -->
+  - {{flagged_finding_summary}} — {{why_uncertain}} <!-- pass label on the title, e.g. "[security] reviewer flagged token-scope widening — requires architectural call, leaving for human review" -->
   <!-- repeat for each flagged finding -->
+- **Cost:** {{cost_note}} <!-- one note per invocation: claude renders cost from each result envelope (.total_cost_usd, .usage) and the general + security passes can consume up to two --max-budget-usd caps per run; codex still reports no per-request counts — note the absence rather than faking a number -->
 
 ## Tests
 - {{test_summary}} <!-- e.g. "142 passing, 0 failing" — or the failure summary if Status is Blocked -->

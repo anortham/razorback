@@ -66,6 +66,8 @@ Run this before any diff or repo content leaves the machine — at every enforce
 
 **Reviewer dispatches (pre-merge review and standalone review):** re-read the policy at dispatch time — validation at plan approval does not carry forward. The provider must be allowed AND the chosen reviewer must also appear in `Reviewer choices permitted:`. A reviewer absent from that list is a denial: follow step 3, including blocker taxonomy #4 on an autonomous run where the user explicitly chose that reviewer.
 
+**Security pass:** whenever a reviewer is chosen for a run, pre-merge review runs a dedicated security pass built from this skill's `security-adversarial-prompt.txt`. Trigger semantics and invocation mechanics live in razorback:pre-merge-review.
+
 ## Security Checklist
 
 These five questions are the canonical security checklist. They are duplicated verbatim (test-guarded) at `skills/requesting-code-review/code-reviewer.md` (the standalone reviewer prompt) and `skills/subagent-driven-development/code-quality-reviewer-prompt.md` (the lead's inline review). If you edit the questions here, update those two copies to match — the same convention `skills/architecture-quality/SKILL.md` uses for its checklist.
