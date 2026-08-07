@@ -273,10 +273,10 @@ Batches run A → B → C → D. Within A and B, tasks dispatch together. Batch 
 **What to build:** Fold (a) and (c) and (d) into `SKILL.md` at their natural sections; add the scoping sentence (b) to `testing-skills-with-subagents.md` beside the Explicit Negation guidance, citing the observed-in-RED criterion.
 
 **Acceptance criteria:**
-- [ ] The no-op test appears once, in model-relative form; the negation scoping references the RED-run criterion
-- [ ] Template lists `It's working if`; `Real-World Impact` slot gone from the template listing
-- [ ] Iron Law, rationalization tables, and existing RED/GREEN discipline unchanged
-- [ ] Worker-scope verification passes and the change is handed to the lead per commit mode
+- [x] The no-op test appears once, in model-relative form; the negation scoping references the RED-run criterion
+- [x] Template lists `It's working if`; `Real-World Impact` slot gone from the template listing (one historical heading at testing-skills-with-subagents.md:379 reported, out of scope)
+- [x] Iron Law, rationalization tables, and existing RED/GREEN discipline unchanged
+- [x] Worker-scope verification passes and the change is handed to the lead per commit mode
 
 ### Task 9: brainstorming refinements
 

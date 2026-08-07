@@ -77,14 +77,16 @@ pptx/  SKILL.md + pptxgenjs.md, ooxml.md, scripts/           # Heavy reference: 
 ```markdown
 # Skill Name
 
-## Overview            — what is this? Core principle in 1-2 sentences
+## Overview            — what is this? Core principle in 1-2 sentences, plus the defining constraint — the single fact that makes this skill behave differently from the obvious default — stated as plain prose, never a labelled aside
 ## When to Use         — symptoms and use cases; when NOT to use; small inline flowchart IF the decision is non-obvious
 ## Core Pattern        — before/after comparison (techniques/patterns)
 ## Quick Reference     — table or bullets for scanning common operations
 ## Implementation      — inline code for simple patterns; link to a file for heavy reference or reusable tools
 ## Common Mistakes     — what goes wrong + fixes
-## Real-World Impact   — concrete results (optional)
+## It's working if     — signals checkable without reopening the skill
 ```
+
+Recorded decision: every razorback skill stays model-invoked, deliberately — introducing a user-invoked axis would require consistent declaration in every harness manifest.
 
 ## Claude Search Optimization (CSO)
 
@@ -152,6 +154,7 @@ Use words Claude would search for:
 - **Cross-reference instead of repeating** - "REQUIRED: Use [other-skill-name] for workflow" beats 20 lines of copied instructions
 - **Compress examples** - cut dialogue to the shortest form that still shows the pattern; a 42-word exchange usually lands in 20
 - **Eliminate redundancy** - don't repeat cross-referenced skills, don't explain what's obvious from the command, don't give two examples of one pattern
+- **Apply the no-op test** - does this sentence change behavior versus the default? Settle by running the document, not by debate. A no-op is a line whose removal leaves the GREEN subagent run unchanged; when a sentence fails the test, delete the whole sentence
 
 **Verify:** `wc -w skills/path/SKILL.md`
 
