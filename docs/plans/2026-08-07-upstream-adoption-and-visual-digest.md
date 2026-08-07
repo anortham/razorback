@@ -298,9 +298,9 @@ Batches run A → B → C → D. Within A and B, tasks dispatch together. Batch 
 **What to build:** Two surgical insertions in The Process ("Understanding the idea" bullets) and one Key Principles line for the facts rule.
 
 **Acceptance criteria:**
-- [ ] Stop condition names the empty frontier; one-question-per-message still stated
-- [ ] Facts rule present with Miller/subagent named and the no-blocking clause
-- [ ] Worker-scope verification passes and the change is handed to the lead per commit mode
+- [x] Stop condition names the empty frontier; one-question-per-message still stated
+- [x] Facts rule present with Miller/subagent named and the no-blocking clause
+- [x] Worker-scope verification passes and the change is handed to the lead per commit mode
 
 ### Task 10: prototyping HTML shell
 
