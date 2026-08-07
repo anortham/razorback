@@ -322,9 +322,9 @@ Batches run A → B → C → D. Within A and B, tasks dispatch together. Batch 
 **What to build:** Add the HTML shell section to LOGIC.md with the choice rule at the top; update SKILL.md's Pick-a-Branch lines to mention the shell choice inside the logic branch.
 
 **Acceptance criteria:**
-- [ ] LOGIC.md states the shell-choice rule and the tabbed-walkthrough contract
-- [ ] Existing TUI content and pure-module rules unchanged
-- [ ] Worker-scope verification passes and the change is handed to the lead per commit mode
+- [x] LOGIC.md states the shell-choice rule and the tabbed-walkthrough contract
+- [x] Existing TUI content and pure-module rules unchanged
+- [x] Worker-scope verification passes and the change is handed to the lead per commit mode
 
 ### Task 11: Digest component kit
 
