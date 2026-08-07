@@ -150,7 +150,7 @@ Commit mode: `parallel-lead-commit` — workers hand verified diffs to the lead;
 **Dependency reason:** None - safe parallel batch.
 
 **Acceptance criteria:**
-- [ ] All six edit sites landed; the exact string `dual-flagged` present; reviewer-unavailability wording covers either pass; no invocation details inlined (those live in reviewer-prompts).
+- [x] All six edit sites landed; the exact string `dual-flagged` present; reviewer-unavailability wording covers either pass; no invocation details inlined (those live in reviewer-prompts).
 
 ### Task 3: reviewer invocation docs
 
