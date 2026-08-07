@@ -153,7 +153,7 @@ For moderate, well-understood tasks executed in the same session. Skips writing-
 **If the task is a single coherent unit:** Dispatch one implementer using the prompt template from `razorback:subagent-driven-development`.
 
 ```
-Agent / Task tool:
+Dispatch one implementer subagent:
   description: "Implement [feature name]"
   prompt: |
     [Follow subagent-driven-development/implementer-prompt.md template]

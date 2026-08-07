@@ -194,9 +194,9 @@ Batches run A → B → C → D. Within A and B, tasks dispatch together. Batch 
 **What to build:** Rewrite each site to capability language (keep surrounding content untouched — Batch C rewrites implementer-prompt.md's body later; this task touches only the line-6 header). Write the guard test to scan `skills/` recursively, strip harness-guarded regions, apply the allowlist, and assert zero hits.
 
 **Acceptance criteria:**
-- [ ] Guard test green; fails when a bare `general-purpose` is reintroduced outside a guard (verify by temporary mutation)
-- [ ] The five sites read as capability language; no other content in those files changed
-- [ ] Worker-scope verification passes and the change is handed to the lead per commit mode
+- [x] Guard test green; fails when a bare `general-purpose` is reintroduced outside a guard (verified by temporary mutation)
+- [x] The five sites read as capability language; no other content in those files changed (sweep found 5 additional sites: 2 fixed in unowned files, 3 backtick-only form fixes in Batch-C-owned lines — accepted, zero wording change, committed before Batch C dispatch)
+- [x] Worker-scope verification passes and the change is handed to the lead per commit mode
 
 ---
 

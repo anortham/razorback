@@ -57,7 +57,7 @@ HEAD_SHA=$(git rev-parse HEAD)
 
 | Harness | How to invoke |
 |---------|---------------|
-| Claude Code | `Agent(subagent_type="razorback:code-reviewer", prompt=<filled template>)` |
+| Claude Code | Dispatch the `razorback:code-reviewer` plugin agent with the filled template as its prompt |
 | Cursor | Same as Claude Code (plugin agents exposed through the Skill tool's agent discovery) |
 | Codex | `spawn_agent(task_name="code-review", message=<see two-file note below>)` |
 | OpenCode | `Task` tool with `general` subagent (message built as in the two-file note below) |

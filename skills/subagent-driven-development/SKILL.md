@@ -164,7 +164,7 @@ Conversation memory does not survive every long run. Track task completion in `.
 
 **Save the agent ID (or name) returned by every dispatch.** Step 4 needs it to
 route fixes back to the worker that holds the orientation context. On opencode
-there is nothing to save — the Task tool exposes no persistent resume.
+there is nothing to save — the `Task` tool exposes no persistent resume.
 
 ### Parallel Dispatch (Independent Tasks)
 
@@ -248,7 +248,7 @@ this skill points here.
 
 **Claude Code (prefer resume):** Send the filled `./fix-prompt.md` to the stored implementer via `SendMessage` (agent ID or name); on older builds this was `Agent(resume: "<agent-id>")` — use whichever continuation mechanism the harness exposes. The resumed subagent keeps its orientation context — files read, decisions made, tests written — and goes straight to the fix instead of re-reading the codebase.
 
-**opencode (dispatch fresh with context):** The Task tool doesn't expose persistent resume. Dispatch a fresh implementer via the Task tool (or @mention `general`) using `./fix-prompt.md` plus:
+**opencode (dispatch fresh with context):** The `Task` tool doesn't expose persistent resume. Dispatch a fresh implementer via the `Task` tool (or @mention `general`) using `./fix-prompt.md` plus:
 - The original task text
 - A pointer to the commit(s) the prior implementer produced (so the fresh subagent can `git show` or read the files instead of rediscovering them)
 - The reviewer findings

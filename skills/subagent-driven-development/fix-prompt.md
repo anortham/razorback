@@ -5,7 +5,7 @@ The subagent already has full context from its implementation pass.
 
 On Claude Code, resume = `SendMessage` to the stored implementer's agent ID or
 name with this prompt as the message (older builds exposed a `resume` parameter
-on the Agent tool instead). On Codex, resume = `followup_task(target=<agent-id>, …)`.
+on the `Agent` tool instead). On Codex, resume = `followup_task(target=<agent-id>, …)`.
 
 ```
 SendMessage (to: "<implementer-agent-id-or-name>"):
