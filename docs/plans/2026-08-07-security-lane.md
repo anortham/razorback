@@ -175,7 +175,7 @@ Commit mode: `parallel-lead-commit` — workers hand verified diffs to the lead;
 **Dependency reason:** None - safe parallel batch.
 
 **Acceptance criteria:**
-- [ ] `node --test tests/adversarial-prompt-sync.test.mjs` passes (trio guard proves sync); the line appears once per file, as the section's final bullet.
+- [x] `node --test tests/adversarial-prompt-sync.test.mjs` passes (trio guard proves sync); the line appears once per file, as the section's final bullet.
 
 ### Task 6: policy-gate sections
 
