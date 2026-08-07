@@ -2,7 +2,7 @@
   "name": "razorback",
   "displayName": "Razorback",
   "description": "Miller-powered development workflow with subagent-driven execution, inline review, and Miller-first codebase orientation.",
-  "version": "0.26.2",
+  "version": "0.27.0",
   "author": {
     "name": "Alan Northam"
   },
