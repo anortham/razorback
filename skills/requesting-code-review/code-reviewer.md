@@ -53,7 +53,14 @@ If your review does not cite Miller-assisted investigation and API-shape evidenc
 - Did it fix the structural cause, not only the symptom?
 - Scalability considerations?
 - Performance implications?
-- Security concerns?
+
+<!-- Canonical security checklist: skills/security-review/SKILL.md — update all copies together. -->
+**Security:**
+- No secrets, credentials, tokens, or connection strings in the diff?
+- Input validated at trust boundaries (injection, path traversal, unsafe deserialization)?
+- Authorization checked on new or changed routes/APIs?
+- New dependencies vetted (source, maintenance, known CVEs)?
+- No sensitive data written to logs or error messages?
 
 **Testing:**
 - Tests actually test logic (not mocks)?

@@ -24,6 +24,7 @@ Skip this skill entirely if the reviewer choice is `none`. The choice is fixed b
 - The verification ledger has a passing `branch-gate` entry for current HEAD, or the caller can run that scope before review
 - The branch is NOT yet pushed (no PR yet)
 - A reviewer was chosen: one of `codex`, `claude`
+- The chosen reviewer's provider (`codex` → `openai`, `claude` → `anthropic`) passes the external-model policy check in razorback:security-review, and the reviewer appears in the policy's `Reviewer choices permitted:` list
 
 If any pre-condition is not met, abort and surface the gap to the caller. Do not review a partial branch or pre-push a branch on your own.
 
@@ -102,6 +103,8 @@ implementation wrong?", treat that as lead-owned review evidence before claiming
 verification evidence.
 
 ## Step 2: Dispatch the chosen reviewer
+
+Before the diff is sent, re-read the policy and apply the external-model policy check in razorback:security-review at dispatch time: the dispatched CLI's provider (`codex` → `openai`, `claude` → `anthropic`) must be allowed, and the reviewer must appear in `Reviewer choices permitted:`. A denial on either field means refuse this reviewer and name an allowed alternative.
 
 Select the prompt file based on the reviewer choice and invoke the matching reviewer-cli skill. Each file contains a complete runnable invocation. Both invocations run the reviewer in adversarial mode with read-only tool access — the reviewer never edits code.
 

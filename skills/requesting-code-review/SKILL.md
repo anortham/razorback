@@ -64,6 +64,16 @@ HEAD_SHA=$(git rev-parse HEAD)
 
 **Two-file note (Codex / OpenCode inline-prompt harnesses):** The reviewer uses two files. `agents/code-reviewer.md` holds the reviewer's system-prompt body (its behavioral spec). `requesting-code-review/code-reviewer.md` is the task template with placeholders (`{WHAT_WAS_IMPLEMENTED}`, `{PLAN_OR_REQUIREMENTS}`, `{BASE_SHA}`, `{HEAD_SHA}`, `{DESCRIPTION}`). On Claude Code / Cursor the agent discovery wires these together automatically. On Codex and OpenCode, build the dispatch message by concatenating: (1) `agents/code-reviewer.md` body (strip the frontmatter), then (2) the filled-in `requesting-code-review/code-reviewer.md` template. Send that as the subagent's task message (Codex `spawn_agent` `message` or OpenCode `Task` prompt).
 
+### Policy Gate
+
+Before any dispatch from the table above sends the diff or repo content to an
+external CLI, apply the external-model policy check in
+razorback:security-review, using that CLI's provider from the mapping there.
+No policy block in the target repo's project instructions → proceed and add the
+loud note to the morning report. Policy denies the provider → refuse the
+dispatch and name an allowed alternative; on an autonomous run where the user
+chose that provider, stop per blocker taxonomy #4.
+
 **Placeholders:**
 - `{WHAT_WAS_IMPLEMENTED}` - What you just built
 - `{PLAN_OR_REQUIREMENTS}` - What it should do

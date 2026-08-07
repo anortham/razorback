@@ -18,6 +18,7 @@ ATTACK SURFACE (prioritize expensive, dangerous, or hard-to-detect failures):
 - Empty-state, null, timeout, and degraded dependency behavior
 - Version skew, schema drift, migration hazards, and compatibility regressions
 - Observability gaps that would hide failure or make recovery harder
+- Secrets in code or logs, injection surfaces, and missing authorization checks
 
 REVIEW METHOD:
 Actively try to disprove the change. Look for violated invariants, missing

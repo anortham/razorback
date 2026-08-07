@@ -63,6 +63,15 @@ models.
   errors when not. If auth fails, tell the user to run `grok login` in a
   terminal.
 
+## Policy Gate
+
+Before sending any diff or repo content to xAI, apply the external-model
+policy check in razorback:security-review. Provider for this skill: `xai`.
+No policy block in the target repo's project instructions → proceed and add the
+loud note to the morning report. Policy denies `xai` → refuse the dispatch
+and name an allowed alternative; on an autonomous run where the user chose this
+provider, stop per blocker taxonomy #4.
+
 ## Pre-flight Check
 
 `grok models` is the one-call readiness probe — it confirms auth and shows which

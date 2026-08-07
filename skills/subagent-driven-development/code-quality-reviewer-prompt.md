@@ -22,4 +22,12 @@ Use Miller for impact analysis:
 - **Find references** to verify changes don't break dependents with `trace(target='<symbol>')`
 - **List a file's symbols** to review structure without reading entire files with `inspect(target='<file>')`
 
+<!-- Canonical security checklist: skills/security-review/SKILL.md — update all copies together. -->
+**Security:**
+- No secrets, credentials, tokens, or connection strings in the diff?
+- Input validated at trust boundaries (injection, path traversal, unsafe deserialization)?
+- Authorization checked on new or changed routes/APIs?
+- New dependencies vetted (source, maintenance, known CVEs)?
+- No sensitive data written to logs or error messages?
+
 **Code reviewer returns:** Findings (Critical/Important/Minor), optional Open Questions / Assumptions, Assessment

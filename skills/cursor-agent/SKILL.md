@@ -32,6 +32,15 @@ Cursor Agent is the implementer.
 - **Safety**: tell Cursor no push, no release, no deploy, no destructive git,
   and no edits outside assigned files.
 
+## Policy Gate
+
+Before sending any diff or repo content to Cursor, apply the external-model
+policy check in razorback:security-review. Provider for this skill: `cursor`.
+No policy block in the target repo's project instructions → proceed and add the
+loud note to the morning report. Policy denies `cursor` → refuse the dispatch
+and name an allowed alternative; on an autonomous run where the user chose this
+provider, stop per blocker taxonomy #4.
+
 ## Preflight
 
 Before the first run, verify the CLI exists: `cursor-agent --version`

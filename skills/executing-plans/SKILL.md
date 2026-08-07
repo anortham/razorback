@@ -46,7 +46,7 @@ For each task:
 
 If the `reviewer_choice` propagated from `writing-plans` is one of `codex` or `claude`:
 
-**First**, ensure the verification ledger has a passing `branch-gate` entry for the current HEAD. If it does not, run the branch-gate scope now and record the result. `pre-merge-review` requires this as a precondition.
+**First**, ensure the verification ledger has a passing `branch-gate` entry for the current HEAD. If it does not, run the branch-gate scope now and record the result. The branch-gate run includes the plan's declared Security scope commands (`security-secrets`, `security-deps` — `razorback:security-review`); `none declared` skips them and is rendered in the morning report. `pre-merge-review` requires this as a precondition.
 
 **Then** invoke `razorback:pre-merge-review`, passing:
 
