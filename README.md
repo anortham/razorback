@@ -2,6 +2,8 @@
 
 **Miller-powered development workflow for Claude Code, Codex CLI / ChatGPT desktop app, and OpenCode.**
 
+> Website: [anortham.github.io/razorback](https://anortham.github.io/razorback/) — the setup path from nothing to a working install, on one page.
+
 Razorback is a skill set for coding-agent harnesses, diverged from [Superpowers](https://github.com/obra/superpowers) to add Miller MCP for token-efficient codebase orientation. Plan execution runs through `subagent-driven-development` on harnesses that support delegation, and `executing-plans` where delegation is unavailable.
 
 **Supported harnesses.** Claude Code, Codex CLI / ChatGPT desktop app (rebranded from Codex), and OpenCode get the full plugin: skills, agents, bootstrap, and delegated execution. Cursor is **frozen** — its plugin support still works and is documented below, but it receives no new work. Copilot CLI is **instruction-tier**: it picks up razorback's Miller-first ruleset from `.github/copilot-instructions.md` and nothing else.
@@ -196,6 +198,12 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 - Concrete commands come from the target repo, not from razorback.
 - The lead owns decomposition, integration review, escalation, and final branch verification.
 
+**Visual digest:**
+- Long documents ship a single-file HTML view beside the markdown, same basename — no build step, no external assets, light and dark.
+- The component kit is [`skills/using-razorback/references/digest-kit.md`](skills/using-razorback/references/digest-kit.md): layout contract, kit CSS, status chips, hero figure with meter, timeline spine, tabs, and authoring rules.
+- Three read moments emit one: `brainstorming` writes `<design-doc>.html` at the User Review Gate, `writing-plans` writes `<plan>.html` at the plan-save announcement, and `finishing-a-development-branch` writes the run report's `.html` sibling when it renders the morning report.
+- Writing the digest is part of writing the document, not a separate stop.
+
 ## Skills
 
 | Skill | Purpose |
@@ -204,15 +212,16 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 | brainstorming | Requirements exploration, design, approach selection |
 | prototyping | Throwaway-code off-ramp from brainstorming for empirical design questions: logic TUIs or UI variants, captured on a `prototype/<slug>` branch |
 | fixing-small-issues | Quick-fix tier: triage small defects/tweaks by objective criteria, fix in place, affected-scope verification |
+| harvesting-debt | Debt ledger: collects the `razorback:` shortcut markers left by deliberate corner-cuts, flagging any that name no upgrade trigger |
 | architecture-quality | Architecture and interface quality checks for planning, review, and test surface decisions |
 | writing-plans | Implementation plans (full or light) with MCP-verified file paths |
 | executing-plans | Single-agent execution (fallback for sequential/single-task work or no-subagent harnesses) |
-| test-driven-development | Red-green-refactor with MCP-powered test discovery |
+| test-driven-development | Red-green-refactor with MCP-powered test discovery; `writing-good-tests.md` is the test-design reference (name the break, exercise the real thing, mutation check) |
 | systematic-debugging | Root cause investigation with MCP-powered tracing |
 | requesting-code-review | Inline review (during plan execution) or standalone review (ad-hoc) with per-harness dispatch |
 | receiving-code-review | Process for acting on review feedback |
 | verification-before-completion | Evidence-before-claims verification |
-| finishing-a-development-branch | Merge/PR/cleanup decision workflow |
+| finishing-a-development-branch | Branch gate, then autonomous push + PR with the morning report and its digest (forge-ladder fallback, never merges), or the interactive 4-option menu plus worktree cleanup |
 | dispatching-parallel-agents | Ad-hoc parallel agent dispatch |
 | using-git-worktrees | Isolated workspace setup |
 | writing-skills | Meta-skill for creating/editing skills |
@@ -224,16 +233,19 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 | cursor-agent | Invokes Cursor Agent / Composer 2.5 Fast for bounded implementation while the current lead owns planning, review, and verification |
 | claude-cli | Invokes `claude -p` for second opinions and adversarial review; omits `--bare` because it breaks OAuth auth |
 | grok-cli | Invokes `grok -p` for second opinions, adversarial review, and delegation to xAI's Grok models |
-| security-review | Security lane: secrets-scan + dependency-audit branch-gate scopes, security review checklist, external-model policy gate |
+| security-review | Security lane: the `security-secrets` and `security-deps` branch-gate scopes, the external-model policy gate every outbound dispatch checks, and the canonical security checklist and redaction rules |
 
-## Prompt Templates
+## Prompt templates and scripts
 
-| Template | Purpose |
-|----------|---------|
+| File | Purpose |
+|------|---------|
 | subagent-driven-development/implementer-prompt.md | Implementer spawn: task assignment, file ownership, Miller directives, status protocol |
 | subagent-driven-development/fix-prompt.md | Fix-round prompt with reviewer findings and reframed-context guidance |
 | subagent-driven-development/spec-reviewer-prompt.md | Review guide: spec compliance criteria |
 | subagent-driven-development/code-quality-reviewer-prompt.md | Review guide: code quality criteria |
+| subagent-driven-development/scripts/sdd-workspace | Resolves and creates one plan's artifact directory at `.razorback/sdd/<plan>/` — self-ignoring, escape-checked, single source of the location for the two scripts below |
+| subagent-driven-development/scripts/task-brief | Extracts one task's full text from the plan into a brief file, so task text never passes through the lead's context |
+| subagent-driven-development/scripts/review-package | Writes the commit list, stat summary, and `BASE..HEAD` diff to one file the reviewer reads in a single call |
 
 ## Version management
 

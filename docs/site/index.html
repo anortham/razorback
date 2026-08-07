@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Razorback - Miller-powered development workflow for coding agents</title>
+  <meta name="description" content="Razorback is a skill set for Claude Code, Codex CLI / ChatGPT desktop app, and OpenCode. It routes every agent and subagent through Miller MCP, dispatches implementation to fresh subagents, and runs approved plans to completion.">
+  <link rel="canonical" href="https://anortham.github.io/razorback/">
+  <link rel="icon" href="assets/razorback-small.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js"></script>
+</head>
+<body>
+  <nav class="site-nav" aria-label="Main navigation">
+    <a class="brand" href="#top">
+      <img src="assets/razorback-small.svg" alt="" width="24" height="24">
+      <span>Razorback</span>
+    </a>
+    <div class="nav-links">
+      <a href="#why">Why</a>
+      <a href="#workflow">Workflow</a>
+      <a href="#skills">Skills</a>
+      <a href="#digest">Digest</a>
+      <a href="#setup">Setup</a>
+      <a href="#limits">Limits</a>
+      <a href="https://github.com/anortham/razorback" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </nav>
+
+  <header id="top" class="hero">
+    <div class="hero-content">
+      <p class="eyebrow">Miller-powered development workflow</p>
+      <h1>Razorback</h1>
+      <p class="hero-lede">
+        A skill set for Claude Code, Codex CLI / ChatGPT desktop app, and OpenCode. It routes every
+        agent and every subagent through Miller instead of grep-and-read chains, dispatches
+        implementation to fresh subagents, and runs an approved plan to completion without waking you
+        for anything short of a real blocker.
+      </p>
+      <p class="hero-meta">
+        <span class="version">v0.28.0</span>
+        <span>26 skills</span>
+        <span>MIT licensed</span>
+        <span>No build step</span>
+      </p>
+      <div class="hero-actions">
+        <a class="button primary" href="#setup">Set it up</a>
+        <a class="button secondary" href="https://github.com/anortham/razorback" target="_blank" rel="noopener">View on GitHub</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="why" class="section">
+      <div class="section-heading">
+        <p class="eyebrow">Why it exists</p>
+        <h2>Agents re-discover the same code every single time.</h2>
+      </div>
+      <div class="split-copy">
+        <p>
+          AI-assisted development burns tokens on repetitive codebase exploration. The lead orients
+          through a Glob, then a Grep, then a chain of file reads — five to eight calls to answer one
+          question. Then it dispatches a subagent, and that subagent starts from zero and does the
+          same thing. The next one does it again. The work is real, but most of the context spent on
+          it is a re-run of context you already paid for.
+        </p>
+        <p>
+          Razorback diverged from
+          <a href="https://github.com/obra/superpowers" target="_blank" rel="noopener">Superpowers</a>
+          to fix that. It keeps the process discipline and replaces the exploration layer with Miller,
+          a local code-intelligence server that answers orientation questions in one or two structured
+          calls. Three things follow from that choice.
+        </p>
+      </div>
+      <div class="feature-strip">
+        <div>
+          <strong>Miller-first, for every worker</strong>
+          <span>
+            The lead, implementers, reviewers, and fix workers all orient with
+            <code>search</code>, <code>context</code>, <code>inspect</code>, <code>trace</code>, and
+            <code>impact</code> before any raw file read. On Claude Code a <code>SubagentStart</code>
+            hook injects that ruleset into every dispatched subagent, so a fresh worker cannot fall
+            back to grep by accident.
+          </span>
+        </div>
+        <div>
+          <strong>Delegated execution, inline review</strong>
+          <span>
+            Independent tasks go to fresh implementer subagents, in parallel when the plan says they
+            are independent. The lead reviews each result inline for spec compliance and code quality.
+            The lead's own context stays clean, so it can still see the whole change at the end.
+          </span>
+        </div>
+        <div>
+          <strong>Autonomous plan runs</strong>
+          <span>
+            Once you approve a plan, execution runs to completion. Stops are gated by a five-category
+            blocker taxonomy, not by task boundaries, and Goldfish checkpoints keep the run durable
+            across a context compaction. The final stop is pull-request creation.
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <section id="workflow" class="section alt-section">
+      <div class="section-heading">
+        <p class="eyebrow">The process</p>
+        <h2>Brainstorm, plan, test, execute, review, finish.</h2>
+      </div>
+      <ol class="flow-list">
+        <li>
+          <h3>Brainstorm</h3>
+          <p>
+            Any creative work starts here. The skill pushes back on the first idea, forces the design
+            question into the open, and ends with a written design document plus its visual digest.
+          </p>
+        </li>
+        <li>
+          <h3>Plan</h3>
+          <p>
+            The design becomes a task-by-task implementation plan with explicit file ownership,
+            verification scopes, and acceptance criteria. You approve the plan. That approval is the
+            gate.
+          </p>
+        </li>
+        <li>
+          <h3>Test</h3>
+          <p>
+            Test-driven development is the default for features and bugfixes: a failing test first,
+            then the implementation that makes it pass.
+          </p>
+        </li>
+        <li>
+          <h3>Execute</h3>
+          <p>
+            The plan runs. Which skill drives it depends on the shape of the work — see the fork
+            below.
+          </p>
+        </li>
+        <li>
+          <h3>Review</h3>
+          <p>
+            The lead reviews every task inline, in two passes: spec compliance, then code quality. An
+            optional pre-merge review by a second model runs after the branch is green.
+          </p>
+        </li>
+        <li>
+          <h3>Finish</h3>
+          <p>
+            Final branch verification, then the integration decision and the pull request. Merge stays
+            a human action.
+          </p>
+        </li>
+      </ol>
+      <div class="fork">
+        <h3>The execution fork</h3>
+        <div class="fork-grid">
+          <article>
+            <h4><code>subagent-driven-development</code></h4>
+            <p>
+              Two or more independent tasks, on a harness that can delegate. Fresh implementer
+              subagent per task, parallel where the plan allows, inline review by the lead. This is
+              the primary path.
+            </p>
+          </article>
+          <article>
+            <h4><code>executing-plans</code></h4>
+            <p>
+              One task, tightly sequential work, or no delegation available. Single agent, batch
+              execution, same verification scopes.
+            </p>
+          </article>
+          <article>
+            <h4><code>fixing-small-issues</code></h4>
+            <p>
+              A defect or tweak that passes objective triage — at most two files, roughly twenty
+              lines, no contract change. Fixed on the current checkout with no worktree and no
+              baseline suite run. It escalates to the standard flow the moment the fix outgrows the
+              criteria.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="skills" class="section">
+      <div class="section-heading">
+        <p class="eyebrow">26 skills</p>
+        <h2>Each one covers a moment where work usually goes wrong.</h2>
+      </div>
+      <div class="skill-grid">
+        <article>
+          <h3>Start here</h3>
+          <ul>
+            <li><code>using-razorback</code> — the entry point. It loads at session start and routes every later request to the right skill.</li>
+          </ul>
+        </article>
+        <article>
+          <h3>Design and planning</h3>
+          <ul>
+            <li><code>brainstorming</code> — turn a request into a design document before any code.</li>
+            <li><code>prototyping</code> — build the throwaway thing when a design question resists discussion.</li>
+            <li><code>writing-plans</code> — a design plus requirements become an ordered, verifiable plan.</li>
+            <li><code>grounding-in-current-docs</code> — check the real current API before coding against a library.</li>
+          </ul>
+        </article>
+        <article>
+          <h3>Execution</h3>
+          <ul>
+            <li><code>subagent-driven-development</code> — dispatch implementers per task, review inline.</li>
+            <li><code>executing-plans</code> — single-agent batch execution of an approved plan.</li>
+            <li><code>dispatching-parallel-agents</code> — independent work outside a plan.</li>
+            <li><code>fixing-small-issues</code> — the quick-fix tier, with objective triage.</li>
+            <li><code>using-git-worktrees</code> — isolate feature work from your current checkout.</li>
+          </ul>
+        </article>
+        <article>
+          <h3>Quality and verification</h3>
+          <ul>
+            <li><code>test-driven-development</code> — failing test first, every time.</li>
+            <li><code>systematic-debugging</code> — find the cause before proposing a fix.</li>
+            <li><code>verification-before-completion</code> — prove it before claiming it is done.</li>
+            <li><code>requesting-code-review</code> — the inline review criteria the lead applies.</li>
+            <li><code>receiving-code-review</code> — how to weigh feedback that looks wrong.</li>
+            <li><code>security-review</code> — secrets scan, dependency audit, branch-gate scopes, and the external-model policy.</li>
+            <li><code>architecture-quality</code> — module boundaries, coupling, and complexity.</li>
+          </ul>
+        </article>
+        <article>
+          <h3>Review and ship</h3>
+          <ul>
+            <li><code>pre-merge-review</code> — the optional external review before the branch finishes.</li>
+            <li><code>finishing-a-development-branch</code> — final verification, integration decision, pull request.</li>
+            <li><code>harvesting-debt</code> — account for every shortcut deliberately marked during the run.</li>
+          </ul>
+        </article>
+        <article>
+          <h3>Second opinions</h3>
+          <ul>
+            <li><code>codex-cli</code> — delegate to Codex or ask for its take.</li>
+            <li><code>claude-cli</code> — a fresh Claude with no stake in the current answer.</li>
+            <li><code>grok-cli</code> — delegate to Grok.</li>
+            <li><code>cursor-agent</code> — hand implementation work to Cursor.</li>
+            <li><code>cross-model-convergence</code> — two models check each other until the findings stop changing.</li>
+          </ul>
+        </article>
+        <article>
+          <h3>Extending razorback</h3>
+          <ul>
+            <li><code>writing-skills</code> — author, edit, and verify a skill before it ships.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section id="digest" class="section alt-section">
+      <div class="section-heading">
+        <p class="eyebrow">New in v0.28.0</p>
+        <h2>Every plan gets a picture you can actually read.</h2>
+      </div>
+      <div class="split-copy">
+        <p>
+          A long autonomous run produces a long markdown document, and nobody reads a long markdown
+          document at 8am. So razorback writes a visual digest beside it: a single self-contained HTML
+          file, same basename, that shows the whole run as a timeline. Stage by stage, task by task,
+          with a "you are here" marker on the active task and a warning flag at the exact point where
+          a criterion was revised.
+        </p>
+        <p>
+          Three moments emit one — <code>brainstorming</code> beside the design document,
+          <code>writing-plans</code> beside the plan, and
+          <code>finishing-a-development-branch</code> beside the final report. The component kit lives
+          in <code>skills/using-razorback/references/digest-kit.md</code>. Digests declare a strict
+          content-security policy: no network fetch, no image, no frame. Below is a sample built from
+          the kit's own classes.
+        </p>
+      </div>
+      <div class="digest-sample">
+        <p class="sample-label">Sample digest — abridged</p>
+        <section class="digest">
+          <header>
+            <div>
+              <h3>Upstream adoption and the visual digest</h3>
+              <p class="goal">Adopt ranked upstream improvements and add the digest feature.</p>
+            </div>
+            <div class="hprog">
+              <div class="n">9<small> / 13 tasks</small></div>
+              <div class="meter" aria-label="69 percent complete"><i style="width:69%"></i></div>
+            </div>
+          </header>
+          <div class="spine">
+            <div class="stage done">
+              <h4>Batch A — Independent bug fixes <span class="chip done"><span class="ico">✓</span>3 / 3</span></h4>
+              <p class="why">Nothing else can be trusted until the audit findings are closed.</p>
+              <div class="trow"><span class="st done">✓ Done</span>
+                <span class="what"><b>1</b>Fix the quick-fix triage gap <span>— criteria now objective</span></span></div>
+              <div class="trow"><span class="st done">✓ Done</span>
+                <span class="what"><b>2</b>Repair the rule-copy sync <span>— test-guarded</span></span></div>
+            </div>
+            <div class="stage now">
+              <h4>Batch C — Serialized SDD lane <span class="chip inprogress"><span class="ico">◐</span>1 / 3</span></h4>
+              <p class="why">These three tasks touch the same files, so they run in order.</p>
+              <div class="flag"><b>⚠ Criterion revised — Task 8.</b>
+                <p>Plan-scoped workspace replaced the per-run directory. The dispatch path changed with it.</p></div>
+              <div class="here">You are here — Task 9 running</div>
+              <div class="trow"><span class="st inprogress">◐ In progress</span>
+                <span class="what"><b>9</b>Brief-path dispatch <span>— implementer running</span></span></div>
+              <div class="trow"><span class="st queued">○ Queued</span>
+                <span class="what"><b>10</b>Wire the digest read moments <span>— blocked on Task 9</span></span></div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <p class="sample-note">
+        Status is never carried by color alone: every chip and every task row pairs its color with an
+        icon and a written status word.
+      </p>
+    </section>
+
+    <section id="setup" class="section setup-section">
+      <div class="section-heading">
+        <p class="eyebrow">Setup</p>
+        <h2>Four steps, in this order, starting from nothing.</h2>
+      </div>
+      <p class="setup-intro">
+        Razorback is a pure-content plugin — skills, agents, and hooks, with no build step and no
+        runtime dependency. What it does need is Miller and Goldfish, so install those first. Pick your
+        harness and work down the tab.
+      </p>
+
+      <div class="tabs-wrap">
+        <div class="tablist" role="tablist" aria-label="Install instructions by harness">
+          <button class="tab" type="button" id="tab-claude" role="tab" aria-selected="true" aria-controls="pane-claude" data-pane="pane-claude">Claude Code</button>
+          <button class="tab" type="button" id="tab-codex" role="tab" aria-selected="false" aria-controls="pane-codex" data-pane="pane-codex">Codex CLI / ChatGPT desktop</button>
+          <button class="tab" type="button" id="tab-opencode" role="tab" aria-selected="false" aria-controls="pane-opencode" data-pane="pane-opencode">OpenCode</button>
+        </div>
+
+        <div class="tabpane is-active" id="pane-claude" role="tabpanel" aria-labelledby="tab-claude">
+          <p class="pane-title">Claude Code</p>
+          <ol class="steps">
+            <li>
+              <h3>Node.js</h3>
+              <p>
+                Miller's plugin launcher is a Node script, so Node.js must be on your
+                <code>PATH</code>. Without it the plugin fails with the opaque MCP error
+                <code>-32000</code> and writes no log. Install Node.js LTS, then fully restart the
+                agent — an in-session reconnect keeps the old environment and still fails.
+              </p>
+              <pre><code># Windows, for example
+winget install OpenJS.NodeJS.LTS</code></pre>
+              <p class="step-note">
+                On macOS and Linux, install Node.js LTS however you normally do:
+                <a href="https://nodejs.org/" target="_blank" rel="noopener">nodejs.org</a>.
+              </p>
+            </li>
+            <li>
+              <h3>Miller</h3>
+              <p>Code intelligence. Razorback requires it — there is no fallback to grep.</p>
+              <pre><code>/plugin marketplace add anortham/miller
+/plugin install miller@miller</code></pre>
+            </li>
+            <li>
+              <h3>Goldfish</h3>
+              <p>Persistent memory: checkpoints, briefs, and recall. Also required.</p>
+              <pre><code>/plugin marketplace add anortham/goldfish
+/plugin install goldfish@goldfish</code></pre>
+            </li>
+            <li>
+              <h3>Razorback</h3>
+              <pre><code>/plugin marketplace add anortham/razorback
+/plugin install razorback@razorback</code></pre>
+              <p class="step-note">
+                To scope it to one project instead of your whole user account, add
+                <code>--scope project</code> to the install line. Restart, and the
+                <code>SessionStart</code> hook loads razorback into every new session.
+              </p>
+            </li>
+          </ol>
+        </div>
+
+        <div class="tabpane" id="pane-codex" role="tabpanel" aria-labelledby="tab-codex">
+          <p class="pane-title">Codex CLI / ChatGPT desktop app</p>
+          <p class="pane-note">The ChatGPT desktop app was rebranded from Codex. Both use this path.</p>
+          <ol class="steps">
+            <li>
+              <h3>Node.js</h3>
+              <p>
+                Miller's plugin launcher is a Node script, so Node.js must be on your
+                <code>PATH</code>. Install Node.js LTS and fully restart the agent.
+              </p>
+              <pre><code># Windows, for example
+winget install OpenJS.NodeJS.LTS</code></pre>
+            </li>
+            <li>
+              <h3>Miller</h3>
+              <pre><code>codex plugin marketplace add anortham/miller
+codex
+# then open /plugins and install Miller from the miller marketplace</code></pre>
+            </li>
+            <li>
+              <h3>Goldfish</h3>
+              <pre><code>codex plugin marketplace add anortham/goldfish
+codex plugin add goldfish@goldfish</code></pre>
+              <p class="step-note">
+                Codex does not trust a plugin's hooks automatically. Run <code>codex</code>, open
+                <code>/hooks</code>, trust Goldfish's SessionStart hook, then start a new thread.
+                Until you do, the tools work but the session-start guidance stays silent.
+              </p>
+            </li>
+            <li>
+              <h3>Razorback</h3>
+              <p>Tell Codex:</p>
+              <pre><code>Fetch and follow instructions from https://raw.githubusercontent.com/anortham/razorback/refs/heads/main/.codex/INSTALL.md</code></pre>
+              <p>
+                That installs razorback from the repo-scoped marketplace entry, then relies on native
+                skill discovery. Delegated execution needs Codex's multi-agent feature, so add this to
+                your Codex config:
+              </p>
+              <pre><code>[features]
+multi_agent = true</code></pre>
+              <p>Restart Codex, then check it:</p>
+              <pre><code>codex features list | grep '^multi_agent'</code></pre>
+            </li>
+          </ol>
+        </div>
+
+        <div class="tabpane" id="pane-opencode" role="tabpanel" aria-labelledby="tab-opencode">
+          <p class="pane-title">OpenCode</p>
+          <ol class="steps">
+            <li>
+              <h3>Node.js</h3>
+              <p>
+                Needed only if you install Miller through an agent plugin launcher. The manual binary
+                install path runs <code>miller</code> directly and skips Node entirely.
+              </p>
+            </li>
+            <li>
+              <h3>Miller</h3>
+              <p>
+                Miller's README documents a plugin one-liner for Claude Code, Codex, and Cursor. For
+                any other MCP harness it points at the same binary plus a routing block:
+              </p>
+              <pre><code>miller rules --harness &lt;name&gt;</code></pre>
+              <p class="step-note">
+                Follow
+                <a href="https://github.com/anortham/miller/blob/main/docs/install.md" target="_blank" rel="noopener">Miller's install guide</a>
+                for the manual binary path and the MCP config block. Do not guess a harness name —
+                the guide lists the supported ones.
+              </p>
+            </li>
+            <li>
+              <h3>Goldfish</h3>
+              <p>OpenCode loads local MCP servers from <code>opencode.json</code>:</p>
+              <pre><code>{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "goldfish": {
+      "type": "local",
+      "command": ["bun", "run", "/absolute/path/to/goldfish/src/server.ts"],
+      "enabled": true
+    }
+  }
+}</code></pre>
+            </li>
+            <li>
+              <h3>Razorback</h3>
+              <p>Add razorback to the <code>plugin</code> array in your <code>opencode.json</code>:</p>
+              <pre><code>{
+  "plugin": ["razorback@git+https://github.com/anortham/razorback.git"]
+}</code></pre>
+              <p class="step-note">
+                Restart OpenCode. The plugin registers its own skills directory — no symlinks. To pin
+                a version, append <code>#&lt;version&gt;</code> to the spec; Bun caches by the full
+                spec, so changing the ref forces a fresh fetch.
+              </p>
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="setup-extras">
+        <article>
+          <h3>Copilot CLI gets the ruleset only</h3>
+          <p>
+            No skills, no agents, no delegated execution. Copilot reads
+            <code>.github/copilot-instructions.md</code> natively, so copy razorback's Miller-first
+            ruleset into the repo you work in. If that file already exists, merge the ruleset in
+            rather than overwriting it.
+          </p>
+          <pre><code>curl -fsSL https://raw.githubusercontent.com/anortham/razorback/refs/heads/main/.github/copilot-instructions.md \
+  -o .github/copilot-instructions.md</code></pre>
+        </article>
+        <article>
+          <h3>Cursor is frozen</h3>
+          <p>
+            Cursor support works as documented and receives no new development. Razorback is not in
+            Cursor's marketplace, so clone the repo and point Cursor at the local checkout through its
+            plugin-load mechanism.
+          </p>
+          <pre><code>git clone https://github.com/anortham/razorback.git ~/path/to/razorback
+# Then in Cursor: add ~/path/to/razorback to your plugin paths</code></pre>
+        </article>
+      </div>
+    </section>
+
+    <section id="limits" class="section">
+      <div class="section-heading">
+        <p class="eyebrow">Honest limits</p>
+        <h2>Two hard requirements, and an uneven harness story.</h2>
+      </div>
+      <div class="split-copy">
+        <p>
+          <strong>Miller and Goldfish are mandatory, not suggested.</strong> Razorback deleted the
+          generic-tool fallback on purpose. Without Miller the exploration, editing, and reference
+          skills do not function. Without Goldfish there is no durable memory, so a long autonomous
+          run loses its thread at the first context compaction. If you will not install both, this is
+          not the right tool for you.
+        </p>
+        <p>
+          <strong>Support is tiered, and the tiers are real.</strong> Three harnesses get the full
+          plugin. Cursor is frozen — it works, but it gets no new work. Copilot CLI gets the
+          Miller-first ruleset and nothing else: no skills, no agents, no delegation. Razorback also
+          owns process contracts only. It never picks your model, and the concrete verification
+          commands come from your repository, not from razorback.
+        </p>
+      </div>
+      <div class="table-wrap">
+        <table class="tier-table">
+          <caption>What each harness actually gets.</caption>
+          <thead>
+            <tr>
+              <th scope="col">Harness</th>
+              <th scope="col">Tier</th>
+              <th scope="col">Bootstrap</th>
+              <th scope="col">Delegated execution</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Claude Code</th>
+              <td>Plugin</td>
+              <td><code>SessionStart</code> hook, plus a <code>SubagentStart</code> hook for workers</td>
+              <td>Yes</td>
+            </tr>
+            <tr>
+              <th scope="row">Codex CLI / ChatGPT desktop app</th>
+              <td>Plugin</td>
+              <td>Native skill discovery from the installed plugin</td>
+              <td>Yes, with <code>multi_agent = true</code></td>
+            </tr>
+            <tr>
+              <th scope="row">OpenCode</th>
+              <td>Plugin</td>
+              <td>Plugin registers the skills path and injects on the first message</td>
+              <td>Yes</td>
+            </tr>
+            <tr>
+              <th scope="row">Cursor</th>
+              <td>Plugin, frozen</td>
+              <td><code>sessionStart</code> hook</td>
+              <td>Yes, but no new work is planned</td>
+            </tr>
+            <tr>
+              <th scope="row">Copilot CLI</th>
+              <td>Instruction only</td>
+              <td>Reads <code>.github/copilot-instructions.md</code> natively</td>
+              <td>No</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>
+      <strong>Razorback</strong> v0.28.0 — MIT licensed. Diverged from
+      <a href="https://github.com/obra/superpowers" target="_blank" rel="noopener">Superpowers</a>
+      by Jesse Vincent, whose copyright the license still carries.
+    </p>
+    <p class="footer-links">
+      <a href="https://github.com/anortham/razorback" target="_blank" rel="noopener">Repository</a>
+      <a href="https://github.com/anortham/miller" target="_blank" rel="noopener">Miller</a>
+      <a href="https://github.com/anortham/goldfish" target="_blank" rel="noopener">Goldfish</a>
+      <a href="https://github.com/anortham/razorback/issues" target="_blank" rel="noopener">Issues</a>
+    </p>
+  </footer>
+
+</body>
+</html>

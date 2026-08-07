@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>Razorback</title>
+  <rect width="64" height="64" rx="12" fill="#141418"/>
+  <path fill="#FFF4E0" d="M16 12h8v40h-8zm8 0h14c4.418 0 8 3.582 8 8v4c0 4.418-3.582 8-8 8H24v-8h12c1.105 0 2-.895 2-2v-2c0-1.105-.895-2-2-2H24z"/>
+  <path fill="#FFF4E0" d="M24 28h16v8H24z"/>
+  <path fill="#B31B1B" d="M30 36h10l12 16H42z"/>
+</svg>
