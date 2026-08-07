@@ -64,6 +64,8 @@ Run this before any diff or repo content leaves the machine — at every enforce
 3. Block present and the provider is denied → refuse the dispatch, name an allowed alternative, and record the refusal in the morning report. On an autonomous run where the user explicitly chose the denied provider, this is blocker taxonomy #4 — STOP; do not silently substitute another provider.
 4. No block → proceed, and add the loud morning-report note: `no external-model policy declared — diff sent to <provider>`.
 
+**Reviewer dispatches (pre-merge review and standalone review):** re-read the policy at dispatch time — validation at plan approval does not carry forward. The provider must be allowed AND the chosen reviewer must also appear in `Reviewer choices permitted:`. A reviewer absent from that list is a denial: follow step 3, including blocker taxonomy #4 on an autonomous run where the user explicitly chose that reviewer.
+
 ## Security Checklist
 
 These five questions are the canonical security checklist. They are duplicated verbatim (test-guarded) at `skills/requesting-code-review/code-reviewer.md` (the standalone reviewer prompt) and `skills/subagent-driven-development/code-quality-reviewer-prompt.md` (the lead's inline review). If you edit the questions here, update those two copies to match — the same convention `skills/architecture-quality/SKILL.md` uses for its checklist.
