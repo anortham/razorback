@@ -8,7 +8,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 const VARIANTS = { codex: 'Codex', claude: 'Claude', grok: 'Grok' };
 
-const QUARTET_SHARED_SECTIONS = ['OPERATING STANCE', 'FINDING BAR', 'CALIBRATION', 'GROUNDING'];
+const QUARTET_SHARED_SECTIONS = ['OPERATING STANCE', 'FINDING BAR', 'CALIBRATION', 'GROUNDING', 'INPUT TRUST'];
 
 const TRIO_ONLY_SECTIONS = ['ATTACK SURFACE'];
 
