@@ -150,6 +150,8 @@ Every plan MUST include a language-agnostic verification strategy. Razorback own
 
 **Branch gate:** [Project-defined broad confidence gate before handoff, push, or PR.]
 
+**Security scope:** [Project-defined secrets-scan and dependency-audit commands run at the branch gate, or `none declared`.]
+
 **Replay/metric evidence:** [For replay, metric, or acceptance evidence, state which assertions or metrics are hard gates and which are report-only.]
 
 **Escalation triggers:** [Changed areas or failure modes that require broader tiers.]
@@ -158,6 +160,8 @@ Every plan MUST include a language-agnostic verification strategy. Razorback own
 
 **Verification ledger:** Record invariant, command, scope label, commit SHA, result, and timestamp. For replay or metric evidence, also record hard-gate metrics and report-only metrics. If the same HEAD already has a passing ledger entry for the required scope, reuse that evidence instead of rerunning the same expensive gate.
 ```
+
+The `Security scope` field must either name the commands or write `none declared` explicitly — silence is not allowed. `razorback:finishing-a-development-branch` renders `none declared` into the morning report, so the opt-out is visible. `razorback:security-review` defines the scopes (`security-secrets`, `security-deps`) and their gate semantics.
 
 If the repo has no documented hierarchy, define one in the plan using these neutral scope labels: **worker** (narrowest behavior proof), **affected-change** (changed files or touched subsystem), **branch** (broad pre-handoff confidence), and **expensive** (slow specialist gates, run only when touched areas require them).
 
@@ -323,6 +327,8 @@ When a full plan has exactly one task, use `## Task Structure` above unchanged �
 If the user requests changes, revise the plan, re-run the self-review, re-save, and re-ask for approval. Brainstorming gates the spec; writing-plans gates the plan. This is the last human stop before autonomous execution.
 
 **Step 3, capture the reviewer choice without prompting.** The default reviewer choice is `none`. If the approval message already named a choice (e.g. "approved, run it, pre-merge codex review", "approved, no external review") or the saved spec explicitly requested a reviewer, set `reviewer_choice` to `codex` or `claude` as requested. Do not ask a separate reviewer-choice question after approval.
+
+If the target repo's project instructions declare an `## External model policy` block, the chosen reviewer must appear in its `Reviewer choices permitted:` list. If it does not, surface the conflict to the user at approval time — a human is present at this gate — instead of proceeding. `razorback:security-review` defines the policy block format.
 
 **Step 4, invoke the execution skill immediately.** After approval, announce which execution skill will run and invoke it, passing the plan path, the reviewer choice (`none` / `codex` / `claude`), and verification strategy:
 
