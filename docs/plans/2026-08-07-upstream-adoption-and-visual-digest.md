@@ -94,9 +94,9 @@ Batches run A → B → C → D. Within A and B, tasks dispatch together. Batch 
 **What to build:** Port the upstream fix verbatim into razorback's copy (the files are otherwise identical — diff first to confirm). Translate the upstream bash test suite into `tests/find-polluter.test.mjs` using node's test runner + `child_process` to exercise the script against a temp fixture tree: pattern with `src/**/` matching nested and top-level test files, empty-match reporting 0, `./`-prefixed input accepted.
 
 **Acceptance criteria:**
-- [ ] Script run against a fixture tree finds nested AND top-level test files from a `**/` pattern; zero matches reports 0, not 1
-- [ ] `tests/find-polluter.test.mjs` fails against the old script body (verify by temporary revert), passes against the new one
-- [ ] Worker-scope verification passes and the change is handed to the lead per commit mode
+- [x] Script run against a fixture tree finds nested AND top-level test files from a `**/` pattern; zero matches reports 0, not 1
+- [x] `tests/find-polluter.test.mjs` fails against the old script body (verified by true red-first ordering — stronger than the planned temporary revert, same invariant), passes against the new one
+- [x] Worker-scope verification passes and the change is handed to the lead per commit mode
 
 ### Task 2: Windows-safe hook dispatch
 
