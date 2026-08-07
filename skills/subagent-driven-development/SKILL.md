@@ -150,7 +150,7 @@ The helper scripts live in this skill's own `scripts/` directory — NOT in the 
 - **Task brief:** before dispatching an implementer, run `"$SKILL_DIR/scripts/task-brief" PLAN_FILE N`. It writes `task-N-brief.md` under `.razorback/sdd` (in the target repo) and prints the path. The dispatch prompt should point the implementer at that brief as the source of requirements.
 - **Report file:** name the implementer's report file after the brief (`task-N-report.md`) and put it under `.razorback/sdd`. The implementer writes the full report there, then returns only status, commits, one-line test summary, and concerns.
 - **Review package:** when a focused diff helps the lead inline review, run `"$SKILL_DIR/scripts/review-package" BASE HEAD`. The lead reads the generated package; do not dispatch a reviewer subagent. No reviewer subagents means the lead still owns spec compliance and code quality.
-- **Fix rounds:** append fix reports and test evidence to the same report file. Re-review the updated diff/report before approving the task.
+- **Fix rounds:** append fix reports and test evidence to the same report file. Re-review before approving the task; the re-review scope is stated in Step 4 ("Scoped Re-Review").
 
 ## Durable Progress
 
@@ -160,6 +160,9 @@ Conversation memory does not survive every long run. Track task completion in `.
 - Record a task complete only after its durable commit exists — the completion line always carries a real commit SHA:
   - `serial-worker-commit`: after the worker commit, `Task N: complete (commits <base7>..<head7>, Lead inline review clean)`.
   - `parallel-lead-commit`: after the **lead** stages the owned files and commits, `Task N: complete (parallel-lead-commit, Lead inline review clean, lead commit <sha7>)`. Do not write this line while the commit is still pending; the lead commits first, then records the SHA.
+- Fix rounds: after each scoped re-review (Step 4), append `Task N: fix round <R> (<X> addressed, <Y> open — <one-liners>; commits <a7>..<b7>)`. The range covers the round's commits. In `parallel-lead-commit` mode no per-round commit exists — write `commits none - parallel-lead-commit` and let the completion line carry the lead commit SHA.
+- Minor deferrals: `Task N: minor (deferred): <one-liner>` — written when Step 3 rules a finding Minor, or when a Step 4 re-review observation falls outside the fix diff. Step 4a hands this list to the pre-merge reviewer.
+- Cap rulings: `Task N: cap ruling (<contested|real-but-deferred|load-bearing-stop>): <finding one-liner> — <reason>`, one line per open finding adjudicated at the cap (Step 3).
 - The ledger is git-ignored working-tree scratch. `git clean -fdx` deletes it; if that happens, recover from `git log` and checked plan boxes.
 
 **Save the agent ID (or name) returned by every dispatch.** Step 4 needs it to
@@ -214,13 +217,22 @@ When the implementer reports completion, the lead does a single inline review co
 - **Inspect** key new/modified symbols to check callers, callees, and types with Miller `inspect(target, depth=overview)` — escalate to `depth=full` for the symbols the task centers on.
 - **Find references** to verify API changes don't break dependents with Miller `trace`.
 
+**Severity routes the loop.** Only Critical and Important findings enter the fix loop (Step 4). Minor findings never enter the loop: record each as a `minor (deferred)` ledger line (format: Durable Progress) and move on. Step 4a hands that list to the pre-merge reviewer.
+
 **Review cap: 3 iterations.** This is the one statement of the cap — every other
 mention in this skill points here. Three fix attempts per task (routing
 mechanism per harness: Step 4). If the 3rd iteration still fails:
 
 1. Dispatch a **fresh implementer with reframed context** using `./fix-prompt.md`'s "Reframed-Context Attempt" section — different framing (different ownership, explicit plan disambiguation, simpler decomposition, or a prior-commit pointer so the fresh agent can read what was tried without rediscovering it). The 4th attempt's value is the reframing, not the freshness.
-2. If the fresh attempt also fails, flag the task in the morning report's "Blockers hit" section and continue with remaining tasks.
-3. Escalate to the user only if the failure matches blocker taxonomy #5 (unresolvable test failures blocking the whole plan).
+2. If the fresh attempt also fails — or no honest reframe can be articulated and the 4th attempt is skipped — adjudicate at the cap.
+
+**Cap adjudication.** This is the one statement of cap adjudication — adjudicate only at the cap, never mid-loop. The lead rules each open finding into exactly one of:
+
+- **Contested** — on re-inspection the lead judges the finding wrong, or not required by the plan. Record the ruling; continue with remaining tasks.
+- **Real but deferred** — real, but no later task builds on it. Record the ruling; continue with remaining tasks.
+- **Real and load-bearing** — later tasks build on it. Stop per the blocker taxonomy (#5, unresolvable test failures blocking the plan).
+
+Every ruling is a ledger entry (format: Durable Progress); silent discards are forbidden — an open finding with no recorded ruling is a broken run. Rulings that continue (contested, real-but-deferred) also appear in the morning report's "Blockers hit" section.
 
 ### When Lighter Review Is Appropriate
 
@@ -257,7 +269,18 @@ this skill points here.
 
 Prefer the context-preserving path (resume / `followup_task`) for iterations 1-3; the 4th attempt is a fresh dispatch with reframed context. Dispatch fresh earlier only when the subagent is unreachable (session error, context limit, stored ID lost to a session restart), the prior implementer's context is genuinely stale (another task modified the same files), or the fix needs a fundamentally different approach — always with the prior-commit pointer.
 
-Re-review after every fix. The iteration cap is stated in Step 3 ("Review cap"); the commit mode is unchanged by a fix round (Commit Mode Contract).
+### Scoped Re-Review
+
+Re-review after every fix. This is the one statement of the re-review scope — every other mention in this skill points here.
+
+1. **Gate the fix report first.** It must name the covering tests, the exact command run, and the output. If any is missing, send the report back before re-reviewing — an evidence bounce is a report correction, not a new fix iteration.
+2. **Build the package from the fix base:** `"$SKILL_DIR/scripts/review-package" FIX_BASE HEAD`, where `FIX_BASE` is the head the previous review saw. The package then contains exactly the fix diff.
+3. **Verdict every prior finding:** ADDRESSED or NOT ADDRESSED, each with file:line evidence. "Attempted" is not ADDRESSED.
+4. **Inspect the fix diff only for new breakage.** A fix round does not reopen the whole task.
+5. **Observations outside the fix diff never extend the loop.** Record each as a `minor (deferred)` ledger line (format: Durable Progress); Step 4a hands that list to the pre-merge reviewer.
+6. **Record the round** with a fix-round ledger line (format: Durable Progress).
+
+The iteration cap and its adjudication are stated in Step 3 ("Review cap"); the commit mode is unchanged by a fix round (Commit Mode Contract).
 
 ## Step 4a: Pre-merge external review (if chosen)
 
@@ -271,6 +294,7 @@ If the reviewer choice propagated from `writing-plans` (via the execution handof
 - reviewer choice
 - verification strategy
 - verification ledger
+- the ledger's `minor (deferred)` lines (Durable Progress) — the deferred findings the reviewer weighs alongside its own findings
 
 If the choice is `none` (or absent), skip Step 4a.
 
@@ -345,7 +369,8 @@ Implementer reports: verify/repair modes added, worker-red-green passing, commit
   Spec: MISSING progress reporting; EXTRA --json flag. Quality: magic number 100 hard-coded
 [Fix round 1 of 3 — resume impl-c3d4 with ./fix-prompt.md + the three findings]
 Implementer (resumed): all three addressed, tests passing, committed ghi789.
-[Lead re-review → approved. TaskUpdate task 2 completed. Remaining tasks follow the same pattern]
+[Lead scoped re-review of def456..ghi789: 3/3 ADDRESSED → approved. Ledger: fix round 1 (3 addressed, 0 open)]
+[TaskUpdate task 2 completed. Remaining tasks follow the same pattern]
 [All tasks done: lead runs branch-gate scope, updates the ledger, then razorback:finishing-a-development-branch]
 ```
 
@@ -363,13 +388,15 @@ Implementer (resumed): all three addressed, tests passing, committed ghi789.
 - Skip scene-setting context (the subagent needs to know where the task fits)
 - Ignore subagent questions (answer before letting them proceed)
 - Skip the re-review after a fix
+- Extend the fix loop with Minor findings or with observations outside the fix diff — both go to the deferred list
+- Close an open finding at the cap without a recorded ruling
 - Dispatch a separate reviewer subagent when the lead can review inline
 - Approve work from an implementer who cannot show Miller-first orientation
 - Pause for user input between tasks - the plan is approved, run it to completion. Stops are governed by the blocker taxonomy. If you can reason through a plan-consistent path, keep moving and log the choice.
 
 **If the subagent asks questions:** answer clearly and completely before letting it proceed; provide extra context if needed, and don't rush it into implementation.
 
-**If review finds issues:** route the fix per Step 4; the iteration cap is in Step 3 ("Review cap").
+**If review finds issues:** route the fix and re-review per Step 4; the iteration cap and its adjudication are in Step 3 ("Review cap").
 
 ## Integration
 
@@ -387,4 +414,4 @@ Implementer (resumed): all three addressed, tests passing, committed ghi789.
 
 **Codex-specific:**
 - Collaboration tools (`spawn_agent` / `followup_task` / `send_message` / `wait_agent` / `interrupt_agent` / `list_agents`) are enabled by default on current codex (verified 0.144.3); older versions needed `multi_agent = true` in `~/.codex/config.toml` (see `../using-razorback/references/codex-tools.md`). Trust the live tool list over these names.
-- Use `interrupt_agent(target=<agent-id>)` to cancel a worker that is stuck or no longer needed (e.g. after the 4th-iteration flag-and-continue); there is no separate close/free step on current codex.
+- Use `interrupt_agent(target=<agent-id>)` to cancel a worker that is stuck or no longer needed (e.g. after cap adjudication rules its open findings); there is no separate close/free step on current codex.

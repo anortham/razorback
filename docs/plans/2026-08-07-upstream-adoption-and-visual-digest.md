@@ -379,11 +379,11 @@ New ledger line format for fix rounds: `Task <N>: fix round <R> (<X> addressed, 
 **What to build:** Fold the four mechanisms into Steps 3/4/4a and Durable Progress; extend `fix-prompt.md`. Run `node --test tests/twin-sections.test.mjs` before handoff; if a twin section changed, mirror it in executing-plans preserving the encoded divergence.
 
 **Acceptance criteria:**
-- [ ] Step 4 states the re-review scope contract (FIX_BASE, per-finding verdicts, fix-diff-only, deferred-list sink) and the fix-report gate
-- [ ] Cap behavior is the three-way adjudication with the load-bearing → blocker-taxonomy stop; "flag and continue" no longer the cap's only path
-- [ ] Minor-deferral ledger line format present; Step 4a consumes the list
-- [ ] `tests/twin-sections.test.mjs` green
-- [ ] Worker-scope verification passes and the change is handed to the lead per commit mode
+- [x] Step 4 states the re-review scope contract (FIX_BASE, per-finding verdicts, fix-diff-only, deferred-list sink) and the fix-report gate
+- [x] Cap behavior is the three-way adjudication with the load-bearing → blocker-taxonomy stop; "flag and continue" no longer the cap's only path
+- [x] Minor-deferral ledger line format present; Step 4a consumes the list
+- [x] `tests/twin-sections.test.mjs` green
+- [x] Worker-scope verification passes and the change is handed to the lead per commit mode
 
 ### Task 13: Plan-scoped SDD workspace
 
