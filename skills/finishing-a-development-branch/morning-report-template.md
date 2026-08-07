@@ -31,6 +31,7 @@ Placeholders use {{double-brace}} syntax.
 ## External review ({{reviewer}}, adversarial)
 <!-- reviewer is one of: codex | claude | none. If "none", replace this whole section with: "External review: none (not requested for this run)." -->
 
+- **External-model policy:** {{policy_status}} <!-- policy honored (<providers>) | no policy declared — <provider> received the diff | refused: <provider> not allowed -->
 - **Findings:** {{findings_total}}
 - **Verified real, fixed:** {{findings_fixed_count}} (commits: {{fix_commit_shas}})
   - {{verified_finding_summary}} <!-- e.g. "missing null check in parseReviewOutput — fixed in abc1234" -->

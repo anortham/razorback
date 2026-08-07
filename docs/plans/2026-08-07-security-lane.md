@@ -218,7 +218,7 @@ Commit mode: `parallel-lead-commit` — workers hand verified diffs to the lead;
 **Dependency reason:** None - safe parallel batch.
 
 **Acceptance criteria:**
-- [ ] Placeholder and README row present; template's comment lists the three values.
+- [x] Placeholder and README row present; template's comment lists the three values.
 
 ## Completion
 
