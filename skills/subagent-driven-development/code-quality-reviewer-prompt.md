@@ -22,6 +22,9 @@ Use Miller for impact analysis:
 - **Find references** to verify changes don't break dependents with `trace(target='<symbol>')`
 - **List a file's symbols** to review structure without reading entire files with `inspect(target='<file>')`
 
+**Test quality:**
+- Run the mutation check from `test-driven-development/writing-good-tests.md`: mentally mutate the production code; a test should fail for each realistic mutation.
+
 <!-- Canonical security checklist: skills/security-review/SKILL.md — update all copies together. -->
 **Security:**
 - No secrets, credentials, tokens, or connection strings in the diff?

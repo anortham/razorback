@@ -224,10 +224,10 @@ Batches run A → B → C → D. Within A and B, tasks dispatch together. Batch 
 **What to build:** Port, translate, retarget the trigger, update the reviewer prompt, and update any guard test that references the old filename (change the reference, do not delete the guard).
 
 **Acceptance criteria:**
-- [ ] `testing-anti-patterns.md` gone; no references to it remain (`grep -ri 'testing-anti-patterns' skills/ tests/` → no hits)
-- [ ] `writing-good-tests.md` contains the falsifiability question, the mutation check, and zero `superpowers:` references
-- [ ] TDD SKILL.md trigger reads "any test", not "when adding mocks"
-- [ ] Worker-scope verification passes and the change is handed to the lead per commit mode
+- [x] `testing-anti-patterns.md` gone; no references to it remain (`grep -ri 'testing-anti-patterns' skills/ tests/` → no hits)
+- [x] `writing-good-tests.md` contains the falsifiability question, the mutation check, and zero `superpowers:` references
+- [x] TDD SKILL.md trigger reads "any test", not "when adding mocks"
+- [x] Worker-scope verification passes and the change is handed to the lead per commit mode
 
 ### Task 7: Region-scoped guard assertions
 
