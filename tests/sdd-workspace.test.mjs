@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -71,6 +71,26 @@ test('the workspace tree self-ignores via .razorback/sdd/.gitignore', () => {
   git(repo, 'add', '-A');
   const staged = git(repo, 'diff', '--cached', '--name-only');
   assert.ok(!staged.includes('.razorback'), staged);
+});
+
+test('a pre-planted .razorback/sdd symlink to an outside directory exits 2 and leaves it untouched', () => {
+  const outside = join(testRoot, 'outside');
+  mkdirSync(outside);
+  writeFileSync(join(outside, 'keep.txt'), 'keep\n');
+  const trap = join(testRoot, 'trap');
+  git(testRoot, 'init', '-q', '-b', 'main', trap);
+  const trapRepo = git(trap, 'rev-parse', '--show-toplevel').trim();
+  writeFileSync(join(trapRepo, 'plan-a.md'), '# Plan A\n\n## Task 1: First thing\n\nDo the first thing.\n');
+  mkdirSync(join(trapRepo, '.razorback'));
+  symlinkSync(outside, join(trapRepo, '.razorback', 'sdd'));
+
+  const result = runScript(trapRepo, 'sdd-workspace', 'plan-a.md');
+
+  assert.equal(result.status, 2, result.stdout);
+  assert.match(result.stderr, /escapes the repository/);
+  assert.equal(readFileSync(join(outside, 'keep.txt'), 'utf8'), 'keep\n');
+  assert.ok(!existsSync(join(outside, '.gitignore')));
+  assert.deepEqual(readdirSync(outside).filter((name) => name !== 'plan-a'), ['keep.txt']);
 });
 
 test('task-brief writes the brief into its plan directory', () => {

@@ -173,7 +173,7 @@ Conversation memory does not survive every long run. Track task completion in th
   - `serial-worker-commit`: after the worker commit, `Task N: complete (commits <base7>..<head7>, Lead inline review clean)`.
   - `parallel-lead-commit`: after the **lead** stages the owned files and commits, `Task N: complete (parallel-lead-commit, Lead inline review clean, lead commit <sha7>)`. Do not write this line while the commit is still pending; the lead commits first, then records the SHA.
 - Fix rounds: after each scoped re-review (Step 4), append `Task N: fix round <R> (<X> addressed, <Y> open — <one-liners>; commits <a7>..<b7>)`. The range covers the round's commits. In `parallel-lead-commit` mode no per-round commit exists — write `commits none - parallel-lead-commit` and let the completion line carry the lead commit SHA.
-- Minor deferrals: `Task N: minor (deferred): <one-liner>` — written when Step 3 rules a finding Minor, or when a Step 4 re-review observation falls outside the fix diff. Step 4a hands this list to the pre-merge reviewer.
+- Deferrals: `Task N: minor (deferred): <one-liner>` — written when Step 3 rules a finding Minor, or when a Minor Step 4 re-review observation falls outside the fix diff. An out-of-diff observation that is not Minor keeps its observed severity: `Task N: deferred (<Important|Critical>): <one-liner>`. Step 4a hands this list to the pre-merge reviewer.
 - Cap rulings: `Task N: cap ruling (<contested|real-but-deferred|load-bearing-stop>): <finding one-liner> — <reason>`, one line per open finding adjudicated at the cap (Step 3).
 - The ledger is git-ignored working-tree scratch. `git clean -fdx` deletes it; if that happens, recover from `git log` and checked plan boxes.
 
@@ -289,7 +289,7 @@ Re-review after every fix. This is the one statement of the re-review scope — 
 2. **Build the package from the fix base:** `"$SKILL_DIR/scripts/review-package" PLAN_FILE FIX_BASE HEAD`, where `FIX_BASE` is the head the previous review saw. The package then contains exactly the fix diff.
 3. **Verdict every prior finding:** ADDRESSED or NOT ADDRESSED, each with file:line evidence. "Attempted" is not ADDRESSED.
 4. **Inspect the fix diff only for new breakage.** A fix round does not reopen the whole task.
-5. **Observations outside the fix diff never extend the loop.** Record each as a `minor (deferred)` ledger line (format: Durable Progress); Step 4a hands that list to the pre-merge reviewer.
+5. **Observations outside the fix diff never extend the loop.** Record each as a deferral ledger line carrying its observed severity (format: Durable Progress). A Minor observation joins the deferred list; a Critical or Important observation keeps its severity and is adjudicated like an open finding at the cap (Step 3, "Cap adjudication"); an observation meeting the blocker taxonomy stops the run. Step 4a hands the deferred list to the pre-merge reviewer.
 6. **Record the round** with a fix-round ledger line (format: Durable Progress).
 
 The iteration cap and its adjudication are stated in Step 3 ("Review cap"); the commit mode is unchanged by a fix round (Commit Mode Contract).
@@ -319,7 +319,7 @@ After `pre-merge-review` returns, proceed to Step 5 (Complete → `razorback:fin
 When all tasks are approved and marked complete:
 
 1. **Final verification:** Run the plan's `branch-gate` scope, or reuse a passing verification-ledger entry for the same HEAD and scope. Add any `expensive-specialist` scopes required by touched areas. The branch-gate run includes the plan's declared Security scope commands (`security-secrets`, `security-deps` — `razorback:security-review`); `none declared` skips them and is rendered in the morning report.
-2. **Clean up the workspace:** when the final review is clean (final verification passed, and Step 4a — if chosen — returned), delete this plan's workspace: `rm -rf <workspace>`. Git history is the record now. Sibling directories under `.razorback/sdd/` belong to other plans; leave them alone.
+2. **Clean up the workspace:** when the final review is clean (final verification passed, and Step 4a — if chosen — returned), re-resolve the workspace path with `"$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE` immediately before deleting — the script verifies the path stays inside the repository — then delete only the path it prints: `rm -rf <printed path>`. Never `rm -rf` a remembered workspace path. Git history is the record now. Sibling directories under `.razorback/sdd/` belong to other plans; leave them alone.
 3. **Finish:** Use `razorback:finishing-a-development-branch`.
 
 ## Blockers

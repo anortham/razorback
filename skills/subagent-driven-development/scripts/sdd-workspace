@@ -36,5 +36,17 @@ root=$(git rev-parse --show-toplevel)
 base="$root/.razorback/sdd"
 dir="$base/$slug"
 mkdir -p "$dir"
+
+# A pre-planted symlink at .razorback or .razorback/sdd would redirect the
+# .gitignore write and the Step 5 `rm -rf` outside the repository. Require the
+# physical workspace path to stay inside the physical repo root before touching it.
+physical_root=$(cd "$root" && pwd -P)
+physical_dir=$(cd "$dir" && pwd -P)
+expected="$physical_root/.razorback/sdd/$slug"
+if [ "$physical_dir" != "$expected" ]; then
+  echo "workspace escapes the repository: $dir resolves to $physical_dir (expected $expected)" >&2
+  exit 2
+fi
+
 printf '*\n' > "$base/.gitignore"
-cd "$dir" && pwd
+printf '%s\n' "$physical_dir"
