@@ -346,9 +346,9 @@ Batches run A → B → C → D. Within A and B, tasks dispatch together. Batch 
 **What to build:** The kit file as specified above. Target ≤ 350 lines: the CSS block dominates; component examples stay minimal.
 
 **Acceptance criteria:**
-- [ ] Kit contains the three sections; CSS block includes both light and dark token sets and the status/meter/spine/tab/flag/tile styles
-- [ ] Authoring rules state the view-not-transcript rule, the sibling-file rule, and the agents-never-read-HTML rule
-- [ ] Worker-scope verification passes and the change is handed to the lead per commit mode
+- [x] Kit contains the three sections; CSS block includes both light and dark token sets and the status/meter/spine/tab/flag/tile styles
+- [x] Authoring rules state the view-not-transcript rule, the sibling-file rule, and the agents-never-read-HTML rule
+- [x] Worker-scope verification passes and the change is handed to the lead per commit mode
 
 ---
 
