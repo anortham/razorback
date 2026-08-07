@@ -430,22 +430,42 @@ multi_agent = true</code></pre>
             <li>
               <h3>Node.js</h3>
               <p>
-                Needed only if you install Miller through an agent plugin launcher. The manual binary
-                install path runs <code>miller</code> directly and skips Node entirely.
+                Not needed on this path. OpenCode has no Miller plugin launcher, so you run the
+                <code>miller</code> binary directly. No .NET SDK either.
               </p>
             </li>
             <li>
               <h3>Miller</h3>
               <p>
-                Miller's README documents a plugin one-liner for Claude Code, Codex, and Cursor. For
-                any other MCP harness it points at the same binary plus a routing block:
+                Download an archive from
+                <a href="https://github.com/anortham/miller/releases" target="_blank" rel="noopener">Miller's releases</a>,
+                verify its <code>.sha256</code> sidecar, extract it, then point OpenCode at the
+                binary in <code>opencode.json</code>:
               </p>
-              <pre><code>miller rules --harness &lt;name&gt;</code></pre>
+              <pre><code>{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "miller": {
+      "type": "local",
+      "command": ["/absolute/path/to/miller", "serve"],
+      "enabled": true
+    }
+  }
+}</code></pre>
+              <p>
+                Installing the server does not make an agent use it. Add the routing block to the
+                file OpenCode always reads:
+              </p>
+              <pre><code>miller rules --harness agents &gt;&gt; AGENTS.md</code></pre>
               <p class="step-note">
-                Follow
+                <code>agents</code> is the selector for any harness that loads a repository-root
+                <code>AGENTS.md</code>, OpenCode included. The full list is
+                <code>cursor</code>, <code>windsurf</code>, <code>cline</code>, <code>kiro</code>,
+                <code>copilot</code>, <code>agents</code>. On Windows use the full path to
+                <code>miller.exe</code>. Miller binds the workspace from MCP roots on the first tool
+                call; if your client does not pass them, see
                 <a href="https://github.com/anortham/miller/blob/main/docs/install.md" target="_blank" rel="noopener">Miller's install guide</a>
-                for the manual binary path and the MCP config block. Do not guess a harness name —
-                the guide lists the supported ones.
+                for the <code>MILLER_WORKSPACE_ROOT</code> fallback.
               </p>
             </li>
             <li>
