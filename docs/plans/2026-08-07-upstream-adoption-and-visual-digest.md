@@ -118,10 +118,10 @@ Batches run A → B → C → D. Within A and B, tasks dispatch together. Batch 
 **What to build:** Add `"shell": "bash"` beside `"type": "command"` in both hook entries. Extend both hook test files with a registration-shape assertion: parse `hooks.json`, find the entry, assert `entry.shell === "bash"` and the command string shape is unchanged.
 
 **Acceptance criteria:**
-- [ ] Both entries in `hooks.json` carry `"shell": "bash"`; JSON parses
-- [ ] Both test files assert the shape; assertions fail when the key is removed (verify by temporary mutation)
-- [ ] `hooks/hooks-cursor.json` untouched
-- [ ] Worker-scope verification passes and the change is handed to the lead per commit mode
+- [x] Both entries in `hooks.json` carry `"shell": "bash"`; JSON parses
+- [x] Both test files assert the shape; assertions fail when the key is removed (verified by mutation: exactly the 2 guards failed)
+- [x] `hooks/hooks-cursor.json` untouched
+- [x] Worker-scope verification passes and the change is handed to the lead per commit mode
 
 ### Task 3: finishing-a-development-branch — capture-before-checkout + forge ladder
 
