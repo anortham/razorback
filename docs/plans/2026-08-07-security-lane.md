@@ -157,7 +157,7 @@ Commit mode: `parallel-lead-commit` — workers hand verified diffs to the lead;
 **Dependency reason:** None - safe parallel batch.
 
 **Acceptance criteria:**
-- [ ] `- Security concerns?` no longer appears; both `**Security:**` groups byte-match the canonical; existing checklist content otherwise untouched.
+- [x] `- Security concerns?` no longer appears; both `**Security:**` groups byte-match the canonical; existing checklist content otherwise untouched.
 
 ### Task 5: adversarial trio line
 
