@@ -146,11 +146,15 @@ test('the debugging instrumentation example never prints a credential value', ()
   const text = read(REDACT_COPY);
   assert.ok(
     !text.includes('env | grep IDENTITY'),
-    `${REDACT_COPY} reintroduced "env | grep IDENTITY" — that prints the credential value into agent-visible output; use the \${IDENTITY:+SET}\${IDENTITY:-UNSET} presence check instead`,
+    `${REDACT_COPY} reintroduced "env | grep IDENTITY" — that prints the credential value into agent-visible output; use the $([ -n "\${IDENTITY:-}" ] && echo SET || echo UNSET) presence check instead`,
   );
   assert.ok(
-    text.includes('${IDENTITY:+SET}${IDENTITY:-UNSET}'),
-    `${REDACT_COPY} lost the \${IDENTITY:+SET}\${IDENTITY:-UNSET} presence check — the instrumentation example must show that a credential is present without its value`,
+    !text.includes('${IDENTITY:+SET}${IDENTITY:-UNSET}'),
+    `${REDACT_COPY} reintroduced the \${IDENTITY:+SET}\${IDENTITY:-UNSET} pattern — \${IDENTITY:-UNSET} expands to the credential value when IDENTITY is set, so the line prints SET<value> into agent-visible output; use $([ -n "\${IDENTITY:-}" ] && echo SET || echo UNSET) instead`,
+  );
+  assert.ok(
+    text.includes('$([ -n "${IDENTITY:-}" ] && echo SET || echo UNSET)'),
+    `${REDACT_COPY} lost the $([ -n "\${IDENTITY:-}" ] && echo SET || echo UNSET) presence check — the instrumentation example must show that a credential is present without any expansion of its value reaching output`,
   );
 });
 
