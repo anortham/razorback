@@ -99,8 +99,8 @@ Commit mode: `parallel-lead-commit` — workers hand verified diffs to the lead;
 **What to build:** The lane's canonical skill: both scopes (`security-secrets`, `security-deps`) with named example defaults (`gitleaks detect`; `osv-scanner`, alternates `npm audit`, `pip-audit`, `cargo audit`, `dotnet list package --vulnerable`) and gate semantics; when they run (branch gate, quick-fix tier unaffected); the policy block format, provider mapping, and the numbered check procedure (read block → allowed → proceed / denied → refuse, blocker #4 on autonomous user-chosen provider / absent → proceed + loud note); the canonical `**Security:**` checklist with its copy locations named (mirroring `architecture-quality`'s convention); suppression rule (tool-native baseline/ignore files, each suppression recorded in the morning report); an anti-rationalization table (≥4 rows, e.g. "the diff is tiny, skip the scan" → "secrets ship in one-line diffs").
 
 **Acceptance criteria:**
-- [ ] All Global Constraints content present verbatim; copy locations listed; Integration section names the seven enforcement-point skills, `writing-plans`, and `finishing-a-development-branch`.
-- [ ] Worker verification: re-read against Global Constraints; hand diff to lead.
+- [x] All Global Constraints content present verbatim; copy locations listed; Integration section names the seven enforcement-point skills, `writing-plans`, and `finishing-a-development-branch`.
+- [x] Worker verification: re-read against Global Constraints; hand diff to lead.
 
 ### Task 2: checklist sync guard suite
 
