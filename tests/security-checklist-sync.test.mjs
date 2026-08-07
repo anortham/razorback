@@ -98,6 +98,41 @@ test('the morning report template renders the external-model policy status', () 
   );
 });
 
+test('the morning report renders the policy status above the replaceable External review section', () => {
+  const template = read('skills/finishing-a-development-branch/morning-report-template.md');
+  const placeholderIndex = template.indexOf('{{policy_status}}');
+  const sectionIndex = template.indexOf('## External review');
+  assert.ok(
+    placeholderIndex >= 0,
+    'skills/finishing-a-development-branch/morning-report-template.md lost the {{policy_status}} placeholder — restore it to the always-rendered header block so policy outcomes reach the morning report',
+  );
+  assert.ok(
+    placeholderIndex < sectionIndex,
+    'skills/finishing-a-development-branch/morning-report-template.md renders {{policy_status}} inside the External review section — move it above the "## External review" heading so the reviewer=none wholesale replacement cannot delete the policy disclosure',
+  );
+});
+
+test('every branch-gate consumer executes the declared Security scope', () => {
+  for (const rel of [
+    'skills/executing-plans/SKILL.md',
+    'skills/subagent-driven-development/SKILL.md',
+    'skills/finishing-a-development-branch/SKILL.md',
+  ]) {
+    assert.ok(
+      read(rel).includes('declared Security scope'),
+      `${rel} lost the phrase "declared Security scope" — restore the branch-gate step that runs the plan's declared Security scope commands so scan scopes are executed, not just declared`,
+    );
+  }
+});
+
+test('the canonical home rechecks the chosen reviewer against the permitted list at dispatch time', () => {
+  const phrase = 'the chosen reviewer must also appear in `Reviewer choices permitted:`';
+  assert.ok(
+    read(CANONICAL_HOME).includes(phrase),
+    `${CANONICAL_HOME} lost the dispatch-time reviewer recheck — restore the exact phrase "${phrase}" so reviewer dispatches re-validate the reviewer against the policy instead of trusting plan-approval validation`,
+  );
+});
+
 test('every enforcement point references razorback:security-review', () => {
   for (const rel of ENFORCEMENT_POINTS) {
     assert.ok(

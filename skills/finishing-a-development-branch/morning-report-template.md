@@ -16,6 +16,7 @@ Placeholders use {{double-brace}} syntax.
 **Duration:** {{duration}} <!-- e.g. 2h 14m -->
 **Phases:** {{phases_complete}}/{{phases_total}} complete
 **Tasks:** {{tasks_complete}}/{{tasks_total}} complete
+**External-model policy:** {{policy_status}} <!-- policy honored (<providers>) | no policy declared — <provider> received the diff | refused: <provider> not allowed | aggregate every external dispatch in the run, not only the pre-merge reviewer -->
 
 ## What shipped
 - {{shipped_item_example}} <!-- one line per phase or major task, e.g. "Phase 1: blocker taxonomy reference added to executing-plans / subagent-driven-development" -->
@@ -31,7 +32,6 @@ Placeholders use {{double-brace}} syntax.
 ## External review ({{reviewer}}, adversarial)
 <!-- reviewer is one of: codex | claude | none. If "none", replace this whole section with: "External review: none (not requested for this run)." -->
 
-- **External-model policy:** {{policy_status}} <!-- policy honored (<providers>) | no policy declared — <provider> received the diff | refused: <provider> not allowed -->
 - **Findings:** {{findings_total}}
 - **Verified real, fixed:** {{findings_fixed_count}} (commits: {{fix_commit_shas}})
   - {{verified_finding_summary}} <!-- e.g. "missing null check in parseReviewOutput — fixed in abc1234" -->
