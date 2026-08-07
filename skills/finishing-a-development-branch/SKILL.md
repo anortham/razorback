@@ -25,7 +25,7 @@ No menu, no prompts. Push the branch, open a PR with the morning-report summary,
 
 Use the plan's Verification Strategy and verification ledger.
 
-Run the project-defined `branch-gate` scope before push or PR. If the verification ledger already has a passing `branch-gate` entry for the current HEAD, reuse that evidence instead of rerunning the same command. Add any required `expensive-specialist` scopes when touched areas demand them.
+Run the project-defined `branch-gate` scope before push or PR. If the verification ledger already has a passing `branch-gate` entry for the current HEAD, reuse that evidence instead of rerunning the same command. Add any required `expensive-specialist` scopes when touched areas demand them. Running the branch gate includes running the plan's declared Security scope commands (`security-secrets`, `security-deps` — `razorback:security-review`); a plan with `none declared` skips them, and the morning report renders that.
 
 If required verification fails, this is a blocker taxonomy #5 (unresolvable test failures). Do **not** create a PR. Instead:
 - Render a partial morning report with `Status: Blocked`, the failure summary in the `Tests` section, and the blocker description in `Blockers hit`.
@@ -141,6 +141,8 @@ Used when the user invokes this skill directly ("finish this branch"). Presents 
 # Run the command specified by the plan's branch-gate scope
 <branch-gate command>
 ```
+
+Running the branch gate includes running the plan's declared Security scope commands (`security-secrets`, `security-deps` — `razorback:security-review`); a plan with `none declared` skips them.
 
 **If verification fails:**
 ```

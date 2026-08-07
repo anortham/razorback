@@ -282,7 +282,7 @@ After `pre-merge-review` returns, proceed to Step 5 (Complete → `razorback:fin
 
 When all tasks are approved and marked complete:
 
-1. **Final verification:** Run the plan's `branch-gate` scope, or reuse a passing verification-ledger entry for the same HEAD and scope. Add any `expensive-specialist` scopes required by touched areas.
+1. **Final verification:** Run the plan's `branch-gate` scope, or reuse a passing verification-ledger entry for the same HEAD and scope. Add any `expensive-specialist` scopes required by touched areas. The branch-gate run includes the plan's declared Security scope commands (`security-secrets`, `security-deps` — `razorback:security-review`); `none declared` skips them and is rendered in the morning report.
 2. **Finish:** Use `razorback:finishing-a-development-branch`.
 
 ## Blockers
