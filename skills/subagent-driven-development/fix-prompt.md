@@ -99,7 +99,7 @@ Context available to the fresh subagent:
 - **Prior commits (with SHAs)** — for reading (`git show <sha>`, `git log <base>..HEAD`),
   not as a baseline to extend. The fresh subagent can see what was tried without
   re-exploring the codebase.
-- **Original task text** — copied from the plan, the same shape as the first dispatch.
+- **The task's brief path** — the single source of task requirements (SKILL.md Step 2), the same shape as the first dispatch.
 - **All prior review-finding iterations** — rounds 1, 2, 3 of reviewer feedback, so
   the fresh subagent can see what kept failing.
 - **Reframing note from the lead** — an explicit statement of what to try differently.

@@ -8,9 +8,14 @@ Dispatch one implementer subagent:
   prompt: |
     You are implementing Task N: [task name]
 
-    ## Task Description
+    ## Task Brief
 
-    [FULL TEXT of task from plan - paste it here, don't make subagent read file]
+    Read this first — it is your requirements, with the exact values to use
+    verbatim: [brief path printed by task-brief, .razorback/sdd/<plan-basename>/task-N-brief.md]
+
+    The brief is the single source of task requirements. The task text and every
+    exact value (numbers, magic strings, signatures, test cases) live there, not
+    in this prompt.
 
     ## Context
 
@@ -18,7 +23,9 @@ Dispatch one implementer subagent:
 
     ## Contract inputs
 
-    [Exact shared constraints, fixtures, upstream outputs, tool contracts, or public strings this task may rely on]
+    [Interfaces and decisions from earlier tasks that this task consumes, plus
+    the lead's resolution of any known ambiguity — execution-produced values the
+    brief cannot contain. Not an accumulated summary of prior tasks.]
 
     ## File ownership
 
@@ -26,9 +33,9 @@ Dispatch one implementer subagent:
 
     ## Before You Begin
 
-    You are operating inside an approved plan. The plan text in "Task Description" above is the authoritative spec. If something is ambiguous:
+    You are operating inside an approved plan. The task brief named above is the authoritative spec. If something is ambiguous:
 
-    1. Read the plan context to see if it's disambiguated elsewhere.
+    1. Re-read the brief and this prompt's Contract inputs — the lead resolves known ambiguities at dispatch.
     2. Check the surrounding codebase with Miller (orient, inspect a symbol, find references).
     3. If still ambiguous, pick the plan-consistent option and note the choice in your report (file:line + reason).
 

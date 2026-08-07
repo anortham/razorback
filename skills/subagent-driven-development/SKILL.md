@@ -44,7 +44,7 @@ Fix-round follow-up mechanics are per-harness — see Step 4.
 
 ## Step 1: Extract Tasks from the Plan
 
-Read the plan file once. Extract every task with its full text and surrounding context. Create tracking tasks via `TaskCreate` so progress is visible.
+Read the plan file once. Extract every task and its surrounding context. Create tracking tasks via `TaskCreate` so progress is visible.
 
 Check for durable progress before dispatching. Resolve this plan's workspace, then read its ledger:
 
@@ -72,21 +72,28 @@ Read `## Parallel Execution Contract` before dispatching and validate every task
 
 ## Step 2: Dispatch Implementer Subagent
 
-Use the template at `./implementer-prompt.md`. The spawn prompt MUST include:
+Use the template at `./implementer-prompt.md`.
 
-1. **Task text** copied from the plan (don't make the subagent read the plan file)
-2. **Scene-setting context** (how this task fits the larger plan)
-3. **Contract inputs** (the exact shared constraints, fixtures, upstream outputs, tool contracts, or public strings this task may rely on)
-4. **File ownership** (which files this task may modify)
-5. **Miller directives** (orient, inspect before modifying any symbol, find references before changing public APIs, list a file's symbols before reading full files)
-6. **TDD expectations** (from `razorback:test-driven-development`)
-7. **Verification scope** specific to this task, using commands from the plan's verification strategy
-8. **Commit mode** (`serial-worker-commit` or `parallel-lead-commit`)
-9. **Miller evidence requirement** (the implementer must report which Miller calls they used and what those calls confirmed)
-10. **API-shape evidence requirement** (the implementer must name the Miller evidence used for every symbol name, function signature, config shape, route name, CLI flag, or public contract they rely on)
-11. **Gate invariant requirement** (the implementer must state what each assigned test, replay, metric, or acceptance gate proves)
-12. **architecture-quality context** (the approved architecture, any `No Architecture Impact` note, and the plan mismatch rule)
-13. **Report file path** under the plan's workspace (`.razorback/sdd/<plan-basename>/`), so the worker writes the full report to a file and returns only status, commits, test summary, and concerns
+**The brief file is the single source of task requirements** — this is the one statement of that rule; every other mention points here. The task text and every exact value (numbers, magic strings, signatures, test cases) are brief-resident: they appear only in `task-N-brief.md` (written by `task-brief`, File Handoffs), never in the spawn prompt. The spawn prompt introduces the brief path as "read this first — it is your requirements, with the exact values to use verbatim". Everything else the worker needs is prompt-resident, listed below.
+
+**Record the base before dispatching:** `BASE=$(git rev-parse HEAD)`. Review packages and fix-round diffs are built from this recorded per-task BASE — never from `HEAD~1`, which silently drops all but the last commit of a multi-commit task.
+
+The spawn prompt MUST include (all prompt-resident):
+
+1. **Task brief path** with the read-this-first introduction above (don't paste the task text, don't make the subagent read the plan file)
+2. **Scene-setting line** (how this task fits the larger plan)
+3. **Earlier-task interfaces and decisions** this task consumes (execution-produced values the brief cannot contain — never accumulated prior-task summaries)
+4. **The lead's ambiguity resolutions** for this task's requirements
+5. **File ownership** (which files this task may modify)
+6. **Miller directives** (orient, inspect before modifying any symbol, find references before changing public APIs, list a file's symbols before reading full files)
+7. **TDD expectations** (from `razorback:test-driven-development`)
+8. **Verification scope** specific to this task, using commands from the plan's verification strategy
+9. **Commit mode** (`serial-worker-commit` or `parallel-lead-commit`)
+10. **Miller evidence requirement** (the implementer must report which Miller calls they used and what those calls confirmed)
+11. **API-shape evidence requirement** (the implementer must name the Miller evidence used for every symbol name, function signature, config shape, route name, CLI flag, or public contract they rely on)
+12. **Gate invariant requirement** (the implementer must state what each assigned test, replay, metric, or acceptance gate proves)
+13. **architecture-quality context** (the approved architecture, any `No Architecture Impact` note, and the plan mismatch rule)
+14. **Report file path** under the plan's workspace (`.razorback/sdd/<plan-basename>/`), so the worker writes the full report to a file and returns only status, commits, test summary, and concerns
 
 ### Verification Scope Contract
 
@@ -146,13 +153,13 @@ Fix rounds keep the same commit mode unless the lead explicitly changes it.
 
 ## File Handoffs
 
-Large task text, reports, and diffs should move as files instead of pasted prompt content. This keeps the lead context small and makes recovery after compaction concrete.
+Task text, reports, and diffs move as files instead of pasted prompt content. This keeps the lead context small and makes recovery after compaction concrete.
 
 The helper scripts live in this skill's own `scripts/` directory — NOT in the target repository. Resolve them from the skill's base directory (announced when the skill loads), e.g. `"$SKILL_DIR/scripts/task-brief"`.
 
-- **Task brief:** before dispatching an implementer, run `"$SKILL_DIR/scripts/task-brief" PLAN_FILE N`. It writes `task-N-brief.md` under the plan's workspace (in the target repo) and prints the path. The dispatch prompt should point the implementer at that brief as the source of requirements.
+- **Task brief:** before dispatching an implementer, run `"$SKILL_DIR/scripts/task-brief" PLAN_FILE N`. It writes `task-N-brief.md` under the plan's workspace (in the target repo) and prints the path. The brief is the single source of task requirements (the one statement is in Step 2); the dispatch prompt introduces its path, never pastes its content.
 - **Report file:** name the implementer's report file after the brief (`task-N-report.md`) and put it under the plan's workspace. The implementer writes the full report there, then returns only status, commits, one-line test summary, and concerns.
-- **Review package:** when a focused diff helps the lead inline review, run `"$SKILL_DIR/scripts/review-package" PLAN_FILE BASE HEAD`. The lead reads the generated package; do not dispatch a reviewer subagent. No reviewer subagents means the lead still owns spec compliance and code quality.
+- **Review package:** when a focused diff helps the lead inline review, run `"$SKILL_DIR/scripts/review-package" PLAN_FILE BASE HEAD`, where `BASE` is the base commit recorded at dispatch (Step 2). The lead reads the generated package; do not dispatch a reviewer subagent. No reviewer subagents means the lead still owns spec compliance and code quality.
 - **Fix rounds:** append fix reports and test evidence to the same report file. Re-review before approving the task; the re-review scope is stated in Step 4 ("Scoped Re-Review").
 
 ## Durable Progress
@@ -266,7 +273,7 @@ this skill points here.
 **Claude Code (prefer resume):** Send the filled `./fix-prompt.md` to the stored implementer via `SendMessage` (agent ID or name); on older builds this was `Agent(resume: "<agent-id>")` — use whichever continuation mechanism the harness exposes. The resumed subagent keeps its orientation context — files read, decisions made, tests written — and goes straight to the fix instead of re-reading the codebase.
 
 **opencode (dispatch fresh with context):** The `Task` tool doesn't expose persistent resume. Dispatch a fresh implementer via the `Task` tool (or @mention `general`) using `./fix-prompt.md` plus:
-- The original task text
+- The task's brief path (the single source of task requirements, Step 2)
 - A pointer to the commit(s) the prior implementer produced (so the fresh subagent can `git show` or read the files instead of rediscovering them)
 - The reviewer findings
 
@@ -369,7 +376,7 @@ This sequence runs only on resumed runs. A fresh run dispatches directly into St
 ```
 [Read plan once; orient with Miller context; TaskCreate per task]
 [Task 2 of 5 — commit mode: serial-worker-commit]
-[Dispatch implementer with full task text + context + Miller directives. Save agent ID: impl-c3d4]
+[BASE recorded; task-brief writes task-2-brief.md. Dispatch implementer with brief path + context + Miller directives. Save agent ID: impl-c3d4]
 Implementer reports: verify/repair modes added, worker-red-green passing, committed def456. DONE.
 [Lead inline review: inspect changed symbols]
   Spec: MISSING progress reporting; EXTRA --json flag. Quality: magic number 100 hard-coded
@@ -390,7 +397,7 @@ Implementer (resumed): all three addressed, tests passing, committed ghi789.
 - Let parallel-batch workers race on `git add` or `git commit`
 - Stage a `parallel-lead-commit` task outside the Commit Mode Contract's lead-staging rule
 - Record a `parallel-lead-commit` task complete before its lead commit exists, or write its progress line without the real commit SHA
-- Make the subagent read the plan file (provide the full task text instead)
+- Make the subagent read the plan file, or paste task text and exact values into the dispatch prompt (point the worker at its task brief — Step 2)
 - Skip scene-setting context (the subagent needs to know where the task fits)
 - Ignore subagent questions (answer before letting them proceed)
 - Skip the re-review after a fix

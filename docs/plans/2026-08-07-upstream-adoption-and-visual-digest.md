@@ -431,9 +431,9 @@ New ledger line format for fix rounds: `Task <N>: fix round <R> (<X> addressed, 
 **What to build:** Rewrite implementer-prompt.md's Task Description block to take the brief path; reconcile Step 2's element list (mark which elements are prompt-resident vs brief-resident); add the BASE-recording rule beside the dispatch steps; delete the paste-the-full-text instruction.
 
 **Acceptance criteria:**
-- [ ] `grep -n 'FULL TEXT' skills/subagent-driven-development/implementer-prompt.md` → no hits; brief-path introduction present
-- [ ] BASE-recording rule present in Step 2; no `HEAD~1` guidance anywhere in the skill dir
-- [ ] Worker-scope verification passes and the change is handed to the lead per commit mode
+- [x] `grep -n 'FULL TEXT' skills/subagent-driven-development/implementer-prompt.md` → no hits; brief-path introduction present
+- [x] BASE-recording rule present in Step 2; no `HEAD~1` guidance anywhere in the skill dir
+- [x] Worker-scope verification passes and the change is handed to the lead per commit mode
 
 ---
 
