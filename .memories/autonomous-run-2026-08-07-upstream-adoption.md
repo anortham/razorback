@@ -3,7 +3,7 @@
 **Status:** Complete
 **Plan:** docs/plans/2026-08-07-upstream-adoption-and-visual-digest.md
 **Branch:** worktree-upstream-adoption-2026-08
-**PR:** pending — filled in after PR creation
+**PR:** https://github.com/anortham/razorback/pull/11
 **Duration:** ≈2h execution; ≈6h 20m full session (comparative audit → brainstorm → prototype → spec → plan → execution → review)
 **Phases:** 4/4 complete
 **Tasks:** 15/15 complete
@@ -51,7 +51,7 @@
 - 45 files changed, 2296 insertions(+), 443 deletions(-) across 21 commits: skills (brainstorming, writing-skills, prototyping, test-driven-development, subagent-driven-development + scripts, security-review, systematic-debugging, finishing-a-development-branch, using-razorback references, writing-plans), hooks config, tests, and docs/plans (spec, plan, dogfood digest).
 
 ## Next steps
-- Review PR: pending — filled in after PR creation
+- Review PR: https://github.com/anortham/razorback/pull/11
 - Decide the flagged workspace-key question (basename vs path-derived slug for `.razorback/sdd/` dirs).
 - Follow-ups filed: redaction preflight for outbound model delegation; mutation-check bullet for `requesting-code-review/code-reviewer.md`; cap-adjudication pointers in `requesting-code-review`/`cursor-agent`/blocker-taxonomy; `spec-reviewer-prompt.md` brief-path consistency; Miller `workspace refresh` note for post-batch dispatches.
 - Version bump / release — deliberately out of this plan's scope; run after merge.
