@@ -13,6 +13,16 @@ The reviewer must be a different model from the lead. Calling your own model's C
 
 **REQUIRED SUB-SKILLS:** razorback:architecture-quality (Audit Mode), one reviewer channel (razorback:codex-cli, razorback:claude-cli, or razorback:cursor-agent in read-only mode) pointing at a model that is not the lead, razorback:receiving-code-review, razorback:test-driven-development, razorback:verification-before-completion.
 
+## Policy Gate
+
+Every participating model's provider must be allowed by the external-model
+policy check in razorback:security-review — check each provider against the
+mapping there before Round 0. No policy block in the target repo's project
+instructions → proceed and add the loud note to the morning report. Policy
+denies a participant's provider → refuse that reviewer and name an allowed
+alternative; on an autonomous run where the user chose that provider, stop per
+blocker taxonomy #4.
+
 ## Setup (Round 0)
 
 Write these down in the conversation before the first sweep. They cannot be changed mid-loop.

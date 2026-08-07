@@ -120,6 +120,15 @@ Claude choose its configured default. Claude Code's Agent tool uses short names
 (`opus`, `sonnet`, `haiku`); the CLI's `--model` flag accepts both short and
 full model IDs. Add `--effort "$CLAUDE_EFFORT"` only when it is non-empty.
 
+## Policy Gate
+
+Before sending any diff or repo content to Anthropic, apply the external-model
+policy check in razorback:security-review. Provider for this skill:
+`anthropic`. No policy block in the target repo's project instructions →
+proceed and add the loud note to the morning report. Policy denies `anthropic`
+→ refuse the dispatch and name an allowed alternative; on an autonomous run
+where the user chose this provider, stop per blocker taxonomy #4.
+
 ## Review Targeting
 
 Scope selection (`--scope auto|working-tree|branch`, `--base <ref>`) and the

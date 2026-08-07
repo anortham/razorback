@@ -199,7 +199,7 @@ Commit mode: `parallel-lead-commit` — workers hand verified diffs to the lead;
 **Dependency reason:** None - safe parallel batch.
 
 **Acceptance criteria:**
-- [ ] All seven files carry the section with the right provider; `node --test tests/claude-cli-docs.test.mjs` stays green (no non-canonical `--tools` text introduced).
+- [x] All seven files carry the section with the right provider; `node --test tests/claude-cli-docs.test.mjs` stays green (no non-canonical `--tools` text introduced).
 
 ### Task 7: morning report + README
 

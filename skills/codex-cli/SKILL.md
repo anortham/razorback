@@ -30,6 +30,15 @@ models.
   `codex login` in a terminal.
 - **Profiles**: `-p, --profile <NAME>` selects a `~/.codex/config.toml` profile. If the user's policy defines a "review" profile (specific model + reasoning + sandbox), pass it instead of repeating those flags inline. Niche; only relevant when the user actually maintains profiles.
 
+## Policy Gate
+
+Before sending any diff or repo content to OpenAI, apply the external-model
+policy check in razorback:security-review. Provider for this skill: `openai`.
+No policy block in the target repo's project instructions → proceed and add the
+loud note to the morning report. Policy denies `openai` → refuse the dispatch
+and name an allowed alternative; on an autonomous run where the user chose this
+provider, stop per blocker taxonomy #4.
+
 ## Review Targeting
 
 Scope selection (`--scope auto|working-tree|branch`, `--base <ref>`) and the
