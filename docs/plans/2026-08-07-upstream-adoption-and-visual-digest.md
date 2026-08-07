@@ -460,10 +460,10 @@ New ledger line format for fix rounds: `Task <N>: fix round <R> (<X> addressed, 
 **What to build:** The three wiring blocks, the template line, and the guard test. As the GREEN check, generate a real digest of THIS plan (`docs/plans/2026-08-07-upstream-adoption-and-visual-digest.html`) following only the kit file, and verify it matches the layout contract (timeline main view, Decisions/Guardrails tabs, inline flags, hero progress, links back to the markdown). Commit the sample with the task.
 
 **Acceptance criteria:**
-- [ ] All three skills reference the kit inside the producing step; `tests/digest-wiring.test.mjs` green and fails when a reference is removed (verify by temporary mutation)
-- [ ] The sample digest of this plan exists, is self-contained, renders both themes, and follows the kit's layout contract
-- [ ] No new user-facing stop added to any of the three flows
-- [ ] Worker-scope verification passes and the change is handed to the lead per commit mode
+- [x] All three skills reference the kit inside the producing step; `tests/digest-wiring.test.mjs` green and fails when a reference is removed (verify by temporary mutation)
+- [x] The sample digest of this plan exists, is self-contained, renders both themes, and follows the kit's layout contract
+- [x] No new user-facing stop added to any of the three flows
+- [x] Worker-scope verification passes and the change is handed to the lead per commit mode
 
 ---
 

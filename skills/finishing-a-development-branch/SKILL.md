@@ -68,16 +68,17 @@ Use `$BASE_SHA` for any `base..HEAD` range computation (e.g. `git diff --stat $B
 
 Fill the placeholders in `./morning-report-template.md` using the fields the caller accumulated during execution (plan name + path, branch name, phases complete/total, tasks complete/total, duration, judgment calls log, external review outcome, tests summary, blockers, files changed from `git diff --stat $BASE_SHA..HEAD`, next steps).
 
-Produce two renderings:
+Produce three renderings:
 - **Full report** — every section filled in, for `.memories/` and for review.
 - **PR summary** — status, What shipped, External review, Blockers, Next steps only. The Judgment calls section is not inlined in the PR description; the PR body points at the `.memories/` file instead (committed in Step 4, so the link is live the moment the PR opens).
+- **Report digest** — the full report's `.html` sibling (same basename), composed per the `razorback:using-razorback` skill's `references/digest-kit.md`. Rendering the digest is part of rendering the report, not a separate step.
 
 ### Step 4: Write full report + commit
 
-Write the full rendered report to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md`, where `<slug>` is a short kebab-case identifier for the plan (e.g. `autonomous-execution`). Committing it before the push means the PR includes the report from its first revision — no dead link in the PR body. The PR does not exist yet, so render `{{pr_url}}` as `pending — filled in after PR creation`; Step 7 writes the real URL back.
+Write the full rendered report to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md` and its digest to `.memories/autonomous-run-YYYY-MM-DD-<slug>.html`, where `<slug>` is a short kebab-case identifier for the plan (e.g. `autonomous-execution`). Committing them before the push means the PR includes the report from its first revision — no dead link in the PR body. The PR does not exist yet, so render `{{pr_url}}` as `pending — filled in after PR creation`; Step 7 writes the real URL back.
 
 ```bash
-git add .memories/autonomous-run-YYYY-MM-DD-<slug>.md
+git add .memories/autonomous-run-YYYY-MM-DD-<slug>.md .memories/autonomous-run-YYYY-MM-DD-<slug>.html
 git commit -m "docs: autonomous run report for <plan name>"
 ```
 
@@ -127,7 +128,7 @@ git push
 One line, then exit:
 
 ```
-Done. PR: <url>. Report: .memories/autonomous-run-YYYY-MM-DD-<slug>.md
+Done. PR: <url>. Report: .memories/autonomous-run-YYYY-MM-DD-<slug>.md. Digest: .memories/autonomous-run-YYYY-MM-DD-<slug>.html
 ```
 
 ### Autonomous Mode rules

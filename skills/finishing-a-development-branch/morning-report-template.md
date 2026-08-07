@@ -2,8 +2,10 @@
 Morning report template for autonomous-execution finish.
 Rendered into THREE destinations:
   1. PR description — summary sections only (status, what shipped, external review, blockers, next steps)
-  2. .memories/autonomous-run-YYYY-MM-DD-<slug>.md — full detail including judgment calls + dismissed findings
-  3. Terminal output — one-line pointer: "Done. PR: <URL>. Report: <path>."
+  2. .memories/autonomous-run-YYYY-MM-DD-<slug>.md — full detail including judgment calls + dismissed findings,
+     with its visual digest sibling .memories/autonomous-run-YYYY-MM-DD-<slug>.html (composed per the
+     razorback:using-razorback skill's references/digest-kit.md)
+  3. Terminal output — one-line pointer: "Done. PR: <URL>. Report: <path>.md. Digest: <path>.html."
 Placeholders use {{double-brace}} syntax.
 -->
 
@@ -12,7 +14,7 @@ Placeholders use {{double-brace}} syntax.
 **Status:** {{status}} <!-- Complete | Blocked | Partial -->
 **Plan:** {{plan_path}} <!-- e.g. docs/plans/2026-04-18-autonomous-execution.md -->
 **Branch:** {{branch_name}}
-**PR:** {{pr_url}} <!-- URL (written back after PR creation), "pending — filled in after PR creation", or "not created (blocked)" -->
+**PR:** {{pr_url}} <!-- URL (written back after PR creation), "pending — filled in after PR creation", "not created — open <creation-url>" (forge-ladder rung 3: branch pushed, PR needs one click), or "not created (blocked)" -->
 **Duration:** {{duration}} <!-- e.g. 2h 14m -->
 **Phases:** {{phases_complete}}/{{phases_total}} complete
 **Tasks:** {{tasks_complete}}/{{tasks_total}} complete
