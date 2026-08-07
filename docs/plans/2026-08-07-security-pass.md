@@ -207,7 +207,7 @@ Commit mode: `parallel-lead-commit` — workers hand verified diffs to the lead;
 **Dependency reason:** Asserts content landed by Tasks 1–4 — must run against the finished Batch A tree.
 
 **Acceptance criteria:**
-- [ ] `node --test tests/adversarial-prompt-sync.test.mjs tests/security-checklist-sync.test.mjs` green with the new guards; meta-test proves detection; `npm test` green.
+- [x] `node --test tests/adversarial-prompt-sync.test.mjs tests/security-checklist-sync.test.mjs` green with the new guards (22/22); meta-test proves detection; `npm test` green (195/195).
 
 ## Completion
 

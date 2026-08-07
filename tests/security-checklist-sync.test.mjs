@@ -169,6 +169,40 @@ test('the canonical home documents the policy block, provider mapping, and scan 
   }
 });
 
+test('both reviewer prompt files wire the security pass', () => {
+  for (const rel of [
+    'skills/pre-merge-review/reviewer-prompts/codex.md',
+    'skills/pre-merge-review/reviewer-prompts/claude.md',
+  ]) {
+    const text = read(rel);
+    assert.ok(
+      text.includes('## Security pass'),
+      `${rel} lost its "## Security pass" section — restore it so pre-merge review can dispatch the dedicated security pass through this reviewer`,
+    );
+    assert.ok(
+      text.includes('security-adversarial-prompt.txt'),
+      `${rel} no longer references security-adversarial-prompt.txt — point the Security pass section back at the canonical prompt in skills/security-review/`,
+    );
+  }
+});
+
+test('the pre-merge orchestration keeps the dual-flagged dedupe vocabulary', () => {
+  assert.ok(
+    read('skills/pre-merge-review/SKILL.md').includes('dual-flagged'),
+    'skills/pre-merge-review/SKILL.md lost the exact term "dual-flagged" — restore the dedupe rule that collapses a defect flagged by both passes into one finding',
+  );
+});
+
+test('the morning report template renders the per-pass counts and the cost note', () => {
+  const template = read('skills/finishing-a-development-branch/morning-report-template.md');
+  for (const placeholder of ['{{general_findings_count}}', '{{security_findings_count}}', '{{cost_note}}']) {
+    assert.ok(
+      template.includes(placeholder),
+      `skills/finishing-a-development-branch/morning-report-template.md lost the ${placeholder} placeholder — restore it so two-pass review results reach the morning report`,
+    );
+  }
+});
+
 test('the checklist extractor flags a one-character mutation in a copy', () => {
   const canonicalSample = [
     'Intro prose.',
