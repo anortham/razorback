@@ -120,7 +120,7 @@ Commit mode: `parallel-lead-commit` — workers hand verified diffs to the lead;
 **What to build:** Tests: (a) extract the five lines following `**Security:**` in the three checklist homes, byte-compare to the canonical in `security-review/SKILL.md`; (b) `writing-plans/SKILL.md` contains the exact `**Security scope:**` template line; (c) `morning-report-template.md` contains `{{policy_status}}`; (d) each of the seven enforcement-point files contains a Policy Gate section referencing `razorback:security-review`; (e) `security-review/SKILL.md` contains the policy block, provider mapping, and both scope names; (f) negative meta-tests — the checklist extractor flags a one-character mutation of a sample copy, and the presence checks fail on a sample missing the marker (pattern: the meta-tests in `tests/claude-cli-docs.test.mjs`).
 
 **Acceptance criteria:**
-- [ ] Suite passes against the Batch A tree; meta-tests prove detection; `npm test` green.
+- [x] Suite passes against the Batch A tree; meta-tests prove detection; `npm test` green (186/186).
 
 ### Task 3: writing-plans template + handoff validation
 
