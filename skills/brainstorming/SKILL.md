@@ -86,7 +86,8 @@ Every project goes through this process. A todo list, a single-function utility,
 - Orient with Miller first: use `context` for token-budgeted codebase context, `inspect` to understand file structure and key symbols, and `trace` when references matter. Do NOT fall back to Glob → Read → Grep chains.
 - For non-trivial work, run `razorback:architecture-quality` after that orientation and once requirements are clear enough to assess structure, before presenting the design. If the task has no architecture impact, record `No Architecture Impact` and continue.
 - Check recent commits: `git log --oneline -10`
-- Ask questions one at a time to refine the idea
+- Infer and record routine, reversible details instead of turning them into user questions
+- Ask only unresolved questions whose answers materially change product intent, safety, scope, or architecture; ask them one at a time
 - Attach your best guess to every question and make it falsifiable: "I'm guessing X because Y — is that right?" A confirmed guess advances the design; a corrected one is the cheapest correction you'll ever get. In multiple choice, put your guess first and label it as your guess.
 - Prefer multiple choice questions when possible, but open-ended is fine too
 - Only one question per message - if a topic needs more exploration, break it into multiple messages
@@ -94,7 +95,7 @@ Every project goes through this process. A todo list, a single-function utility,
 - Finding facts is the agent's job: for any environment fact (what the repo contains, what a tool supports, what a config declares), use Miller or dispatch a subagent — never ask the user for something the repo can answer, and don't block the interview on the lookup; only questions downstream of that fact wait
 - Model the open design questions as a tree: a question is on the frontier when its prerequisites are settled
 - When the dialogue loops on a question only running code can answer — the feel of a state model, the look of a page — stop arguing and take the razorback:prototyping off-ramp; record the verdict in the design when you return
-- Stop asking when the frontier is empty AND you can state the purpose, constraints, and success criteria in your own words AND your last question produced no correction — then move to approaches. If you cannot state all three, you are not done asking.
+- Stop asking when no frontier question can materially change product intent, safety, scope, or architecture, you can state the purpose, constraints, and success criteria in your own words, and your last material question produced no correction — then move to approaches. Routine reversible details do not keep the frontier open; record the chosen defaults in the design and continue.
 
 **Exploring approaches:**
 - Propose 2-3 different approaches with trade-offs

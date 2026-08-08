@@ -26,6 +26,14 @@ test('brainstorming can offer visual companion before the plan is approved', () 
   assert.match(skill, /Wait for the user's response before continuing/);
 });
 
+test('brainstorming resolves reversible details without manufacturing user stops', () => {
+  const skill = read('skills/brainstorming/SKILL.md');
+
+  assert.match(skill, /infer and record routine, reversible details/i);
+  assert.match(skill, /product intent, safety, scope, or architecture/i);
+  assert.doesNotMatch(skill, /frontier is empty AND/);
+});
+
 test('writing-plans requires approval, then starts without post-approval prompts', () => {
   const skill = read('skills/writing-plans/SKILL.md');
 
@@ -71,4 +79,31 @@ test('supporting skills route autonomous uncertainty through blocker taxonomy', 
   assert.doesNotMatch(tdd, /Ask your human partner/);
   assert.doesNotMatch(tdd, /human partner's permission/i);
   assert.match(tdd, /planned exception/i);
+});
+
+test('autonomy is goal-independent and recoverable failures exhaust repair paths before stopping', () => {
+  const taxonomy = read('skills/using-razorback/references/blocker-taxonomy.md');
+  const security = read('skills/security-review/SKILL.md');
+  const finishing = read('skills/finishing-a-development-branch/SKILL.md');
+
+  assert.match(taxonomy, /with or without a goal runner/i);
+  assert.match(security, /diagnose, repair, and rerun/i);
+  assert.match(security, /safe, plan-consistent recovery paths are exhausted/i);
+  assert.match(finishing, /Do not classify the first failed run as blocker taxonomy #5/i);
+  assert.match(finishing, /diagnose, repair, and rerun/i);
+});
+
+test('pre-merge review proceeds without allowlist enforcement when no policy exists', () => {
+  const security = read('skills/security-review/SKILL.md');
+  const preMerge = read('skills/pre-merge-review/SKILL.md');
+
+  assert.match(security, /When no policy block exists, proceed/i);
+  assert.match(preMerge, /When no external-model policy block exists, proceed/i);
+});
+
+test('subagent execution describes both pre-merge passes without implying a re-review loop', () => {
+  const skill = read('skills/subagent-driven-development/SKILL.md');
+
+  assert.match(skill, /one general pass plus one security pass/i);
+  assert.doesNotMatch(skill, /Single pass; no round-two review/);
 });

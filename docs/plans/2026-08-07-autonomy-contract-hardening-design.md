@@ -29,7 +29,20 @@ The blocker taxonomy remains the canonical stop/continue policy. Workflow skills
 
 **Architecture risk:** medium. These are cross-skill control-flow contracts; inconsistent wording can create premature stops or skipped gates.
 
-## Acceptance Criteria
+## Task 1: Harden goal-independent autonomy
+
+**Files:**
+
+- Modify: `skills/brainstorming/SKILL.md`
+- Modify: `skills/security-review/SKILL.md`
+- Modify: `skills/pre-merge-review/SKILL.md`
+- Modify: `skills/finishing-a-development-branch/SKILL.md`
+- Modify: `skills/subagent-driven-development/SKILL.md`
+- Modify: `skills/using-razorback/references/blocker-taxonomy.md`
+- Test: `tests/autonomous-process-gates.test.mjs`
+- Test: `tests/security-checklist-sync.test.mjs`
+
+**Acceptance Criteria:**
 
 - [ ] Brainstorming explicitly infers and logs routine reversible details and limits questions to material product/safety/scope/architecture decisions.
 - [ ] Pre-merge review makes reviewer allowlist enforcement conditional on a declared policy block.

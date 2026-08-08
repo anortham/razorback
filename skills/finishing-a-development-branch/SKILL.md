@@ -27,7 +27,9 @@ Use the plan's Verification Strategy and verification ledger.
 
 Run the project-defined `branch-gate` scope before push or PR. If the verification ledger already has a passing `branch-gate` entry for the current HEAD, reuse that evidence instead of rerunning the same command. Add any required `expensive-specialist` scopes when touched areas demand them. Running the branch gate includes running the plan's declared Security scope commands (`security-secrets`, `security-deps` — `razorback:security-review`); a plan with `none declared` skips them, and the morning report renders that.
 
-If required verification fails, this is a blocker taxonomy #5 (unresolvable test failures). Do **not** create a PR. Instead:
+If required verification fails, keep the branch local and diagnose, repair, and rerun the failed scope while a safe, plan-consistent recovery path remains. Follow razorback:security-review for scanner or security-finding failures so its hard gates remain intact. Record each recovery attempt and refresh the verification ledger for the resulting HEAD. Do not classify the first failed run as blocker taxonomy #5.
+
+Only after recovery paths are exhausted, classify the failure with the canonical blocker taxonomy. Repeated test failures with no further viable strategy are blocker taxonomy #5; environmental failures may instead be taxonomy #1. Do **not** create a PR. Instead:
 - Render a partial morning report with `Status: Blocked`, the failure summary in the `Tests` section, and the blocker description in `Blockers hit`.
 - Write it to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md`.
 - Emit terminal one-liner: `Blocked. Report: .memories/autonomous-run-YYYY-MM-DD-<slug>.md` and exit.
