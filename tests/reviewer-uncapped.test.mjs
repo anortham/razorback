@@ -62,6 +62,16 @@ test('the cap scanner distinguishes a passed value from prose naming the flag', 
   ]);
 });
 
+test('every reviewer CLI skill states the no-caps policy in its own Defaults', () => {
+  for (const rel of ['skills/claude-cli/SKILL.md', 'skills/codex-cli/SKILL.md', 'skills/grok-cli/SKILL.md']) {
+    assert.match(
+      read(rel),
+      /No caps in review recipes/,
+      `${rel} does not carry the no-caps Defaults bullet its sibling reviewer skills carry — the policy has to read the same in all three`,
+    );
+  }
+});
+
 test('every reviewer doc frames its timeout as a failsafe, not a budget', () => {
   for (const rel of FAILSAFE_TIMEOUT_DOCS) {
     const doc = read(rel);

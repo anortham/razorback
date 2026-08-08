@@ -63,9 +63,14 @@ Decide:
 - **Tiny** (≤ 2 files, < ~200 lines): foreground. Return the result inline.
 - **Anything else, or unclear**: launch with
   `Bash({command: ..., run_in_background: true})`. Tell the user "<reviewer>
-  review running in the background; escalation-tier review on a large diff can
-  take 2-5 minutes" and use `Monitor` on the returned shell ID to fetch output
+  review running in the background; a deep review on a large diff often runs
+  10-20+ minutes" and use `Monitor` on the returned shell ID to fetch output
   later.
+
+This heuristic picks where output lands. It never narrows what the reviewer
+looks at — a large diff goes to the background whole, not split. Set the Bash
+timeout to the 30-minute failsafe either way; a long-running review is working,
+not stuck.
 
 `--wait` forces foreground; `--background` forces background. Otherwise apply
 the heuristic and announce the chosen mode in one sentence.

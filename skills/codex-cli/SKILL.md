@@ -22,6 +22,11 @@ models.
 - **Always redirect stdin**: append `< /dev/null` to every invocation that doesn't pipe a prompt. `codex exec` reads stdin even when a prompt is passed as an argument (it prints "Reading additional input from stdin..." and waits for EOF). On macOS/Linux bash this is harmless because the shell closes stdin, but on Windows (Git Bash / Claude Code Bash tool) stdin can stay open and codex blocks forever with no output — this is the cause of the 30+ minute Windows hang. Use `< /dev/null` on bash; on Windows native cmd/PowerShell use `< NUL`.
 - **Working directory**: `-C /path/to/project` sets the root. Defaults to cwd.
 - **Output capture**: `-o, --output-last-message <FILE>` writes the agent's final message to a file. Use this for adversarial review when you need the JSON cleanly without stderr/banner contamination — point a temp file at it and read the file afterwards.
+- **No caps in review recipes**: razorback passes no turn cap, no spend cap,
+  and no other mechanical ceiling to a reviewer. Any such cap truncates a
+  review mid-flight and trades finding quality for a few cents. Review depth
+  is the point; a review's scope is set by the prompt. A user who wants a hard
+  ceiling sets it themselves.
 - **Timeout is a failsafe, not a budget**: set 1800000ms (30 min) on every
   review invocation. It exists to catch a process that hung or died and will
   never return — nothing else. It is not a bound on how long a review may
