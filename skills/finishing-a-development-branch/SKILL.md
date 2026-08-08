@@ -66,9 +66,34 @@ Use `$BASE_SHA` for any `base..HEAD` range computation (e.g. `git diff --stat $B
 
 **If both lookups fail** (no `main`, no `master` ancestor), that's a blocker per taxonomy #3. Render a partial morning report with `Status: Blocked`, describe the missing base in `Blockers hit`, write it to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md`, emit the terminal one-liner, and exit. Do **not** push.
 
+### Step 2a: Reconcile source-control state
+
+Run Check B of `../using-razorback/references/source-control-hygiene.md`. This is the run's last chance to notice work that is finished but not integrated — after this, the report says "Complete".
+
+```bash
+git status --short --branch
+git worktree list
+# per listed worktree:
+git -C <path> status --short --branch
+git log --oneline "$BASE_BRANCH".."<branch>"
+```
+
+Classify every worktree and branch the inventory names:
+
+- **Landed** — its commits are ancestors of this branch, or already merged into the base. Nothing to do.
+- **Riding along** — its commits are on the branch this run is about to push. They ship with the PR. Nothing to do.
+- **Stranded** — commits absent from both the base and this branch, or uncommitted changes in a worktree this run created. **These must be resolved or named.**
+- **The user's** — a worktree outside razorback-managed locations, or a branch this run did not create. Report the path; change nothing.
+
+For stranded work, take the plan-consistent path: if it belongs in this PR and merges cleanly, land it on the branch and re-run the branch gate (the diff changed, so Step 1's evidence is stale). If it does not belong, leave it and name it.
+
+Autonomous Mode does **not** remove worktrees. The PR is open and the branch is still live; disposition is the user's call after review.
+
+Feed the outcome into the report's `Source control` section (Step 3). Stranded work that was deliberately left is a `Next steps` item, not a blocker — the run still reports `Complete`. Stranded work you could neither land nor explain is a judgment call to log, not a reason to withhold the report.
+
 ### Step 3: Render morning report
 
-Fill the placeholders in `./morning-report-template.md` using the fields the caller accumulated during execution (plan name + path, branch name, phases complete/total, tasks complete/total, duration, judgment calls log, external review outcome, tests summary, blockers, files changed from `git diff --stat $BASE_SHA..HEAD`, next steps).
+Fill the placeholders in `./morning-report-template.md` using the fields the caller accumulated during execution (plan name + path, branch name, phases complete/total, tasks complete/total, duration, judgment calls log, external review outcome, tests summary, blockers, files changed from `git diff --stat $BASE_SHA..HEAD`, source-control state from Step 2a, next steps).
 
 Produce three renderings:
 - **Full report** — every section filled in, for `.memories/` and for review.
@@ -141,6 +166,8 @@ Done. PR: <url>. Report: .memories/autonomous-run-YYYY-MM-DD-<slug>.md. Digest: 
 - **Never show a menu, never ask "which option".** Autonomous means no prompts.
 - **Never fall back to Interactive Mode mid-run.** If a step fails (push rejected, every forge-ladder rung failed, remote mismatch), emit a partial report with `Status: Blocked` or `Status: Partial` as appropriate and let the user resolve from there.
 - **Always write the report to `.memories/`**, even on blocked/partial outcomes — the report is the user's morning read regardless of outcome.
+- **Never report `Complete` with unaccounted source-control state.** Step 2a either lands stranded work or names it in the `Source control` section. A run that leaves commits stranded in another worktree without saying so is not complete, whatever the tests say.
+- **Never remove a worktree in Autonomous Mode.** The PR is open; disposition is the user's call.
 
 ## Interactive Mode
 
@@ -301,16 +328,20 @@ Check whether the captured path is a listed worktree:
 git worktree list | grep "$WORKTREE_PATH"
 ```
 
-If it is listed **and** the path lies under `.claude/worktrees/`:
+**Provenance rule** (canonical definition: `../using-razorback/references/source-control-hygiene.md`): a worktree is yours to remove when this run created it, or when its path lies under a razorback-managed location — `.worktrees/`, `worktrees/`, or `~/.config/razorback/worktrees/<project>/`. These are the locations `razorback:using-git-worktrees` Step 1b actually creates. A worktree anywhere else belongs to the host or the user: leave it in place and report its path instead.
+
+If the path is listed **and** provenance says it is yours:
 ```bash
 git worktree remove "$WORKTREE_PATH"
 ```
 
 Then report: "Removed worktree $WORKTREE_PATH for branch $FEATURE_BRANCH."
 
-Provenance rule: a worktree anywhere else belongs to the host or the user. Leave it in place and report its path instead.
-
 **For Option 3:** Keep worktree.
+
+### Step 6: Reconcile Remaining Source-Control State
+
+Run Check B of `../using-razorback/references/source-control-hygiene.md` before reporting the branch finished. Report one line per outstanding item — a worktree still holding uncommitted changes, or a branch with commits absent from the base and from any PR opened here. Land it or name it; do not report "done" with the state unaccounted for.
 
 ## Quick Reference
 
@@ -342,6 +373,9 @@ Provenance rule: a worktree anywhere else belongs to the host or the user. Leave
 ## Red Flags
 
 **Never:**
+- Claim the work is finished without running Check B (`../using-razorback/references/source-control-hygiene.md`)
+- Leave commits stranded in another worktree or branch without naming them in the report
+- Remove a worktree outside a razorback-managed location
 - Proceed with failing tests
 - Merge without verifying tests on result
 - Delete work without confirmation
@@ -350,6 +384,7 @@ Provenance rule: a worktree anywhere else belongs to the host or the user. Leave
 - Fall back to Interactive Mode mid-autonomous-run — if autonomous mode can't complete (e.g. every forge-ladder rung fails), emit a partial report with status `Blocked` and let the user resolve; don't prompt for an option
 
 **Always:**
+- Reconcile source-control state (Check B) before reporting the work finished
 - Verify tests before offering options (Interactive) or before pushing (Autonomous)
 - In Interactive Mode, present exactly 4 options
 - Get typed confirmation for Option 4

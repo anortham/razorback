@@ -62,6 +62,7 @@ After `razorback:pre-merge-review` returns its morning-report summary block, pro
 ### Step 4: Complete Development
 
 After all tasks complete and verified (and pre-merge review, if any, has run):
+- **Reconcile source-control state first:** run Check B of `../using-razorback/references/source-control-hygiene.md`. Status every worktree this run created and every branch the plan produced. Land stranded commits on this branch (re-run the branch gate afterward; the diff changed) or carry them forward as named items for the morning report. Do not proceed to the finish skill with the state unaccounted for.
 - Announce: "I'm using the finishing-a-development-branch skill to complete this work."
 - **REQUIRED SUB-SKILL:** Use razorback:finishing-a-development-branch
 - Follow that skill in Autonomous Mode to verify the branch gate, push, create the PR, write the report, and stop before merge
@@ -117,11 +118,13 @@ On a resumed run, orient before continuing:
 - Reference skills when plan says to
 - Stop only for real blockers; if you can reason through a plan-consistent path, take it and note the choice (see blocker taxonomy)
 - Never start implementation on main/master branch without explicit user consent
+- Never declare the plan complete while a worktree this run created still holds uncommitted or unmerged work you have not named
 
 ## Integration
 
 **Required workflow skills:**
-- **razorback:using-git-worktrees** - Set up isolated workspace before starting. Skip only with explicit user consent (small, single-session work where a feature branch is sufficient).
+- **razorback:using-git-worktrees** - Set up isolated workspace before starting; its Step 0b inventories outstanding worktrees and branches first. Skip only with explicit user consent (small, single-session work where a feature branch is sufficient).
+- **`../using-razorback/references/source-control-hygiene.md`** - Check A before creating a worktree, Check B before Step 4 hands off to the finish skill.
 - **razorback:writing-plans** - Creates the plan this skill executes; propagates `reviewer_choice` and verification strategy as inputs.
 - **razorback:pre-merge-review** - Invoked at Step 3 when `reviewer_choice` is `codex` / `claude`. Skipped if the choice is `none`.
 - **razorback:finishing-a-development-branch** - Complete development after all tasks (and pre-merge review, if any)

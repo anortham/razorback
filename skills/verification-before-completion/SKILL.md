@@ -50,6 +50,8 @@ Skip any step = lying, not verifying
 | Requirements met | Line-by-line checklist against the plan or spec | Tests passing alone | Miller `inspect(target)` each symbol the requirement names — the code, not the claim |
 | Architecture decision followed | Approved architecture visible in the diff, ADR note, or verified implementation | "Looks aligned", verbal recall | Miller `trace(target)` the boundary it must respect; `impact(target)` for what the change actually reaches |
 | Review finding fixed | Fresh verification at the affected scope shows the specific reviewer finding no longer reproduces | Code changed, assumed fixed | Miller `inspect(target, depth=full)` the fixed symbol and read the body |
+| Work is integrated | `git log --oneline <base>..<branch>` per worktree: every commit landed, pushed, or named in the report | Tests pass, task marked done | Check B of `../using-razorback/references/source-control-hygiene.md` |
+| Nothing is stranded | `git worktree list` plus `git -C <path> status --short --branch` for each: no unreported dirty tree, no unreported unmerged branch | `git worktree list` alone — that is an inventory, not a cleanliness check | Status every listed path, not just the current one |
 
 ## Tool-Assisted Verification
 
@@ -65,6 +67,7 @@ Skip any step = lying, not verifying
 - About to commit/push/PR without verification
 - Trusting agent success reports
 - Relying on partial verification
+- Declaring a plan complete without statusing every worktree it created
 - Thinking "just this once"
 - Tired and wanting work over
 - **ANY wording implying success without having run verification**
@@ -80,6 +83,8 @@ Skip any step = lying, not verifying
 | "Agent said success" | Verify independently |
 | "I'm tired" | Exhaustion ≠ excuse |
 | "Partial check is enough" | Partial proves nothing |
+| "The other worktree isn't my task" | Then name it in the report. Silence is the bug. |
+| "Tests pass, so the phase is done" | Passing tests is not integration. Landed is integration. |
 | "Different words so rule doesn't apply" | Spirit over letter |
 
 ## Key Patterns

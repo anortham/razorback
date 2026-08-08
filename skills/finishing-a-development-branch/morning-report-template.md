@@ -56,6 +56,12 @@ Placeholders use {{double-brace}} syntax.
 ## Files changed
 - {{files_changed_summary}} <!-- e.g. output of `git diff --stat base..HEAD`, trimmed to the per-file line totals -->
 
+## Source control
+<!-- Rendered from Step 2a (Check B, references/source-control-hygiene.md). Never omit this section:
+     "nothing outstanding" is itself the reconciliation result and must be stated. -->
+- **Outstanding:** {{outstanding_work_summary}} <!-- "None — all commits ride on {{branch_name}}." Otherwise one line per stranded item: "<path> on <branch> — N commits not in this PR (left because <reason>)" or "<path> — M uncommitted files (left because <reason>)" -->
+- **Worktrees left in place:** {{worktrees_retained}} <!-- one line per retained worktree with why, e.g. "~/.config/razorback/worktrees/<project>/<branch> — kept, PR open" or "None". User-owned worktrees are listed here and never removed. -->
+
 ## Next steps
 - Review PR: {{pr_url}}
 - {{next_step_item}} <!-- specific items flagged for human attention, e.g. "Decide on token-scope widening flagged by reviewer in auth.ts:88" -->

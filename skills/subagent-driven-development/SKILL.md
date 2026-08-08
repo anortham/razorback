@@ -319,8 +319,9 @@ After `pre-merge-review` returns, proceed to Step 5 (Complete → `razorback:fin
 When all tasks are approved and marked complete:
 
 1. **Final verification:** Run the plan's `branch-gate` scope, or reuse a passing verification-ledger entry for the same HEAD and scope. Add any `expensive-specialist` scopes required by touched areas. The branch-gate run includes the plan's declared Security scope commands (`security-secrets`, `security-deps` — `razorback:security-review`); `none declared` skips them and is rendered in the morning report.
-2. **Clean up the workspace:** when the final review is clean (final verification passed, and Step 4a — if chosen — returned), re-resolve the workspace path with `"$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE` immediately before deleting — the script verifies the path stays inside the repository — then delete only the path it prints: `rm -rf <printed path>`. Never `rm -rf` a remembered workspace path. Git history is the record now. Sibling directories under `.razorback/sdd/` belong to other plans; leave them alone.
-3. **Finish:** Use `razorback:finishing-a-development-branch`.
+2. **Reconcile source-control state:** run Check B of `../using-razorback/references/source-control-hygiene.md`. Status every worktree this run created — including any a subagent reported working in — and every branch the plan produced. Land stranded commits on this branch (re-run the branch gate afterward; the diff changed) or carry them forward as named items for the morning report. Subagents report the path, branch, commit, and dirty state they used; the lead cannot reconcile a path nobody reported.
+3. **Clean up the workspace:** when the final review is clean (final verification passed, and Step 4a — if chosen — returned), re-resolve the workspace path with `"$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE` immediately before deleting — the script verifies the path stays inside the repository — then delete only the path it prints: `rm -rf <printed path>`. Never `rm -rf` a remembered workspace path. Git history is the record now. Sibling directories under `.razorback/sdd/` belong to other plans; leave them alone.
+4. **Finish:** Use `razorback:finishing-a-development-branch`.
 
 ## Blockers
 
@@ -343,7 +344,7 @@ Anything else: pick the plan-consistent option, note the choice in your report, 
 
 The lead writes a `goldfish:checkpoint` at four points during the run. This persists phase-level progress and decisions across auto-compaction and session restarts.
 
-1. **Phase boundary** — after each phase of a multi-phase plan: "Phase N of M complete. Decisions: …. Next: Phase N+1."
+1. **Phase boundary** — after each phase of a multi-phase plan: "Phase N of M complete. Decisions: …. Next: Phase N+1." Record the phase's branch and worktree path in the checkpoint. A multi-phase plan runs in **one** worktree by default; a phase that opens its own worktree runs Step 0b of `razorback:using-git-worktrees` first, so the prior phase's unmerged state is stated rather than discovered at Step 5.
 2. **Pre-review** — before Step 4a begins (if a reviewer was chosen): captures reviewer choice, diff range, verification strategy.
 3. **Post-review** — after Step 4a completes: captures findings, classifications, fix commits.
 4. **Post-PR** — after `finishing-a-development-branch` creates the PR: final state.
@@ -405,6 +406,8 @@ Implementer (resumed): all three addressed, tests passing, committed ghi789.
 - Close an open finding at the cap without a recorded ruling
 - Dispatch a separate reviewer subagent when the lead can review inline
 - Approve work from an implementer who cannot show Miller-first orientation
+- Open a new phase worktree without running the Step 0b inventory against the prior phase's
+- Reach Step 5 without statusing every worktree the run created (Check B)
 - Pause for user input between tasks - the plan is approved, run it to completion. Stops are governed by the blocker taxonomy. If you can reason through a plan-consistent path, keep moving and log the choice.
 
 **If the subagent asks questions:** answer clearly and completely before letting it proceed; provide extra context if needed, and don't rush it into implementation.
@@ -414,7 +417,8 @@ Implementer (resumed): all three addressed, tests passing, committed ghi789.
 ## Integration
 
 **Required workflow skills:**
-- **razorback:using-git-worktrees** — Set up isolated workspace before starting. Skip only with explicit user consent (small, single-session work where a feature branch is sufficient).
+- **razorback:using-git-worktrees** — Set up isolated workspace before starting; its Step 0b inventories outstanding worktrees and branches first. Skip only with explicit user consent (small, single-session work where a feature branch is sufficient).
+- **`../using-razorback/references/source-control-hygiene.md`** — Check A before creating a worktree, Check B before Step 5 declares the run done.
 - **razorback:writing-plans** — Creates the plan this skill executes
 - **razorback:requesting-code-review** — Review criteria the lead applies during inline review
 - **razorback:finishing-a-development-branch** — Complete development after all tasks

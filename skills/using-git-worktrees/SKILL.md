@@ -36,7 +36,37 @@ Report with branch state:
 - On a branch: "Already in isolated workspace at `<path>` on branch `<name>`."
 - Detached HEAD: "Already in isolated workspace at `<path>` (detached HEAD, externally managed). Branch creation needed at finish time."
 
-**If `GIT_DIR == GIT_COMMON` (or in a submodule):** You are in a normal repo checkout. Continue to Step 1.
+**If `GIT_DIR == GIT_COMMON` (or in a submodule):** You are in a normal repo checkout. Continue to Step 0b.
+
+## Step 0b: Inventory Existing Worktrees and Branches
+
+**Step 0 answers "am I isolated?". This step answers "what else is already outstanding?".** Skipping it is how a phase-2 worktree gets created beside a phase-1 worktree whose work never landed.
+
+Run Check A of `../using-razorback/references/source-control-hygiene.md`:
+
+```bash
+git worktree list
+git -C <each listed path> status --short --branch
+git branch --no-merged <base-branch>
+```
+
+For each worktree other than the one you are standing in, and each unmerged branch, classify it with `git log --oneline <base>..<branch>` (empty result means merged).
+
+**Report what you found before creating anything.** One line per outstanding item:
+
+```
+Existing worktrees: <path> on <branch> — <N unmerged commits | clean, merged | dirty (<M> files)>
+```
+
+Then decide, and say which you chose:
+
+- **Continuation** — the new work builds on an unmerged branch. Branch from that branch, or reuse its worktree. A sibling cut from the base cannot see that branch's code and will conflict later.
+- **Sibling** — the new work is genuinely independent. Create the new worktree and state that the outstanding work stays outstanding.
+- **Reuse** — an existing worktree already matches this task. Use it; do not create a second one.
+
+Finding stranded work does **not** block worktree creation, and it is not a blocker-taxonomy stop. It obliges disclosure. Creating a worktree silently beside unmerged work is the failure; creating one deliberately beside it, and saying so, is fine.
+
+Worktrees outside razorback-managed locations belong to the user. Report them; never remove or reuse them without saying so.
 
 ## Step 1: Create Isolated Workspace
 
@@ -147,6 +177,9 @@ Ready to implement <feature-name>
 |-----------|--------|
 | Already in linked worktree | Skip creation (Step 0) |
 | In a submodule | Treat as normal repo (Step 0 guard) |
+| Sibling worktree has unmerged commits | Report it, then choose continuation / sibling / reuse (Step 0b) |
+| Sibling worktree is dirty | Report it before creating anything (Step 0b) |
+| New work builds on an unmerged branch | Branch from that branch — don't cut a sibling from the base (Step 0b) |
 | Native worktree tool available | Use it (Step 1a) |
 | No native tool | Git worktree fallback (Step 1b) |
 | `.worktrees/` exists | Use it (verify ignored) |
@@ -170,6 +203,11 @@ Ready to implement <feature-name>
 - **Problem:** Creating a nested worktree inside an existing one
 - **Fix:** Always run Step 0 before creating anything
 
+### Accumulating stranded worktrees
+
+- **Problem:** Phase 2 gets a fresh worktree while phase 1's worktree still holds unmerged commits. Nobody notices until the run reports "complete" with work stranded in two places.
+- **Fix:** Step 0b inventories and reports every outstanding worktree and branch before creation, and prefers continuation over a sibling cut from the base
+
 ### Skipping ignore verification
 
 - **Problem:** Worktree contents get tracked, pollute git status
@@ -188,6 +226,10 @@ Ready to implement <feature-name>
 ## Red Flags
 
 **Never:**
+- Create a worktree without running the Step 0b inventory first
+- Create a worktree silently beside another worktree that holds unmerged or uncommitted work
+- Cut a sibling worktree from the base when the new work builds on an unmerged branch
+- Remove or reuse a worktree outside a razorback-managed location without saying so
 - Create a worktree when Step 0 detects existing isolation
 - Use `git worktree add` when you have a native worktree tool (e.g., `EnterWorktree`). This is the #1 mistake — if you have it, use it.
 - Skip Step 1a by jumping straight to Step 1b's git commands
@@ -197,7 +239,8 @@ Ready to implement <feature-name>
 - Stop to ask for a worktree directory preference (default to `.worktrees/`)
 
 **Always:**
-- Run Step 0 detection first
+- Run Step 0 detection first, then the Step 0b inventory
+- State what the inventory found and which choice you made (continuation / sibling / reuse)
 - Prefer native tools over git fallback
 - Follow directory priority: existing > global > CLAUDE.md > default
 - Verify directory is ignored for project-local
