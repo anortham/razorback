@@ -44,10 +44,10 @@ The blocker taxonomy remains the canonical stop/continue policy. Workflow skills
 
 **Acceptance Criteria:**
 
-- [ ] Brainstorming explicitly infers and logs routine reversible details and limits questions to material product/safety/scope/architecture decisions.
-- [ ] Pre-merge review makes reviewer allowlist enforcement conditional on a declared policy block.
-- [ ] Security scanner absence and security findings require safe recovery attempts before blocker classification.
-- [ ] Finishing a branch retries recoverable branch/security gate failures rather than classifying the first failure as blocker taxonomy #5.
-- [ ] SDD describes one general pass plus one security pass and no round-two review.
-- [ ] Regression guards fail against the pre-change contracts and pass after implementation.
-- [ ] The full repository test suite passes.
+- [x] Brainstorming explicitly infers and logs routine reversible details and limits questions to material product/safety/scope/architecture decisions.
+- [x] Pre-merge review makes reviewer allowlist enforcement conditional on a declared policy block.
+- [x] Security scanner absence and security findings require safe recovery attempts before blocker classification.
+- [x] Finishing a branch retries recoverable branch/security gate failures rather than classifying the first failure as blocker taxonomy #5.
+- [x] SDD describes one general pass plus one security pass and no round-two review.
+- [x] Regression guards fail against the pre-change contracts and pass after implementation.
+- [x] The full repository test suite passes.
