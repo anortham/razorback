@@ -51,8 +51,6 @@ cd "$PROJECT_DIR" && claude -p \
   --json-schema "$SCHEMA_JSON" \
   --tools "Read,Grep,Glob" \
   --strict-mcp-config \
-  --max-turns 15 \
-  --max-budget-usd 5.00 \
   ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} \
   --system-prompt-file "$PROMPT_FILE" \
   "$DIFF_AND_CONTEXT" \
@@ -61,7 +59,7 @@ cd "$PROJECT_DIR" && claude -p \
 
 `OUT_DIR` must live outside the repo (`mktemp -d` creates it under the system temp directory): review findings can carry sensitive detail and must not persist in the worktree, where they risk accidental staging. The `trap` removes the directory after parsing — the same cleanup pattern `razorback:grok-cli` uses.
 
-The validated baseline flags are: `-p`, `--no-session-persistence`, `--dangerously-skip-permissions`, `--output-format json`, `--json-schema`, `--tools "Read,Grep,Glob"`, `--strict-mcp-config`, `--max-turns 15`, `--max-budget-usd 5.00`, optional `${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"}`, `--system-prompt-file`.
+The validated baseline flags are: `-p`, `--no-session-persistence`, `--dangerously-skip-permissions`, `--output-format json`, `--json-schema`, `--tools "Read,Grep,Glob"`, `--strict-mcp-config`, optional `${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"}`, `--system-prompt-file`.
 
 Flag rationale:
 
@@ -72,11 +70,11 @@ Flag rationale:
 - `--output-format json --json-schema …` - structured review output conforming to the shared schema.
 - `--tools "Read,Grep,Glob"` - read-only, enforced at the CLI layer: no tool in the allowlist can write. Do NOT add `Bash` — an unrestricted Bash tool can write files and would make the read-only claim prompt-deep only. The diff and commit log are embedded in the prompt, so the reviewer doesn't need shell access.
 - `--strict-mcp-config` - drops MCP servers inherited from user/project settings, which can carry write-capable tools into an otherwise read-only allowlist.
-- `--max-turns 15 --max-budget-usd 5.00` - bounded cost/time. Raise only if a run legitimately needs more.
+- **No `--max-turns` and no `--max-budget-usd`** - razorback caps neither the turns nor the spend of a review. Either cap truncates the review mid-flight and trades finding quality for a few cents, and a truncated review is usually re-run in full — so the cap costs more than it saves. The review's scope is set by the prompt, not by a mechanical limit; let the reviewer finish the job. Do not add the flags back; a user who wants a hard ceiling sets it themselves.
 - `--model "$CLAUDE_MODEL"` - explicit model override when `CLAUDE_MODEL` is set. The review's value is a fresh session and prompt framing, not model superiority.
 - `--system-prompt-file` - loads the adversarial operating stance directly from the canonical `skills/claude-cli/adversarial-prompt.txt` in the razorback plugin. No copy is made, so there is nothing to keep in sync.
 
-**Timeout:** at least `600000` ms (10 min). Large diffs can take minutes.
+**Timeout:** set the Bash tool's `timeout` to `1800000` ms (30 min). This is a failsafe against a hung process, not a budget for the review. Do not lower it to bound cost, and do not raise it and re-run when it trips.
 
 ## Expected output format
 
@@ -96,7 +94,7 @@ jq '.structured_output.findings[]?' < "$OUT_DIR/claude-output.json"
 
 On parse failure, retry **once** with a stricter prompt instructing claude to return ONLY JSON conforming to the schema (no prose, no prefatory text). If the retry still fails to produce schema-valid output, reviewer unavailability applies; see Error Handling below. Do NOT loop beyond one retry (single pass rule).
 
-If a schema-valid partial output exists despite a mid-stream failure (e.g. budget/turn cap trips but `.findings[]` parses), use it and note the truncation in the morning report.
+If a schema-valid partial output exists despite a mid-stream failure (e.g. the run times out but `.findings[]` parses), use it and note the truncation in the morning report.
 
 ## Cost / token notes
 
@@ -110,21 +108,20 @@ Unavailability triggers:
 
 - **Auth failure** (`claude auth status` exits 1) → **blocker taxonomy #1** (credentials broken). Tell the user to run `claude auth login`.
 - **Rate limit exhausted** (Claude plan's rolling usage limits tripped) → **blocker taxonomy #1** - credentials work but the backing service is unavailable. Suggest retry-after-cooldown or dropping the reviewer-choice to `none` on the next run.
-- **Budget cap trips with no schema-valid partial output** (`--max-budget-usd` exhausted before `.findings[]` was produced) → **blocker taxonomy #1**. Raise the cap and re-run, or block.
-- **Turn cap trips with no schema-valid partial output** (`--max-turns` exhausted before final JSON) → **blocker taxonomy #1**. Raise `--max-turns` to 25 and re-run, or shrink the context, otherwise block.
 - **Old `--bare` snippet copied into the command** → **blocker taxonomy #1** until you remove that flag and re-run. Current Claude help says bare mode skips OAuth and keychain auth reads.
 - **Empty stdout** → **blocker taxonomy #1**. Remove `2>/dev/null` and re-run to surface stderr in the blocker note.
+- **The 30-minute failsafe trips with no schema-valid partial output** → **blocker taxonomy #1**. The process hung or died; the diff was not too big. Do NOT raise the timeout and re-run, do NOT split the diff and re-run, and do NOT add `--max-turns` to make the next run finish sooner. One burned attempt is enough — block and let the human decide.
 - **Schema violation that persists after one retry with a stricter prompt** → **blocker taxonomy #5** (unresolvable — the reviewer is producing unusable output).
 
-If a schema-valid partial output exists despite the failure (budget or turn cap trips mid-stream but `.findings[]` parses), use it and note the truncation in the morning report. Otherwise, block.
+If a schema-valid partial output exists despite the failure (the run is cut short mid-stream but `.findings[]` parses), use it and note the truncation in the morning report. Otherwise, block.
 
 **Not a blocker:**
 
-- **Timeout (Bash-level)** - first raise the Bash tool's timeout and re-run. Splitting the diff breaks cross-file reasoning and is a last resort. Only if generous timeouts also fail does this become a blocker (taxonomy #1 - service unavailable).
+- **A long run.** A review that takes 10-20+ minutes is working, not stuck. Wait for it.
 
 ## Security pass
 
-When the run includes the dedicated security pass, run `claude -p` a second time with the validated baseline flags unchanged — same schema string, same read-only allowlist, same caps, same model handling, same timeout. The only change is that `--system-prompt-file` points at the canonical security prompt in the razorback plugin:
+When the run includes the dedicated security pass, run `claude -p` a second time with the validated baseline flags unchanged — same schema string, same read-only allowlist, same model handling, same timeout. The only change is that `--system-prompt-file` points at the canonical security prompt in the razorback plugin:
 
 ```bash
 PROMPT_FILE="$SKILL_DIR/../security-review/security-adversarial-prompt.txt"

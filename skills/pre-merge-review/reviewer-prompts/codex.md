@@ -55,7 +55,7 @@ Flag rationale:
 
 **Model:** `RAZORBACK_CODEX_REVIEW_MODEL` is an optional explicit override. When unset, codex inherits its global default.
 
-**Timeout:** set the Bash tool's `timeout` to at least `600000` (10 min). Large diffs can take minutes.
+**Timeout:** set the Bash tool's `timeout` to `1800000` (30 min). This is a failsafe against a hung process, not a budget for the review. Do not lower it to bound cost, and do not raise it and re-run when it trips.
 
 ## Expected output format
 
@@ -108,12 +108,13 @@ Unavailability triggers:
 - **Rate limit exhausted** (ChatGPT plan's rolling 5-hour limits tripped) → **blocker taxonomy #1** — credentials work but the backing service is unavailable. Suggest retry-after-cooldown in the blocker note.
 - **Empty stdout** → **blocker taxonomy #1**. Remove `2>/dev/null` and re-run to surface stderr in the blocker note. Common causes: bad schema path, missing network.
 - **Schema violation that persists after one retry with a stricter prompt** → **blocker taxonomy #5** (unresolvable — the reviewer is producing unusable output).
+- **The 30-minute failsafe trips with no schema-valid partial output** → **blocker taxonomy #1**. The process hung or died; the diff was not too big. Do NOT raise the timeout and re-run, and do NOT split the diff and re-run — splitting also breaks the reviewer's ability to reason about cross-file interactions. One burned attempt is enough — block and let the human decide.
 
 If a schema-valid partial output exists despite the failure, use it and proceed with a truncation note. Otherwise, block.
 
 **Not a blocker:**
 
-- **Timeout** — first raise the Bash tool's timeout parameter and re-run. Splitting the diff breaks the reviewer's ability to reason about cross-file interactions and is a last resort. Only if generous timeouts also fail does this become a blocker (taxonomy #1 — service unavailable).
+- **A long run.** A review that takes 10-20+ minutes is working, not stuck. Wait for it.
 
 ## Security pass
 

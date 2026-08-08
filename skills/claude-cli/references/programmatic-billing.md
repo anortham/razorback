@@ -37,4 +37,4 @@ Anthropic split Claude subscription usage into two pools:
 
 - Pre June 15: `claude -p` draws from subscription — effectively "free" within plan limits
 - Post June 15: `claude -p` draws from Agent SDK Credits — metered at API rates
-- `--max-budget-usd` only limits API overage on OAuth subscriptions, not subscription usage
+- `--max-budget-usd` only limits API overage on OAuth subscriptions, not subscription usage. Razorback's review recipes do not set it — a dollar cap truncates a review and costs more in missed findings than it saves.

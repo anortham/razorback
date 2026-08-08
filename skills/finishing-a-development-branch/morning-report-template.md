@@ -45,7 +45,7 @@ Placeholders use {{double-brace}} syntax.
 - **Flagged for your review:** {{findings_flagged_count}}
   - {{flagged_finding_summary}} — {{why_uncertain}} <!-- pass label on the title, e.g. "[security] reviewer flagged token-scope widening — requires architectural call, leaving for human review" -->
   <!-- repeat for each flagged finding -->
-- **Cost:** {{cost_note}} <!-- one note per invocation: claude renders cost from each result envelope (.total_cost_usd, .usage) and the general + security passes can consume up to two --max-budget-usd caps per run; codex still reports no per-request counts — note the absence rather than faking a number -->
+- **Cost:** {{cost_note}} <!-- one note per invocation: claude renders cost from each result envelope (.total_cost_usd, .usage) — sum the general + security passes; no spend cap is set, so report the actual cost; codex still reports no per-request counts — note the absence rather than faking a number -->
 
 ## Tests
 - {{test_summary}} <!-- e.g. "142 passing, 0 failing" — or the failure summary if Status is Blocked -->

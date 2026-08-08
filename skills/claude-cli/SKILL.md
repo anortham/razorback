@@ -75,7 +75,7 @@ draws from a separate Agent SDK credit pool, not the general subscription
   this is harmless, but on Windows (Git Bash via a harness Bash tool) stdin
   can stay open with no producer and `claude -p` blocks indefinitely — the
   same hang class documented for `codex exec` in razorback:codex-cli.
-- **Hidden but supported flags**: `--max-turns`, `--system-prompt-file`, and
+- **Hidden but supported flags**: `--system-prompt-file` and
   `--append-system-prompt-file` no longer appear in `claude --help` but are
   still parsed and supported (verified on 2.1.204: probing each without a
   value returns `option ... argument missing`, not `unknown option`). Do not
@@ -89,18 +89,16 @@ draws from a separate Agent SDK credit pool, not the general subscription
   tools from user/project settings out of the session. Do NOT treat
   `--tools "Read,Bash"` as read-only — an unrestricted Bash tool can write
   files; only add Bash when you accept that trade for shell investigation.
-- **`--max-budget-usd` behavior depends on auth**: On OAuth-authenticated
-  Max/Pro subscriptions, this flag limits only *potential API overage* charges
-  (when the user has enabled extra-usage billing). It does NOT limit
-  subscription-token consumption. On API-key auth, it limits total spend.
-  For OAuth users without extra-usage billing enabled, the flag is
-  effectively a no-op — set it but don't rely on it for budget control on
-  subscription plans.
-- **Timeout**: 600000ms (10 min) for simple queries, 1200000ms (20 min) for
-  deep reviews, 1800000ms (30 min) for large diffs.
-  Err generous — a single timeout wastes more time (and tokens) than a longer
-  wait, especially when this Claude is itself delegating to another model.
-  Don't default below 10 min.
+- **No caps in review recipes**: razorback does not pass
+  `--max-budget-usd` and it does not pass `--max-turns`. Either cap truncates
+  a review mid-flight and trades finding quality for a few cents. Review depth
+  is the point; do not add the flags back. A user who wants a hard ceiling
+  sets it themselves.
+- **Timeout is a failsafe, not a budget**: set 1800000ms (30 min) on every
+  review invocation. It exists to catch a process that hung or died and will
+  never return — nothing else. It is not a bound on how long a review may
+  take, and it is not a cost dial. Scope the review in the prompt and let the
+  reviewer finish the job. Never tune it down to make a run cheaper.
 - **Auth**: Logged in via Anthropic OAuth or API key. Run the Pre-flight
   Checklist above. `claude auth status` exits 0 logged in, 1 otherwise, and
   returns JSON with subscription type, auth method, email, and org. If auth
@@ -157,7 +155,7 @@ cd /path/to/project && claude -p \
   < /dev/null 2>/dev/null
 ```
 
-Drop `--json-schema` and `--max-turns`; a second opinion is free-form text.
+Drop `--json-schema`; a second opinion is free-form text.
 The reviewer reads files on its own via the `Read` tool; mention specific
 paths in the prompt if you want it focused.
 
@@ -210,8 +208,6 @@ cd /path/to/project && claude -p \
   --output-format json \
   --json-schema "$SCHEMA_JSON" \
   --tools "Read,Grep,Glob" --strict-mcp-config \
-  --max-turns 15 \
-  --max-budget-usd 5.00 \
   ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} \
   ${CLAUDE_EFFORT:+--effort "$CLAUDE_EFFORT"} \
   ${CLAUDE_FALLBACK_MODEL:+--fallback-model "$CLAUDE_FALLBACK_MODEL"} \
@@ -267,8 +263,6 @@ cd /path/to/project && claude -p \
   --output-format json \
   --json-schema "$SCHEMA_JSON" \
   --tools "Read,Grep,Glob" --strict-mcp-config \
-  --max-turns 15 \
-  --max-budget-usd 5.00 \
   ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} \
   ${CLAUDE_EFFORT:+--effort "$CLAUDE_EFFORT"} \
   ${CLAUDE_FALLBACK_MODEL:+--fallback-model "$CLAUDE_FALLBACK_MODEL"} \
@@ -279,7 +273,7 @@ cd /path/to/project && claude -p \
 
 The `--json-schema` flag tells Claude to return JSON matching the review
 schema (verdict, summary, findings with severity/file/line/confidence, next
-steps). `--max-turns` and `--max-budget-usd` bound cost and time.
+steps). No turn cap and no spend cap are set — the reviewer runs to completion.
 
 **After**: Parse the result envelope (`.structured_output`, fallback
 `.result | fromjson` — see the Code Review section). Present findings grouped
@@ -365,11 +359,6 @@ think it's wrong, and your evidence.
 - **Rate limits**: the Claude plan has rolling usage limits. If you hit
   them, tell the user and suggest trying again later, using a smaller prompt,
   or switching to the project policy's lower-cost tier temporarily.
-- **Budget cap hit**: if `--max-budget-usd` trips mid-review the process
-  exits with a partial result. Either raise the cap or narrow the diff.
-- **Turn cap hit**: if `--max-turns` is exhausted before the reviewer
-  produces schema-valid output, raise the cap (15 → 25) or shrink the
-  context.
 - **`claude usage` hangs**: The `claude usage` command can time out (~10s+) with
   no output, especially on first call or after auth refresh. Do not rely on it
   for pre-flight checks. Use the web UI at `claude.ai/settings` or the `/usage`
@@ -377,27 +366,28 @@ think it's wrong, and your evidence.
 - **Old `--bare` recipe**: remove `--bare` and retry. Current Claude help says
   bare mode skips OAuth and keychain auth, so old snippets fail on normal
   Claude logins.
-- **Timeout**: escalation-tier models on large diffs can take 10-20+ minutes,
-  longer when this Claude delegates to another model. Set generous Bash
-  timeouts (1800000ms / 30 min for escalation-tier). If it still times out,
-  split the review into smaller chunks rather than retrying with the same
-  timeout.
+- **Timeout tripped**: a review that runs 10-20+ minutes is working, not
+  stuck — that is why the failsafe sits at 30 min. If the failsafe trips, the
+  process hung or died; the diff was not "too big". Do NOT re-run with a
+  longer timeout, and do NOT split the diff and re-run. A second full attempt
+  burns another half hour and another full context on the same broken run.
+  Check stderr, then treat it as reviewer unavailability.
 - **Empty output**: if stdout is empty, check stderr (remove `2>/dev/null`
   temporarily) for error messages.
 - **Windows hang (no output for many minutes)**: the stdin-EOF block described
   under Defaults ("Always redirect stdin"). The run never starts, so there is
   no partial output to salvage — kill the process, it will not recover, then
   re-run with the redirect in place.
-- **Flag missing from `--help`**: `--max-turns`, `--system-prompt-file`, and
+- **Flag missing from `--help`**: `--system-prompt-file` and
   `--append-system-prompt-file` are hidden from help output but still
-  supported. Verify with a missing-argument probe (`claude -p --max-turns`
-  should say `argument missing`, not `unknown option`) before concluding a
-  flag was removed.
+  supported. Verify with a missing-argument probe (`claude -p
+  --system-prompt-file` should say `argument missing`, not `unknown option`)
+  before concluding a flag was removed.
 - **Claude not installed**: check with `claude --version`. Install via
   `npm install -g @anthropic-ai/claude-code` if missing.
 - **Schema violation**: if the returned JSON doesn't validate, inspect the
-  raw output — often the reviewer hit the turn cap before finishing the
-  final JSON. Re-run with higher `--max-turns`.
+  raw output — often the reviewer ran out of context or timed out before
+  finishing the final JSON. Re-run with a narrower diff.
 
 ## Quick Reference
 
@@ -410,7 +400,7 @@ assuming a command that exists in one exists in the other.
 | Use case | Mode | Command pattern |
 |---|---|---|
 | Second opinion | read-only | `cd dir && claude -p --no-session-persistence --dangerously-skip-permissions --tools "Read,Grep,Glob" --strict-mcp-config ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} "prompt" < /dev/null 2>/dev/null` |
-| Code review | read-only + schema | Add `--output-format json --json-schema "$SCHEMA_JSON" --max-turns 15 --max-budget-usd 5.00`, where `SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")`. Scope/sizing per Review Targeting. |
+| Code review | read-only + schema | Add `--output-format json --json-schema "$SCHEMA_JSON"`, where `SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")`. Scope/sizing per Review Targeting. |
 | Adversarial review | read-only + schema + system prompt | Add `--system-prompt-file "$SKILL_DIR/adversarial-prompt.txt"` to the code-review pattern. Scope/sizing per Review Targeting. |
 | Resume session | persistent | Drop `--no-session-persistence`, use `claude -r "prompt" < /dev/null 2>/dev/null` |
 | Apply explicit effort | any | Add `--effort "$CLAUDE_EFFORT"` (low/medium/high/xhigh/max) when the environment sets it |

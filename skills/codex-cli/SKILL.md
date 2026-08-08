@@ -22,10 +22,11 @@ models.
 - **Always redirect stdin**: append `< /dev/null` to every invocation that doesn't pipe a prompt. `codex exec` reads stdin even when a prompt is passed as an argument (it prints "Reading additional input from stdin..." and waits for EOF). On macOS/Linux bash this is harmless because the shell closes stdin, but on Windows (Git Bash / Claude Code Bash tool) stdin can stay open and codex blocks forever with no output — this is the cause of the 30+ minute Windows hang. Use `< /dev/null` on bash; on Windows native cmd/PowerShell use `< NUL`.
 - **Working directory**: `-C /path/to/project` sets the root. Defaults to cwd.
 - **Output capture**: `-o, --output-last-message <FILE>` writes the agent's final message to a file. Use this for adversarial review when you need the JSON cleanly without stderr/banner contamination — point a temp file at it and read the file afterwards.
-- **Timeout**: 600000ms (10 min) for simple queries, 1200000ms (20 min) for
-  deep reviews or delegation work, 1800000ms (30 min) for large diffs. Err generous — a single timeout wastes more time
-  (and tokens) than a longer wait, especially when Codex is itself calling out
-  to another model. Don't default below 10 min.
+- **Timeout is a failsafe, not a budget**: set 1800000ms (30 min) on every
+  review invocation. It exists to catch a process that hung or died and will
+  never return — nothing else. It is not a bound on how long a review may
+  take, and it is not a cost dial. Scope the review in the prompt and let the
+  reviewer finish the job. Never tune it down to make a run cheaper.
 - **Auth**: Logged in via ChatGPT OAuth. If auth fails, tell the user to run
   `codex login` in a terminal.
 - **Profiles**: `-p, --profile <NAME>` selects a `~/.codex/config.toml` profile. If the user's policy defines a "review" profile (specific model + reasoning + sandbox), pass it instead of repeating those flags inline. Niche; only relevant when the user actually maintains profiles.
@@ -281,10 +282,12 @@ think it's wrong, and your evidence.
   `codex login` in a terminal.
 - **Rate limits**: ChatGPT plan has rolling 5-hour limits. If you hit them,
   tell the user and suggest trying again later or using a simpler prompt.
-- **Timeout**: escalation-tier reasoning on large diffs can take 10-20+ minutes,
-  longer when Codex delegates to another model. Set generous Bash timeouts
-  (1800000ms / 30 min for escalation-tier). If it still times out, split the
-  review into smaller chunks rather than retrying with the same timeout.
+- **Timeout tripped**: a review that runs 10-20+ minutes is working, not
+  stuck — that is why the failsafe sits at 30 min. If the failsafe trips, the
+  process hung or died; the diff was not "too big". Do NOT re-run with a
+  longer timeout, and do NOT split the diff and re-run. A second full attempt
+  burns another half hour and another full context on the same broken run.
+  Check stderr, then treat it as reviewer unavailability.
 - **Empty output**: If stdout is empty, check stderr (remove `2>/dev/null`
   temporarily) for error messages.
 - **No git repo**: Add `--skip-git-repo-check` for non-repo directories.

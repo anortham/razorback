@@ -52,10 +52,11 @@ models.
   `< /dev/null` (bash) / `< NUL` (Windows cmd/PowerShell) on non-piped
   invocations anyway as cheap insurance against a harness that holds the pipe
   open.
-- **Timeout**: 600000ms (10 min) for simple queries, 1200000ms (20 min) for
-  deep reviews or delegation work, 1800000ms (30 min) for large diffs. Err
-  generous — a single timeout wastes more time (and tokens) than a longer wait.
-  Don't default below 10 min.
+- **Timeout is a failsafe, not a budget**: set 1800000ms (30 min) on every
+  review invocation. It exists to catch a process that hung or died and will
+  never return — nothing else. It is not a bound on how long a review may
+  take, and it is not a cost dial. Scope the review in the prompt and let the
+  reviewer finish the job. Never tune it down to make a run cheaper.
 - **Auth**: logged in via `grok login` (`--oauth` for browser OAuth via
   auth.x.ai, `--device-auth` for headless/remote device-code flow). There is no
   `grok auth status` subcommand; use `grok models` as the readiness check — it
@@ -165,7 +166,6 @@ grok --prompt-file "$PROMPT_FILE" \
   --always-approve \
   --cwd /path/to/project \
   --json-schema "$SCHEMA_JSON" \
-  --max-turns 15 \
   ${GROK_MODEL:+--model "$GROK_MODEL"} \
   ${GROK_EFFORT:+--effort "$GROK_EFFORT"} \
   2>/dev/null < /dev/null
@@ -227,7 +227,6 @@ grok --prompt-file "$PROMPT_FILE" \
   --always-approve \
   --cwd /path/to/project \
   --json-schema "$SCHEMA_JSON" \
-  --max-turns 15 \
   ${GROK_MODEL:+--model "$GROK_MODEL"} \
   ${GROK_EFFORT:+--effort "$GROK_EFFORT"} \
   2>/dev/null < /dev/null > "$RESULT_FILE"
@@ -370,12 +369,15 @@ think it's wrong, and your evidence.
 - **Resume sandbox mismatch**: `cannot resume this session under sandbox profile
   'X' — it was created with 'Y'`. Omit `--sandbox` when resuming, or start a new
   session.
-- **Max turns reached**: `Error: max turns reached` means `--max-turns` was too
-  low for the reviewer to finish (bootstrap + review can burn several turns).
-  Raise the cap (15 → 25) or shrink the context.
-- **Timeout**: large diffs can take 10-20+ minutes. Set generous Bash timeouts
-  (1800000ms / 30 min). If it still times out, split the review into smaller
-  chunks rather than retrying with the same timeout.
+- **Max turns reached**: `Error: max turns reached` means a `--max-turns` value
+  was too low for the reviewer to finish (bootstrap + review can burn several
+  turns). These recipes set no turn cap — remove the flag rather than raising it.
+- **Timeout tripped**: a review that runs 10-20+ minutes is working, not
+  stuck — that is why the failsafe sits at 30 min. If the failsafe trips, the
+  process hung or died; the diff was not "too big". Do NOT re-run with a
+  longer timeout, and do NOT split the diff and re-run. A second full attempt
+  burns another half hour and another full context on the same broken run.
+  Check stderr, then treat it as reviewer unavailability.
 - **Empty / one-sentence truncated output (exit 0)**: almost always a headless
   **permission cancel**, not a model crash. Session
   `events.jsonl` shows `permission_resolved` → `decision: cancelled` on
@@ -408,7 +410,7 @@ insurance against a harness holding stdin open.
 | Use case | Mode | Command pattern |
 |---|---|---|
 | Second opinion | read-only + approve | `grok -p "prompt" --sandbox read-only --always-approve --cwd dir 2>/dev/null < /dev/null` |
-| Code review | read-only + approve + schema | `grok --prompt-file "$PROMPT_FILE" --json-schema "$SCHEMA_JSON" --max-turns 15 --sandbox read-only --always-approve --cwd dir` (no `-p`), where `SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")`. Scope/sizing per Review Targeting. |
+| Code review | read-only + approve + schema | `grok --prompt-file "$PROMPT_FILE" --json-schema "$SCHEMA_JSON" --sandbox read-only --always-approve --cwd dir` (no `-p`), where `SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")`. Scope/sizing per Review Targeting. |
 | Adversarial review | read-only + approve + schema | Build the prompt from `$SKILL_DIR/adversarial-prompt.txt` (see Adversarial Review), then the code-review command. |
 | Delegate (complex) | workspace + approve | `grok -p "prompt" --sandbox workspace --always-approve --cwd dir 2>/dev/null < /dev/null` (add `-w` for an isolated worktree) |
 | Pre-flight / auth check | any | `grok models 2>/dev/null` (prints login state + model list) |
