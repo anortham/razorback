@@ -356,9 +356,12 @@ think it's wrong, and your evidence.
 
 - **Auth expired**: `claude auth status` exits non-zero. Tell the user to run
   `claude auth login` in a terminal.
-- **Rate limits**: the Claude plan has rolling usage limits. If you hit
-  them, tell the user and suggest trying again later, using a smaller prompt,
-  or switching to the project policy's lower-cost tier temporarily.
+- **Rate limits**: the Claude plan has rolling usage limits. A rate limit
+  means the service is unavailable, not that the review was too big. Tell the
+  user and suggest waiting for the window to reset or swapping to another
+  reviewer. Do NOT shrink the prompt or drop to a cheaper model to squeeze
+  the review through — that ships a weaker review under the name of the one
+  the user asked for.
 - **`claude usage` hangs**: The `claude usage` command can time out (~10s+) with
   no output, especially on first call or after auth refresh. Do not rely on it
   for pre-flight checks. Use the web UI at `claude.ai/settings` or the `/usage`

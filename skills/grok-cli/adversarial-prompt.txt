@@ -38,8 +38,10 @@ cleanup, or speculative concerns without evidence. Each finding must answer:
 4. What concrete change would reduce the risk?
 
 CALIBRATION:
-Prefer one strong finding over several weak ones. Do not dilute serious issues
-with filler. If the change looks safe, say so directly and return no findings.
+Do not pad the list with weak findings to look thorough, and do not trim real
+ones to look decisive. Report every material finding you can defend, however
+many that is. Do not dilute serious issues with filler. If the change looks
+safe, say so directly and return no findings.
 
 GROUNDING:
 Every finding must be defensible from the provided context. Do not invent

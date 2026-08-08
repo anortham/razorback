@@ -354,8 +354,11 @@ think it's wrong, and your evidence.
 
 - **Not logged in**: `grok models` errors or prints no model list. Tell the user
   to run `grok login` (`--device-auth` on a headless/remote host).
-- **Rate limits**: xAI plans have usage limits. If you hit them, tell the user
-  and suggest trying again later or using a simpler prompt.
+- **Rate limits**: xAI plans have usage limits. A rate limit means the service
+  is unavailable, not that the review was too big. Tell the user and suggest
+  waiting for the window to reset or swapping to another reviewer. Do NOT
+  shrink the prompt or drop to a cheaper model to squeeze the review through —
+  that ships a weaker review under the name of the one the user asked for.
 - **Sandbox profile not found**: `Custom sandbox profile '<name>' not found` means
   you passed a name that isn't a built-in (`read-only`, `workspace`, `none`) and
   isn't defined in `~/.grok/sandbox.toml`. Use a built-in or define the profile.

@@ -280,8 +280,12 @@ think it's wrong, and your evidence.
 
 - **Auth expired**: `codex login status` exits non-zero. Tell the user to run
   `codex login` in a terminal.
-- **Rate limits**: ChatGPT plan has rolling 5-hour limits. If you hit them,
-  tell the user and suggest trying again later or using a simpler prompt.
+- **Rate limits**: ChatGPT plan has rolling 5-hour limits. A rate limit means
+  the service is unavailable, not that the review was too big. Tell the user
+  and suggest waiting for the window to reset or swapping to another reviewer.
+  Do NOT shrink the prompt or drop to a cheaper model to squeeze the review
+  through — that ships a weaker review under the name of the one the user
+  asked for.
 - **Timeout tripped**: a review that runs 10-20+ minutes is working, not
   stuck — that is why the failsafe sits at 30 min. If the failsafe trips, the
   process hung or died; the diff was not "too big". Do NOT re-run with a
