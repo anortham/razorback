@@ -1,7 +1,9 @@
 # Autonomous Execution by Default — Design
 
 **Date:** 2026-04-18
-**Status:** Approved for plan writing
+**Status:** Implemented; §5's claude invocation is superseded — see below
+
+> **Superseded in part (v0.29.0, 2026-08-08).** The claude reviewer invocation in §5 is a historical record of the 2026-04-18 design and no longer matches what razorback ships. Do not copy commands out of it. Since this design was written, `--bare` was dropped (it skips OAuth and keychain auth), the tool allowlist became `Read,Grep,Glob` plus `--strict-mcp-config`, Julie was replaced by Miller, skills moved from `~/.claude/skills/` into the plugin, and v0.29.0 removed the `--max-turns` and `--max-budget-usd` caps entirely. The live invocation is `skills/pre-merge-review/reviewer-prompts/claude.md`; the background treatment is `skills/claude-cli/SKILL.md`.
 **Motivation:** Approved plans should run to completion without interactive gates. Razorback already invests heavily in spec + plan review; once those are approved, the process should execute overnight without waking the user for anything short of a real blocker.
 
 **Hard dependencies:** This design assumes both [Julie MCP](https://github.com/anortham/julie) (code intelligence) and [Goldfish MCP](https://github.com/anortham/goldfish) (persistent memory) are configured and running. Julie is used for all codebase orientation; Goldfish is used for the phase-boundary checkpoints and recovery sequence in §6. Neither has a fallback.
@@ -207,6 +209,8 @@ claude -p \
 - `--max-turns 15 --max-budget-usd 5`: bounded cost/time
 - `--model opus`: strongest reviewer
 - `--system-prompt-file`: adversarial prompt template (copy of codex-cli's template with tool references adapted)
+
+> **Superseded (v0.29.0).** Three of those rationales no longer hold. `Read,Bash` is not read-only — an unrestricted Bash tool can write, so the shipped allowlist is `Read,Grep,Glob` with `--strict-mcp-config`. The caps were removed: a turn or dollar cap truncates a review mid-flight, and a truncated review gets re-run in full, so the cap costs more than it saves. A review's scope is set by the prompt, and the only remaining bound is a 30-minute failsafe against a hung process.
 
 **Second-opinion mode:** drop `--json-schema`, `--max-turns`, adjust system prompt. Same shape as codex-cli's second-opinion mode.
 

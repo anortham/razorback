@@ -2,6 +2,8 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use razorback:team-driven-development to implement this plan. Parallel execution is possible by phase (see File Ownership); fan out teammates per task within a phase.
 
+> **Completed and superseded in part (v0.29.0, 2026-08-08).** This plan shipped. The claude-cli command it specifies in Phase 1 is a historical record and no longer matches what razorback ships — do not copy it. `--bare` was dropped, the allowlist became `Read,Grep,Glob` with `--strict-mcp-config`, Julie was replaced by Miller, skills moved into the plugin, and v0.29.0 removed the `--max-turns` and `--max-budget-usd` caps. The live invocation is `skills/pre-merge-review/reviewer-prompts/claude.md`.
+
 **Goal:** Make razorback run approved plans to completion overnight — kill interactive stop-points, add pre-merge external review, make execution compaction-durable — per `docs/plans/2026-04-18-autonomous-execution-design.md`.
 
 **Architecture:** Five phases. Phase 1 creates shared reference assets (blocker taxonomy, morning-report template, new `claude-cli` skill). Phase 2 creates the orchestration skill (`pre-merge-review`). Phase 3 modifies the six existing execution-flow skills in parallel (clean file ownership, no overlaps). Phase 4 updates razorback-project docs. Phase 5 is lead-driven integration verification. All modifications reference the shared assets rather than inlining, to stay DRY.

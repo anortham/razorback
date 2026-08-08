@@ -61,7 +61,7 @@ In the External review section:
 - Add a per-pass count line directly under the section heading area: `- **Passes:** general {{general_findings_count}} / security {{security_findings_count}}`
 - Aggregate placeholders (`{{findings_total}}`, fixed/dismissed/flagged counts) now cover both passes combined.
 - Per-finding sub-blocks carry the pass label (e.g. a `[security]` prefix on the finding title); dual-flagged findings say so.
-- Cost note covers both invocations: claude up to two `--max-budget-usd` caps per run; codex still reports no per-request counts.
+- Cost note covers both invocations: claude sums the actual cost of its two passes from each result envelope; codex still reports no per-request counts. (Updated for v0.29.0 — reviews carry no spend cap, so the note reports what a run cost rather than how much of a cap it consumed.)
 
 ### 5. Cross-reference: `skills/security-review/SKILL.md`
 
@@ -83,7 +83,7 @@ One short paragraph in the canonical lane skill: pre-merge review runs a dedicat
 - **Both passes clean:** normal clean-review path; report shows `general 0 / security 0`.
 - **Same defect flagged by both passes:** dedupe to one finding, mark dual-flagged; classify once, fix once.
 - **General pass succeeds, security pass unavailable (or vice versa):** reviewer unavailability — blocker; stop, no push, no PR, partial report. The user chose a reviewer; half a review is a silent downgrade.
-- **Cost:** each pass keeps its own caps. The claude worst case doubles to 2 × `--max-budget-usd`. Codex reports no counts (existing note stands).
+- **Cost:** the security pass roughly doubles the review cost of a run, since it is a second full invocation over the same diff. Neither pass is capped (v0.29.0 removed `--max-turns` and `--max-budget-usd`); each is bounded only by the 30-minute hang failsafe. Codex reports no counts (existing note stands).
 - **Policy gate:** one provider check covers both passes (same CLI); the dispatch-time reviewer recheck from the lane applies unchanged.
 
 ## File inventory

@@ -4,6 +4,8 @@
 
 **Goal:** Make every document that describes the claude pre-merge reviewer state the enforced read-only allowlist (`Read,Grep,Glob`), and add guard tests so this class of copy drift fails CI.
 
+> **Completed; flag summary superseded (v0.29.0, 2026-08-08).** The allowlist fix this plan shipped still stands. The flag summary it prescribes below no longer does: v0.29.0 removed `--max-turns 15` and `--max-budget-usd 5.00` from every review recipe, so the current summary is `--tools "Read,Grep,Glob" --strict-mcp-config --system-prompt-file …`. `tests/reviewer-uncapped.test.mjs` now guards that.
+
 **Architecture:** Documentation alignment plus two guard-test surfaces. The canonical claude invocation (`reviewer-prompts/claude.md` "validated baseline flags") is already correct; four doc sites drifted from it. Tests assert the invariants mechanically instead of relying on "keep in sync" prose.
 
 **Tech Stack:** Markdown skill docs, Node.js built-in test runner (`node:test`), zero dependencies.
