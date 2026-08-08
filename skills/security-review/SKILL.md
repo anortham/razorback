@@ -15,7 +15,7 @@ Razorback owns the scope boundaries; the target repo's plan declares the real co
 
 Both scopes run at the branch gate, before push or PR. The quick-fix tier (razorback:fixing-small-issues) is unaffected — it already defers suite-level verification to the branch gate.
 
-A declared scanner that is missing or not installed is a branch-gate failure on environmental grounds — blocker taxonomy #1. Stop; do not push.
+For a missing declared scanner or a security finding, diagnose, repair, and rerun the failed scope while a safe, plan-consistent recovery path remains. Keep the branch local throughout recovery: no push and no PR. Missing tooling becomes blocker taxonomy #1, and a non-converging finding becomes the applicable blocker, only after safe, plan-consistent recovery paths are exhausted. Recovery never weakens the finding gates below or substitutes an unapproved scanner skip.
 
 ### `security-secrets` — whole-tree secrets scan
 
@@ -62,9 +62,9 @@ Run this before any diff or repo content leaves the machine — at every enforce
 1. Read the policy block from the target repo's project instructions.
 2. Block present and the provider is allowed → proceed.
 3. Block present and the provider is denied → refuse the dispatch, name an allowed alternative, and record the refusal in the morning report. On an autonomous run where the user explicitly chose the denied provider, this is blocker taxonomy #4 — STOP; do not silently substitute another provider.
-4. No block → proceed, and add the loud morning-report note: `no external-model policy declared — diff sent to <provider>`.
+4. When no policy block exists, proceed, and add the loud morning-report note: `no external-model policy declared — diff sent to <provider>`.
 
-**Reviewer dispatches (pre-merge review and standalone review):** re-read the policy at dispatch time — validation at plan approval does not carry forward. The provider must be allowed AND the chosen reviewer must also appear in `Reviewer choices permitted:`. A reviewer absent from that list is a denial: follow step 3, including blocker taxonomy #4 on an autonomous run where the user explicitly chose that reviewer.
+**Reviewer dispatches (pre-merge review and standalone review):** re-read the policy at dispatch time — validation at plan approval does not carry forward. When a policy block exists, the provider must be allowed. When a policy block exists, the chosen reviewer must also appear in `Reviewer choices permitted:`. A provider or reviewer denied by an existing block follows step 3, including blocker taxonomy #4 on an autonomous run where the user explicitly chose that reviewer. With no block, step 4 applies; do not manufacture an allowlist requirement.
 
 **Security pass:** whenever a reviewer is chosen for a run, pre-merge review runs a dedicated security pass built from this skill's `security-adversarial-prompt.txt`. Trigger semantics and invocation mechanics live in razorback:pre-merge-review.
 

@@ -202,7 +202,7 @@ test('every branch-gate consumer executes the declared Security scope', () => {
 });
 
 test('the canonical home rechecks the chosen reviewer against the permitted list at dispatch time', () => {
-  const phrase = 'the chosen reviewer must also appear in `Reviewer choices permitted:`';
+  const phrase = 'When a policy block exists, the chosen reviewer must also appear in `Reviewer choices permitted:`';
   assert.ok(
     read(CANONICAL_HOME).includes(phrase),
     `${CANONICAL_HOME} lost the dispatch-time reviewer recheck — restore the exact phrase "${phrase}" so reviewer dispatches re-validate the reviewer against the policy instead of trusting plan-approval validation`,

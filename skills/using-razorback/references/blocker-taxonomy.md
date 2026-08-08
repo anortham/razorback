@@ -1,8 +1,8 @@
 # Blocker Taxonomy
 
-Reference for autonomous execution: what counts as a real stop-and-report blocker versus a decide-and-log judgment call. Linked from execution skills (`executing-plans`, `subagent-driven-development`) so the taxonomy stays DRY.
+Reference for autonomous execution with or without a goal runner: what counts as a real stop-and-report blocker versus a decide-and-log judgment call. Long-running autonomy is the default workflow behavior; `/goal`, `/loop`, and similar runners may add persistence mechanics, but they are not prerequisites for continuing work.
 
-A blocker is real only when the agent cannot resolve it through reasonable plan-consistent judgment. If a reasonable path exists, take it and log the choice.
+A blocker is real only when the agent cannot resolve it through reasonable plan-consistent judgment. For recoverable failures, diagnose, repair, and rerun while a safe path remains; classify a blocker only after those paths are exhausted. If a reasonable path exists, take it and log the choice.
 
 ## Real blockers (stop and report)
 

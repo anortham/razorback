@@ -24,7 +24,7 @@ Skip this skill entirely if the reviewer choice is `none`. The choice is fixed b
 - The verification ledger has a passing `branch-gate` entry for current HEAD, or the caller can run that scope before review
 - The branch is NOT yet pushed (no PR yet)
 - A reviewer was chosen: one of `codex`, `claude`
-- The chosen reviewer's provider (`codex` → `openai`, `claude` → `anthropic`) passes the external-model policy check in razorback:security-review, and the reviewer appears in the policy's `Reviewer choices permitted:` list
+- The external-model policy check in razorback:security-review passes. When a policy block exists, the chosen reviewer's provider (`codex` → `openai`, `claude` → `anthropic`) is allowed and the reviewer appears in `Reviewer choices permitted:`. When no external-model policy block exists, proceed and add the required loud morning-report note.
 
 If any pre-condition is not met, abort and surface the gap to the caller. Do not review a partial branch or pre-push a branch on your own.
 
@@ -104,7 +104,7 @@ verification evidence.
 
 ## Step 2: Dispatch the chosen reviewer
 
-Before the diff is sent, re-read the policy and apply the external-model policy check in razorback:security-review at dispatch time: the dispatched CLI's provider (`codex` → `openai`, `claude` → `anthropic`) must be allowed, and the reviewer must appear in `Reviewer choices permitted:`. A denial on either field means refuse this reviewer and name an allowed alternative. The policy gate applies per dispatch: re-read the policy immediately before each pass. Both passes use the same CLI, so both checks evaluate the same provider and reviewer — and a policy change between passes fails closed before the second dispatch. A denial follows the canonical procedure in razorback:security-review, including blocker taxonomy #4 on an autonomous run where the user chose this reviewer.
+Before the diff is sent, re-read the policy and apply the external-model policy check in razorback:security-review at dispatch time. When a policy block exists, the dispatched CLI's provider (`codex` → `openai`, `claude` → `anthropic`) must be allowed and the reviewer must appear in `Reviewer choices permitted:`. A denial on either field means refuse this reviewer and name an allowed alternative. When no external-model policy block exists, proceed and add the required loud morning-report note. The policy gate applies per dispatch: re-read the policy immediately before each pass. Both passes use the same CLI, so both checks evaluate the same provider and reviewer — and a policy change between passes fails closed before the second dispatch. A denial follows the canonical procedure in razorback:security-review, including blocker taxonomy #4 on an autonomous run where the user chose this reviewer.
 
 When a reviewer is chosen, dispatch the chosen CLI **twice** against the same diff and the same shared schema:
 

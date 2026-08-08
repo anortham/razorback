@@ -310,7 +310,7 @@ If the reviewer choice propagated from `writing-plans` (via the execution handof
 
 If the choice is `none` (or absent), skip Step 4a.
 
-Pre-merge-review builds the full branch diff, dispatches the chosen reviewer in adversarial read-only mode, classifies findings (real-bug / real-improvement / false-positive / out-of-scope), dispatches fresh implementer subagents for verified fixes, runs the required verification scope for the resulting HEAD, and emits a summary block for the morning report. Single pass; no round-two review.
+Pre-merge-review builds the full branch diff, runs one general pass plus one security pass with the chosen reviewer in adversarial read-only mode, classifies findings (real-bug / real-improvement / false-positive / out-of-scope), dispatches fresh implementer subagents for verified fixes, runs the required verification scope for the resulting HEAD, and emits a summary block for the morning report. Each external pass runs once; fixes are verified locally without a post-fix external re-review.
 
 After `pre-merge-review` returns, proceed to Step 5 (Complete → `razorback:finishing-a-development-branch`).
 
