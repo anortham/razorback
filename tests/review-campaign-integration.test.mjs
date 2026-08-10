@@ -24,6 +24,24 @@ test('cross-model convergence declares one immutable three-round campaign', asyn
   assert.doesNotMatch(skill, /default 4 \(initial audit \+ 3 fix rounds\)/);
 });
 
+test('cross-model unavailability closes an auditable zero-call campaign', async () => {
+  const skill = await read('skills/cross-model-convergence/SKILL.md');
+
+  assert.match(skill, /When no different-model reviewer is available before setup/i);
+  assert.match(skill, /participants: lead[\s\S]*external_invocation_budget: 0[\s\S]*external_invocations: 0\/0/);
+  assert.match(skill, /evidence: lead-only[\s\S]*campaign_closed: yes/);
+  assert.match(skill, /new campaign requires a new explicit user request/i);
+  assert.match(skill, /evidence: <strongest label actually earned>/);
+});
+
+test('completed required discovery is not invalidated by optional confirmer loss', async () => {
+  const skill = await read('skills/cross-model-convergence/SKILL.md');
+
+  assert.match(skill, /required discovery obligation is satisfied once that reviewer supplies usable evidence/i);
+  assert.match(skill, /later optional confirmation failure does not retroactively block/i);
+  assert.match(skill, /lead completes confirmation/i);
+});
+
 test('pre-merge review accounts for exactly two external passes and local confirmation', async () => {
   const skill = await read('skills/pre-merge-review/SKILL.md');
 
@@ -88,4 +106,5 @@ test('morning report renders bounded campaign evidence', async () => {
   assert.match(template, /\{\{review_campaign_external_invocations\}\}/);
   assert.match(template, /\{\{review_campaign_open_critical_high\}\}/);
   assert.match(template, /\{\{review_campaign_open_medium_low\}\}/);
+  assert.match(template, /\{\{review_campaign_open_above_floor\}\}/);
 });

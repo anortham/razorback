@@ -237,6 +237,7 @@ round: <current>/2
 external_invocations: <used>/2
 open_critical_high: <count>
 open_medium_low: <count>
+open_above_floor: <count>
 campaign_closed: yes
 ```
 

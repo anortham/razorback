@@ -52,13 +52,13 @@ const TWINS = [
         plans: /^On a resumed run, orient before continuing:$/,
       },
       {
-        name: 'SDD-only step 5: reconcile parallel-lead-commit gaps (executing-plans is single-agent, so it has no lead-commit crash window)',
-        sdd: /^5\. Reconcile `parallel-lead-commit` gaps: .* Do not trust a completion record that has no verifiable commit\.$/,
+        name: 'SDD-only step 7: reconcile parallel-lead-commit gaps (executing-plans is single-agent, so it has no lead-commit crash window)',
+        sdd: /^7\. Reconcile `parallel-lead-commit` gaps: .* Do not trust a completion record that has no verifiable commit\.$/,
       },
       {
-        name: 'final step renumbered by SDD’s extra step 5 (SDD 6 vs executing-plans 5)',
-        sdd: /^6\. Identify the next incomplete task and resume execution\.$/,
-        plans: /^5\. Identify the next incomplete task and resume execution\.$/,
+        name: 'final step renumbered by SDD’s extra step 7 (SDD 8 vs executing-plans 7)',
+        sdd: /^8\. Identify the next incomplete task and resume execution\.$/,
+        plans: /^7\. Identify the next incomplete task and resume execution\.$/,
       },
       {
         name: 'SDD-only trailer: fresh runs enter at Step 1, and prior-session subagent IDs die at compaction',

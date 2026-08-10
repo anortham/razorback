@@ -41,6 +41,8 @@ test('availability labels evidence honestly without blocking ordinary lead-only 
   assert.match(skill, /explicit reviewer.*unavailable.*block/is);
   assert.match(skill, /optional participant lost mid-campaign.*not retried or replaced/is);
   assert.match(skill, /unavailable optional participant.*record/is);
+  assert.match(skill, /required reviewer obligation is satisfied once usable evidence covers every declared required discovery scope/i);
+  assert.match(skill, /optional confirmation.*does not retroactively block/i);
 });
 
 test('three round ceiling permits Round 3 only for objective fix regressions', () => {
@@ -61,6 +63,7 @@ test('three round ceiling permits Round 3 only for objective fix regressions', (
   assert.match(skill, /stop after (?:Round 3|the round) regardless of outcome/i);
   assert.match(skill, /extra reviewers never add rounds/i);
   assert.match(skill, /at most one (?:external )?confirmer/i);
+  assert.match(skill, /Ordinary lead-only \| Lead sweep \| Lead \| 0 \| 2/);
 });
 
 test('closure uses canonical severity, evidence, and finite terminal states', () => {
@@ -77,6 +80,10 @@ test('closure uses canonical severity, evidence, and finite terminal states', ()
   assert.match(skill, /evidence: lead-only \| fresh-session \| external-reviewed \| cross-model-reviewed/);
   assert.match(skill, /open_critical_high: 0/);
   assert.match(skill, /open_medium_low: 2/);
+  assert.match(skill, /open_above_floor: 1/);
+  assert.match(skill, /deferred finding at or above the severity floor remains open/i);
+  assert.match(skill, /exhausted external budget stops external dispatch but does not prevent an already-permitted lead-only confirmation/i);
+  assert.match(skill, /capped.*no permitted action remains.*above-floor finding/is);
   assert.match(skill, /campaign_closed: yes/);
   assert.match(skill, /clean.*capped.*blocked.*terminal/is);
 });

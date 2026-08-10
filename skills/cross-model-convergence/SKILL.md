@@ -19,6 +19,35 @@ Every participating model's provider must be allowed by the external-model polic
 
 Select the different-model reviewers explicitly requested or deliberately chosen for this campaign before the first sweep. Availability and policy are gates, not reasons to enroll every installed model. Users may run with one selected external reviewer or several. Omit unavailable optional reviewers before setup and record the omission. A reviewer named by the user or approved plan is required; if unavailable, emit a `blocked` campaign status instead of substituting another model or degrading to same-model review.
 
+When no different-model reviewer is available before setup, emit one auditable zero-call record instead of inventing a participant:
+
+```text
+REVIEW CAMPAIGN
+scope: <problem class and approved change range>
+workflow: convergence
+participants: lead
+required_reviewers: at least one different-model reviewer (unavailable)
+evidence_target: cross-model-reviewed
+severity_floor: <default medium>
+discovery_scopes: <problem class>
+external_invocation_budget: 0
+max_rounds: 3
+round: 0/3
+external_invocations: 0/0
+
+REVIEW CAMPAIGN STATUS
+state: blocked
+evidence: lead-only
+round: 0/3
+external_invocations: 0/0
+open_critical_high: 0
+open_medium_low: 0
+open_above_floor: 0
+campaign_closed: yes
+```
+
+Do not start another campaign automatically if availability changes; a new campaign requires a new explicit user request.
+
 Emit this immutable setup once:
 
 ```text
@@ -47,15 +76,15 @@ Replace the budget placeholders with integers before dispatch: one selected exte
 5. Present the merged list once for approval. In an unattended goal-driven run, the pre-approved setup plus a Goldfish checkpoint satisfies this gate.
 6. Fix approved findings with TDD and verify them with `razorback:verification-before-completion`.
 
-Reviewer proposals outside the approved scope are recorded for the final report and cannot extend the campaign. A required reviewer that is unavailable, errors, or supplies no usable review evidence closes the campaign as `blocked`. An optional participant lost after setup is not retried or replaced; degrade the evidence to the strongest label actually earned and continue only if at least one different-model review still satisfies the explicit cross-model requirement.
+Reviewer proposals outside the approved scope are recorded for the final report and cannot extend the campaign. A required discovery obligation is satisfied once that reviewer supplies usable evidence for every declared required discovery scope. Unavailability, errors, or unusable output before then closes the campaign as `blocked`. An optional participant lost after setup is not retried or replaced; use the strongest label actually earned and continue only if at least one different-model review still satisfies the explicit cross-model requirement.
 
 ## Round 2 — Scoped Confirmation
 
 Mark every accepted finding `addressed`, `not addressed`, `contested`, or `deferred`. The lead confirms fixes by default and inspects only the fix diff for new breakage. Observations outside the fix diff are recorded and cannot reopen broad discovery.
 
-If setup predeclared targeted external confirmation, one selected reviewer may make one targeted call against the accepted finding set and fix diff. Increment `external_invocations` to `<budget>/<budget>` immediately after dispatch. The prompt must forbid a new sweep. Content-free approval is not clean evidence and cannot authorize another call.
+If setup predeclared targeted external confirmation, one selected reviewer may make one targeted call against the accepted finding set and fix diff. Increment `external_invocations` to `<budget>/<budget>` immediately after dispatch. The prompt must forbid a new sweep. Content-free approval is not clean evidence and cannot authorize another call. If this optional confirmer is unavailable or fails after supplying required discovery evidence, the later optional confirmation failure does not retroactively block; record the consumed call when dispatched and the lead completes confirmation.
 
-A new medium/low observation may be fixed or deferred but cannot add a round or external invocation. Close `clean` when nothing above the floor remains open. Close `capped` when the round or invocation budget is exhausted with findings still open, unless an unresolved critical/high finding meets the blocker taxonomy and requires `blocked`.
+A new medium/low observation may be fixed or deferred but cannot add a round or external invocation. Close `clean` when nothing above the floor remains open. Close `capped` when no permitted action remains with an above-floor finding still open, unless an unresolved critical/high finding meets the blocker taxonomy and requires `blocked`. Exhausting the external budget forbids another external call but does not prevent eligible lead-only Round 3 confirmation.
 
 ## Round 3 — Exceptional Targeted Confirmation
 
@@ -70,11 +99,12 @@ At the end of every round, print and checkpoint the full immutable setup, curren
 ```text
 REVIEW CAMPAIGN STATUS
 state: clean | capped | blocked
-evidence: cross-model-reviewed
+evidence: <strongest label actually earned>
 round: <current>/3
 external_invocations: <used>/<budget>
 open_critical_high: <count>
 open_medium_low: <count>
+open_above_floor: <count>
 campaign_closed: yes
 ```
 
@@ -82,7 +112,7 @@ The goal predicate for `/loop`, Codex goals, or another until-condition runner i
 
 ## Failure Handling
 
-- **Required reviewer unavailable or erroring:** close `blocked`; an explicit reviewer requirement cannot be replaced or degraded.
+- **Required reviewer unavailable or erroring before required discovery completes:** close `blocked`; an explicit reviewer requirement cannot be replaced or degraded.
 - **Optional reviewer unavailable after setup:** record the consumed call when dispatched, do not retry or replace it, and degrade evidence. Close `blocked` if no usable different-model evidence remains.
 - **Content-free response:** record the consumed invocation and close `blocked` when it supplies no usable required-reviewer evidence. Do not loop for compliments.
 - **Disputed finding:** push back once with evidence. If still disputed, record it and let the lead assign its final disposition.

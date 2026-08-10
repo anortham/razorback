@@ -43,7 +43,7 @@ The lead always participates. Select others only when available, policy-allowed,
 | Lead plus external reviewer | `external-reviewed` | Adds independent evidence within the fixed campaign. |
 | Lead plus a real different-model reviewer | `cross-model-reviewed` | Satisfies an explicit cross-model requirement. |
 
-A reviewer is explicit when named by the user, required by repo instructions, or recorded in the approved plan. An explicit reviewer that is unavailable blocks. An unavailable optional participant is omitted and recorded before setup. An optional participant lost mid-campaign is not retried or replaced; degrade the evidence label and continue within the original budget.
+A reviewer is explicit when named by the user, required by repo instructions, or recorded in the approved plan. An explicit reviewer that is unavailable before completing its required discovery scope blocks. A required reviewer obligation is satisfied once usable evidence covers every declared required discovery scope. Failure of an optional confirmation after that point does not retroactively block; count the call when dispatched, do not retry or replace it, and let the lead confirm. An unavailable optional participant is omitted and recorded before setup. An optional participant lost mid-campaign is not retried or replaced; use the strongest evidence label already earned and continue within the original budget.
 
 ## Bounded Rounds
 
@@ -57,6 +57,7 @@ A reviewer is explicit when named by the user, required by repo instructions, or
 
 - Mark every accepted finding `addressed`, `not addressed`, `contested`, or `deferred`.
 - Inspect only the fix diff for new breakage. Observations outside the fix diff are recorded and cannot extend the campaign. A new medium/low observation may be fixed or deferred but cannot authorize another external sweep.
+- A deferred finding at or above the severity floor remains open. A finding stops counting as open only when addressed, dismissed from evidence, or recorded outside the approved campaign scope.
 - The lead confirms by default. At most one predeclared external confirmer may make one targeted invocation.
 
 ### Round 3 — exceptional targeted confirmation
@@ -67,13 +68,13 @@ Extra reviewers never add rounds. They add Round 1 evidence and consume the pred
 
 ## Workflow Profiles
 
-| Workflow | Discovery | Confirmation | Default external budget |
-|---|---|---|---:|
-| Ordinary lead-only | Lead sweep | Lead | 0 |
-| Standalone external | One selected reviewer | Lead | 1 |
-| Pre-merge | General plus security once | Lead | 2 |
-| Cross-model convergence | Selected reviewers once | At most one targeted external confirmer | selected reviewers + 1 |
-| Exceptional regression | None | One targeted confirmer | +1 only when predeclared |
+| Workflow | Discovery | Confirmation | Default external budget | Max rounds |
+|---|---|---|---:|---:|
+| Ordinary lead-only | Lead sweep | Lead | 0 | 2 |
+| Standalone external | One selected reviewer | Lead | 1 | 2 |
+| Pre-merge | General plus security once | Lead | 2 | 2 |
+| Cross-model convergence | Selected reviewers once | At most one targeted external confirmer | selected reviewers + 1 | 3 |
+| Exceptional regression | None | One targeted confirmer | +1 only when predeclared | 1 |
 
 Callers may choose a stricter profile, never a looser one.
 
@@ -81,7 +82,7 @@ Callers may choose a stricter profile, never a looser one.
 
 Canonical severity comes from `skills/codex-cli/schemas/review-output.schema.json`: `critical`, `high`, `medium`, or `low`. For every accepted finding, record its classification and canonical severity; file:line or symbol evidence; `red-to-green test`, `existing covering test`, or `inspection-only`; and the fix, dismissal, dispute, or deferral reason. Green tests on an uncovered path are inspection-only. Majority vote may raise confidence but cannot override code evidence, scope, or the campaign budget.
 
-Terminal states are `clean` when nothing above the floor remains open in scope, `capped` when a round or invocation budget is exhausted, and `blocked` when an explicit reviewer is unavailable or an unresolved critical/high finding meets the blocker taxonomy. Emit this block for every terminal state:
+Terminal states are `clean` when nothing above the floor remains open in scope, `capped` when the maximum round ends or no permitted action remains while an above-floor finding is open, and `blocked` when a required discovery obligation cannot be satisfied or an unresolved critical/high finding meets the blocker taxonomy. An exhausted external budget stops external dispatch but does not prevent an already-permitted lead-only confirmation. Emit this block for every terminal state:
 
 ```text
 REVIEW CAMPAIGN STATUS
@@ -91,6 +92,7 @@ round: 2/2
 external_invocations: 3/3
 open_critical_high: 0
 open_medium_low: 2
+open_above_floor: 1
 campaign_closed: yes
 ```
 

@@ -55,6 +55,7 @@ Placeholders use {{double-brace}} syntax.
 - **External invocations:** {{review_campaign_external_invocations}}
 - **Open critical/high:** {{review_campaign_open_critical_high}}
 - **Open medium/low:** {{review_campaign_open_medium_low}}
+- **Open at/above floor:** {{review_campaign_open_above_floor}}
 
 ## Tests
 - {{test_summary}} <!-- e.g. "142 passing, 0 failing" — or the failure summary if Status is Blocked -->

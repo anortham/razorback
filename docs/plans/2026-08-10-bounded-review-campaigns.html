@@ -32,15 +32,15 @@
 </head>
 <body>
 <section class="digest">
-  <header><div><h1>Bounded Review Campaigns</h1><p class="goal">Implement one finite campaign contract across lead-only, external, and cross-model review workflows.</p></div><div class="hprog"><div class="n">3<small> / 4 tasks</small></div><div class="meter" aria-label="75% complete"><i style="width:75%"></i></div></div></header>
+  <header><div><h1>Bounded Review Campaigns</h1><p class="goal">Implement one finite campaign contract across lead-only, external, and cross-model review workflows.</p></div><div class="hprog"><div class="n">4<small> / 4 tasks</small></div><div class="meter" aria-label="100% complete"><i style="width:100%"></i></div></div></header>
   <nav class="tabs" aria-label="Digest sections"><button class="on" data-pane="timeline">Timeline</button><button data-pane="decisions">Decisions</button><button data-pane="rails">Guardrails</button></nav>
   <div class="pane on" id="timeline">
     <div class="spine">
       <div class="stage done"><h2>Contract first <span class="chip done"><span class="ico">✓</span>Done</span></h2><p class="why">Lock the deep module before integrations depend on it.</p><div class="trow"><span class="st done">✓ Done</span><span class="what"><b>1</b>Canonical campaign skill <span>— setup, budgets, rounds, closure, guards.</span></span></div></div>
       <div class="stage done"><h2>Parallel integration <span class="chip done"><span class="ico">✓</span>Done</span></h2><p class="why">Two disjoint lanes consume the stable contract.</p><div class="trow"><span class="st done">✓ Done</span><span class="what"><b>2</b>Reviewer CLI boundary <span>— uncapped invocation, capped campaign.</span></span></div><div class="trow"><span class="st done">✓ Done</span><span class="what"><b>3</b>Workflow integration <span>— convergence, pre-merge, execution, report.</span></span></div></div>
-      <div class="stage now"><h2>Pressure and branch gates <span class="chip inprogress"><span class="ico">◐</span>In progress</span></h2><p class="why">Fresh agents test the rules under the pressures that caused the incident.</p><div class="here">You are here — adversarial pressure validation</div><div class="trow"><span class="st inprogress">◐ In progress</span><span class="what"><b>4</b>Close loopholes <span>— one/two/three models, severity, loss, compaction.</span></span></div><div class="flag"><b>⚠ Hard gate.</b><p>No completion claim until focused tests, 239+ repository tests, diff check, version audit, and GREEN pressure scenarios pass.</p></div></div>
+      <div class="stage done"><h2>Pressure and branch gates <span class="chip done"><span class="ico">✓</span>Done</span></h2><p class="why">Fresh agents tested the rules under the pressures that caused the incident.</p><div class="trow"><span class="st done">✓ Done</span><span class="what"><b>4</b>Close loopholes <span>— one/two/three models, severity, loss, compaction.</span></span></div><div class="flag"><b>✓ Gates passed.</b><p>All 256 repository tests, focused guards, diff check, version audit, and GREEN pressure scenarios passed.</p></div></div>
     </div>
-    <div class="card remains"><b>Remaining:</b> approve the plan, execute four tasks autonomously, checkpoint each milestone, and stop before any push or release.</div>
+    <div class="card remains"><b>Complete:</b> four tasks implemented and verified locally. No push or release was performed.</div>
   </div>
   <div class="pane" id="decisions">
     <div class="card dec"><h3>New canonical skill <span class="where">Task 1</span></h3><p><b>Landed:</b> `managing-review-campaigns` owns immutable setup, counters, evidence labels, and terminal states.</p></div>

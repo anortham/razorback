@@ -161,6 +161,7 @@
 
 **Files:**
 - Modify if required: every Task 1-3 owned skill/test file
+- Modify if required: `tests/twin-sections.test.mjs`
 - Modify: `docs/plans/2026-08-10-bounded-review-campaigns.md`
 - Modify: `docs/plans/2026-08-10-bounded-review-campaigns.html`
 
@@ -170,7 +171,7 @@
 
 **Contract inputs:** Run fresh agents with raw scenarios only; do not leak the intended answer or prior diagnosis. Scenarios remain read-only.
 
-**File ownership:** May modify every Task 1-3 owned skill/test file; modify this plan and its digest for final status.
+**File ownership:** May modify every Task 1-3 owned skill/test file and `tests/twin-sections.test.mjs`; modify this plan and its digest for final status.
 
 **Serialization required:** Yes.
 
@@ -181,11 +182,11 @@
 **Approach:** The lead dispatches fresh read-only validation agents. Closure requires correct terminal state, evidence label, immutable counters, and no invented quorum or extra reviewer call. After GREEN pressure evidence, run affected-change and branch gates and update plan/digest status.
 
 **Acceptance criteria:**
-- [ ] One-model ordinary review closes as `lead-only`; explicit cross-model absence blocks.
-- [ ] Two- and three-model campaigns stop at the declared round and invocation caps.
-- [ ] Severity inflation, reviewer disagreement, optional participant loss, and counter-reset attempts do not extend the campaign.
-- [ ] Any new rationalization is countered in the skill and locked by a deterministic test.
-- [ ] Lead affected-change scope passes on the integrated HEAD.
-- [ ] `npm test`, `git diff --check`, and `./scripts/bump-version.sh --audit` pass.
-- [ ] Plan and digest show completed status and the verification ledger is checkpointed.
-- [ ] Task changes are committed with `serial-worker-commit` after checkpointing.
+- [x] One-model ordinary review closes as `lead-only`; explicit cross-model absence blocks.
+- [x] Two- and three-model campaigns stop at the declared round and invocation caps.
+- [x] Severity inflation, reviewer disagreement, optional participant loss, and counter-reset attempts do not extend the campaign.
+- [x] Any new rationalization is countered in the skill and locked by a deterministic test.
+- [x] Lead affected-change scope passes on the integrated HEAD.
+- [x] `npm test`, `git diff --check`, and `./scripts/bump-version.sh --audit` pass.
+- [x] Plan and digest show completed status and the verification ledger is checkpointed.
+- [x] Task changes are committed with `serial-worker-commit` after checkpointing.
