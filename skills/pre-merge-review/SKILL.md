@@ -7,7 +7,9 @@ description: Use after all tasks are complete and branch verification passes, be
 
 ## Overview
 
-Run a fresh, isolated external reviewer (codex / claude) against the full branch diff after all tasks are done and the plan's branch-gate verification scope is green, then route verified findings through razorback's own fix flow. The review is two passes of the same reviewer CLI, both against the full branch diff: a **general adversarial pass**, then a **dedicated security pass** driven by a security-only prompt. The lead verifies every finding against the code with Miller, classifies it (real-bug / real-improvement / false-positive / out-of-scope), fixes what's real, dismisses what isn't (with a written reason), and flags what needs human judgment. Each pass runs once — no round-two review after fixes. The output is a summary block that slots into the morning report's External review section, so the user sees exactly what the reviewer said, what the lead did with it, and why.
+Run a fresh, isolated external reviewer (codex / claude) against the full branch diff after all tasks are done and the plan's branch-gate verification scope is green, then route verified findings through razorback's own fix flow. The review is two passes of the same reviewer CLI, both against the full branch diff: a **general adversarial pass**, then a **dedicated security pass** driven by a security-only prompt. The lead verifies every finding against the code with Miller, classifies it (real-bug / real-improvement / false-positive / out-of-scope), fixes what's real, dismisses what isn't (with a written reason), and flags what needs human judgment. Each pass runs once — fixes receive local confirmation without a post-fix external re-review. The output is a summary block that slots into the morning report's External review section, so the user sees exactly what the reviewer said, what the lead did with it, and why.
+
+**REQUIRED SUB-SKILL:** razorback:managing-review-campaigns.
 
 ## When to invoke
 
@@ -27,6 +29,27 @@ Skip this skill entirely if the reviewer choice is `none`. The choice is fixed b
 - The external-model policy check in razorback:security-review passes. When a policy block exists, the chosen reviewer's provider (`codex` → `openai`, `claude` → `anthropic`) is allowed and the reviewer appears in `Reviewer choices permitted:`. When no external-model policy block exists, proceed and add the required loud morning-report note.
 
 If any pre-condition is not met, abort and surface the gap to the caller. Do not review a partial branch or pre-push a branch on your own.
+
+## Campaign Setup
+
+After the pre-conditions and policy gate pass, emit this immutable setup before either external call:
+
+```text
+REVIEW CAMPAIGN
+scope: full branch diff against merge base
+workflow: pre-merge
+participants: lead, <chosen reviewer>
+required_reviewers: <chosen reviewer>
+evidence_target: external-reviewed
+severity_floor: medium
+discovery_scopes: general, security
+external_invocation_budget: 2
+max_rounds: 2
+round: 0/2
+external_invocations: 0/2
+```
+
+The general and security calls consume the entire immutable external budget. The participant and reviewer cannot be replaced mid-campaign. A dispatch consumes its invocation even if output is unusable; the required reviewer being unavailable or failing either pass closes the campaign `blocked`.
 
 ## The Process
 
@@ -111,6 +134,8 @@ When a reviewer is chosen, dispatch the chosen CLI **twice** against the same di
 1. **General pass** — the existing adversarial prompt wiring in the chosen reviewer-prompts file below.
 2. **Security pass** — the canonical security-only prompt at `../security-review/security-adversarial-prompt.txt` (in the razorback plugin), dispatched per the `## Security pass` section of the chosen reviewer-prompts file. Follow that section for the runnable invocation — do not construct the security-pass command here.
 
+Immediately after the general pass call, record `external_invocations: 1/2`. Immediately after the security pass call, record `external_invocations: 2/2`. Count the calls even when parsing later fails. Do not dispatch either scope again.
+
 Select the prompt file based on the reviewer choice and invoke the matching reviewer-cli skill. Each file contains a complete runnable invocation for each pass. Every invocation runs the reviewer in adversarial mode with read-only tool access — the reviewer never edits code.
 
 - **codex** → follow [`reviewer-prompts/codex.md`](reviewer-prompts/codex.md). Calls `codex exec --ephemeral --color never --output-schema …` with the shared JSON schema. Background on codex's adversarial-review mode lives in the bundled `razorback:codex-cli` skill.
@@ -138,6 +163,8 @@ jq '.structured_output.findings[]?' < "$OUT_DIR/claude-output.json"   # iterate;
 ```
 
 After Step 3, both reviewer paths produce **one merged list** of normalized findings covering both passes. Tag each finding with the pass that produced it (`general` / `security`) — the tag carries into classification and the morning report. For cost tracking in the morning report's per-reviewer section: claude surfaces `.total_cost_usd` and `.usage.{input_tokens,output_tokens}` in each pass's envelope — sum the two invocations; codex does not surface per-request token counts in its JSON output, so note the absence for codex rather than faking a number.
+
+Malformed or schema-invalid output is a failed required-reviewer pass. Close `blocked` with the consumed invocation count; do not retry and displace the other declared discovery scope.
 
 ## Step 4: Verify findings
 
@@ -174,7 +201,7 @@ Why fresh workers when delegation exists? The review runs after the main executi
 
 ## Step 6: Run required verification
 
-After all delegated fix workers report DONE and commit their changes, or after the inline fixes are committed on a no-delegation run, run the smallest project-defined verification scope that covers the fixes. If the fixes change branch-level behavior or invalidate the prior branch-gate ledger entry, run the branch-gate scope again. If the same HEAD already has a passing ledger entry for the required scope, reuse that evidence.
+After all delegated fix workers report DONE and commit their changes, or after the inline fixes are committed on a no-delegation run, begin Round 2 local confirmation. Run the smallest project-defined verification scope that covers the fixes and inspect only the fix diff for new breakage. If the fixes change branch-level behavior or invalidate the prior branch-gate ledger entry, run the branch-gate scope again. If the same HEAD already has a passing ledger entry for the required scope, reuse that evidence. No external reviewer is dispatched during local confirmation.
 
 If verification fails after fixes:
 
@@ -200,6 +227,21 @@ Produce a structured block that slots into the External review section of `../fi
 
 Append a one-line cost note per reviewer, summed across both pass invocations: claude from `.total_cost_usd` and `.usage` ("claude used N in / M out tokens, $X.XX"). Codex does not surface per-request token counts — note the absence rather than faking a number.
 
+Also emit the terminal campaign block consumed by the morning report. Use `clean` when nothing above the floor remains open, `capped` when the fixed budget or round limit is exhausted with non-blocking findings still open, and `blocked` when the required reviewer failed or an unresolved critical/high finding meets the blocker taxonomy:
+
+```text
+REVIEW CAMPAIGN STATUS
+state: clean | capped | blocked
+evidence: external-reviewed
+round: <current>/2
+external_invocations: <used>/2
+open_critical_high: <count>
+open_medium_low: <count>
+campaign_closed: yes
+```
+
+Every state with `campaign_closed: yes` is terminal. The caller must not dispatch another reviewer after this block.
+
 The caller (`executing-plans` Step 3 or `subagent-driven-development` Step 4a) takes this block and hands it forward to `finishing-a-development-branch`, which renders it into the PR description (summary form) and the full worktree report.
 
 ## Red flags
@@ -207,12 +249,12 @@ The caller (`executing-plans` Step 3 or `subagent-driven-development` Step 4a) t
 **Never:**
 
 - **Loop external review.** Each pass runs once. No "review, fix, re-review" cycle for the general pass or the security pass. Leftover real findings that the lead cannot fix get flagged for human judgment and the PR proceeds.
-- **Re-run a reviewer that already burned a full attempt.** A run that consumed half an hour and a full context and returned nothing is not fixed by attempt 2 with a bigger timeout, or attempt 3 with a split diff. That escalation is the real runaway — three dead attempts cost far more than the one review you were trying to bound. Retrying **once** on a malformed-output parse failure is the only permitted repeat; everything else blocks. A reviewer that runs long is working, not stuck.
+- **Re-run a reviewer that already burned a full attempt.** A run that consumed half an hour and a full context and returned nothing is not fixed by another attempt with a bigger timeout or a split diff. Every call consumes one of the two immutable invocations; malformed output blocks instead of authorizing a retry. A reviewer that runs long is working, not stuck.
 - **Cap the reviewer to control cost.** The review's scope is set by the prompt, not by `--max-turns`, `--max-budget-usd`, or a shortened timeout. A cap truncates the review mid-flight, and a truncated review gets re-run in full. The 30-minute timeout is a failsafe for a hung process and nothing more.
 - **Let the reviewer edit code.** Reviewers are read-only, each via its CLI's real mechanism: codex runs under `-s read-only` (sandbox blocks writes), claude pins `--tools "Read,Grep,Glob" --strict-mcp-config` (no write-capable tool in the set). Delegated fixes route through fresh implementer workers, and no-delegation runs fix inline under the same Miller-first checklist.
 - **Silently dismiss findings.** Every dismissal requires a written reason in the morning report so the user can override on PR review. Silent dismissals defeat the whole point of running an external reviewer.
 - **Skip verification after fixes.** Every fix invalidates prior affected scopes. Run the required project-defined verification scope, or reuse a ledger entry only when it covers the current HEAD and required scope. Never push a branch whose most recent verification does not include the fix commits.
-- **Ship a PR without the reviewer the user requested.** Reviewer unavailability in **either pass** (auth, rate limit, timeout with no usable partial output, empty stdout, schema violation persisting after one retry) is a **blocker**, not a silent downgrade — the same triggers and the same protocol apply to the general pass and the security pass. Skipping the security pass when a reviewer is chosen is this same red flag: half a review is a silent downgrade. Stop the run, do NOT push, do NOT create a PR, emit a partial morning report with `Status: Blocked` and the specific failure in `Blockers hit`, and exit. The user chose this reviewer for the run; quietly skipping the review — or one of its passes — turns an explicit request into an implicit "never mind".
+- **Ship a PR without the reviewer the user requested.** Reviewer unavailability in **either pass** (auth, rate limit, timeout with no usable partial output, empty stdout, schema violation) is a **blocker**, not a silent downgrade — the same triggers and the same protocol apply to the general pass and the security pass. Skipping the security pass when a reviewer is chosen is this same red flag: half a review is a silent downgrade. Stop the run, do NOT push, do NOT create a PR, emit a partial morning report with `Status: Blocked` and the specific failure in `Blockers hit`, and exit. The user chose this reviewer for the run; quietly skipping the review — or one of its passes — turns an explicit request into an implicit "never mind".
 
 ## Integration
 
@@ -223,6 +265,7 @@ The caller (`executing-plans` Step 3 or `subagent-driven-development` Step 4a) t
 
 **Calls:**
 
+- `managing-review-campaigns` skill — owns immutable setup, counters, and terminal status
 - `codex-cli` skill (when reviewer = codex) — see `reviewer-prompts/codex.md`
 - `claude-cli` skill (when reviewer = claude) — see `reviewer-prompts/claude.md`
 

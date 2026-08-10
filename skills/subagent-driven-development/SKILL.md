@@ -294,6 +294,12 @@ Re-review after every fix. This is the one statement of the re-review scope — 
 
 The iteration cap and its adjudication are stated in Step 3 ("Review cap"); the commit mode is unchanged by a fix round (Commit Mode Contract).
 
+### Review Campaign Boundary
+
+The routine scoped fix review in Step 4 does not start a review campaign. Its existing four-attempt policy remains local to one task: three context-preserving attempts plus the optional fresh reframed 4th attempt, each followed by lead-only scoped re-review.
+
+If a review reopens broad discovery or dispatches an external reviewer, invoke `razorback:managing-review-campaigns` before that action. Emit one immutable campaign setup, count every external CLI call, and close on its terminal status. Never convert routine scoped re-review into a campaign merely because it needed another allowed fix attempt.
+
 ## Step 4a: Pre-merge external review (if chosen)
 
 If the reviewer choice propagated from `writing-plans` (via the execution handoff) is `codex` or `claude`:
@@ -310,7 +316,7 @@ If the reviewer choice propagated from `writing-plans` (via the execution handof
 
 If the choice is `none` (or absent), skip Step 4a.
 
-Pre-merge-review builds the full branch diff, runs one general pass plus one security pass with the chosen reviewer in adversarial read-only mode, classifies findings (real-bug / real-improvement / false-positive / out-of-scope), dispatches fresh implementer subagents for verified fixes, runs the required verification scope for the resulting HEAD, and emits a summary block for the morning report. Each external pass runs once; fixes are verified locally without a post-fix external re-review.
+Pre-merge-review builds the full branch diff, starts its canonical bounded campaign, runs one general pass plus one security pass with the chosen reviewer in adversarial read-only mode, classifies findings (real-bug / real-improvement / false-positive / out-of-scope), dispatches fresh implementer subagents for verified fixes, runs the required verification scope for the resulting HEAD, and emits its terminal `REVIEW CAMPAIGN STATUS` plus a summary block for the morning report. Each external pass runs once; fixes are verified locally without a post-fix external re-review.
 
 After `pre-merge-review` returns, proceed to Step 5 (Complete → `razorback:finishing-a-development-branch`).
 
@@ -345,8 +351,8 @@ Anything else: pick the plan-consistent option, note the choice in your report, 
 The lead writes a `goldfish:checkpoint` at four points during the run. This persists phase-level progress and decisions across auto-compaction and session restarts.
 
 1. **Phase boundary** — after each phase of a multi-phase plan: "Phase N of M complete. Decisions: …. Next: Phase N+1." Record the phase's branch and worktree path in the checkpoint. A multi-phase plan runs in **one** worktree by default; a phase that opens its own worktree runs Step 0b of `razorback:using-git-worktrees` first, so the prior phase's unmerged state is stated rather than discovered at Step 5.
-2. **Pre-review** — before Step 4a begins (if a reviewer was chosen): captures reviewer choice, diff range, verification strategy.
-3. **Post-review** — after Step 4a completes: captures findings, classifications, fix commits.
+2. **Pre-review** — before Step 4a begins (if a reviewer was chosen): captures reviewer choice, diff range, verification strategy, and the immutable REVIEW CAMPAIGN setup and current counters.
+3. **Post-review** — after Step 4a completes: captures findings, classifications, fix commits, and the complete terminal `REVIEW CAMPAIGN STATUS` block.
 4. **Post-PR** — after `finishing-a-development-branch` creates the PR: final state.
 
 Checkpoint at phase granularity, not per task or per subagent dispatch. Per-task checkpoints are noise; per-phase is enough to recover.
@@ -358,11 +364,15 @@ A checkpoint is a fast, non-blocking memory write — never a stop, a review gat
 On detecting a resumed run (post-compaction note, mismatch between expected and actual conversation state, or the user says "resume"), the lead follows this fixed orientation sequence before continuing:
 
 1. `goldfish:recall` — retrieve the active brief and recent checkpoints.
-2. Read the plan file, noting which acceptance-criteria checkboxes are already `[x]`.
-3. Check the TaskList for completed / in-progress / pending tasks.
-4. `git log --oneline <base>..HEAD` — verify what is actually committed.
-5. Reconcile `parallel-lead-commit` gaps: re-read this plan's ledger (`<workspace>/progress.md`, identity and resume check per Durable Progress), then for any progress line marked complete whose commit SHA is missing, `pending`, or absent from `git log`, run `git status` and inspect the working tree for that task's owned files. If approved edits are uncommitted, re-review and commit them (staging per the Commit Mode Contract) before advancing; if nothing is there, treat the task as incomplete and re-dispatch. Do not trust a completion record that has no verifiable commit.
-6. Identify the next incomplete task and resume execution.
+2. Restore any immutable REVIEW CAMPAIGN setup and current counters from the checkpoint before considering review work. Counters only increase; participants and budgets never change after resume.
+3. If recalled `REVIEW CAMPAIGN STATUS` contains `campaign_closed: yes`, treat it as terminal and do not dispatch another reviewer, including when the state is `capped` or `blocked`.
+4. Read the plan file, noting which acceptance-criteria checkboxes are already `[x]`.
+5. Check the TaskList for completed / in-progress / pending tasks.
+6. `git log --oneline <base>..HEAD` — verify what is actually committed.
+7. Reconcile `parallel-lead-commit` gaps: re-read this plan's ledger (`<workspace>/progress.md`, identity and resume check per Durable Progress), then for any progress line marked complete whose commit SHA is missing, `pending`, or absent from `git log`, run `git status` and inspect the working tree for that task's owned files. If approved edits are uncommitted, re-review and commit them (staging per the Commit Mode Contract) before advancing; if nothing is there, treat the task as incomplete and re-dispatch. Do not trust a completion record that has no verifiable commit.
+8. Identify the next incomplete task and resume execution.
+
+For any unattended goal or continuation predicate, `campaign_closed: yes` is terminal. Remaining findings in a `capped` campaign do not authorize another review campaign or reviewer dispatch.
 
 This sequence runs only on resumed runs. A fresh run dispatches directly into Step 1 (Extract Tasks from the Plan). Subagent IDs from the prior session cannot be resumed post-compaction — treat any needed fix as a fresh dispatch with prior-commit context.
 
@@ -421,6 +431,7 @@ Implementer (resumed): all three addressed, tests passing, committed ghi789.
 - **`../using-razorback/references/source-control-hygiene.md`** — Check A before creating a worktree, Check B before Step 5 declares the run done.
 - **razorback:writing-plans** — Creates the plan this skill executes
 - **razorback:requesting-code-review** — Review criteria the lead applies during inline review
+- **razorback:managing-review-campaigns** — Bounds any broad or external review campaign without replacing routine scoped fix review
 - **razorback:finishing-a-development-branch** — Complete development after all tasks
 
 **Subagents should follow:**

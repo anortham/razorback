@@ -47,6 +47,15 @@ Placeholders use {{double-brace}} syntax.
   <!-- repeat for each flagged finding -->
 - **Cost:** {{cost_note}} <!-- one note per invocation: claude renders cost from each result envelope (.total_cost_usd, .usage) — sum the general + security passes; no spend cap is set, so report the actual cost; codex still reports no per-request counts — note the absence rather than faking a number -->
 
+## Review campaign
+<!-- Always render this section. For a run with no review campaign, use "not run" for state/evidence and "0/0" for round/invocations. -->
+- **State:** {{review_campaign_state}} <!-- clean | capped | blocked | not run -->
+- **Evidence:** {{review_campaign_evidence}} <!-- lead-only | fresh-session | external-reviewed | cross-model-reviewed | not run -->
+- **Round:** {{review_campaign_round}}
+- **External invocations:** {{review_campaign_external_invocations}}
+- **Open critical/high:** {{review_campaign_open_critical_high}}
+- **Open medium/low:** {{review_campaign_open_medium_low}}
+
 ## Tests
 - {{test_summary}} <!-- e.g. "142 passing, 0 failing" — or the failure summary if Status is Blocked -->
 

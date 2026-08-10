@@ -55,6 +55,8 @@ If the `reviewer_choice` propagated from `writing-plans` is one of `codex` or `c
 - verification strategy
 - verification ledger
 
+The pre-merge skill owns the canonical immutable `REVIEW CAMPAIGN` setup, its two external invocation counters, and terminal `REVIEW CAMPAIGN STATUS`. Preserve those blocks verbatim in checkpoints and the execution report.
+
 If the reviewer choice is `none` (or absent), skip Step 3 entirely.
 
 After `razorback:pre-merge-review` returns its morning-report summary block, proceed to Step 4.
@@ -95,7 +97,7 @@ Anything else: pick the plan-consistent option, note the choice in your report, 
 
 ## Checkpoints
 
-Write a `goldfish:checkpoint` at phase boundaries (or, for a flat task list, every few completed tasks) to persist progress and decisions across auto-compaction and session restarts. Capture what is done, the key decisions, and the next task to run.
+Write a `goldfish:checkpoint` at phase boundaries (or, for a flat task list, every few completed tasks) to persist progress and decisions across auto-compaction and session restarts. Capture what is done, the key decisions, and the next task to run. Before external review, also capture the immutable REVIEW CAMPAIGN setup and current counters. After review, capture the complete terminal `REVIEW CAMPAIGN STATUS` block with findings and dispositions.
 
 A checkpoint is a fast, non-blocking memory write. It is **not** a stop, a review gate, or a reason to ask the user anything — write it and immediately continue. A phase boundary is a checkpoint trigger, not a stop: finishing a phase never means pausing for confirmation. Checkpoint at phase (or few-task) granularity, not per task; per-task checkpoints are noise.
 
@@ -106,10 +108,14 @@ This sequence runs **only on a resumed run** — a post-compaction note, a misma
 On a resumed run, orient before continuing:
 
 1. `goldfish:recall` — retrieve the active brief and recent checkpoints.
-2. Read the plan file, noting which acceptance-criteria checkboxes are already `[x]`.
-3. Check the TaskList for completed / in-progress / pending tasks.
-4. `git log --oneline <base>..HEAD` — verify what is actually committed.
-5. Identify the next incomplete task and resume execution.
+2. Restore any immutable REVIEW CAMPAIGN setup and current counters from the checkpoint before considering review work. Counters only increase; participants and budgets never change after resume.
+3. If recalled `REVIEW CAMPAIGN STATUS` contains `campaign_closed: yes`, treat it as terminal and do not dispatch another reviewer, including when the state is `capped` or `blocked`.
+4. Read the plan file, noting which acceptance-criteria checkboxes are already `[x]`.
+5. Check the TaskList for completed / in-progress / pending tasks.
+6. `git log --oneline <base>..HEAD` — verify what is actually committed.
+7. Identify the next incomplete task and resume execution.
+
+For any unattended goal or continuation predicate, `campaign_closed: yes` is terminal. Remaining findings in a `capped` campaign do not authorize another review campaign or reviewer dispatch.
 
 ## Remember
 - Review plan critically first
@@ -127,4 +133,5 @@ On a resumed run, orient before continuing:
 - **`../using-razorback/references/source-control-hygiene.md`** - Check A before creating a worktree, Check B before Step 4 hands off to the finish skill.
 - **razorback:writing-plans** - Creates the plan this skill executes; propagates `reviewer_choice` and verification strategy as inputs.
 - **razorback:pre-merge-review** - Invoked at Step 3 when `reviewer_choice` is `codex` / `claude`. Skipped if the choice is `none`.
+- **razorback:managing-review-campaigns** - Provides the immutable campaign state preserved across checkpoints and continuation.
 - **razorback:finishing-a-development-branch** - Complete development after all tasks (and pre-merge review, if any)

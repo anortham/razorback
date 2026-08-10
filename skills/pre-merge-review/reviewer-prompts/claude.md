@@ -54,7 +54,7 @@ cd "$PROJECT_DIR" && claude -p \
   ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} \
   --system-prompt-file "$PROMPT_FILE" \
   "$DIFF_AND_CONTEXT" \
-  < /dev/null > "$OUT_DIR/claude-output.json" 2>/dev/null
+  < /dev/null > "$OUT_DIR/claude-output.json" 2> "$OUT_DIR/claude-stderr.log"
 ```
 
 `OUT_DIR` must live outside the repo (`mktemp -d` creates it under the system temp directory): review findings can carry sensitive detail and must not persist in the worktree, where they risk accidental staging. The `trap` removes the directory after parsing — the same cleanup pattern `razorback:grok-cli` uses.
@@ -70,9 +70,10 @@ Flag rationale:
 - `--output-format json --json-schema …` - structured review output conforming to the shared schema.
 - `--tools "Read,Grep,Glob"` - read-only, enforced at the CLI layer: no tool in the allowlist can write. Do NOT add `Bash` — an unrestricted Bash tool can write files and would make the read-only claim prompt-deep only. The diff and commit log are embedded in the prompt, so the reviewer doesn't need shell access.
 - `--strict-mcp-config` - drops MCP servers inherited from user/project settings, which can carry write-capable tools into an otherwise read-only allowlist.
-- **No `--max-turns` and no `--max-budget-usd`** - razorback caps neither the turns nor the spend of a review. Either cap truncates the review mid-flight and trades finding quality for a few cents, and a truncated review is usually re-run in full — so the cap costs more than it saves. The review's scope is set by the prompt, not by a mechanical limit; let the reviewer finish the job. Do not add the flags back; a user who wants a hard ceiling sets it themselves.
+- **No `--max-turns` and no `--max-budget-usd`** - razorback caps neither the turns nor the spend of a review. Either cap truncates the review mid-flight and can leave unusable evidence while still consuming the campaign invocation. The review's scope is set by the prompt, not by a mechanical limit; let the reviewer finish the job. Do not add the flags back; a user who wants a hard ceiling sets it themselves.
 - `--model "$CLAUDE_MODEL"` - explicit model override when `CLAUDE_MODEL` is set. The review's value is a fresh session and prompt framing, not model superiority.
 - `--system-prompt-file` - loads the adversarial operating stance directly from the canonical `skills/claude-cli/adversarial-prompt.txt` in the razorback plugin. No copy is made, so there is nothing to keep in sync.
+- `2> "$OUT_DIR/claude-stderr.log"` - retains diagnostics from the same invocation for a blocker report while stdout remains the result envelope. Do not re-run merely to recover discarded stderr.
 
 **Timeout:** set the Bash tool's `timeout` to `1800000` ms (30 min). This is a failsafe against a hung process, not a budget for the review. Do not lower it to bound cost, and do not raise it and re-run when it trips.
 
@@ -92,7 +93,7 @@ jq -e '.structured_output.findings | type == "array"' < "$OUT_DIR/claude-output.
 jq '.structured_output.findings[]?' < "$OUT_DIR/claude-output.json"
 ```
 
-On parse failure, retry **once** with a stricter prompt instructing claude to return ONLY JSON conforming to the schema (no prose, no prefatory text). If the retry still fails to produce schema-valid output, reviewer unavailability applies; see Error Handling below. Do NOT loop beyond one retry (single pass rule).
+Malformed or schema-invalid output consumes this pass's invocation and blocks the campaign; do not retry. Record diagnostics from `$OUT_DIR/claude-stderr.log` in the blocker report.
 
 If a schema-valid partial output exists despite a mid-stream failure (e.g. the run times out but `.findings[]` parses), use it and note the truncation in the morning report.
 
@@ -108,10 +109,10 @@ Unavailability triggers:
 
 - **Auth failure** (`claude auth status` exits 1) → **blocker taxonomy #1** (credentials broken). Tell the user to run `claude auth login`.
 - **Rate limit exhausted** (Claude plan's rolling usage limits tripped) → **blocker taxonomy #1** - credentials work but the backing service is unavailable. Suggest retry-after-cooldown or dropping the reviewer-choice to `none` on the next run.
-- **Old `--bare` snippet copied into the command** → **blocker taxonomy #1** until you remove that flag and re-run. Current Claude help says bare mode skips OAuth and keychain auth reads.
-- **Empty stdout** → **blocker taxonomy #1**. Remove `2>/dev/null` and re-run to surface stderr in the blocker note.
+- **Old `--bare` snippet copied into the command** → do not dispatch. Current Claude help says bare mode skips OAuth and keychain auth reads. If it was dispatched and failed, that pass's invocation is consumed and the campaign blocks.
+- **Empty stdout** → **blocker taxonomy #1**. Use the captured `$OUT_DIR/claude-stderr.log` in the blocker note. The invocation is consumed; do not re-run it.
 - **The 30-minute failsafe trips with no schema-valid partial output** → **blocker taxonomy #1**. The process hung or died; the diff was not too big. Do NOT raise the timeout and re-run, do NOT split the diff and re-run, and do NOT add `--max-turns` to make the next run finish sooner. One burned attempt is enough — block and let the human decide.
-- **Schema violation that persists after one retry with a stricter prompt** → **blocker taxonomy #5** (unresolvable — the reviewer is producing unusable output).
+- **Schema violation or malformed output** → **blocker taxonomy #5** (unresolvable — the reviewer produced unusable output). The invocation is consumed; do not re-run it.
 
 If a schema-valid partial output exists despite the failure (the run is cut short mid-stream but `.findings[]` parses), use it and note the truncation in the morning report. Otherwise, block.
 
@@ -129,6 +130,6 @@ PROMPT_FILE="$SKILL_DIR/../security-review/security-adversarial-prompt.txt"
 
 Build `$DIFF_AND_CONTEXT` exactly as under "Build the user prompt". Capture stdout to a second file in the same private temp directory, `$OUT_DIR/claude-output-security.json`, so the general pass's `$OUT_DIR/claude-output.json` is preserved.
 
-Parse rules, cost notes, and error handling are identical to the general pass: apply the Parsing section's envelope shape check, empty-findings rule, and single-retry rule to `$OUT_DIR/claude-output-security.json`, and render the cost line from the same envelope fields.
+Parse rules, cost notes, and error handling are identical to the general pass: apply the Parsing section's envelope shape check, empty-findings rule, and no-retry blocking rule to `$OUT_DIR/claude-output-security.json`, and render the cost line from the same envelope fields.
 
 **A security-pass failure is reviewer unavailability.** The same triggers and the same blocker protocol from Error handling apply: stop the run, do NOT push, do NOT create a PR, emit a partial morning report with `Status: Blocked` and the specific failure in `Blockers hit`. Never silently skip the security pass.

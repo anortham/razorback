@@ -55,7 +55,7 @@
 |---|---|---|---|---|
 | Task 1: Canonical campaign contract | None - serial | Create `skills/managing-review-campaigns/SKILL.md`; create `tests/managing-review-campaigns.test.mjs`; modify `README.md` | Yes | Risk-first contract must be green before callers integrate it. |
 | Task 2: Reviewer CLI boundary | Batch A | Modify `skills/claude-cli/SKILL.md`, `skills/codex-cli/SKILL.md`, `skills/grok-cli/SKILL.md`, `tests/reviewer-uncapped.test.mjs` | No | None - safe parallel batch after Task 1. |
-| Task 3: Workflow integration | Batch A | Modify `skills/cross-model-convergence/SKILL.md`, `skills/pre-merge-review/SKILL.md`, `skills/subagent-driven-development/SKILL.md`, `skills/executing-plans/SKILL.md`, `skills/finishing-a-development-branch/morning-report-template.md`; create `tests/review-campaign-integration.test.mjs` | No | None - safe parallel batch after Task 1. |
+| Task 3: Workflow integration | Batch A | Modify `skills/cross-model-convergence/SKILL.md`, `skills/pre-merge-review/SKILL.md`, `skills/pre-merge-review/reviewer-prompts/claude.md`, `skills/pre-merge-review/reviewer-prompts/codex.md`, `skills/subagent-driven-development/SKILL.md`, `skills/executing-plans/SKILL.md`, `skills/finishing-a-development-branch/morning-report-template.md`; create `tests/review-campaign-integration.test.mjs` | No | None - safe parallel batch after Task 1. |
 | Task 4: Pressure validation and loophole closure | None - serial | May modify every Task 1-3 owned skill/test file; modify this plan and its digest for final status | Yes | Requires the complete integrated behavior and runs after Batch A. |
 
 ### Task 1: Canonical campaign contract
@@ -125,6 +125,8 @@
 **Files:**
 - Modify: `skills/cross-model-convergence/SKILL.md`
 - Modify: `skills/pre-merge-review/SKILL.md`
+- Modify: `skills/pre-merge-review/reviewer-prompts/claude.md`
+- Modify: `skills/pre-merge-review/reviewer-prompts/codex.md`
 - Modify: `skills/subagent-driven-development/SKILL.md`
 - Modify: `skills/executing-plans/SKILL.md`
 - Modify: `skills/finishing-a-development-branch/morning-report-template.md`
@@ -136,24 +138,24 @@
 
 **Contract inputs:** Task 1 campaign skill; pre-merge must retain exactly one general plus one security pass; SDD’s four-attempt scoped inline fix loop remains separate.
 
-**File ownership:** Modify `skills/cross-model-convergence/SKILL.md`, `skills/pre-merge-review/SKILL.md`, `skills/subagent-driven-development/SKILL.md`, `skills/executing-plans/SKILL.md`, `skills/finishing-a-development-branch/morning-report-template.md`; create `tests/review-campaign-integration.test.mjs`.
+**File ownership:** Modify `skills/cross-model-convergence/SKILL.md`, `skills/pre-merge-review/SKILL.md`, `skills/pre-merge-review/reviewer-prompts/claude.md`, `skills/pre-merge-review/reviewer-prompts/codex.md`, `skills/subagent-driven-development/SKILL.md`, `skills/executing-plans/SKILL.md`, `skills/finishing-a-development-branch/morning-report-template.md`; create `tests/review-campaign-integration.test.mjs`.
 
 **Serialization required:** No.
 
 **Dependency reason:** None - safe parallel batch after Task 1.
 
-**What to build:** Make all broad/external review entry points consume the campaign contract. Cross-model convergence uses at most three rounds and an immutable invocation budget; pre-merge counts its two existing passes but does not add external post-fix review; execution checkpoints carry counters across compaction; reports show terminal state, evidence label, rounds, and invocations.
+**What to build:** Make all broad/external review entry points consume the campaign contract. Cross-model convergence uses at most three rounds, runs every selected reviewer once in discovery, and declares an immutable budget of selected external reviewers plus one optional confirmer; pre-merge counts its two existing passes but does not add retries or external post-fix review; execution checkpoints carry counters across compaction; reports show terminal state, evidence label, rounds, and invocations.
 
 **Approach:** Write focused integration guards first. Preserve existing twin-section and pre-merge single-pass invariants. Do not route routine SDD scoped fix re-review through the campaign unless it reopens broad discovery or dispatches an external reviewer.
 
 **Acceptance criteria:**
-- [ ] Focused tests fail before integration and pass afterward.
-- [ ] Cross-model convergence cannot exceed three rounds or grow participants/budget mid-campaign.
-- [ ] Cross-model still blocks without a distinct reviewer when explicitly requested.
-- [ ] Pre-merge still runs general and security once each and verifies fixes locally.
-- [ ] Execution checkpoints and goal predicates preserve and terminate on campaign state.
-- [ ] Morning report exposes state, evidence label, round count, invocation count, and open severities.
-- [ ] Worker-scope verification passes; worker uses `parallel-lead-commit` and does not commit.
+- [x] Focused tests fail before integration and pass afterward.
+- [x] Cross-model convergence cannot exceed three rounds or grow participants/budget mid-campaign.
+- [x] Cross-model still blocks without a distinct reviewer when explicitly requested.
+- [x] Pre-merge still runs general and security once each and verifies fixes locally.
+- [x] Execution checkpoints and goal predicates preserve and terminate on campaign state.
+- [x] Morning report exposes state, evidence label, round count, invocation count, and open severities.
+- [x] Worker-scope verification passes; worker uses `parallel-lead-commit` and does not commit.
 
 ### Task 4: Pressure validation and loophole closure
 

@@ -38,7 +38,7 @@ cd "$PROJECT_DIR" && echo "$ADVERSARIAL_PROMPT_WITH_DIFF" | codex exec \
   ${CODEX_MODEL:+-m "$CODEX_MODEL"} \
   --output-schema "$SCHEMA_FILE" \
   - \
-  > "$OUT_DIR/codex-output.json" 2>/dev/null
+  > "$OUT_DIR/codex-output.json" 2> "$OUT_DIR/codex-stderr.log"
 ```
 
 `OUT_DIR` must live outside the repo (`mktemp -d` creates it under the system temp directory): review findings can carry sensitive detail and must not persist in the worktree, where they risk accidental staging. The `trap` removes the directory after parsing — the same cleanup pattern `razorback:grok-cli` uses.
@@ -51,7 +51,7 @@ Flag rationale:
 - `${CODEX_MODEL:+-m "$CODEX_MODEL"}` — explicit model override from `RAZORBACK_CODEX_REVIEW_MODEL`. When unset, the expansion is empty and codex uses its configured default.
 - `--output-schema` — forces codex to return JSON conforming to the shared review-output schema. `reviewer-prompts/claude.md` reads the same canonical file (minus the `$schema` key, which claude's validator rejects), so both reviewers target an identical shape.
 - `-` — read the prompt from stdin (which is the piped `$ADVERSARIAL_PROMPT_WITH_DIFF`).
-- `2>/dev/null` — drop codex's session banner and transcript noise; stdout carries only the JSON, captured into `$OUT_DIR/codex-output.json`.
+- `2> "$OUT_DIR/codex-stderr.log"` — keep stdout JSON-only while retaining diagnostics from the same invocation for a blocker report. Do not re-run merely to recover discarded stderr.
 
 **Model:** `RAZORBACK_CODEX_REVIEW_MODEL` is an optional explicit override. When unset, codex inherits its global default.
 
@@ -90,7 +90,7 @@ jq -e '.findings | type == "array"' < "$OUT_DIR/codex-output.json" >/dev/null   
 jq '.findings[]?' < "$OUT_DIR/codex-output.json"                                # iterate; empty = clean review
 ```
 
-The shape check exits non-zero if `.findings` is missing or malformed. Do NOT gate on `jq -e '.findings[]'` — it exits 4 on a valid empty array, turning a clean review into a false parse failure. On parse failure, retry **once** with a stricter prompt instructing codex to return ONLY JSON conforming to the schema (no prose). If the retry still fails to produce schema-valid output, reviewer unavailability applies — see Error Handling below. Do NOT loop beyond one retry (single pass rule).
+The shape check exits non-zero if `.findings` is missing or malformed. Do NOT gate on `jq -e '.findings[]'` — it exits 4 on a valid empty array, turning a clean review into a false parse failure. Malformed or schema-invalid output consumes this pass's invocation and blocks the campaign; do not retry. Record diagnostics from `$OUT_DIR/codex-stderr.log` in the blocker report.
 
 If a schema-valid partial output exists despite a mid-stream failure (e.g. stdout truncated but `.findings[]` parses), use it and note the truncation in the morning report.
 
@@ -106,8 +106,8 @@ Unavailability triggers:
 
 - **Auth failure** (`codex login status` exits non-zero) → **blocker taxonomy #1** (credentials broken). Tell the user to run `codex login`.
 - **Rate limit exhausted** (ChatGPT plan's rolling 5-hour limits tripped) → **blocker taxonomy #1** — credentials work but the backing service is unavailable. Suggest retry-after-cooldown in the blocker note.
-- **Empty stdout** → **blocker taxonomy #1**. Remove `2>/dev/null` and re-run to surface stderr in the blocker note. Common causes: bad schema path, missing network.
-- **Schema violation that persists after one retry with a stricter prompt** → **blocker taxonomy #5** (unresolvable — the reviewer is producing unusable output).
+- **Empty stdout** → **blocker taxonomy #1**. Use the captured `$OUT_DIR/codex-stderr.log` in the blocker note. Common causes: bad schema path, missing network. The invocation is consumed; do not re-run it.
+- **Schema violation or malformed output** → **blocker taxonomy #5** (unresolvable — the reviewer produced unusable output). The invocation is consumed; do not re-run it.
 - **The 30-minute failsafe trips with no schema-valid partial output** → **blocker taxonomy #1**. The process hung or died; the diff was not too big. Do NOT raise the timeout and re-run, and do NOT split the diff and re-run — splitting also breaks the reviewer's ability to reason about cross-file interactions. One burned attempt is enough — block and let the human decide.
 
 If a schema-valid partial output exists despite the failure, use it and proceed with a truncation note. Otherwise, block.
@@ -124,7 +124,7 @@ The stdin prompt is NOT the same. You MUST rebuild it from the security template
 
 Capture stdout to a second file in the same private temp directory, `$OUT_DIR/reviewer-output-security.json`, so the general pass's `$OUT_DIR/codex-output.json` is preserved.
 
-Parse rules, cost notes, and error handling are identical to the general pass: apply the Parsing section's shape check, empty-findings rule, and single-retry rule to `$OUT_DIR/reviewer-output-security.json`, and the Cost / token notes unchanged.
+Parse rules, cost notes, and error handling are identical to the general pass: apply the Parsing section's shape check, empty-findings rule, and no-retry blocking rule to `$OUT_DIR/reviewer-output-security.json`, and the Cost / token notes unchanged.
 
 **A security-pass failure is reviewer unavailability.** The same triggers and the same blocker protocol from Error handling apply: stop the run, do NOT push, do NOT create a PR, emit a partial morning report with `Status: Blocked` and the specific failure in `Blockers hit`. Never silently skip the security pass.
 
