@@ -82,12 +82,12 @@
 **Approach:** Start with guards for the exact setup/status fields, evidence labels, Round 3 objective trigger, explicit reviewer blocker, and “extra reviewers never add rounds” invariant. Keep workflow-specific defaults out of the canonical skill except for a compact profile table; callers own stricter profiles.
 
 **Acceptance criteria:**
-- [ ] Focused tests fail before the skill exists and pass after the minimal contract is written.
-- [ ] Ordinary lead-only review and explicit cross-model unavailability are both represented without contradiction.
-- [ ] The campaign skill distinguishes rounds from actual external-invocation count.
-- [ ] The skill contains an observed-rationalization table and red flags for “one more review,” severity inflation, majority vote, and counter reset.
-- [ ] README lists `managing-review-campaigns` with a concise purpose.
-- [ ] Worker-scope verification passes and the task is committed with `serial-worker-commit`.
+- [x] Focused tests fail before the skill exists and pass after the minimal contract is written.
+- [x] Ordinary lead-only review and explicit cross-model unavailability are both represented without contradiction.
+- [x] The campaign skill distinguishes rounds from actual external-invocation count.
+- [x] The skill contains an observed-rationalization table and red flags for “one more review,” severity inflation, majority vote, and counter reset.
+- [x] README lists `managing-review-campaigns` with a concise purpose.
+- [x] Worker-scope verification passes and the task is committed with `serial-worker-commit`.
 
 ### Task 2: Reviewer CLI boundary
 
