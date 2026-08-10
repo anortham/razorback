@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+  <title>Bounded Review Campaigns Design</title>
+  <style>
+    :root { color-scheme: light; --page:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781; --hairline:#e1e0d9; --border:rgba(11,11,11,.10); --accent:#2a78d6; --accent-track:#cde2fb; --good:#0ca30c; --good-text:#006300; --warning:#fab219; --good-wash:rgba(12,163,12,.09); --warn-wash:rgba(250,178,25,.14); --accent-wash:rgba(42,120,214,.10); --muted-wash:rgba(137,135,129,.10); }
+    @media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) { color-scheme:dark; --page:#0d0d0d; --surface:#1a1a19; --ink:#fff; --ink-2:#c3c2b7; --muted:#898781; --hairline:#2c2c2a; --border:rgba(255,255,255,.10); --accent:#3987e5; --accent-track:#104281; --good-text:#0ca30c; --good-wash:rgba(12,163,12,.16); --warn-wash:rgba(250,178,25,.14); --accent-wash:rgba(57,135,229,.16); --muted-wash:rgba(137,135,129,.14); } }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--page); color:var(--ink); font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    a { color:var(--accent); text-decoration:none; } a:hover { text-decoration:underline; }
+    .digest { max-width:860px; margin:0 auto; padding:28px 24px; }
+    .chip { display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600; line-height:1; padding:4px 9px; border-radius:999px; white-space:nowrap; }
+    .chip .ico { font-size:11px; } .chip.done { background:var(--good-wash); color:var(--good-text); } .chip.inprogress { background:var(--accent-wash); color:var(--accent); } .chip.queued { background:var(--muted-wash); color:var(--ink-2); } .chip.revised { background:var(--warn-wash); color:var(--ink); }
+    .meter { height:10px; border-radius:0 4px 4px 0; background:var(--accent-track); position:relative; overflow:hidden; } .meter>i { position:absolute; inset:0 auto 0 0; background:var(--accent); border-radius:0 4px 4px 0; }
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:10px; }
+    .digest header { display:grid; grid-template-columns:1fr auto; gap:16px; align-items:end; margin-bottom:8px; }
+    .digest h1 { font-size:20px; font-weight:650; } .digest .goal { color:var(--ink-2); font-size:14px; margin-top:3px; max-width:62ch; }
+    .digest .hprog { text-align:right; } .digest .hprog .n { font-size:26px; font-weight:600; } .digest .hprog .n small { font-size:13px; color:var(--muted); font-weight:500; } .digest .hprog .meter { width:180px; margin-top:6px; }
+    .digest .spine { position:relative; margin-top:22px; padding-left:30px; } .digest .spine::before { content:""; position:absolute; left:9px; top:6px; bottom:6px; width:2px; background:var(--hairline); }
+    .digest .stage { position:relative; margin-bottom:26px; } .digest .stage::before { content:""; position:absolute; left:-27px; top:4px; width:12px; height:12px; border-radius:50%; background:var(--surface); border:2px solid var(--muted); } .digest .stage.done::before { background:var(--good); border-color:var(--good); } .digest .stage.now::before { background:var(--accent); border-color:var(--accent); }
+    .digest .stage h2 { font-size:15px; font-weight:650; display:flex; align-items:baseline; gap:10px; } .digest .stage h2 .chip { position:relative; top:-1px; } .digest .stage .why { font-size:13px; color:var(--muted); margin:1px 0 8px; }
+    .digest .trow { display:grid; grid-template-columns:120px 1fr; gap:10px; align-items:baseline; padding:6px 0; border-top:1px solid var(--hairline); font-size:13.5px; } .digest .trow:first-of-type { border-top:0; } .digest .trow .st { font-size:12px; font-weight:600; } .digest .trow .st.done { color:var(--good-text); } .digest .trow .st.inprogress { color:var(--accent); } .digest .trow .st.queued { color:var(--muted); } .digest .trow .what b { color:var(--muted); margin-right:4px; } .digest .trow .what span { color:var(--ink-2); }
+    .digest .flag { border-left:3px solid var(--warning); background:var(--warn-wash); border-radius:0 8px 8px 0; padding:9px 12px; margin:8px 0; font-size:13px; } .digest .flag b { font-weight:650; } .digest .flag p { color:var(--ink-2); margin-top:2px; }
+    .digest .here { display:inline-flex; gap:8px; align-items:center; margin:2px 0 8px; font-size:12.5px; font-weight:650; color:var(--accent); } .digest .here::before { content:"▶"; font-size:10px; }
+    .digest .remains { margin-top:4px; padding:12px 16px; font-size:13.5px; color:var(--ink-2); } .digest .remains b { color:var(--ink); } .digest footer { margin-top:14px; font-size:13px; color:var(--muted); }
+    .digest .tabs { display:flex; gap:2px; border-bottom:1px solid var(--hairline); margin-top:16px; } .digest .tabs button { appearance:none; border:0; background:none; cursor:pointer; font:600 13.5px/1 system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--ink-2); padding:10px 14px; border-bottom:2px solid transparent; margin-bottom:-1px; } .digest .tabs button.on { color:var(--accent); border-bottom-color:var(--accent); }
+    .digest .pane { display:none; } .digest .pane.on { display:block; } .digest .dec { padding:14px 16px; margin:12px 0 10px; } .digest .dec h3 { font-size:14px; font-weight:650; display:flex; gap:8px; align-items:baseline; } .digest .dec .where { font-size:12px; color:var(--muted); font-weight:500; } .digest .dec p { font-size:13.5px; color:var(--ink-2); margin-top:4px; } .digest .dec p b { color:var(--ink); }
+    .digest .rail h3 { font-size:13px; font-weight:650; margin:14px 0 6px; } .digest .rail li { margin:0 0 7px 18px; font-size:13.5px; color:var(--ink-2); } .digest .rail li strong { color:var(--ink); font-weight:600; }
+  </style>
+</head>
+<body>
+<section class="digest">
+  <header>
+    <div><h1>Bounded Review Campaigns</h1><p class="goal">Keep individual reviews deep while making every review campaign finite and honest about available model evidence.</p></div>
+    <div class="hprog"><div class="n">1<small> / 3 stages</small></div><div class="meter" aria-label="33% complete"><i style="width:33%"></i></div></div>
+  </header>
+  <nav class="tabs" aria-label="Digest sections"><button class="on" data-pane="timeline">Timeline</button><button data-pane="decisions">Decisions</button><button data-pane="rails">Guardrails</button></nav>
+  <div class="pane on" id="timeline">
+    <div class="spine">
+      <div class="stage done"><h2>Design <span class="chip done"><span class="ico">✓</span>Done</span></h2><p class="why">Diagnose the runaway and define one campaign interface.</p><div class="trow"><span class="st done">✓ Done</span><span class="what"><b>1</b>Baseline pressure tests <span>— one, two, and three-model cases.</span></span></div><div class="trow"><span class="st done">✓ Done</span><span class="what"><b>2</b>Bounded doubt pass <span>— invocation counting and evidence labels added.</span></span></div></div>
+      <div class="stage now"><h2>Written-spec review <span class="chip inprogress"><span class="ico">◐</span>In progress</span></h2><p class="why">Confirm the exact contract before touching production skills.</p><div class="here">You are here — written spec awaiting review</div><div class="trow"><span class="st inprogress">◐ Review</span><span class="what"><b>3</b>Approve or revise <span>— markdown is canonical.</span></span></div><div class="flag"><b>⚠ Evidence label revised.</b><p>Lead-only review remains valid for ordinary work but is never called cross-model convergence.</p></div></div>
+      <div class="stage"><h2>Implementation <span class="chip queued"><span class="ico">○</span>Queued</span></h2><p class="why">Skill TDD, guard tests, pressure re-tests, and repository verification.</p><div class="trow"><span class="st queued">○ Queued</span><span class="what"><b>4</b>Create campaign skill <span>— canonical setup, budgets, rounds, closure.</span></span></div><div class="trow"><span class="st queued">○ Queued</span><span class="what"><b>5</b>Integrate and verify <span>— reviewer CLIs, workflows, reporting, tests.</span></span></div></div>
+    </div>
+    <div class="card remains"><b>Remaining:</b> written-spec approval, isolated worktree, implementation, and verification. No production skill has been changed.</div>
+  </div>
+  <div class="pane" id="decisions">
+    <div class="card dec"><h3>Cap campaigns, not reviewer thought <span class="where">Core</span></h3><p>Reviewer turns and spend stay uncapped. <b>Landed:</b> immutable round and invocation budgets outside each CLI call.</p></div>
+    <div class="card dec"><h3>Availability changes evidence, not safety <span class="where">Models</span></h3><p>One model can finish ordinary review. <b>Landed:</b> lead-only, fresh-session, external-reviewed, and cross-model-reviewed labels.</p></div>
+    <div class="card dec"><h3>No final vote <span class="where">Closure</span></h3><p>Models provide evidence. <b>Landed:</b> the lead closes on file, symbol, and test evidence; extra reviewers never add rounds.</p></div>
+    <div class="card dec"><h3>Objective third-round trigger <span class="where">Exception</span></h3><p>Disagreement cannot buy another sweep. <b>Landed:</b> only a lead-verified critical/high fix regression opens one targeted final round.</p></div>
+  </div>
+  <div class="pane" id="rails">
+    <div class="rail"><h3>Never touch</h3><ul><li><strong>Per-invocation depth</strong> — do not restore turn, spend, or short timeout caps.</li><li><strong>Explicit reviewer requirements</strong> — never silently downgrade them.</li><li><strong>Pre-merge single-run passes</strong> — general and security each run once.</li></ul><h3>Held constant</h3><ul><li><strong>Lead authority</strong> — evidence, not votes, closes findings.</li><li><strong>Fixed scope</strong> — confirmation inspects accepted findings and the fix diff only.</li><li><strong>Immutable counters</strong> — compaction and goal continuation cannot reset them.</li></ul><h3>Verification gates</h3><ul><li><strong>Skill RED–GREEN–REFACTOR</strong> — baseline and revised pressure scenarios.</li><li><strong>Guard suite</strong> — campaign references, counters, evidence labels, and terminal states.</li><li><strong>Repository checks</strong> — npm test, diff check, and version audit.</li></ul></div>
+  </div>
+  <footer>Digest of <a href="2026-08-10-bounded-review-campaigns-design.md">the full design</a></footer>
+</section>
+<script>
+  document.querySelectorAll(".tabs button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("on"));
+      document.querySelectorAll(".pane").forEach(p => p.classList.remove("on"));
+      btn.classList.add("on");
+      document.getElementById(btn.dataset.pane).classList.add("on");
+    });
+  });
+</script>
+</body>
+</html>
