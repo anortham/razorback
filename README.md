@@ -220,6 +220,7 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 | systematic-debugging | Root cause investigation with MCP-powered tracing |
 | requesting-code-review | Inline review (during plan execution) or standalone review (ad-hoc) with per-harness dispatch |
 | receiving-code-review | Process for acting on review feedback |
+| managing-review-campaigns | Canonical bounded-review contract for repeated, multi-reviewer, and clean-only campaigns |
 | verification-before-completion | Evidence-before-claims verification |
 | finishing-a-development-branch | Branch gate, then autonomous push + PR with the morning report and its digest (forge-ladder fallback, never merges), or the interactive 4-option menu plus worktree cleanup |
 | dispatching-parallel-agents | Ad-hoc parallel agent dispatch |
