@@ -52,11 +52,16 @@ models.
   `< /dev/null` (bash) / `< NUL` (Windows cmd/PowerShell) on non-piped
   invocations anyway as cheap insurance against a harness that holds the pipe
   open.
-- **No caps in review recipes**: razorback does not pass `--max-turns`, and it
-  passes no other mechanical ceiling to a reviewer. Any such cap truncates a
-  review mid-flight and trades finding quality for a few cents. Review depth
-  is the point; do not add the flag back. A user who wants a hard ceiling sets
-  it themselves.
+- **No per-invocation turn/spend caps**: razorback does not pass `--max-turns`,
+  and it passes no other mechanical ceiling to a reviewer. Any such cap
+  truncates a review mid-flight and trades finding quality for a few cents.
+  Review depth is the point; do not add the flag back. These uncapped settings
+  apply inside one CLI invocation only. Every CLI call counts once against the
+  caller's campaign `external_invocation_budget`; one internally uncapped
+  invocation does not waive the campaign budget. Before a second review call
+  or any multi-reviewer dispatch, load and follow
+  `razorback:managing-review-campaigns`. A user who wants a hard per-invocation
+  ceiling sets it themselves.
 - **Timeout is a failsafe, not a budget**: set 1800000ms (30 min) on every
   review invocation. It exists to catch a process that hung or died and will
   never return — nothing else. It is not a bound on how long a review may

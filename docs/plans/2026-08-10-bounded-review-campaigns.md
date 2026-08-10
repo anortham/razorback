@@ -114,11 +114,11 @@
 **Approach:** Extend the existing uncapped reviewer tests first. Preserve every command flag and timeout invariant; change only policy boundary wording and repeat-review routing.
 
 **Acceptance criteria:**
-- [ ] Focused tests fail on current ambiguous wording and pass after all three skills align.
-- [ ] No recipe passes a turn or spend cap; all retain the 30-minute failsafe.
-- [ ] Each CLI skill routes repeated or multi-reviewer review through `razorback:managing-review-campaigns`.
-- [ ] Each CLI skill says one internally uncapped invocation does not waive the campaign budget.
-- [ ] Worker-scope verification passes; worker uses `parallel-lead-commit` and does not commit.
+- [x] Focused tests fail on current ambiguous wording and pass after all three skills align.
+- [x] No recipe passes a turn or spend cap; all retain the 30-minute failsafe.
+- [x] Each CLI skill routes repeated or multi-reviewer review through `razorback:managing-review-campaigns`.
+- [x] Each CLI skill says one internally uncapped invocation does not waive the campaign budget.
+- [x] Worker-scope verification passes; worker uses `parallel-lead-commit` and does not commit.
 
 ### Task 3: Workflow integration
 

@@ -23,8 +23,18 @@ const FAILSAFE_TIMEOUT_DOCS = [
   'skills/pre-merge-review/reviewer-prompts/codex.md',
 ];
 
+const REVIEWER_CLI_SKILLS = [
+  'skills/claude-cli/SKILL.md',
+  'skills/codex-cli/SKILL.md',
+  'skills/grok-cli/SKILL.md',
+];
+
 function read(relativePath) {
   return readFileSync(join(root, relativePath), 'utf8');
+}
+
+function normalized(text) {
+  return text.replace(/\s+/g, ' ');
 }
 
 function capOccurrences(text, flag) {
@@ -62,12 +72,38 @@ test('the cap scanner distinguishes a passed value from prose naming the flag', 
   ]);
 });
 
-test('every reviewer CLI skill states the no-caps policy in its own Defaults', () => {
-  for (const rel of ['skills/claude-cli/SKILL.md', 'skills/codex-cli/SKILL.md', 'skills/grok-cli/SKILL.md']) {
+test('every reviewer CLI skill limits the no-caps policy to one invocation', () => {
+  for (const rel of REVIEWER_CLI_SKILLS) {
     assert.match(
       read(rel),
-      /No caps in review recipes/,
-      `${rel} does not carry the no-caps Defaults bullet its sibling reviewer skills carry — the policy has to read the same in all three`,
+      /No per-invocation turn\/spend caps/,
+      `${rel} does not limit its no-caps Defaults policy to one reviewer invocation`,
+    );
+  }
+});
+
+test('every reviewer CLI call consumes its caller campaign budget', () => {
+  for (const rel of REVIEWER_CLI_SKILLS) {
+    const doc = normalized(read(rel));
+    assert.match(
+      doc,
+      /Every CLI call counts once against the caller's campaign `external_invocation_budget`/,
+      `${rel} does not count each provider invocation against the caller campaign`,
+    );
+    assert.match(
+      doc,
+      /one internally uncapped invocation does not waive the campaign budget/i,
+      `${rel} lets an internally uncapped invocation imply an uncapped campaign`,
+    );
+  }
+});
+
+test('every reviewer CLI skill routes repeats and multi-reviewer dispatch through the campaign skill', () => {
+  for (const rel of REVIEWER_CLI_SKILLS) {
+    assert.match(
+      normalized(read(rel)),
+      /Before a second review call or any multi-reviewer dispatch[^.]*`razorback:managing-review-campaigns`/,
+      `${rel} does not require the canonical campaign policy before repeating or adding reviewers`,
     );
   }
 });
