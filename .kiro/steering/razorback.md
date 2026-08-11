@@ -37,5 +37,6 @@ Use Miller by capability, not by raw file reading:
 2. **Plan before you code.** For anything beyond a small local fix, state the approach and the files it touches first. Small, local, reversible fixes skip the ceremony: fix on the current checkout and verify the affected scope.
 3. **Test first.** Write the failing test before the implementation, watch it fail for the right reason, then make it pass. No implementation-shaped tests written after the fact.
 4. **Verify before claiming done.** Run the narrowest real check that would fail if the change is wrong. "Should work", "looks right", and a passing typecheck are not verification. If a check cannot be run, say so and name the evidence you did check instead.
-5. **Root cause, not symptom.** A report names a symptom. Find every caller with `trace`, fix the shared cause once, and do not patch only the path the report names.
-6. **Do not narrow the task.** No stubs, placeholders, fake data, or hard-coded happy paths standing in for real behavior. Do not weaken tests or docs to make incomplete work look complete.
+5. **Scope test runs.** In the inner loop, run single tests or the focused group that covers the change. Run broader suites at task boundaries, and the full suite once at the branch gate before push or PR. Do not rerun a passing scope on an unchanged tree — cite the earlier result instead.
+6. **Root cause, not symptom.** A report names a symptom. Find every caller with `trace`, fix the shared cause once, and do not patch only the path the report names.
+7. **Do not narrow the task.** No stubs, placeholders, fake data, or hard-coded happy paths standing in for real behavior. Do not weaken tests or docs to make incomplete work look complete.

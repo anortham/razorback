@@ -25,6 +25,7 @@ Use Miller by capability, not by raw file reading:
 4. Find a symbol's references before changing it, to check impact.
 5. Do not infer or invent API shapes. Use Miller to discover symbol names, function signatures, config shapes, route names, CLI flags, or public contracts before relying on them.
 6. When Miller cannot prove a shape, say what evidence is missing and choose the safest plan-consistent path. Do not fill gaps from memory or plausible guesses.
+7. Run only the verification scope your task assigns — single tests or the focused group that covers your change. Broader suites belong to the lead. Do not rerun a passing scope on an unchanged tree.
 
 **Worktree state:** report the path, branch, commit, and dirty state you actually worked in
 (`git status --short --branch`). The lead reconciles every subagent's worktree before verifying,

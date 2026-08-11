@@ -115,3 +115,4 @@ Use Miller by capability, not by raw file reading:
 4. Find a symbol's references before changing it, to check impact.
 5. Do not infer or invent API shapes. Use Miller to discover symbol names, function signatures, config shapes, route names, CLI flags, or public contracts before relying on them.
 6. When Miller cannot prove a shape, say what evidence is missing and choose the safest plan-consistent path. Do not fill gaps from memory or plausible guesses.
+7. Scope test runs: in the inner loop, run single tests or the focused group that covers the change. The full suite runs once, at the branch gate. Do not rerun a passing scope on an unchanged tree.
