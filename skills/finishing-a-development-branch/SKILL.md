@@ -98,20 +98,20 @@ Fill the placeholders in `./morning-report-template.md` using the fields the cal
 Produce three renderings:
 - **Full report** — every section filled in, for `.memories/` and for review.
 - **PR summary** — status, What shipped, External review, Blockers, Next steps only. The Judgment calls section is not inlined in the PR description; the PR body points at the `.memories/` file instead (committed in Step 4, so the link is live the moment the PR opens).
-- **Report digest** — the full report's `.html` sibling (same basename), composed per the `razorback:using-razorback` skill's `references/digest-kit.md`. Rendering the digest is part of rendering the report, not a separate step.
+- **Report digest (opt-in)** — the full report's `.html` sibling (same basename), composed per the `razorback:using-razorback` skill's `references/digest-kit.md`. Write it only when the user asked for a digest in this session or in project instructions. Never generate one unprompted. When no digest was requested, skip every digest step below.
 
 ### Step 4: Write full report + commit
 
-Write the full rendered report to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md` and its digest to `.memories/autonomous-run-YYYY-MM-DD-<slug>.html`, where `<slug>` is a short kebab-case identifier for the plan (e.g. `autonomous-execution`). Committing them before the push means the PR includes the report from its first revision — no dead link in the PR body. The PR does not exist yet, so render `{{pr_url}}` as `pending — filled in after PR creation`; Step 7 writes the real URL back.
+Write the full rendered report to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md` — plus its digest sibling `.memories/autonomous-run-YYYY-MM-DD-<slug>.html` when one was requested — where `<slug>` is a short kebab-case identifier for the plan (e.g. `autonomous-execution`). Committing them before the push means the PR includes the report from its first revision — no dead link in the PR body. The PR does not exist yet, so render `{{pr_url}}` as `pending — filled in after PR creation`; Step 7 writes the real URL back.
 
 ```bash
-git add .memories/autonomous-run-YYYY-MM-DD-<slug>.md .memories/autonomous-run-YYYY-MM-DD-<slug>.html
+git add .memories/autonomous-run-YYYY-MM-DD-<slug>.md   # add the .html sibling too when a digest was requested
 git commit -m "docs: autonomous run report for <plan name>"
 ```
 
 This commit (and the Step 7 URL write-back) are metadata-only: they touch nothing outside `.memories/`, so the Step 1 branch-gate evidence carries over to the new HEAD. If anything outside `.memories/` changes after Step 1, the evidence is invalidated — re-run the branch gate before pushing.
 
-Every report mutation after this step updates the digest sibling's matching field and stages both files in the same commit — a committed digest that contradicts its markdown is worse than none.
+When a digest exists, every report mutation after this step updates the digest sibling's matching field and stages both files in the same commit — a committed digest that contradicts its markdown is worse than none.
 
 ### Step 5: Push branch
 
@@ -144,10 +144,10 @@ Capture the PR URL from `gh`'s output for Step 7.
 
 ### Step 7: Write the PR URL back into the report
 
-Applies to ladder rungs 1–2, which return the created PR's URL; rungs 3–4 already wrote their outcome in Step 6. Replace the `pending — filled in after PR creation` value in the committed report with the captured URL, update the digest's `PR` field to match (per Step 4), then commit and push the update. This is a metadata-only commit; the branch-gate evidence still holds (see Step 4).
+Applies to ladder rungs 1–2, which return the created PR's URL; rungs 3–4 already wrote their outcome in Step 6. Replace the `pending — filled in after PR creation` value in the committed report with the captured URL, update the digest's `PR` field to match when a digest exists (per Step 4), then commit and push the update. This is a metadata-only commit; the branch-gate evidence still holds (see Step 4).
 
 ```bash
-git add .memories/autonomous-run-YYYY-MM-DD-<slug>.md .memories/autonomous-run-YYYY-MM-DD-<slug>.html
+git add .memories/autonomous-run-YYYY-MM-DD-<slug>.md   # add the .html sibling too when a digest was requested
 git commit -m "docs: record PR URL in run report"
 git push
 ```
@@ -157,8 +157,10 @@ git push
 One line, then exit:
 
 ```
-Done. PR: <url>. Report: .memories/autonomous-run-YYYY-MM-DD-<slug>.md. Digest: .memories/autonomous-run-YYYY-MM-DD-<slug>.html
+Done. PR: <url>. Report: .memories/autonomous-run-YYYY-MM-DD-<slug>.md.
 ```
+
+When a digest was requested, append: ` Digest: .memories/autonomous-run-YYYY-MM-DD-<slug>.html`
 
 ### Autonomous Mode rules
 

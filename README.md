@@ -198,11 +198,11 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 - Concrete commands come from the target repo, not from razorback.
 - The lead owns decomposition, integration review, escalation, and final branch verification.
 
-**Visual digest:**
-- Long documents ship a single-file HTML view beside the markdown, same basename — no build step, no external assets, light and dark.
+**Visual digest (opt-in):**
+- Long documents can ship a single-file HTML view beside the markdown, same basename — no build step, no external assets, light and dark.
 - The component kit is [`skills/using-razorback/references/digest-kit.md`](skills/using-razorback/references/digest-kit.md): layout contract, kit CSS, status chips, hero figure with meter, timeline spine, tabs, and authoring rules.
-- Three read moments emit one: `brainstorming` writes `<design-doc>.html` at the User Review Gate, `writing-plans` writes `<plan>.html` at the plan-save announcement, and `finishing-a-development-branch` writes the run report's `.html` sibling when it renders the morning report.
-- Writing the digest is part of writing the document, not a separate stop.
+- Three read moments can emit one: `brainstorming` at the User Review Gate (`<design-doc>.html`), `writing-plans` at the plan-save announcement (`<plan>.html`), and `finishing-a-development-branch` when it renders the morning report (the report's `.html` sibling).
+- Digests are opt-in: ask for one in the session, or request them in project instructions. No skill writes one unprompted.
 
 ## Skills
 
@@ -222,7 +222,7 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 | receiving-code-review | Process for acting on review feedback |
 | managing-review-campaigns | Canonical bounded-review contract for repeated, multi-reviewer, and clean-only campaigns |
 | verification-before-completion | Evidence-before-claims verification |
-| finishing-a-development-branch | Branch gate, then autonomous push + PR with the morning report and its digest (forge-ladder fallback, never merges), or the interactive 4-option menu plus worktree cleanup |
+| finishing-a-development-branch | Branch gate, then autonomous push + PR with the morning report and its opt-in digest (forge-ladder fallback, never merges), or the interactive 4-option menu plus worktree cleanup |
 | dispatching-parallel-agents | Ad-hoc parallel agent dispatch |
 | using-git-worktrees | Isolated workspace setup |
 | writing-skills | Meta-skill for creating/editing skills |

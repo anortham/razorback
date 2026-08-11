@@ -2,10 +2,11 @@
 Morning report template for autonomous-execution finish.
 Rendered into THREE destinations:
   1. PR description — summary sections only (status, what shipped, external review, blockers, next steps)
-  2. .memories/autonomous-run-YYYY-MM-DD-<slug>.md — full detail including judgment calls + dismissed findings,
-     with its visual digest sibling .memories/autonomous-run-YYYY-MM-DD-<slug>.html (composed per the
-     razorback:using-razorback skill's references/digest-kit.md)
-  3. Terminal output — one-line pointer: "Done. PR: <URL>. Report: <path>.md. Digest: <path>.html."
+  2. .memories/autonomous-run-YYYY-MM-DD-<slug>.md — full detail including judgment calls + dismissed findings.
+     Its visual digest sibling <slug>.html (composed per the razorback:using-razorback skill's
+     references/digest-kit.md) is opt-in — written only when the user requested a digest.
+  3. Terminal output — one-line pointer: "Done. PR: <URL>. Report: <path>.md." (plus " Digest: <path>.html"
+     when a digest was requested)
 Placeholders use {{double-brace}} syntax.
 -->
 

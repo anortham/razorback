@@ -318,9 +318,11 @@ When a full plan has exactly one task, use `## Task Structure` above unchanged �
 
 ## Execution Handoff
 
-**Step 1, announce plan save and request approval.** After saving the plan, write its visual digest — `<plan>.html` beside the markdown, sibling basename, composed per the `razorback:using-razorback` skill's `references/digest-kit.md`. Digest generation is part of saving the plan, not a separate stop. Then announce:
+**Step 1, announce plan save and request approval.** The plan's visual digest — `<plan>.html` beside the markdown, sibling basename, composed per the `razorback:using-razorback` skill's `references/digest-kit.md` — is opt-in: write it only when the user asked for a digest in this session or in project instructions. Never generate one unprompted. After saving the plan (and the digest, when requested), announce:
 
-**"Plan saved to `<path>`, with a visual digest at `<plan>.html`. Please review it and reply **approved** (with optional reviewer choice, e.g. 'approved, codex review'; omit reviewer choice for no external review) or request changes."**
+**"Plan saved to `<path>`. Please review it and reply **approved** (with optional reviewer choice, e.g. 'approved, codex review'; omit reviewer choice for no external review) or request changes."**
+
+When a digest was requested, add to the announcement: "with a visual digest at `<plan>.html`".
 
 **Step 2, wait for explicit approval.** Do NOT proceed on silence, hedged responses ("looks ok", "maybe", "I guess"), questions, or partial feedback. Only an explicit **"approved"**, **"yes, go"**, **"run it"**, or equivalent unblocks execution. The approval message can fold in the reviewer choice (e.g. "approved, codex review", "approved, no external review").
 

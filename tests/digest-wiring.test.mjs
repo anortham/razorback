@@ -70,7 +70,13 @@ for (const { file, heading, moment } of WIRING) {
     assert.match(
       region,
       /digest-kit\.md/,
-      `${file} region "${heading}" no longer references digest-kit.md — ${moment} must write the .html digest beside the markdown per the kit`
+      `${file} region "${heading}" no longer references digest-kit.md — ${moment} must define the opt-in .html digest per the kit`
+    );
+
+    assert.match(
+      region,
+      /opt-in/,
+      `${file} region "${heading}" no longer marks the digest as opt-in — digests are written only when the user asks, never unprompted`
     );
   });
 }

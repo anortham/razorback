@@ -126,9 +126,11 @@ After writing the spec document, look at it with fresh eyes:
 Fix any issues inline. No need to re-review, just fix and move on.
 
 **User Review Gate:**
-After the spec review loop passes, write the spec's visual digest — `<design-doc>.html` beside the markdown, sibling basename, composed per the `razorback:using-razorback` skill's `references/digest-kit.md`. Digest generation is part of writing the spec, not a separate stop. Then ask the user to review the written spec before proceeding:
+After the spec review loop passes, ask the user to review the written spec before proceeding. The spec's visual digest — `<design-doc>.html` beside the markdown, sibling basename, composed per the `razorback:using-razorback` skill's `references/digest-kit.md` — is opt-in: write it only when the user asked for a digest in this session or in project instructions. Never generate one unprompted.
 
-> "Spec written and committed to `<path>`, with a visual digest at `<design-doc>.html`. Please review it and let me know if you want to make any changes before we start writing out the implementation plan."
+> "Spec written and committed to `<path>`. Please review it and let me know if you want to make any changes before we start writing out the implementation plan."
+
+When a digest was requested, add to the ask: "with a visual digest at `<design-doc>.html`".
 
 Wait for the user's response. If they request changes, make them and re-run the spec review loop. Only proceed once the user approves.
 
