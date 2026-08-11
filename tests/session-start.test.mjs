@@ -43,8 +43,8 @@ const ACCESS_TEXT = {
   opencode: /\*\*In OpenCode:\*\*/,
 };
 
-test('check-rule-copies exposes exactly the seven rule invariants this hook must carry', () => {
-  assert.equal(RULE_INVARIANTS.length, 7, `parsed invariants: ${JSON.stringify(RULE_INVARIANTS)}`);
+test('check-rule-copies exposes exactly the eight rule invariants this hook must carry', () => {
+  assert.equal(RULE_INVARIANTS.length, 8, `parsed invariants: ${JSON.stringify(RULE_INVARIANTS)}`);
 });
 
 test('session-start emits the Claude Code SessionStart hookSpecificOutput shape', () => {
