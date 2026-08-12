@@ -27,9 +27,12 @@ Use for ANY technical issue:
 - Test failures
 - Bugs in production
 - Unexpected behavior
-- Performance problems
 - Build failures
 - Integration issues
+
+**Not here:** when the output is right but late — a slow endpoint, query, page, job, build, or
+test suite — use `razorback:diagnosing-performance`. A defect has a wrong answer to trace back
+to a wrong line; slowness has no wrong line, so it needs measurement instead of tracing.
 
 **Use this ESPECIALLY when:**
 - Under time pressure (emergencies make guessing tempting)
@@ -284,6 +287,7 @@ These techniques are part of systematic debugging and available in this director
 - **`condition-based-waiting.md`** - Replace arbitrary timeouts with condition polling
 
 **Related skills:**
+- **razorback:diagnosing-performance** - When the output is right but late; measurement replaces tracing
 - **razorback:test-driven-development** - For creating failing test case (Phase 4, Step 1)
 - **razorback:verification-before-completion** - Verify fix worked before claiming success
 - **razorback:fixing-small-issues** - When the root-caused fix meets the quick-fix criteria, execute it there: in place, affected-scope verification, no worktree or baseline-suite ceremony
