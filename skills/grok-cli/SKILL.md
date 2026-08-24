@@ -46,7 +46,8 @@ models.
 - **Structured output**: `--json-schema '<SCHEMA JSON STRING>'` constrains the
   model to JSON and implies `--output-format json`. `--output-format` also
   accepts `plain` (default) and `streaming-json`.
-- **Stderr**: append `2>/dev/null` to suppress banner and status noise.
+- **Stderr**: on review and delegate invocations, append `2>/dev/null` to
+  suppress banner and status noise. Do **not** discard stderr on `grok models`.
 - **stdin**: In testing, `grok -p` does **not** block on stdin the way
   `codex exec` and `claude -p` do — it returns without a redirect. Keep
   `< /dev/null` (bash) / `< NUL` (Windows cmd/PowerShell) on non-piped
@@ -67,12 +68,11 @@ models.
   never return — nothing else. It is not a bound on how long a review may
   take, and it is not a cost dial. Scope the review in the prompt and let the
   reviewer finish the job. Never tune it down to make a run cheaper.
-- **Auth**: logged in via `grok login` (`--oauth` for browser OAuth via
-  auth.x.ai, `--device-auth` for headless/remote device-code flow). There is no
-  `grok auth status` subcommand; use `grok models` as the readiness check — it
-  prints `You are logged in with grok.com.` plus the model list when authed, and
-  errors when not. If auth fails, tell the user to run `grok login` in a
-  terminal.
+- **Auth**: session from `grok login` (`--oauth` default, `--device-auth` for
+  headless/remote). There is no `grok auth status`. Classify `grok models` per
+  Pre-flight Check — a failed probe is not logout. Tell the user to run
+  `grok login` only when stdout is `You are not authenticated.` and
+  `~/.grok/auth.json` is missing.
 
 ## Policy Gate
 
@@ -85,19 +85,24 @@ provider, stop per blocker taxonomy #4.
 
 ## Pre-flight Check
 
-`grok models` is the one-call readiness probe — it confirms auth and shows which
-model you'll get:
+`grok models` is a full CLI start, not `auth status`. When the binary runs, it
+always prints a model list and exits 0. The login line on stdout is the only
+auth signal. Keep stderr.
 
 ```bash
-grok models 2>/dev/null
-# You are logged in with grok.com.
-# Default model: grok-4.5
-# Available models:
-#   * grok-4.5 (default)
+GROK_BIN=$(command -v grok || true)
+: "${GROK_BIN:=$HOME/.local/bin/grok}"
+[ -x "$GROK_BIN" ] || GROK_BIN="$HOME/.grok/bin/grok"
+"$GROK_BIN" models
 ```
 
-If it errors or prints nothing, the user is not logged in — tell them to run
-`grok login`.
+| stdout / result | Meaning | What to do |
+|---|---|---|
+| `You are logged in with grok.com.` | Ready | Proceed |
+| `You are not authenticated.` and `~/.grok/auth.json` exists | This process cannot see credentials (sandbox, wrong `HOME`) | Do **not** run `grok login`. Re-run with a shell that can read `~/.grok/auth.json`. |
+| `You are not authenticated.` and `~/.grok/auth.json` is missing | No session on disk | Run `grok login` (`--device-auth` on a headless host). |
+| `command not found` / exit 127 | Binary missing or not on `PATH` | Try `~/.local/bin/grok` and `~/.grok/bin/grok`. Do **not** run `grok login`. |
+| empty stdout, timeout, or a network/settings error | Probe failed | Keep stderr. Retry once. Do **not** run `grok login`. |
 
 ## Review Targeting
 
@@ -362,8 +367,9 @@ think it's wrong, and your evidence.
 
 ## Error Handling
 
-- **Not logged in**: `grok models` errors or prints no model list. Tell the user
-  to run `grok login` (`--device-auth` on a headless/remote host).
+- **Not logged in**: only `You are not authenticated.` plus a missing
+  `~/.grok/auth.json`. Classify every other `grok models` result per Pre-flight
+  Check — do not run `grok login`.
 - **Rate limits**: xAI plans have usage limits. A rate limit means the service
   is unavailable, not that the review was too big. Tell the user and suggest
   waiting for the window to reset or swapping to another reviewer. Do NOT
@@ -404,8 +410,9 @@ think it's wrong, and your evidence.
 - **Empty output (other)**: if stdout is empty and the permission pattern above
   does not match, check stderr (remove `2>/dev/null` temporarily) for error
   messages.
-- **Grok not installed**: check with `grok --version`. Install per xAI's Grok
-  CLI instructions if missing (the binary lives under `~/.grok/bin/grok`).
+- **Grok not installed**: `command -v grok` fails and `~/.local/bin/grok` /
+  `~/.grok/bin/grok` are missing. Install per xAI's Grok CLI instructions.
+  A missing binary is not logout.
 
 ## Quick Reference
 
@@ -426,7 +433,7 @@ insurance against a harness holding stdin open.
 | Code review | read-only + approve + schema | `grok --prompt-file "$PROMPT_FILE" --json-schema "$SCHEMA_JSON" --sandbox read-only --always-approve --cwd dir` (no `-p`), where `SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")`. Scope/sizing per Review Targeting. |
 | Adversarial review | read-only + approve + schema | Build the prompt from `$SKILL_DIR/adversarial-prompt.txt` (see Adversarial Review), then the code-review command. |
 | Delegate (complex) | workspace + approve | `grok -p "prompt" --sandbox workspace --always-approve --cwd dir 2>/dev/null < /dev/null` (add `-w` for an isolated worktree) |
-| Pre-flight / auth check | any | `grok models 2>/dev/null` (prints login state + model list) |
+| Pre-flight / auth check | any | `"$GROK_BIN" models` with stderr kept. Ready only if stdout contains `You are logged in with grok.com.` Empty/timeout/exit 127 is not logout. `You are not authenticated.` + missing `~/.grok/auth.json` is the only `grok login` case. |
 | Apply explicit model/effort | any | Add `--model "$GROK_MODEL"` / `--effort "$GROK_EFFORT"` when set |
 | Resume session | persistent | `grok -c -p "prompt" --always-approve` (most recent) or `grok -r <ID> -p "prompt" --always-approve` (`--fork-session` to branch). `-c`/`-r` never take the prompt — omit `-p` and you get the interactive TUI. Omit `--sandbox` on resume; still pass `--always-approve`. |
 | Structured output shape | any | Envelope: `.structuredOutput` (parsed object), `.text` (JSON string), `.usage`, `.total_cost_usd` |
