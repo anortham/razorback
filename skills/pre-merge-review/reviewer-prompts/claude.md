@@ -17,7 +17,12 @@ Bare relative paths below (like the blocker-taxonomy reference) are relative to 
 The adversarial system prompt (loaded via `--system-prompt-file`) supplies the operating stance, attack-surface categories, finding bar, calibration, and grounding rules. The user prompt therefore carries only the target-specific context; the same three inputs codex gets:
 
 ```bash
-DIFF_AND_CONTEXT="Target: $FILE_STAT (branch <name>: base..HEAD)
+DIFF_AND_CONTEXT="Review the complete code-change bundle for bugs, security issues, correctness problems, and material improvements. Return only the required completion schema with review_completed=true, files_inspected, commands_run, and concrete file/line evidence.
+
+Target: branch <name>: base..HEAD
+
+File stat:
+$FILE_STAT
 
 User focus: ${USER_FOCUS:-none specified}
 
@@ -28,7 +33,7 @@ Diff:
 $DIFF"
 ```
 
-If the plan path is short and likely to orient the reviewer, append it ("Plan: docs/plans/…"). Do not paste the full plan; the reviewer is supposed to form an independent take. The caller writes this complete payload to `$PAYLOAD_FILE`, filters it through `skills/security-review/scripts/redact-outbound`, and exposes the resulting `$REDACTED_PAYLOAD_FILE` for the invocation. Never load the redacted payload into a shell variable or pass it as a positional argument.
+If the plan path is short and likely to orient the reviewer, append it ("Plan: docs/plans/…"). Do not paste the full plan; the reviewer is supposed to form an independent take. The caller writes this complete prompt to `$PAYLOAD_FILE`, including the review instruction, optional focus, and bundle, filters it through `skills/security-review/scripts/redact-outbound`, and applies the shared [`review-payload.md`](../../security-review/review-payload.md) contract. It exposes the resulting `$REVIEW_PROMPT_FILE` for the invocation and records the large artifact path in `$REVIEW_ARTIFACT`. For bundles over 128 KiB, `$REVIEW_PROMPT_FILE` contains only the bounded static instruction `Read and follow the complete redacted review bundle at:` plus its path; Claude reads the complete redacted prompt from `.razorback-review/review-input.md` inside `$REVIEW_ROOT` with `Read,Grep,Glob`. Never load the large artifact into a shell variable or pass it as a positional argument.
 
 ## Invocation
 
@@ -55,7 +60,7 @@ cd "$REVIEW_ROOT" && claude -p \
   --strict-mcp-config \
   ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} \
   --system-prompt-file "$PROMPT_FILE" \
-  < "$REDACTED_PAYLOAD_FILE" > "$OUT_DIR/claude-output.json" 2> "$OUT_DIR/claude-stderr.log"
+  < "$REVIEW_PROMPT_FILE" > "$OUT_DIR/claude-output.json" 2> "$OUT_DIR/claude-stderr.log"
 ```
 
 `REVIEW_ROOT` and `OUT_DIR` must both live outside the live worktree. The review root is created once by pre-merge-review and is shared across both passes; the caller removes it explicitly after both outputs are captured and parsed. `OUT_DIR` is private per invocation, so its local `trap` only removes reviewer output files and is not the review-root lifecycle.
@@ -70,7 +75,7 @@ Flag rationale:
 - `--dangerously-skip-permissions` - required for scripted non-interactive use.
 - `--safe-mode` - disables branch-controlled startup hooks and settings while preserving the explicit read-only tool allowlist.
 - `--output-format json --json-schema …` - structured review output conforming to the shared schema.
-- `--tools "Read,Grep,Glob"` - read-only, enforced at the CLI layer: no tool in the allowlist can write. Do NOT add `Bash` — an unrestricted Bash tool can write files and would make the read-only claim prompt-deep only. The diff and commit log are embedded in the prompt, so the reviewer doesn't need shell access.
+- `--tools "Read,Grep,Glob"` — read-only, enforced at the CLI layer: no tool in the allowlist can write. Do NOT add `Bash` — an unrestricted Bash tool can write files and would make the read-only claim prompt-deep only. Small bundles are embedded in the prompt; large bundles are in the reviewer-root-local artifact read through the existing allowlist.
 - `--strict-mcp-config` - drops MCP servers inherited from user/project settings, which can carry write-capable tools into an otherwise read-only allowlist.
 - **No `--max-turns` and no `--max-budget-usd`** - razorback caps neither the turns nor the spend of a review. Either cap truncates the review mid-flight and can leave unusable evidence while still consuming the campaign invocation. The review's scope is set by the prompt, not by a mechanical limit; let the reviewer finish the job. Do not add the flags back; a user who wants a hard ceiling sets it themselves.
 - `--model "$CLAUDE_MODEL"` - explicit model override when `CLAUDE_MODEL` is set. The review's value is a fresh session and prompt framing, not model superiority.
@@ -127,7 +132,7 @@ PROMPT_FILE="$SKILL_DIR/../security-review/security-adversarial-prompt.txt"
 
 Run the second command from the same exported tree: `cd "$REVIEW_ROOT" && claude -p …`. Do not switch back to `$PROJECT_DIR` or create a second review root. If this pass fails, remove `"$REVIEW_ROOT"` explicitly before returning the blocker.
 
-Build `$DIFF_AND_CONTEXT` exactly as under "Build the user prompt", redact it into a fresh `$REDACTED_PAYLOAD_FILE`, and keep the final bytes in that file. Capture stdout to a second file in the same private temp directory, `$OUT_DIR/claude-output-security.json`, so the general pass's `$OUT_DIR/claude-output.json` is preserved. Do not pass the security payload positionally.
+Build `$DIFF_AND_CONTEXT` exactly as under "Build the user prompt", including its instruction and optional focus, redact it into a fresh `$REDACTED_PAYLOAD_FILE`, and apply `prepare-review-artifact` to select the shared `$REVIEW_PROMPT_FILE`. Capture stdout to a second file in the same private temp directory, `$OUT_DIR/claude-output-security.json`, so the general pass's `$OUT_DIR/claude-output.json` is preserved. Do not pass the security payload positionally, interpolate it into a large wrapper, or reload a large artifact into stdin.
 
 Parse rules, cost notes, and error handling are identical to the general pass: apply `validate-review-output` to `$OUT_DIR/claude-output-security.json`, preserve the empty-findings rule for `approve`, and apply the no-retry blocking rule. Render the cost line from the same envelope fields.
 

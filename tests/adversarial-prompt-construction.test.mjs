@@ -19,23 +19,23 @@ function extractConstructionBlock() {
   assert.notEqual(
     start,
     -1,
-    'skills/codex-cli/SKILL.md must contain a bash block that builds ADVERSARIAL_PROMPT from the template',
+    'skills/codex-cli/SKILL.md must contain a bash block that builds the adversarial instruction from the template',
   );
 
-  let end = start;
-  while (end < lines.length && lines[end].trim() !== '') end += 1;
-  const block = lines.slice(start, end);
+  const end = lines.findIndex((line, index) => index > start && line.startsWith('ADVERSARIAL_INSTRUCTION='));
+  assert.notEqual(end, -1, 'the construction block must render the adversarial instruction before preparing the review workspace');
+  const block = lines.slice(start, end + 1);
 
   assert.ok(
-    block.some((line) => line.startsWith('ADVERSARIAL_PROMPT=')),
-    'the construction block must assign ADVERSARIAL_PROMPT',
+    block.some((line) => line.startsWith('ADVERSARIAL_INSTRUCTION=')),
+    'the construction block must assign ADVERSARIAL_INSTRUCTION',
   );
 
   return block.join('\n');
 }
 
 function runConstruction({ target, diff }) {
-  const script = `${extractConstructionBlock()}\nprintf '%s' "$ADVERSARIAL_PROMPT"`;
+  const script = `${extractConstructionBlock()}\nprintf '%s' "$ADVERSARIAL_INSTRUCTION"`;
 
   return execFileSync('bash', ['-c', script], {
     encoding: 'utf8',
@@ -87,7 +87,7 @@ test('template declares placeholders in the order the construction splits them',
   assert.deepEqual(order, ['{{TARGET_LABEL}}', '{{USER_FOCUS}}', '{{REVIEW_INPUT}}']);
 });
 
-test('construction reproduces a diff containing && and backslashes byte for byte', () => {
+test('construction reproduces target and focus containing && and backslashes byte for byte', () => {
   const actual = runConstruction({ target: HOSTILE_TARGET, diff: HOSTILE_DIFF });
 
   assert.equal(
@@ -95,7 +95,7 @@ test('construction reproduces a diff containing && and backslashes byte for byte
     expectedPrompt({
       target: HOSTILE_TARGET,
       focus: 'none specified',
-      diff: HOSTILE_DIFF,
+      diff: '',
     }),
   );
 });
@@ -114,11 +114,11 @@ test('construction never duplicates a placeholder into the rendered prompt', () 
   assert.doesNotMatch(actual, /\{\{REVIEW_INPUT\}\}/);
 });
 
-test('construction carries the hostile diff through unmangled', () => {
+test('adversarial instruction leaves the hostile diff for bundle transport', () => {
   const actual = runConstruction({ target: HOSTILE_TARGET, diff: HOSTILE_DIFF });
 
-  assert.ok(actual.endsWith(HOSTILE_DIFF), 'diff must survive substitution verbatim');
-  assert.match(actual, /^Target: auth & billing \(3 files changed\)$/m);
+  assert.doesNotMatch(actual, /ready && enabled/);
+  assert.doesNotMatch(actual, /trailing backslash/);
 });
 
 test('construction does not use pattern substitution with an expanding replacement', () => {

@@ -28,9 +28,26 @@ Extend `skills/codex-cli/schemas/review-output.schema.json` with required comple
 
 Add `skills/codex-cli/scripts/validate-review-output`. It accepts a Grok result-envelope file, normalizes `.structuredOutput` or the JSON object encoded in `.text`, enforces the completion contract, writes the normalized object on success, and exits nonzero on malformed, contradictory, or incomplete output. It never inspects Grok's private transcript format.
 
-The Grok review recipe must embed the complete resolved diff in the initial prompt. A branch range or instruction to inspect later is not a review payload. After the first CLI call, the validator decides whether the required discovery scope completed.
+The Grok review recipe must construct the complete resolved diff in a redacted
+review bundle before the initial prompt. A branch range or instruction to
+inspect later is not a review payload. After the first CLI call, the validator
+decides whether the required discovery scope completed. The initial prompt may
+carry the complete bundle only when it is at or below the shared small-payload
+threshold.
 
-Large review inputs use files as transport. Grok keeps `--prompt-file`; Codex keeps standard input; Claude writes the final redacted prompt to a temporary file and redirects that file to `claude -p`. Pre-merge review must not load the redacted payload back into a shell variable or pass it as a positional argument. This avoids command-line argument limits while preserving `Read,Grep,Glob` as the Claude tool allowlist. Reviewers receive the complete diff, stat, and commit log without gaining Bash or access to live Git metadata.
+Large review inputs use the shared `skills/security-review/review-payload.md`
+contract and `skills/security-review/scripts/prepare-review-artifact`. The helper
+uses one 128 KiB threshold, validates `Target:`, `File stat:`, `Commit log:`,
+and `Diff:` sections, and writes the complete redacted bundle to
+`.razorback-review/review-input.md` inside the isolated `.git`-free reviewer
+workspace with `0700`/`0600` permissions. Grok keeps `--prompt-file`; Codex
+keeps standard input; Claude redirects a temporary prompt file to `claude -p`.
+For a large bundle those transports contain only concise instructions and the
+artifact path; they never reload or interpolate the artifact bytes. This avoids
+command-line/context ingestion limits while preserving `Read,Grep,Glob` as the
+Claude and Grok fallback tool allowlist. Reviewers receive the complete diff,
+stat, and commit log by reading the artifact without gaining Bash or access to
+live Git metadata.
 
 Standalone Grok campaigns predeclare two external invocations and two rounds. The second invocation is permitted only when the first created a session but failed completion validation. It resumes that same current-directory session with `-c`, omits `--sandbox`, repeats the schema, and asks only for completion of the existing review. It is not a fresh sweep or post-fix re-review. A second invalid result closes the campaign blocked or capped with no third call.
 
@@ -42,7 +59,8 @@ Sandbox startup failures remain terminal for their campaign because no session e
 - Create `skills/codex-cli/scripts/validate-review-output`.
 - Modify `skills/grok-cli/SKILL.md`.
 - Modify `skills/managing-review-campaigns/SKILL.md`.
-- Modify `skills/claude-cli/SKILL.md` and `skills/pre-merge-review/reviewer-prompts/claude.md` so large payloads use temporary files and standard input.
+- Create `skills/security-review/scripts/prepare-review-artifact` and the shared `skills/security-review/review-payload.md` transport contract.
+- Modify `skills/grok-cli/SKILL.md`, `skills/claude-cli/SKILL.md`, `skills/codex-cli/SKILL.md`, `skills/pre-merge-review/SKILL.md`, and both pre-merge reviewer prompts so large payloads use the reviewer-root-local artifact and bounded prompt transport.
 - Modify reviewer prompt documentation that enumerates the shared output fields.
 - Add focused validator, Grok workflow, and Claude payload-transport tests.
 
@@ -52,10 +70,10 @@ Sandbox startup failures remain terminal for their campaign because no session e
 - [x] `needs-attention` with empty findings is rejected.
 - [x] Missing or empty inspected-file and evidence lists are rejected.
 - [x] Malformed envelopes and malformed `.text` are rejected without partial output.
-- [x] Grok code review embeds the complete diff and does not treat `--no-plan` or tool use as completion proof.
+- [x] Grok code review constructs the complete redacted bundle and uses the reviewer-root-local artifact for large payloads; it does not treat `--no-plan` or tool use as completion proof.
 - [x] One invalid placeholder may resume the same session once; no fresh sweep or third invocation is allowed.
 - [x] Sandbox startup failure cannot consume the continuation path and `grok inspect` is not presented as a capability probe.
 - [x] Claude standalone and pre-merge review never pass the full diff as a positional argument.
-- [x] Large redacted Claude payloads are supplied through a temporary file on standard input while `Bash` remains absent from the tool allowlist.
+- [x] Large redacted review bundles for Grok, Codex, Claude, and pre-merge review are supplied through a reviewer-root-local `0600` artifact; the CLI prompt remains bounded and `Bash` remains absent from the read-only tool allowlists.
 - [x] Existing Codex, Claude, and pre-merge structured-output contracts stay compatible with the expanded schema.
 - [x] Focused tests show RED before implementation and GREEN afterward.

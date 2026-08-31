@@ -17,14 +17,23 @@ Read the canonical adversarial prompt template at `$SKILL_DIR/../codex-cli/adver
 
 - `{{TARGET_LABEL}}` ← `$FILE_STAT` plus a short description, e.g. `"branch <name>: N files changed, base..HEAD"`.
 - `{{USER_FOCUS}}` ← `$USER_FOCUS` if set during execution handoff, otherwise `"none specified"`.
-- `{{REVIEW_INPUT}}` ← `$FILE_STAT`, `$COMMIT_LOG`, and `$DIFF`, concatenated under labelled headings.
+- `{{REVIEW_INPUT}}` ← `$FILE_STAT`, `$COMMIT_LOG`, and `$DIFF`, concatenated under
+  the labelled `Target:`, `File stat:`, `Commit log:`, and `Diff:` headings.
 
 The template instructs codex to default to skepticism, prioritize high-impact attack surfaces (auth, data loss, race conditions, schema drift, observability gaps), emit only material findings, and return JSON matching the shared schema.
 
-The caller writes the complete rendered prompt to `$PAYLOAD_FILE`, filters it
-through `skills/security-review/scripts/redact-outbound`, and exposes the final
-bytes as `$REDACTED_PAYLOAD_FILE`. Keep the payload in that file; do not pass a
-large diff to `echo` or any other positional argument.
+The caller writes the complete rendered prompt to `$PAYLOAD_FILE`, including
+the template's review instruction and optional focus, filters it through
+`skills/security-review/scripts/redact-outbound`, and applies the shared
+[`review-payload.md`](../../security-review/review-payload.md) contract. It
+exposes `$REVIEW_PROMPT_FILE` and records the large artifact path in `$REVIEW_ARTIFACT`:
+the complete redacted review prompt for payloads at or below 128 KiB, or the
+bounded static instruction `Read and follow the complete redacted review bundle at:`
+plus its path for larger bundles. The large artifact is
+`.razorback-review/review-input.md` inside
+`$REVIEW_ROOT`; Codex reads it with its existing read-only tools. Keep the large
+payload in the reviewer-root-local artifact; do not pass it to `echo`, stdin,
+or any positional argument.
 
 ## Invocation
 
@@ -38,7 +47,7 @@ CODEX_MODEL="${RAZORBACK_CODEX_REVIEW_MODEL:-}"  # empty = inherit global defaul
 OUT_DIR=$(mktemp -d)
 trap 'rm -rf "$OUT_DIR"' EXIT
 
-cd "$REVIEW_ROOT" && cat "$REDACTED_PAYLOAD_FILE" | codex exec \
+cd "$REVIEW_ROOT" && cat "$REVIEW_PROMPT_FILE" | codex exec \
   --ephemeral --color never \
   -s read-only \
   --skip-git-repo-check \
@@ -61,7 +70,7 @@ Flag rationale:
 - `--ignore-user-config --ignore-rules` — prevents user/project configuration and branch-controlled rules from becoming reviewer control input.
 - `${CODEX_MODEL:+-m "$CODEX_MODEL"}` — explicit model override from `RAZORBACK_CODEX_REVIEW_MODEL`. When unset, the expansion is empty and codex uses its configured default.
 - `--output-schema` — forces codex to return JSON conforming to the shared review-output schema. A completed result includes `review_completed: true`, non-empty unique `files_inspected`, a `commands_run` array (which may be empty), and non-empty file/line/observation `evidence`; `needs-attention` requires a finding. `reviewer-prompts/claude.md` reads the same canonical file (minus the `$schema` key, which claude's validator rejects), so both reviewers target an identical shape.
-- `-` — read the prompt from stdin (which is the piped `$REDACTED_PAYLOAD_FILE`).
+- `-` — read the prompt from stdin (which is the piped `$REVIEW_PROMPT_FILE`; for large bundles this is only the concise artifact instruction).
 - `2> "$OUT_DIR/codex-stderr.log"` — keep stdout JSON-only while retaining diagnostics from the same invocation for a blocker report. Do not re-run merely to recover discarded stderr.
 
 **Model:** `RAZORBACK_CODEX_REVIEW_MODEL` is an optional explicit override. When unset, codex inherits its global default.
@@ -143,10 +152,13 @@ A truncated result is incomplete and must be rejected by `validate-review-output
 When the run includes the dedicated security pass, run codex a second time. The invocation is the SAME as the general pass — `codex exec --ephemeral --color never -s read-only --output-schema "$SCHEMA_FILE" -`, with the same model handling, timeout, and stdin pipe as the Invocation section above.
 
 The stdin prompt is NOT the same. Rebuild the security template into a fresh
-`PAYLOAD_FILE`, redact it into a fresh `$REDACTED_PAYLOAD_FILE`, and pipe that
-file — not the general pass's payload — into the second `codex exec`. Reusing
-the general pass's rendered prompt here is an error: it produces two general
-reviews and no security review.
+`PAYLOAD_FILE`, including its instruction and optional focus, redact it into a
+fresh `$REDACTED_PAYLOAD_FILE`, apply `prepare-review-artifact` to select a fresh
+`$REVIEW_PROMPT_FILE`, and pipe that file — not the general pass's payload —
+into the second `codex exec`. Reusing the general pass's rendered prompt here is
+an error: it produces two general reviews and no security review. For a large
+payload, the second prompt still contains only the static artifact instruction;
+never reload the artifact bytes.
 Build the security template from the canonical
 `$SKILL_DIR/../security-review/security-adversarial-prompt.txt` file.
 

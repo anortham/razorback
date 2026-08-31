@@ -158,7 +158,20 @@ Both target the shared output schema defined canonically at `../codex-cli/schema
 
 ### Redact each pass payload
 
-Immediately before each reviewer-prompt invocation, filter the final constructed payload through `skills/security-review/scripts/redact-outbound`: Claude's `$DIFF_AND_CONTEXT` or Codex's `$ADVERSARIAL_PROMPT_WITH_DIFF`. Keep the existing single `$REVIEW_ROOT` for both passes; redaction adds only per-pass payload artifacts and never changes the exported tree. The selected prompt file consumes `$REDACTED_PAYLOAD_FILE` on standard input; never load that file back into a shell variable or pass the full diff as a positional argument. On helper failure, remove the payload files and explicitly clean `$REVIEW_ROOT` before returning the blocker.
+Immediately before each reviewer-prompt invocation, construct the complete
+review prompt — full review instruction, optional user focus, and the labelled
+Target/File stat/Commit log/Diff bundle — then filter it through
+`skills/security-review/scripts/redact-outbound`: Claude's
+`$DIFF_AND_CONTEXT` or Codex's `$ADVERSARIAL_PROMPT_WITH_DIFF`. Apply the
+shared [`review-payload.md`](../security-review/review-payload.md) contract with
+`prepare-review-artifact`. The complete redacted review prompt remains the
+source of truth, and a large prompt is exposed through its review artifact
+path. Keep the existing single `$REVIEW_ROOT` for both passes; the helper writes
+a large bundle only inside that isolated tree. The selected prompt file consumes
+`$REVIEW_PROMPT_FILE` on standard input; never load a large artifact back into a
+shell variable or pass it as a positional argument. On helper or redaction
+failure, remove the payload files and explicitly clean `$REVIEW_ROOT` before
+returning the blocker.
 
 ```bash
 PAYLOAD_FILE=$(mktemp)
@@ -175,12 +188,34 @@ if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" >
   echo "outbound redaction failed" >&2
   exit 1
 fi
+if ! REVIEW_ARTIFACT=$("$SKILL_DIR/../security-review/scripts/prepare-review-artifact" \
+  "$REVIEW_ROOT" "$REDACTED_PAYLOAD_FILE"); then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  rm -rf -- "$REVIEW_ROOT"
+  echo "review artifact preparation failed" >&2
+  exit 1
+fi
+REVIEW_PROMPT_FILE="$REDACTED_PAYLOAD_FILE"
+if [ "$REVIEW_ARTIFACT" != inline ]; then
+  REVIEW_PROMPT_FILE=$(mktemp)
+  printf '%s\n\n%s\n%s\n%s\n\n%s\n' \
+    'Read and follow the complete redacted review bundle at:' \
+    "$REVIEW_ARTIFACT" \
+    'The bundle contains the complete review instructions; follow them.' \
+    'Use the available read-only tools to inspect that file.' \
+    'Return only the required completion schema with review_completed=true, files_inspected, commands_run, and concrete file/line evidence.' \
+    > "$REVIEW_PROMPT_FILE"
+fi
 ```
 
-Use the redacted `$REDACTED_PAYLOAD_FILE` for exactly one pass, then remove
-`"$PAYLOAD_FILE"` and `"$REDACTED_PAYLOAD_FILE"` before constructing and
-filtering the next pass. The final explicit `rm -rf -- "$REVIEW_ROOT"` lifecycle
-remains required after both outputs are parsed.
+Use `$REVIEW_PROMPT_FILE` for exactly one pass, then remove
+`"$PAYLOAD_FILE"`, `"$REDACTED_PAYLOAD_FILE"`, and a distinct
+`"$REVIEW_PROMPT_FILE"`. If `REVIEW_ARTIFACT` is a path, remove that artifact
+after the pass has been parsed before constructing and filtering the next pass;
+the next pass reuses the same `$REVIEW_ROOT` and creates its own path. The
+final explicit `rm -rf -- "$REVIEW_ROOT"` lifecycle remains required after both
+outputs are parsed. The shared threshold is 128 KiB; `--prompt-file` and stdin
+carry only the small prompt wrapper when the artifact branch is selected.
 
 ## Step 3: Parse findings
 

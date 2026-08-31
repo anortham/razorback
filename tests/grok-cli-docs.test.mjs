@@ -153,14 +153,16 @@ test('grok-cli classifies sandbox startup failures and requires a new approved f
   }
 });
 
-test('grok code review embeds the complete diff and validates completion evidence', () => {
+test('grok code review transports large bundles through the shared artifact contract', () => {
   const skill = read('skills/grok-cli/SKILL.md');
 
-  assert.match(skill, /Diff:\n\$DIFF/);
-  assert.match(skill, /complete resolved diff/i);
+  assert.match(skill, /complete redacted bundle/i);
+  assert.match(skill, /prepare-review-artifact/);
+  assert.match(skill, /payload over 128 KiB/i);
+  assert.match(skill, /prompt-file.*prompt transport.*review-artifact|review-artifact.*prompt-file.*prompt transport/is);
   assert.match(skill, /validate-review-output\s+RESULT_FILE/i);
   assert.match(skill, /review_completed/);
-  assert.match(skill, /tool use.*not.*completion|completion.*not.*tool use/i);
+  assert.match(skill, /tool use.*not.*completion|completion.*not.*tool use/is);
   assert.doesNotMatch(skill, /--no-plan/);
 });
 

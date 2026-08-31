@@ -23,8 +23,8 @@ models.
   delegate flows (write access inside the workspace). There is no built-in `none`
   or `danger-full-access` profile.
 - **Headless single-turn**: `-p, --single <PROMPT>` prints the response to
-  stdout and exits. For large prompts (an embedded diff), use
-  `--prompt-file <PATH>` instead of passing the prompt as an argument.
+  stdout and exits. For large review bundles, use the shared review-artifact
+  contract; `--prompt-file <PATH>` transports only the concise prompt wrapper.
   `-p` and `--prompt-file` are **mutually exclusive** — each is a complete way
   to supply the headless prompt. `-p` requires its own value, so
   `grok -p --prompt-file FILE` fails with
@@ -91,9 +91,10 @@ Immediately before every Grok dispatch, write the fully constructed payload to
 `PAYLOAD_FILE` and pass it through `skills/security-review/scripts/redact-outbound`.
 Use only `REDACTED_PAYLOAD_FILE` for the invocation; never log matched material.
 If redaction fails, remove both files, emit only a generic error, and stop before
-Grok receives any input. Small `-p` payloads may be read into a variable after
-redaction; large review and adversarial payloads must stay in the redacted file
-and use `--prompt-file`.
+Grok receives any input. Review and adversarial bundles use the shared
+`prepare-review-artifact` helper: small bundles stay in the redacted prompt file,
+while large bundles are kept in the reviewer-root-local artifact and the CLI
+receives only a concise prompt file.
 
 ```bash
 PAYLOAD_FILE=$(mktemp)
@@ -183,21 +184,79 @@ Review Targeting section above.
 
 **Step 2: Build the prompt**
 
+Use the shared [`review-payload.md`](../security-review/review-payload.md)
+contract. For a standalone review, export the reviewed `HEAD` tree first so a
+large bundle has a readable, `.git`-free workspace:
+
 ```bash
-PROMPT="Review the following code changes for bugs, security issues, correctness problems, and improvements.
+PROJECT_DIR=$(git rev-parse --show-toplevel)
+REVIEW_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/razorback-review-tree.XXXXXX")
+if ! "$SKILL_DIR/../pre-merge-review/scripts/prepare-review-tree" \
+  "$PROJECT_DIR" HEAD "$REVIEW_ROOT" >/dev/null; then
+  rm -rf -- "$REVIEW_ROOT"
+  exit 1
+fi
 
-$([ -n "$FOCUS" ] && echo "Focus area: $FOCUS")
+if [ -n "${RANGE:-}" ]; then
+  FILE_STAT=$(git -C "$PROJECT_DIR" diff --stat "$RANGE")
+  COMMIT_LOG=$(git -C "$PROJECT_DIR" log --oneline "$RANGE")
+else
+  FILE_STAT=$(git -C "$PROJECT_DIR" diff --stat --cached; git -C "$PROJECT_DIR" diff --stat)
+  COMMIT_LOG=$(git -C "$PROJECT_DIR" log -1 --oneline HEAD)
+fi
 
-Files changed:
-$TARGET
+REVIEW_INSTRUCTION="Review the complete code-change bundle for bugs, security issues, correctness problems, and material improvements. Return only the required completion schema with review_completed=true, files_inspected, commands_run, and concrete file/line evidence."
 
-Diff:
-$DIFF"
+PAYLOAD_FILE=$(mktemp)
+REDACTED_PAYLOAD_FILE=$(mktemp)
+{
+  printf '%s\n\n' "$REVIEW_INSTRUCTION"
+  if [ -n "${FOCUS:-}" ]; then
+    printf 'Focus area: %s\n\n' "$FOCUS"
+  fi
+  printf 'Target: %s\n' "$TARGET"
+  printf 'File stat:\n%s\n' "$FILE_STAT"
+  printf 'Commit log:\n%s\n' "$COMMIT_LOG"
+  printf 'Diff:\n%s' "$DIFF"
+} > "$PAYLOAD_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" \
+  < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  rm -rf -- "$REVIEW_ROOT"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+
+if ! REVIEW_ARTIFACT=$("$SKILL_DIR/../security-review/scripts/prepare-review-artifact" \
+  "$REVIEW_ROOT" "$REDACTED_PAYLOAD_FILE"); then
+  rm -f -- "$REDACTED_PAYLOAD_FILE"
+  rm -rf -- "$REVIEW_ROOT"
+  echo "review artifact preparation failed" >&2
+  exit 1
+fi
+REVIEW_PROMPT_FILE="$REDACTED_PAYLOAD_FILE"
+if [ "$REVIEW_ARTIFACT" != inline ]; then
+  REVIEW_PROMPT_FILE=$(mktemp)
+  printf '%s\n\n%s\n%s\n%s\n\n%s\n' \
+    'Read and follow the complete redacted review bundle at:' \
+    "$REVIEW_ARTIFACT" \
+    'The bundle contains the complete review instructions; follow them.' \
+    'Use the available read-only tools to inspect that file.' \
+    'Return only the required completion schema with review_completed=true, files_inspected, commands_run, and concrete file/line evidence.' \
+    > "$REVIEW_PROMPT_FILE"
+fi
 ```
 
-The initial prompt must contain the complete resolved diff (`$DIFF`). A branch range,
-file list, or instruction to inspect the changes later is not a review payload.
-The reviewer must report completion evidence from this embedded diff. Tool use is not completion proof; future-tense planning and a successful CLI exit do not prove that the review completed.
+The complete redacted bundle contains the target, file stat, commit log, and
+resolved diff. A payload over 128 KiB is written by
+`prepare-review-artifact` to `.razorback-review/review-input.md` inside
+`$REVIEW_ROOT`; the CLI prompt contains only the concise instruction and
+artifact path. Do not reload the artifact into an argument, stdin, or
+`--prompt-file`: `--prompt-file` is prompt transport, not a review-artifact
+mechanism. Payloads at or below the threshold remain the normal prompt file.
+The reviewer must report completion evidence from the complete bundle. Tool use
+is not completion proof; future-tense planning and a successful CLI exit do not
+prove that the review completed.
 
 **Step 3: Send to Grok with structured output**
 
@@ -210,24 +269,16 @@ reject it; the verified working schema had no `$schema` key):
 
 ```bash
 SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")
-PROMPT_FILE=$(mktemp)
-REDACTED_PROMPT_FILE=$(mktemp)
 RESULT_FILE=$(mktemp)
 NORMALIZED_RESULT_FILE=$(mktemp)
 STDERR_FILE=$(mktemp)
-trap 'rm -f "$PROMPT_FILE" "$REDACTED_PROMPT_FILE" "$RESULT_FILE" "$NORMALIZED_RESULT_FILE" "$STDERR_FILE"' EXIT
-printf '%s' "$PROMPT" > "$PROMPT_FILE"
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PROMPT_FILE" > "$REDACTED_PROMPT_FILE"; then
-  rm -f -- "$PROMPT_FILE" "$REDACTED_PROMPT_FILE"
-  echo "outbound redaction failed" >&2
-  exit 1
-fi
+trap 'rm -f "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE" "$REVIEW_PROMPT_FILE" "$RESULT_FILE" "$NORMALIZED_RESULT_FILE" "$STDERR_FILE"; rm -rf "$REVIEW_ROOT"' EXIT
 
 GROK_STATUS=0
-grok --prompt-file "$REDACTED_PROMPT_FILE" \
+grok --prompt-file "$REVIEW_PROMPT_FILE" \
   --sandbox read-only \
   --always-approve \
-  --cwd /path/to/project \
+  --cwd "$REVIEW_ROOT" \
   --json-schema "$SCHEMA_JSON" \
   ${GROK_MODEL:+--model "$GROK_MODEL"} \
   ${GROK_EFFORT:+--effort "$GROK_EFFORT"} \
@@ -263,7 +314,7 @@ else
   CONTINUATION_STATUS=0
   grok -c --prompt-file "$REDACTED_FOLLOW_UP_FILE" \
     --always-approve \
-    --cwd /path/to/project \
+    --cwd "$REVIEW_ROOT" \
     --json-schema "$SCHEMA_JSON" \
     < /dev/null > "$RESULT_FILE" 2> "$STDERR_FILE" || CONTINUATION_STATUS=$?
   cat "$STDERR_FILE" >&2
@@ -336,19 +387,31 @@ change.
 
 **Step 1: Apply Review Targeting** (same as Code Review)
 
-**Step 2: Build the adversarial prompt** from this skill's canonical
-`adversarial-prompt.txt`, substituting `{{TARGET_LABEL}}` with the diff stat,
-`{{USER_FOCUS}}` with any focus text (or "none specified"), and
-`{{REVIEW_INPUT}}` with the full diff.
+**Step 2: Build the adversarial prompt** with the shared
+[`review-payload.md`](../security-review/review-payload.md) contract. For a
+standalone review, use a `.git`-free `REVIEW_ROOT` exported from the reviewed
+`HEAD` tree. The complete rendered bundle is redacted before the size decision.
 
 ```bash
-# Split on the placeholders rather than ${//} substitution: bash >=5.2 expands
-# & and backslashes in a substitution's replacement text, which mangles diffs.
 TEMPLATE=$(cat "$SKILL_DIR/adversarial-prompt.txt")
 HEAD=${TEMPLATE%%'{{TARGET_LABEL}}'*};  REST=${TEMPLATE#*'{{TARGET_LABEL}}'}
 MID=${REST%%'{{USER_FOCUS}}'*};         REST=${REST#*'{{USER_FOCUS}}'}
 TAIL=${REST%%'{{REVIEW_INPUT}}'*}
-ADVERSARIAL_PROMPT="${HEAD}${TARGET}${MID}${FOCUS:-none specified}${TAIL}${DIFF}"
+PROJECT_DIR=$(git rev-parse --show-toplevel)
+REVIEW_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/razorback-review-tree.XXXXXX")
+if ! "$SKILL_DIR/../pre-merge-review/scripts/prepare-review-tree" \
+  "$PROJECT_DIR" HEAD "$REVIEW_ROOT" >/dev/null; then
+  rm -rf -- "$REVIEW_ROOT"
+  exit 1
+fi
+if [ -n "${RANGE:-}" ]; then
+  FILE_STAT=$(git -C "$PROJECT_DIR" diff --stat "$RANGE")
+  COMMIT_LOG=$(git -C "$PROJECT_DIR" log --oneline "$RANGE")
+else
+  FILE_STAT=$(git -C "$PROJECT_DIR" diff --stat --cached; git -C "$PROJECT_DIR" diff --stat)
+  COMMIT_LOG=$(git -C "$PROJECT_DIR" log -1 --oneline HEAD)
+fi
+ADVERSARIAL_INSTRUCTION="${HEAD}${TARGET}${MID}${FOCUS:-none specified}${TAIL}"
 ```
 
 **Step 3: Send with structured output**
@@ -356,22 +419,48 @@ ADVERSARIAL_PROMPT="${HEAD}${TARGET}${MID}${FOCUS:-none specified}${TAIL}${DIFF}
 ```bash
 SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")
 
-PROMPT_FILE=$(mktemp)
-REDACTED_PROMPT_FILE=$(mktemp)
 RESULT_FILE=$(mktemp)
 NORMALIZED_RESULT_FILE=$(mktemp)
-trap 'rm -f "$PROMPT_FILE" "$REDACTED_PROMPT_FILE" "$RESULT_FILE" "$NORMALIZED_RESULT_FILE"' EXIT
-printf '%s' "$ADVERSARIAL_PROMPT" > "$PROMPT_FILE"
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PROMPT_FILE" > "$REDACTED_PROMPT_FILE"; then
-  rm -f -- "$PROMPT_FILE" "$REDACTED_PROMPT_FILE" "$RESULT_FILE"
+PAYLOAD_FILE=$(mktemp)
+REDACTED_PAYLOAD_FILE=$(mktemp)
+{
+  printf '%s\n' "$ADVERSARIAL_INSTRUCTION"
+  printf 'Target: %s\n' "$TARGET"
+  printf 'File stat:\n%s\n' "$FILE_STAT"
+  printf 'Commit log:\n%s\n' "$COMMIT_LOG"
+  printf 'Diff:\n%s' "$DIFF"
+} > "$PAYLOAD_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" \
+  < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE" "$RESULT_FILE"
+  rm -rf -- "$REVIEW_ROOT"
   echo "outbound redaction failed" >&2
   exit 1
 fi
+if ! REVIEW_ARTIFACT=$("$SKILL_DIR/../security-review/scripts/prepare-review-artifact" \
+  "$REVIEW_ROOT" "$REDACTED_PAYLOAD_FILE"); then
+  rm -f -- "$REDACTED_PAYLOAD_FILE"
+  rm -rf -- "$REVIEW_ROOT"
+  echo "review artifact preparation failed" >&2
+  exit 1
+fi
+REVIEW_PROMPT_FILE="$REDACTED_PAYLOAD_FILE"
+if [ "$REVIEW_ARTIFACT" != inline ]; then
+  REVIEW_PROMPT_FILE=$(mktemp)
+  printf '%s\n\n%s\n%s\n%s\n\n%s\n' \
+    'Read and follow the complete redacted review bundle at:' \
+    "$REVIEW_ARTIFACT" \
+    'The bundle contains the complete review instructions; follow them.' \
+    'Use the available read-only tools to inspect that file.' \
+    'Return only the required completion schema with review_completed=true, files_inspected, commands_run, and concrete file/line evidence.' \
+    > "$REVIEW_PROMPT_FILE"
+fi
 
-grok --prompt-file "$REDACTED_PROMPT_FILE" \
+trap 'rm -f "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE" "$REVIEW_PROMPT_FILE" "$RESULT_FILE" "$NORMALIZED_RESULT_FILE"; rm -rf "$REVIEW_ROOT"' EXIT
+grok --prompt-file "$REVIEW_PROMPT_FILE" \
   --sandbox read-only \
   --always-approve \
-  --cwd /path/to/project \
+  --cwd "$REVIEW_ROOT" \
   --json-schema "$SCHEMA_JSON" \
   ${GROK_MODEL:+--model "$GROK_MODEL"} \
   ${GROK_EFFORT:+--effort "$GROK_EFFORT"} \
@@ -379,6 +468,12 @@ grok --prompt-file "$REDACTED_PROMPT_FILE" \
 "$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$RESULT_FILE" > "$NORMALIZED_RESULT_FILE"
 cat "$NORMALIZED_RESULT_FILE"
 ```
+
+For payloads over 128 KiB, `prepare-review-artifact` writes the complete
+redacted bundle to `.razorback-review/review-input.md` inside `REVIEW_ROOT` and
+the prompt contains only the concise instruction and artifact path. Do not
+reload that file into an argument, stdin, or `--prompt-file`; `--prompt-file`
+is prompt transport, not a review-artifact mechanism.
 
 Always include `--always-approve` with `--sandbox read-only` (see Defaults).
 The `--json-schema` flag tells Grok to return JSON matching the review schema
@@ -645,18 +740,20 @@ the same review campaign. A new explicit user-approved campaign may use
 while kernel filesystem and child-network enforcement are disabled.
 
 The command patterns below assume the final payload has already passed the
-Outbound Payload Redaction guard. Use `$REDACTED_PROMPT` only for small `-p`
-payloads and `$REDACTED_PROMPT_FILE` for large `--prompt-file` payloads. Every
+Outbound Payload Redaction guard and the shared review-artifact size decision.
+Use `$REDACTED_PROMPT` only for small `-p` payloads and `$REVIEW_PROMPT_FILE`
+for review/adversarial prompt transport (a concise wrapper for large bundles).
+Every
 structured result must pass `validate-review-output RESULT_FILE` before it is
 accepted.
 
 | Use case | Mode | Command pattern |
 |---|---|---|
 | Second opinion | read-only + approve | `grok -p "$REDACTED_PROMPT" --sandbox read-only --always-approve --cwd dir < /dev/null` |
-| Code review | read-only + approve + schema | `grok --prompt-file "$REDACTED_PROMPT_FILE" --json-schema "$SCHEMA_JSON" --sandbox read-only --always-approve --cwd dir` (no `-p`), where `SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")`. Scope/sizing per Review Targeting. |
+| Code review | read-only + approve + schema | `grok --prompt-file "$REVIEW_PROMPT_FILE" --json-schema "$SCHEMA_JSON" --sandbox read-only --always-approve --cwd "$REVIEW_ROOT"` (no `-p`), after `prepare-review-artifact` selects inline vs artifact transport. Scope/sizing per Review Targeting. |
 | Adversarial review | read-only + approve + schema | Build the prompt from `$SKILL_DIR/adversarial-prompt.txt` (see Adversarial Review), then the code-review command. |
 | Delegate (complex) | workspace + approve | `grok -p "$REDACTED_PROMPT" --sandbox workspace --always-approve --cwd dir < /dev/null` (add `-w` for an isolated worktree) |
 | Pre-flight / auth check | any | `"$GROK_BIN" models` with stderr kept. Ready only if stdout contains `You are logged in with grok.com.` Empty/timeout/exit 127 is not logout. `You are not authenticated.` + missing `~/.grok/auth.json` is the only `grok login` case. |
 | Apply explicit model/effort | any | Add `--model "$GROK_MODEL"` / `--effort "$GROK_EFFORT"` when set |
-| Resume session | persistent | `grok -c --prompt-file "$REDACTED_PROMPT_FILE" --always-approve` for the one bounded standalone continuation (most recent), or `grok -r <ID> -p "$REDACTED_PROMPT" --always-approve` for a user-requested conversation follow-up. `-c`/`-r` never take the prompt — omit `-p` / `--prompt-file` and you get the interactive TUI. Omit `--sandbox` on resume; still pass `--always-approve`. |
+| Resume session | persistent | `grok -c --prompt-file "$REDACTED_FOLLOW_UP_FILE" --always-approve` for the one bounded standalone continuation (most recent), or `grok -r <ID> -p "$REDACTED_PROMPT" --always-approve` for a user-requested conversation follow-up. `-c`/`-r` never take the prompt — omit `-p` / `--prompt-file` and you get the interactive TUI. Omit `--sandbox` on resume; still pass `--always-approve`. |
 | Structured output shape | any | Envelope: `.structuredOutput` (parsed object), `.text` (JSON string), `.usage`, `.total_cost_usd`; normalize and validate with `validate-review-output RESULT_FILE`. |

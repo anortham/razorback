@@ -211,18 +211,18 @@ test('documents that practical reviewer isolation is not host-wide read confinem
   assert.match(read('skills/pre-merge-review/SKILL.md'), /not host-wide read confinement/i);
 });
 
-test('pre-merge Claude transport keeps the complete redacted payload on stdin', () => {
+test('pre-merge adapters use the selected prompt file on stdin', () => {
   const prompt = read('skills/pre-merge-review/reviewer-prompts/claude.md');
   const codex = read('skills/pre-merge-review/reviewer-prompts/codex.md');
   const blocks = bashBlocks(prompt).filter((block) => block.includes('claude -p'));
   const codexBlocks = bashBlocks(codex).filter((block) => block.includes('codex exec'));
 
-  assert.ok(blocks.some((block) => /< "\$REDACTED_PAYLOAD_FILE"/.test(block)));
+  assert.ok(blocks.some((block) => /< "\$REVIEW_PROMPT_FILE"/.test(block)));
   for (const block of blocks) {
     assert.doesNotMatch(block, /"\$DIFF_AND_CONTEXT"/);
     assert.doesNotMatch(block, /IFS= read -r -d '' DIFF_AND_CONTEXT/);
   }
-  assert.ok(codexBlocks.some((block) => /cat "\$REDACTED_PAYLOAD_FILE" \| codex exec/.test(block)));
+  assert.ok(codexBlocks.some((block) => /cat "\$REVIEW_PROMPT_FILE" \| codex exec/.test(block)));
   for (const block of codexBlocks) {
     assert.doesNotMatch(block, /echo "\$ADVERSARIAL_PROMPT_WITH_DIFF"/);
   }
