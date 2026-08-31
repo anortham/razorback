@@ -245,6 +245,8 @@ Review cap: 3 iterations. Re-review after every fix. If the third fix still
 fails, stop using that Cursor session and start a fresh Cursor run with a
 smaller task, prior diff summary, and explicit reviewer findings.
 
+The canonical three-way cap contract is in `razorback:subagent-driven-development` Step 3 ("Cap adjudication").
+
 ## Lead Review Checklist
 
 The lead reviews every Cursor implementation before accepting it:

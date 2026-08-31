@@ -197,6 +197,8 @@ limitation recorded in the plan's `Dependency reason`.
 
 Reviews still happen inline per-task. Do not batch reviews — a failing task shouldn't block review of the ones that passed.
 
+After a completed batch of file writes, run Miller `workspace refresh` before the next dispatch. Do not refresh after individual file writes.
+
 ## Step 3: Lead Inline Review
 
 When the implementer reports completion, the lead does a single inline review covering both spec compliance and code quality. No reviewer subagents — the lead does this directly.

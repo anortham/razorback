@@ -13,7 +13,8 @@ Lead inline review — spec compliance for Task N:
 
     ## What Was Requested
 
-    [FULL TEXT of task requirements]
+    Read this first — it is your requirements, with the exact values to use
+    verbatim: [brief path printed by task-brief, .razorback/sdd/<plan-key>/task-N-brief.md]
 
     ## What Implementer Claims They Built
 

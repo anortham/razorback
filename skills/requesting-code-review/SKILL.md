@@ -34,6 +34,8 @@ When using `razorback:subagent-driven-development`, the **lead does inline revie
 
 **If issues found:** Route the fix back to an implementer using the harness-native follow-up path. Resume the existing implementer on Claude Code or Codex when possible, or dispatch a fresh implementer with fix context where resume is unavailable. They fix and re-report. Review cap: 3 iterations.
 
+The canonical three-way cap contract is in `razorback:subagent-driven-development` Step 3 ("Cap adjudication").
+
 ## Mode 2: Standalone Review (Ad-Hoc / Baseline)
 
 For work done outside plan execution, dispatch the `razorback:code-reviewer` agent.

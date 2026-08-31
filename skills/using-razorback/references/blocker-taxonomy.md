@@ -12,6 +12,8 @@ A blocker is real only when the agent cannot resolve it through reasonable plan-
 4. **Safety-critical ambiguity** — two plausible interpretations with non-trivial cost if chosen wrong (security boundary, data integrity, billing, auth flow), AND the plan doesn't disambiguate.
 5. **Unresolvable test failures** — repeated fix attempts do not converge, the failure is not explained by a plan-level issue the agent can flag-and-skip, and no further strategy is available.
 
+For review-loop caps, the canonical three-way cap contract is in `razorback:subagent-driven-development` Step 3 ("Cap adjudication").
+
 ## Not a blocker (decide + log in the morning report)
 
 - Naming, style, or minor design choices
