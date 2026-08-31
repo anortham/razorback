@@ -99,11 +99,56 @@ test('grok-cli tells the user to grok login only when auth.json is actually miss
   assert.match(skill, /~\/\.grok\/bin/);
 });
 
-test('grok-cli review invocations still suppress banner stderr', () => {
+test('grok-cli headless invocations preserve stderr for startup diagnostics', () => {
   const skill = read('skills/grok-cli/SKILL.md');
 
+  assert.doesNotMatch(
+    skill,
+    /2>\s*\/dev\/null/,
+    'headless Grok recipes must leave stderr available for banners and startup failures',
+  );
   assert.match(
     skill,
-    /grok -p "Your prompt here"[\s\S]*?2>\/dev\/null < \/dev\/null/,
+    /Grok 1\.0\.13 puts banners and startup failures on stderr[\s\S]*stdout\/?JSON remains clean[\s\S]*stderr must remain available/i,
   );
+});
+
+test('grok-cli documents the Grok 1.0.13 built-in sandbox profiles', () => {
+  const skill = read('skills/grok-cli/SKILL.md');
+  const normalized = skill.replace(/\s+/g, ' ');
+
+  assert.match(
+    normalized,
+    /built-in profiles are `off`, `workspace`, `devbox`, `read-only`, and `strict`\./i,
+  );
+  assert.match(
+    normalized,
+    /There is no built-in `none` or `danger-full-access` profile\./,
+  );
+});
+
+test('grok-cli classifies sandbox startup failures and requires a new approved fallback campaign', () => {
+  const skill = read('skills/grok-cli/SKILL.md');
+  const normalized = skill.replace(/\s+/g, ' ');
+
+  for (const pattern of [
+    /sandbox profile resolve failed/i,
+    /runtime-socket/i,
+    /\/run\/podman\/podman\.sock/i,
+    /other runtime sockets/i,
+    /denied paths unprotected/i,
+    /missing or unusable `?bwrap`?/i,
+    /pre-session host\/sandbox failure/i,
+    /not a model crash/i,
+    /not `permission_cancelled`/i,
+    /failed CLI call consumes the campaign invocation/i,
+    /do not auto-retry in the same review campaign/i,
+    /new explicit user-approved campaign/i,
+    /`--sandbox off`/i,
+    /kernel filesystem and child-network enforcement are disabled/i,
+    /read-only tool allowlist/i,
+    /`--tools "Read,Grep,Glob"`/i,
+  ]) {
+    assert.match(normalized, pattern);
+  }
 });
