@@ -154,16 +154,20 @@ Select the prompt file based on the reviewer choice and invoke the matching revi
 - **codex** → follow [`reviewer-prompts/codex.md`](reviewer-prompts/codex.md). Runs from `$REVIEW_ROOT` with `codex exec --ephemeral --color never --output-schema …` and the non-git/config-ignore flags, using the shared JSON schema. Background on codex's adversarial-review mode lives in the bundled `razorback:codex-cli` skill.
 - **claude** → follow [`reviewer-prompts/claude.md`](reviewer-prompts/claude.md). Runs from `$REVIEW_ROOT` with `claude -p --no-session-persistence --dangerously-skip-permissions --safe-mode --output-format json --json-schema … --tools "Read,Grep,Glob" --strict-mcp-config --system-prompt-file …` (no `--max-turns`, no `--max-budget-usd` — razorback caps neither the turns nor the spend of a review). The reviewer-prompts file reads the canonical schema and claude-cli's canonical adversarial prompt from the plugin at dispatch time; `razorback:claude-cli` has the background treatment.
 
-Both target the shared output schema defined canonically at `../codex-cli/schemas/review-output.schema.json` in the razorback plugin (verdict, summary, findings[severity, title, body, file, line_start, line_end, confidence, recommendation], next_steps). Both reviewer-prompts files read the schema from that canonical file at dispatch time (claude strips the `$schema` key its validator rejects).
+Both target the shared output schema defined canonically at `../codex-cli/schemas/review-output.schema.json` in the razorback plugin (verdict, summary, findings[severity, title, body, file, line_start, line_end, confidence, recommendation], next_steps, `review_completed: true`, non-empty unique `files_inspected`, `commands_run`, and non-empty file/line/observation `evidence`). Both reviewer-prompts files read the schema from that canonical file at dispatch time (claude strips the `$schema` key its validator rejects).
 
 ### Redact each pass payload
 
-Immediately before each reviewer-prompt invocation, filter the final constructed payload through `skills/security-review/scripts/redact-outbound`: Claude's `$DIFF_AND_CONTEXT` or Codex's `$ADVERSARIAL_PROMPT_WITH_DIFF`. Keep the existing single `$REVIEW_ROOT` for both passes; redaction adds only per-pass payload artifacts and never changes the exported tree. Replace the selected variable with the redacted content before invoking the prompt file. On helper failure, remove the payload files and explicitly clean `$REVIEW_ROOT` before returning the blocker.
+Immediately before each reviewer-prompt invocation, filter the final constructed payload through `skills/security-review/scripts/redact-outbound`: Claude's `$DIFF_AND_CONTEXT` or Codex's `$ADVERSARIAL_PROMPT_WITH_DIFF`. Keep the existing single `$REVIEW_ROOT` for both passes; redaction adds only per-pass payload artifacts and never changes the exported tree. The selected prompt file consumes `$REDACTED_PAYLOAD_FILE` on standard input; never load that file back into a shell variable or pass the full diff as a positional argument. On helper failure, remove the payload files and explicitly clean `$REVIEW_ROOT` before returning the blocker.
 
 ```bash
 PAYLOAD_FILE=$(mktemp)
 REDACTED_PAYLOAD_FILE=$(mktemp)
-printf '%s' "$DIFF_AND_CONTEXT" > "$PAYLOAD_FILE"
+if [ "$REVIEWER" = "claude" ]; then
+  printf '%s' "$DIFF_AND_CONTEXT" > "$PAYLOAD_FILE"
+else
+  printf '%s' "$ADVERSARIAL_PROMPT_WITH_DIFF" > "$PAYLOAD_FILE"
+fi
 if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
   rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
   rm -rf -- "$REVIEW_ROOT"
@@ -171,34 +175,34 @@ if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" >
   echo "outbound redaction failed" >&2
   exit 1
 fi
-IFS= read -r -d '' DIFF_AND_CONTEXT < "$REDACTED_PAYLOAD_FILE" || true
-IFS= read -r -d '' ADVERSARIAL_PROMPT_WITH_DIFF < "$REDACTED_PAYLOAD_FILE" || true
 ```
 
-Use the redacted `$DIFF_AND_CONTEXT` for exactly one pass, then remove `"$PAYLOAD_FILE"` and `"$REDACTED_PAYLOAD_FILE"` before constructing and filtering the next pass. The final explicit `rm -rf -- "$REVIEW_ROOT"` lifecycle remains required after both outputs are parsed.
+Use the redacted `$REDACTED_PAYLOAD_FILE` for exactly one pass, then remove
+`"$PAYLOAD_FILE"` and `"$REDACTED_PAYLOAD_FILE"` before constructing and
+filtering the next pass. The final explicit `rm -rf -- "$REVIEW_ROOT"` lifecycle
+remains required after both outputs are parsed.
 
 ## Step 3: Parse findings
 
 Two parse paths, because each CLI's output shape differs — and two outputs per review, because each pass writes its own output file. Both files live in `$OUT_DIR`, the private temp directory the reviewer-prompts invocation creates outside the worktree. Apply the chosen CLI's rules below to both pass outputs.
 
-**codex (strict schema, no envelope):** `--output-schema` makes the CLI enforce the JSON schema directly on stdout. Validate the array shape, then iterate — a clean review has `findings: []`, and `jq -e '.findings[]'` exits 4 on a valid empty array, which would misread success as a parse failure.
+**codex (strict schema, no envelope):** `--output-schema` makes the CLI enforce the JSON schema directly on stdout. Run `validate-review-output` against the direct object, then iterate the normalized result — a clean review has `findings: []`, and `jq -e '.findings[]'` exits 4 on a valid empty array, which would misread success as a parse failure.
 
 ```bash
-jq -e '.findings | type == "array"' < "$OUT_DIR/codex-output.json" >/dev/null   # shape check
-jq '.findings[]?' < "$OUT_DIR/codex-output.json"                                # iterate; empty = clean review
+"$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$OUT_DIR/codex-output.json" > "$OUT_DIR/codex-normalized.json"
+jq '.findings[]?' < "$OUT_DIR/codex-normalized.json"                              # iterate; empty = clean review
 ```
 
-**claude (result envelope):** `--output-format json` wraps the response in a result envelope: `{type, subtype, result, structured_output, usage, total_cost_usd, …}`. With `--json-schema`, the parsed object lands in `.structured_output`; `.result` holds the same JSON as a string.
+**claude (result envelope):** `--output-format json` wraps the response in a result envelope: `{type, subtype, result, structured_output, usage, total_cost_usd, …}`. With `--json-schema`, the parsed object lands in `.structured_output`; `.result` holds the same JSON as a string. Run `validate-review-output` before accepting it.
 
 ```bash
-jq -e '.structured_output.findings | type == "array"' < "$OUT_DIR/claude-output.json" >/dev/null \
-  || jq -re '.result' < "$OUT_DIR/claude-output.json" | jq -e '.findings | type == "array"' >/dev/null
-jq '.structured_output.findings[]?' < "$OUT_DIR/claude-output.json"   # iterate; empty = clean review
+"$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$OUT_DIR/claude-output.json" > "$OUT_DIR/claude-normalized.json"
+jq '.findings[]?' < "$OUT_DIR/claude-normalized.json"   # iterate; empty = clean review
 ```
 
 After Step 3, both reviewer paths produce **one merged list** of normalized findings covering both passes. Tag each finding with the pass that produced it (`general` / `security`) — the tag carries into classification and the morning report. For cost tracking in the morning report's per-reviewer section: claude surfaces `.total_cost_usd` and `.usage.{input_tokens,output_tokens}` in each pass's envelope — sum the two invocations; codex does not surface per-request token counts in its JSON output, so note the absence for codex rather than faking a number.
 
-Malformed or schema-invalid output is a failed required-reviewer pass. Close `blocked` with the consumed invocation count; do not retry and displace the other declared discovery scope.
+Malformed, incomplete, or schema-invalid output is a failed required-reviewer pass. Close `blocked` with the consumed invocation count; do not retry and displace the other declared discovery scope. A partial result is not completion evidence.
 
 After both pass outputs are captured and parsed, explicitly remove the shared review root before classifying findings. Run the cleanup on failed parse or dispatch paths too, before returning `blocked`; this lifecycle must not depend on an `EXIT` trap surviving between harness calls.
 

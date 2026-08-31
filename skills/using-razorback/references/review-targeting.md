@@ -22,6 +22,10 @@ command). Default `--scope auto`:
 
 Resolve `$DIFF`, `$TARGET`, and `$RANGE` per scope:
 
+`$DIFF` is always the complete resolved diff for the selected scope. `$RANGE`
+and `$TARGET` describe that scope for labels and metadata; neither is a
+substitute for the full diff in a review payload.
+
 ```bash
 DIR="${DIR:-$(git rev-parse --show-toplevel)}"
 

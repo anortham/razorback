@@ -170,7 +170,6 @@ if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" >
   echo "outbound redaction failed" >&2
   exit 1
 fi
-IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
 
 cd /path/to/project && claude -p \
   --no-session-persistence \
@@ -178,7 +177,7 @@ cd /path/to/project && claude -p \
   --tools "Read,Grep,Glob" --strict-mcp-config \
   ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} \
   ${CLAUDE_EFFORT:+--effort "$CLAUDE_EFFORT"} \
-  "$REDACTED_PROMPT" < /dev/null 2>/dev/null
+  < "$REDACTED_PAYLOAD_FILE" 2>/dev/null
 rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ```
 
@@ -237,7 +236,6 @@ if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" >
   echo "outbound redaction failed" >&2
   exit 1
 fi
-IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
 
 cd /path/to/project && claude -p \
   --no-session-persistence \
@@ -248,7 +246,7 @@ cd /path/to/project && claude -p \
   ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} \
   ${CLAUDE_EFFORT:+--effort "$CLAUDE_EFFORT"} \
   ${CLAUDE_FALLBACK_MODEL:+--fallback-model "$CLAUDE_FALLBACK_MODEL"} \
-  "$REDACTED_PROMPT" < /dev/null 2>/dev/null
+  < "$REDACTED_PAYLOAD_FILE" 2>/dev/null
 rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ```
 
@@ -258,14 +256,14 @@ prompt; the prompt body itself asks for a standard review.
 **After**: Parse the output. `--output-format json` returns a **result
 envelope**, not the model response directly — the schema-conforming object is
 at `.structured_output` (with `.result` holding the same JSON as a string, and
-`.usage` / `.total_cost_usd` carrying cost data):
+`.usage` / `.total_cost_usd` carrying cost data). A completed review must
+include `review_completed: true`, a non-empty unique `files_inspected` list, a
+`commands_run` array (which may be empty), and non-empty file/line/observation
+`evidence`; `needs-attention` requires at least one finding.
 
 ```bash
-# Shape check first — a clean review has findings: [] and `jq -e '.findings[]'`
-# exits 4 on a valid empty array (false parse failure).
-jq -e '.structured_output.findings | type == "array"' < output.json >/dev/null \
-  || jq -re '.result' < output.json | jq -e '.findings | type == "array"' >/dev/null
-jq '.structured_output.findings[]?' < output.json   # iterate; empty = clean review
+"$SKILL_DIR/../codex-cli/scripts/validate-review-output" output.json > normalized.json
+jq '.findings[]?' < normalized.json
 ```
 
 Present findings, add your own assessment. Highlight agreements and
@@ -302,7 +300,6 @@ if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" >
   echo "outbound redaction failed" >&2
   exit 1
 fi
-IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
 
 cd /path/to/project && claude -p \
   --no-session-persistence \
@@ -314,16 +311,20 @@ cd /path/to/project && claude -p \
   ${CLAUDE_EFFORT:+--effort "$CLAUDE_EFFORT"} \
   ${CLAUDE_FALLBACK_MODEL:+--fallback-model "$CLAUDE_FALLBACK_MODEL"} \
   --system-prompt-file "$SKILL_DIR/adversarial-prompt.txt" \
-  "$REDACTED_PROMPT" < /dev/null 2>/dev/null
+  < "$REDACTED_PAYLOAD_FILE" 2>/dev/null
 rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ```
 
 The `--json-schema` flag tells Claude to return JSON matching the review
 schema (verdict, summary, findings with severity/file/line/confidence, next
-steps). No turn cap and no spend cap are set — the reviewer runs to completion.
+steps, and completion evidence). A completed review requires
+`review_completed: true`, a non-empty unique `files_inspected` list, a
+`commands_run` array (which may be empty), and non-empty file/line/observation
+`evidence`; `needs-attention` requires at least one finding. No turn cap and no
+spend cap are set — the reviewer runs to completion.
 
-**After**: Parse the result envelope (`.structured_output`, fallback
-`.result | fromjson` — see the Code Review section). Present findings grouped
+**After**: Run `validate-review-output RESULT_FILE` to normalize and enforce
+the completion contract before accepting the result. Present findings grouped
 by severity (critical first). For each finding, show the file, lines, and
 recommendation. Add your own assessment of each finding: do you agree? Is
 the confidence warranted? Then give your overall take on the verdict.
@@ -379,8 +380,9 @@ clarifying questions about findings).
 ## Cross-Project Usage
 
 Claude reads `CLAUDE.md` from the project root and discovers plugins, hooks,
-skills, and MCP servers by default. This skill accepts that tradeoff because
-`--bare` disables OAuth and keychain auth (CI runs with a guaranteed `ANTHROPIC_API_KEY` can use `--bare` safely).
+skills, and MCP servers by default. This skill accepts that tradeoff; use the
+pre-merge `--safe-mode` and strict read-only allowlist when those inputs must be
+reduced.
 
 There is no `-C`/`--cwd` flag equivalent to codex's working-directory
 override. To review a project other than cwd, `cd` into it first:
@@ -465,9 +467,10 @@ think it's wrong, and your evidence.
   before concluding a flag was removed.
 - **Claude not installed**: check with `claude --version`. Install via
   `npm install -g @anthropic-ai/claude-code` if missing.
-- **Schema violation**: if the returned JSON doesn't validate, inspect the
-  raw output — often the reviewer ran out of context or timed out before
-  finishing the final JSON. Re-run with a narrower diff.
+- **Schema or completion violation**: `validate-review-output` rejects malformed,
+  contradictory, placeholder, or evidence-free output. The review invocation is
+  consumed; do not narrow the diff or retry inside the same campaign. A new
+  campaign requires an explicit user decision.
 
 ## Quick Reference
 
@@ -480,8 +483,8 @@ assuming a command that exists in one exists in the other.
 | Use case | Mode | Command pattern |
 |---|---|---|
 | Second opinion | read-only | `cd dir && claude -p --no-session-persistence --dangerously-skip-permissions --tools "Read,Grep,Glob" --strict-mcp-config ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} "prompt" < /dev/null 2>/dev/null` |
-| Code review | read-only + schema | Add `--output-format json --json-schema "$SCHEMA_JSON"`, where `SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")`. Scope/sizing per Review Targeting. |
-| Adversarial review | read-only + schema + system prompt | Add `--system-prompt-file "$SKILL_DIR/adversarial-prompt.txt"` to the code-review pattern. Scope/sizing per Review Targeting. |
+| Code review | read-only + schema | Add `--output-format json --json-schema "$SCHEMA_JSON"` and feed the final redacted payload file to stdin, where `SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")`; normalize with `validate-review-output RESULT_FILE`. Scope/sizing per Review Targeting. |
+| Adversarial review | read-only + schema + system prompt | Add `--system-prompt-file "$SKILL_DIR/adversarial-prompt.txt"` to the code-review pattern and keep the redacted payload on stdin. Scope/sizing per Review Targeting. |
 | Resume session | persistent | Drop `--no-session-persistence`, use `claude -r "prompt" < /dev/null 2>/dev/null` |
 | Apply explicit effort | any | Add `--effort "$CLAUDE_EFFORT"` (low/medium/high/xhigh/max) when the environment sets it |
 | Survive overload | autonomous | Add `--fallback-model "$CLAUDE_FALLBACK_MODEL"` so the run doesn't hard-fail on capacity |

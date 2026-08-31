@@ -28,7 +28,7 @@ Diff:
 $DIFF"
 ```
 
-If the plan path is short and likely to orient the reviewer, append it ("Plan: docs/plans/…"). Do not paste the full plan; the reviewer is supposed to form an independent take.
+If the plan path is short and likely to orient the reviewer, append it ("Plan: docs/plans/…"). Do not paste the full plan; the reviewer is supposed to form an independent take. The caller writes this complete payload to `$PAYLOAD_FILE`, filters it through `skills/security-review/scripts/redact-outbound`, and exposes the resulting `$REDACTED_PAYLOAD_FILE` for the invocation. Never load the redacted payload into a shell variable or pass it as a positional argument.
 
 ## Invocation
 
@@ -55,8 +55,7 @@ cd "$REVIEW_ROOT" && claude -p \
   --strict-mcp-config \
   ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} \
   --system-prompt-file "$PROMPT_FILE" \
-  "$DIFF_AND_CONTEXT" \
-  < /dev/null > "$OUT_DIR/claude-output.json" 2> "$OUT_DIR/claude-stderr.log"
+  < "$REDACTED_PAYLOAD_FILE" > "$OUT_DIR/claude-output.json" 2> "$OUT_DIR/claude-stderr.log"
 ```
 
 `REVIEW_ROOT` and `OUT_DIR` must both live outside the live worktree. The review root is created once by pre-merge-review and is shared across both passes; the caller removes it explicitly after both outputs are captured and parsed. `OUT_DIR` is private per invocation, so its local `trap` only removes reviewer output files and is not the review-root lifecycle.
@@ -82,23 +81,18 @@ Flag rationale:
 
 ## Expected output format
 
-A **result envelope** on stdout: `{"type":"result","subtype":"success","result":"<JSON string>","structured_output":{…},"usage":{…},"total_cost_usd":…,…}`. With `--json-schema`, the schema-conforming object lands in `.structured_output`; `.result` carries the same JSON as a string. The model response is NOT the top-level object.
+A **result envelope** on stdout: `{"type":"result","subtype":"success","result":"<JSON string>","structured_output":{…},"usage":{…},"total_cost_usd":…,…}`. With `--json-schema`, the schema-conforming object lands in `.structured_output`; `.result` carries the same JSON as a string. The model response is NOT the top-level object. The normalized review must include `review_completed: true`, a non-empty unique `files_inspected` list, a `commands_run` array (which may be empty), and non-empty file/line/observation `evidence`; `needs-attention` requires at least one finding.
 
 ## Parsing
 
 ```bash
-# Validate shape first — a clean review has findings: [] and must NOT read as a
-# parse failure (`jq -e '.findings[]'` exits 4 on a valid empty array).
-jq -e '.structured_output.findings | type == "array"' < "$OUT_DIR/claude-output.json" >/dev/null \
-  || jq -re '.result' < "$OUT_DIR/claude-output.json" | jq -e '.findings | type == "array"' >/dev/null
-
-# Then iterate (empty output for a clean review is success):
-jq '.structured_output.findings[]?' < "$OUT_DIR/claude-output.json"
+"$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$OUT_DIR/claude-output.json" > "$OUT_DIR/claude-normalized.json"
+jq '.findings[]?' < "$OUT_DIR/claude-normalized.json"
 ```
 
-Malformed or schema-invalid output consumes this pass's invocation and blocks the campaign; do not retry. Record diagnostics from `$OUT_DIR/claude-stderr.log` in the blocker report.
+Malformed, incomplete, or schema-invalid output consumes this pass's invocation and blocks the campaign; do not retry. Record diagnostics from `$OUT_DIR/claude-stderr.log` in the blocker report.
 
-If a schema-valid partial output exists despite a mid-stream failure (e.g. the run times out but `.findings[]` parses), use it and note the truncation in the morning report.
+A partial output is not completion evidence and must not be accepted.
 
 ## Cost / token notes
 
@@ -133,8 +127,8 @@ PROMPT_FILE="$SKILL_DIR/../security-review/security-adversarial-prompt.txt"
 
 Run the second command from the same exported tree: `cd "$REVIEW_ROOT" && claude -p …`. Do not switch back to `$PROJECT_DIR` or create a second review root. If this pass fails, remove `"$REVIEW_ROOT"` explicitly before returning the blocker.
 
-Build `$DIFF_AND_CONTEXT` exactly as under "Build the user prompt". Capture stdout to a second file in the same private temp directory, `$OUT_DIR/claude-output-security.json`, so the general pass's `$OUT_DIR/claude-output.json` is preserved.
+Build `$DIFF_AND_CONTEXT` exactly as under "Build the user prompt", redact it into a fresh `$REDACTED_PAYLOAD_FILE`, and keep the final bytes in that file. Capture stdout to a second file in the same private temp directory, `$OUT_DIR/claude-output-security.json`, so the general pass's `$OUT_DIR/claude-output.json` is preserved. Do not pass the security payload positionally.
 
-Parse rules, cost notes, and error handling are identical to the general pass: apply the Parsing section's envelope shape check, empty-findings rule, and no-retry blocking rule to `$OUT_DIR/claude-output-security.json`, and render the cost line from the same envelope fields.
+Parse rules, cost notes, and error handling are identical to the general pass: apply `validate-review-output` to `$OUT_DIR/claude-output-security.json`, preserve the empty-findings rule for `approve`, and apply the no-retry blocking rule. Render the cost line from the same envelope fields.
 
 **A security-pass failure is reviewer unavailability.** The same triggers and the same blocker protocol from Error handling apply: stop the run, do NOT push, do NOT create a PR, emit a partial morning report with `Status: Blocked` and the specific failure in `Blockers hit`. Never silently skip the security pass.

@@ -232,7 +232,13 @@ cat "$RESULT_FILE"  # Clean JSON, no banner/transcript noise
 
 The `--output-schema` flag tells Codex to return JSON matching the review
 schema (verdict, summary, findings with severity/file/line/confidence, next
-steps). `-o` writes the agent's final message to a file so the JSON arrives uncontaminated by status output.
+steps, and completion evidence). A completed review must also return
+`review_completed: true`, a non-empty unique `files_inspected` list, a
+`commands_run` array (which may be empty), and non-empty `evidence` entries
+with a file, line range, and concrete observation. `needs-attention` requires
+at least one finding; an empty findings list is valid only with `approve`.
+`-o` writes the agent's final message to a file so the JSON arrives
+uncontaminated by status output.
 
 **After**: Parse the JSON output. Present findings grouped by severity
 (critical first). For each finding, show the file, lines, and recommendation.

@@ -21,6 +21,11 @@ Read the canonical adversarial prompt template at `$SKILL_DIR/../codex-cli/adver
 
 The template instructs codex to default to skepticism, prioritize high-impact attack surfaces (auth, data loss, race conditions, schema drift, observability gaps), emit only material findings, and return JSON matching the shared schema.
 
+The caller writes the complete rendered prompt to `$PAYLOAD_FILE`, filters it
+through `skills/security-review/scripts/redact-outbound`, and exposes the final
+bytes as `$REDACTED_PAYLOAD_FILE`. Keep the payload in that file; do not pass a
+large diff to `echo` or any other positional argument.
+
 ## Invocation
 
 Codex's `--output-schema` flag takes a file path, so point it straight at the canonical schema file — no temp copy needed:
@@ -33,7 +38,7 @@ CODEX_MODEL="${RAZORBACK_CODEX_REVIEW_MODEL:-}"  # empty = inherit global defaul
 OUT_DIR=$(mktemp -d)
 trap 'rm -rf "$OUT_DIR"' EXIT
 
-cd "$REVIEW_ROOT" && echo "$ADVERSARIAL_PROMPT_WITH_DIFF" | codex exec \
+cd "$REVIEW_ROOT" && cat "$REDACTED_PAYLOAD_FILE" | codex exec \
   --ephemeral --color never \
   -s read-only \
   --skip-git-repo-check \
@@ -55,8 +60,8 @@ Flag rationale:
 - `--skip-git-repo-check` — permits review from the exported tree, which intentionally has no `.git` directory.
 - `--ignore-user-config --ignore-rules` — prevents user/project configuration and branch-controlled rules from becoming reviewer control input.
 - `${CODEX_MODEL:+-m "$CODEX_MODEL"}` — explicit model override from `RAZORBACK_CODEX_REVIEW_MODEL`. When unset, the expansion is empty and codex uses its configured default.
-- `--output-schema` — forces codex to return JSON conforming to the shared review-output schema. `reviewer-prompts/claude.md` reads the same canonical file (minus the `$schema` key, which claude's validator rejects), so both reviewers target an identical shape.
-- `-` — read the prompt from stdin (which is the piped `$ADVERSARIAL_PROMPT_WITH_DIFF`).
+- `--output-schema` — forces codex to return JSON conforming to the shared review-output schema. A completed result includes `review_completed: true`, non-empty unique `files_inspected`, a `commands_run` array (which may be empty), and non-empty file/line/observation `evidence`; `needs-attention` requires a finding. `reviewer-prompts/claude.md` reads the same canonical file (minus the `$schema` key, which claude's validator rejects), so both reviewers target an identical shape.
+- `-` — read the prompt from stdin (which is the piped `$REDACTED_PAYLOAD_FILE`).
 - `2> "$OUT_DIR/codex-stderr.log"` — keep stdout JSON-only while retaining diagnostics from the same invocation for a blocker report. Do not re-run merely to recover discarded stderr.
 
 **Model:** `RAZORBACK_CODEX_REVIEW_MODEL` is an optional explicit override. When unset, codex inherits its global default.
@@ -83,7 +88,18 @@ JSON conforming to the canonical schema:
       "recommendation": "..."
     }
   ],
-  "next_steps": ["..."]
+  "next_steps": ["..."],
+  "review_completed": true,
+  "files_inspected": ["path/to/file.ext"],
+  "commands_run": [],
+  "evidence": [
+    {
+      "file": "path/to/file.ext",
+      "line_start": 42,
+      "line_end": 58,
+      "observation": "Concrete observation from the reviewed diff."
+    }
+  ]
 }
 ```
 
@@ -92,13 +108,13 @@ JSON conforming to the canonical schema:
 Direct — no envelope. Parse with `jq`:
 
 ```bash
-jq -e '.findings | type == "array"' < "$OUT_DIR/codex-output.json" >/dev/null   # shape check
-jq '.findings[]?' < "$OUT_DIR/codex-output.json"                                # iterate; empty = clean review
+"$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$OUT_DIR/codex-output.json" > "$OUT_DIR/codex-normalized.json"
+jq '.findings[]?' < "$OUT_DIR/codex-normalized.json"
 ```
 
-The shape check exits non-zero if `.findings` is missing or malformed. Do NOT gate on `jq -e '.findings[]'` — it exits 4 on a valid empty array, turning a clean review into a false parse failure. Malformed or schema-invalid output consumes this pass's invocation and blocks the campaign; do not retry. Record diagnostics from `$OUT_DIR/codex-stderr.log` in the blocker report.
+The validator exits non-zero if the result is missing completion evidence or is malformed. Do NOT gate on `jq -e '.findings[]'` — it exits 4 on a valid empty array, turning a clean review into a false parse failure. Malformed, incomplete, or schema-invalid output consumes this pass's invocation and blocks the campaign; do not retry. Record diagnostics from `$OUT_DIR/codex-stderr.log` in the blocker report.
 
-If a schema-valid partial output exists despite a mid-stream failure (e.g. stdout truncated but `.findings[]` parses), use it and note the truncation in the morning report.
+A partial output is not completion evidence and must not be accepted.
 
 ## Cost / token notes
 
@@ -126,7 +142,11 @@ If a schema-valid partial output exists despite the failure, use it and proceed 
 
 When the run includes the dedicated security pass, run codex a second time. The invocation is the SAME as the general pass — `codex exec --ephemeral --color never -s read-only --output-schema "$SCHEMA_FILE" -`, with the same model handling, timeout, and stdin pipe as the Invocation section above.
 
-The stdin prompt is NOT the same. You MUST rebuild it from the security template into a distinct variable, `ADVERSARIAL_SECURITY_PROMPT`, using the placeholder-split construction shown in `razorback:codex-cli`'s SKILL.md — the same construction that built the general pass's prompt, but reading the canonical security prompt at `$SKILL_DIR/../security-review/security-adversarial-prompt.txt` in the razorback plugin instead of `$SKILL_DIR/../codex-cli/adversarial-prompt.txt`. The security template carries the same placeholders (`{{TARGET_LABEL}}`, `{{USER_FOCUS}}`, `{{REVIEW_INPUT}}`), substituted identically. Pipe `$ADVERSARIAL_SECURITY_PROMPT` — not the general pass's `$ADVERSARIAL_PROMPT_WITH_DIFF` — into the second `codex exec`. Reusing the general pass's rendered prompt here is an error: it produces two general reviews and no security review.
+The stdin prompt is NOT the same. Rebuild the security template into a fresh
+`PAYLOAD_FILE`, redact it into a fresh `$REDACTED_PAYLOAD_FILE`, and pipe that
+file — not the general pass's payload — into the second `codex exec`. Reusing
+the general pass's rendered prompt here is an error: it produces two general
+reviews and no security review.
 
 Capture stdout to a second file in the same private temp directory, `$OUT_DIR/reviewer-output-security.json`, so the general pass's `$OUT_DIR/codex-output.json` is preserved.
 

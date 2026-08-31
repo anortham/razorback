@@ -210,3 +210,32 @@ test('runs both reviewer adapters from the exported tree with their approved iso
 test('documents that practical reviewer isolation is not host-wide read confinement', () => {
   assert.match(read('skills/pre-merge-review/SKILL.md'), /not host-wide read confinement/i);
 });
+
+test('pre-merge Claude transport keeps the complete redacted payload on stdin', () => {
+  const prompt = read('skills/pre-merge-review/reviewer-prompts/claude.md');
+  const codex = read('skills/pre-merge-review/reviewer-prompts/codex.md');
+  const blocks = bashBlocks(prompt).filter((block) => block.includes('claude -p'));
+  const codexBlocks = bashBlocks(codex).filter((block) => block.includes('codex exec'));
+
+  assert.ok(blocks.some((block) => /< "\$REDACTED_PAYLOAD_FILE"/.test(block)));
+  for (const block of blocks) {
+    assert.doesNotMatch(block, /"\$DIFF_AND_CONTEXT"/);
+    assert.doesNotMatch(block, /IFS= read -r -d '' DIFF_AND_CONTEXT/);
+  }
+  assert.ok(codexBlocks.some((block) => /cat "\$REDACTED_PAYLOAD_FILE" \| codex exec/.test(block)));
+  for (const block of codexBlocks) {
+    assert.doesNotMatch(block, /echo "\$ADVERSARIAL_PROMPT_WITH_DIFF"/);
+  }
+});
+
+test('pre-merge payload construction includes the complete diff, stat, and commit log', () => {
+  const skill = read('skills/pre-merge-review/SKILL.md');
+  const prompt = read('skills/pre-merge-review/reviewer-prompts/claude.md');
+  const codex = read('skills/pre-merge-review/reviewer-prompts/codex.md');
+
+  assert.match(skill, /DIFF=\$\(git diff[\s\S]*?HEAD/);
+  assert.match(skill, /FILE_STAT=\$\(git diff --stat/);
+  assert.match(skill, /COMMIT_LOG=\$\(git log --oneline/);
+  assert.match(prompt, /Diff:\n\$DIFF/);
+  assert.match(codex, /\$FILE_STAT[\s\S]*?\$COMMIT_LOG[\s\S]*?\$DIFF/);
+});

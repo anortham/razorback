@@ -152,3 +152,34 @@ test('grok-cli classifies sandbox startup failures and requires a new approved f
     assert.match(normalized, pattern);
   }
 });
+
+test('grok code review embeds the complete diff and validates completion evidence', () => {
+  const skill = read('skills/grok-cli/SKILL.md');
+
+  assert.match(skill, /Diff:\n\$DIFF/);
+  assert.match(skill, /complete resolved diff/i);
+  assert.match(skill, /validate-review-output\s+RESULT_FILE/i);
+  assert.match(skill, /review_completed/);
+  assert.match(skill, /tool use.*not.*completion|completion.*not.*tool use/i);
+  assert.doesNotMatch(skill, /--no-plan/);
+});
+
+test('grok continuation is one same-session completion attempt', () => {
+  const skill = read('skills/grok-cli/SKILL.md');
+
+  assert.match(skill, /external_invocation_budget.*2/i);
+  assert.match(skill, /first.*failed completion validation/i);
+  assert.match(skill, /same current-directory session/i);
+  assert.match(skill, /grok -c --prompt-file/);
+  assert.match(skill, /omit[s]? `--sandbox`|without `--sandbox`/i);
+  assert.match(skill, /no third call|third invocation/i);
+  assert.match(skill, /not a fresh sweep|not.*post-fix/i);
+});
+
+test('grok sandbox fallback does not use inspect as a capability probe', () => {
+  const skill = read('skills/grok-cli/SKILL.md');
+
+  assert.match(skill, /sandbox startup failure.*no session.*continuation/is);
+  assert.match(skill, /`grok inspect`.*not.*sandbox.*probe/is);
+  assert.match(skill, /new.*campaign.*`--sandbox off`/is);
+});

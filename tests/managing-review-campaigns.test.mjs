@@ -21,6 +21,10 @@ test('campaign setup is immutable and budgets external invocations separately fr
   assert.match(skill, /each (?:external )?CLI call counts as one external invocation/i);
   assert.match(skill, /rounds and total (?:external )?reviewer invocations are hard-capped/i);
   assert.match(skill, /no per-invocation turn\/spend caps/i);
+  assert.match(skill, /\| Standalone external \| One selected reviewer \| Lead \| 2 \| 2/);
+  assert.match(skill, /completion validation/i);
+  assert.match(skill, /same current-directory session/i);
+  assert.match(skill, /no third call|third invocation/i);
 });
 
 test('availability labels evidence honestly without blocking ordinary lead-only completion', () => {
@@ -98,6 +102,17 @@ test('discipline counters the observed runaway-review rationalizations', () => {
   assert.match(skill, /reset (?:the )?counters.*compaction|compaction.*reset (?:the )?counters/is);
   assert.match(skill, /## Red Flags/);
   assert.match(skill, /campaign_closed: yes.*terminal/is);
+});
+
+test('campaign completion continuation cannot become a fresh sweep', () => {
+  const skill = read('skills/managing-review-campaigns/SKILL.md');
+
+  assert.match(skill, /one bounded continuation/i);
+  assert.match(skill, /same session/i);
+  assert.match(skill, /only.*failed completion validation/i);
+  assert.match(skill, /sandbox startup failure.*no session.*cannot.*continuation/is);
+  assert.match(skill, /second invalid.*blocked|capped/is);
+  assert.doesNotMatch(skill, /--no-plan/);
 });
 
 test('README lists the canonical campaign skill', () => {

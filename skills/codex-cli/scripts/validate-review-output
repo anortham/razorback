@@ -1,0 +1,153 @@
+#!/usr/bin/env node
+
+import { isDeepStrictEqual } from 'node:util';
+import { readFileSync } from 'node:fs';
+
+const REVIEW_KEYS = new Set([
+  'verdict',
+  'summary',
+  'findings',
+  'next_steps',
+  'review_completed',
+  'files_inspected',
+  'commands_run',
+  'evidence',
+]);
+const FINDING_KEYS = new Set([
+  'severity',
+  'title',
+  'body',
+  'file',
+  'line_start',
+  'line_end',
+  'confidence',
+  'recommendation',
+]);
+const EVIDENCE_KEYS = new Set(['file', 'line_start', 'line_end', 'observation']);
+const SEVERITIES = new Set(['critical', 'high', 'medium', 'low']);
+
+function reject(message) {
+  throw new Error(message);
+}
+
+function isRecord(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function hasOnlyKeys(value, allowed) {
+  return Object.keys(value).every((key) => allowed.has(key));
+}
+
+function nonEmptyString(value) {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function positiveInteger(value) {
+  return Number.isInteger(value) && value >= 1;
+}
+
+function parseText(text) {
+  if (typeof text !== 'string') reject('malformed result envelope');
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    reject('malformed result text');
+  }
+  if (!isRecord(parsed)) reject('malformed result text');
+  return parsed;
+}
+
+function normalize(envelope) {
+  if (!isRecord(envelope)) reject('malformed result envelope');
+
+  const candidates = [];
+  for (const key of ['structuredOutput', 'structured_output']) {
+    if (!Object.hasOwn(envelope, key)) continue;
+    if (!isRecord(envelope[key])) reject('malformed result envelope');
+    candidates.push(envelope[key]);
+  }
+  for (const key of ['text', 'result']) {
+    if (!Object.hasOwn(envelope, key)) continue;
+    candidates.push(parseText(envelope[key]));
+  }
+
+  if (candidates.length === 0) return envelope;
+  if (candidates.some((candidate) => !isDeepStrictEqual(candidate, candidates[0]))) {
+    reject('contradictory result envelope');
+  }
+  return candidates[0];
+}
+
+function validateFinding(finding) {
+  if (!isRecord(finding) || !hasOnlyKeys(finding, FINDING_KEYS)) reject('incomplete review output');
+  if (!SEVERITIES.has(finding.severity)) reject('incomplete review output');
+  for (const key of ['title', 'body', 'file']) {
+    if (!nonEmptyString(finding[key])) reject('incomplete review output');
+  }
+  if (!positiveInteger(finding.line_start) || !positiveInteger(finding.line_end)) {
+    reject('incomplete review output');
+  }
+  if (finding.line_end < finding.line_start) reject('incomplete review output');
+  if (typeof finding.confidence !== 'number' || !Number.isFinite(finding.confidence) || finding.confidence < 0 || finding.confidence > 1) {
+    reject('incomplete review output');
+  }
+  if (typeof finding.recommendation !== 'string') reject('incomplete review output');
+}
+
+function validateEvidence(evidence) {
+  if (!isRecord(evidence) || !hasOnlyKeys(evidence, EVIDENCE_KEYS)) reject('incomplete review output');
+  if (!nonEmptyString(evidence.file) || !positiveInteger(evidence.line_start) || !positiveInteger(evidence.line_end)) {
+    reject('incomplete review output');
+  }
+  if (evidence.line_end < evidence.line_start || !nonEmptyString(evidence.observation)) {
+    reject('incomplete review output');
+  }
+}
+
+function validateReview(review) {
+  if (!isRecord(review) || !hasOnlyKeys(review, REVIEW_KEYS)) reject('incomplete review output');
+  for (const key of REVIEW_KEYS) {
+    if (!Object.hasOwn(review, key)) reject('incomplete review output');
+  }
+  if (review.review_completed !== true) reject('incomplete review output');
+  if (!['approve', 'needs-attention'].includes(review.verdict) || !nonEmptyString(review.summary)) {
+    reject('incomplete review output');
+  }
+  if (!Array.isArray(review.findings)) reject('incomplete review output');
+  if (review.verdict === 'needs-attention' && review.findings.length === 0) {
+    reject('incomplete review output');
+  }
+  review.findings.forEach(validateFinding);
+
+  if (!Array.isArray(review.next_steps) || review.next_steps.some((step) => !nonEmptyString(step))) {
+    reject('incomplete review output');
+  }
+  if (!Array.isArray(review.files_inspected) || review.files_inspected.length === 0) {
+    reject('incomplete review output');
+  }
+  if (review.files_inspected.some((file) => !nonEmptyString(file)) || new Set(review.files_inspected).size !== review.files_inspected.length) {
+    reject('incomplete review output');
+  }
+  if (!Array.isArray(review.commands_run) || review.commands_run.some((command) => !nonEmptyString(command))) {
+    reject('incomplete review output');
+  }
+  if (!Array.isArray(review.evidence) || review.evidence.length === 0) reject('incomplete review output');
+  review.evidence.forEach(validateEvidence);
+}
+
+try {
+  if (process.argv.length !== 3) reject('usage: validate-review-output RESULT_FILE');
+  let input;
+  try {
+    input = JSON.parse(readFileSync(process.argv[2], 'utf8'));
+  } catch {
+    reject('malformed result file');
+  }
+  const normalized = normalize(input);
+  validateReview(normalized);
+  process.stdout.write(`${JSON.stringify(normalized)}\n`);
+} catch (error) {
+  process.stderr.write(`review output rejected: ${error instanceof Error ? error.message : 'invalid result'}\n`);
+  process.exitCode = 1;
+}

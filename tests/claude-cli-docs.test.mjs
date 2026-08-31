@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -114,6 +115,37 @@ test('every documented claude --tools value pins the read-only allowlist, inline
       [],
       `${rel} documents a --tools value other than the canonical "Read,Grep,Glob" allowlist outside the "Do NOT treat" anti-pattern warning`,
     );
+  }
+});
+
+test('large Claude review payloads use redacted-file stdin instead of a positional argument', () => {
+  for (const rel of ['skills/claude-cli/SKILL.md', 'skills/pre-merge-review/reviewer-prompts/claude.md']) {
+    const text = read(rel);
+    const blocks = bashBlocks(text).filter((block) => block.includes('claude -p') && (block.includes('--output-format json') || rel.includes('reviewer-prompts/claude.md')));
+    assert.ok(blocks.some((block) => /< "\$REDACTED_(?:PAYLOAD|PROMPT)_FILE"/.test(block)), `${rel} must redirect the final redacted file to Claude`);
+    for (const block of blocks.filter((candidate) => /REDACTED_(?:PAYLOAD|PROMPT)_FILE/.test(candidate))) {
+      assert.doesNotMatch(block, /"\$REDACTED_PROMPT"\s*</, `${rel} must not pass a large prompt as a positional argument`);
+    }
+  }
+});
+
+test('file and stdin transport preserve a 276 KiB review payload without one positional argument', () => {
+  const payload = 'review-payload-'.repeat(Math.ceil((276 * 1024) / 15)).slice(0, 276 * 1024);
+  const script = 'const fs = require("node:fs"); process.stdout.write(process.argv[1] === "file" ? fs.readFileSync(process.argv[2]) : fs.readFileSync(0));';
+  const file = join(expectedRoot, 'tests', `.payload-${process.pid}`);
+  try {
+    writeFileSync(file, payload);
+    const fromFile = spawnSync(process.execPath, ['-e', script, 'file', file], { encoding: 'utf8' });
+    const fromStdin = spawnSync(process.execPath, ['-e', script, 'stdin', '-'], { input: payload, encoding: 'utf8' });
+
+    assert.equal(fromFile.status, 0, fromFile.stderr);
+    assert.equal(fromStdin.status, 0, fromStdin.stderr);
+    assert.equal(fromFile.stdout, payload);
+    assert.equal(fromStdin.stdout, payload);
+    assert.equal(fromFile.error, undefined);
+    assert.equal(fromStdin.error, undefined);
+  } finally {
+    rmSync(file, { force: true });
   }
 });
 
