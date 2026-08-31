@@ -119,12 +119,12 @@
 **Approach:** Test the helper through temporary Git repositories. Prove untracked files are absent, external symlinks are neutralized, the output root is outside the source repository, and cleanup does not rely on one shell's `EXIT` trap. Guard exact live-verified CLI flags without making an external model call.
 
 **Acceptance criteria:**
-- [ ] Reviewer execution uses the exported tree rather than the live worktree.
-- [ ] The export contains tracked review material but no live `.git`, untracked files, or escaping symlink.
-- [ ] Claude reviewer commands include the verified safe-mode combination.
-- [ ] Codex reviewer commands support the non-git export and ignore rules/config.
-- [ ] The skill states that practical isolation is not host-wide read confinement.
-- [ ] Worker-scope verification passes and the change is handed to the lead per `parallel-lead-commit`.
+- [x] Reviewer execution uses the exported tree rather than the live worktree.
+- [x] The export contains tracked review material but no live `.git`, untracked files, or escaping symlink.
+- [x] Claude reviewer commands include the verified safe-mode combination.
+- [x] Codex reviewer commands support the non-git export and ignore rules/config.
+- [x] The skill states that practical isolation is not host-wide read confinement.
+- [x] Worker-scope verification passes and the change is handed to the lead per `parallel-lead-commit`.
 
 ### Task 3: Shared outbound redaction and repository policy
 

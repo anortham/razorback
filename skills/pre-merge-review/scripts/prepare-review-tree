@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+exec node --input-type=module - "$@" <<'NODE'
+import { execFileSync } from 'node:child_process';
+import {
+  lstatSync,
+  mkdirSync,
+  mkdtempSync,
+  readlinkSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+
+function fail(message) {
+  throw new Error(`prepare-review-tree: ${message}`);
+}
+
+function physicalPath(pathName) {
+  const absolutePath = resolve(pathName);
+  try {
+    return realpathSync(absolutePath);
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+    return join(physicalPath(dirname(absolutePath)), basename(absolutePath));
+  }
+}
+
+function isInside(root, candidate) {
+  const relativePath = relative(root, candidate);
+  return relativePath === '' ||
+    (!relativePath.startsWith(`..${sep}`) && relativePath !== '..' && !isAbsolute(relativePath));
+}
+
+function trackedSymlinks(directory) {
+  const links = [];
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const entryPath = join(directory, entry.name);
+    if (entry.isSymbolicLink()) {
+      links.push(entryPath);
+    } else if (entry.isDirectory()) {
+      links.push(...trackedSymlinks(entryPath));
+    }
+  }
+  return links;
+}
+
+function gitTopLevel(repository) {
+  try {
+    return execFileSync('git', ['-C', repository, 'rev-parse', '--show-toplevel'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch {
+    fail(`not a Git repository: ${repository}`);
+  }
+}
+
+function main() {
+  const args = process.argv.slice(2);
+  if (args.length !== 3) {
+    throw new Error('usage: prepare-review-tree REPOSITORY REF OUTPUT_DIR');
+  }
+
+  const [repository, reviewRef, outputArg] = args;
+  const sourceRoot = physicalPath(gitTopLevel(repository));
+
+  try {
+    execFileSync('git', ['-C', sourceRoot, 'rev-parse', '--verify', `${reviewRef}^{tree}`], {
+      stdio: 'ignore',
+    });
+  } catch {
+    fail(`review ref does not resolve to a Git tree: ${reviewRef}`);
+  }
+
+  const requestedOutput = resolve(outputArg);
+  let outputStat;
+  try {
+    outputStat = lstatSync(requestedOutput);
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
+  if (outputStat?.isSymbolicLink()) {
+    fail('output path must not be a symlink');
+  }
+
+  const outputRoot = physicalPath(requestedOutput);
+  if (isInside(sourceRoot, outputRoot)) {
+    fail('output directory must be outside the source repository');
+  }
+  if (outputStat && !outputStat.isDirectory()) {
+    fail(`output path is not a directory: ${outputRoot}`);
+  }
+  if (outputStat && readdirSync(outputRoot).length > 0) {
+    fail(`output directory must be empty: ${outputRoot}`);
+  }
+  if (!outputStat) {
+    mkdirSync(outputRoot, { recursive: true });
+  }
+
+  const archiveDirectory = mkdtempSync(join(tmpdir(), 'razorback-review-archive-'));
+  const archivePath = join(archiveDirectory, 'tree.tar');
+  try {
+    execFileSync(
+      'git',
+      ['-C', sourceRoot, 'archive', '--format=tar', '--output', archivePath, reviewRef],
+      { stdio: 'ignore' },
+    );
+    execFileSync('tar', ['-xf', archivePath, '-C', outputRoot], { stdio: 'inherit' });
+  } finally {
+    rmSync(archiveDirectory, { recursive: true, force: true });
+  }
+
+  for (const linkPath of trackedSymlinks(outputRoot)) {
+    const linkTarget = readlinkSync(linkPath);
+    const targetPath = isAbsolute(linkTarget)
+      ? linkTarget
+      : resolve(dirname(linkPath), linkTarget);
+    if (!isInside(outputRoot, physicalPath(targetPath))) {
+      rmSync(linkPath, { force: true });
+    }
+  }
+
+  process.stdout.write(`${outputRoot}\n`);
+}
+
+try {
+  main();
+} catch (error) {
+  process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+  process.exitCode = 2;
+}
+NODE

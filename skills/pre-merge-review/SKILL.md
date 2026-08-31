@@ -9,6 +9,8 @@ description: Use after all tasks are complete and branch verification passes, be
 
 Run a fresh, isolated external reviewer (codex / claude) against the full branch diff after all tasks are done and the plan's branch-gate verification scope is green, then route verified findings through razorback's own fix flow. The review is two passes of the same reviewer CLI, both against the full branch diff: a **general adversarial pass**, then a **dedicated security pass** driven by a security-only prompt. The lead verifies every finding against the code with Miller, classifies it (real-bug / real-improvement / false-positive / out-of-scope), fixes what's real, dismisses what isn't (with a written reason), and flags what needs human judgment. Each pass runs once — fixes receive local confirmation without a post-fix external re-review. The output is a summary block that slots into the morning report's External review section, so the user sees exactly what the reviewer said, what the lead did with it, and why.
 
+Both passes run from one temporary export of the reviewed Git ref, created outside the live worktree and removed explicitly after the pass outputs are parsed.
+
 **REQUIRED SUB-SKILL:** razorback:managing-review-campaigns.
 
 ## When to invoke
@@ -58,7 +60,7 @@ digraph pre_merge_review {
     rankdir=TB;
 
     "Reviewer choice (codex/claude)" [shape=box];
-    "Step 1: Build diff + context" [shape=box];
+    "Step 1: Build diff + context + review tree" [shape=box];
     "Step 2: Dispatch chosen reviewer twice (general pass + security pass, read-only)" [shape=box];
     "Step 3: Parse both pass outputs into one merged list (schema JSON for codex, result envelope for claude)" [shape=box];
     "Any findings?" [shape=diamond];
@@ -72,8 +74,8 @@ digraph pre_merge_review {
     "Return to caller (proceed to finishing-a-development-branch)" [shape=box style=filled fillcolor=lightgreen];
     "Blocker per taxonomy (stop + report)" [shape=box style=filled fillcolor=lightpink];
 
-    "Reviewer choice (codex/claude)" -> "Step 1: Build diff + context";
-    "Step 1: Build diff + context" -> "Step 2: Dispatch chosen reviewer twice (general pass + security pass, read-only)";
+    "Reviewer choice (codex/claude)" -> "Step 1: Build diff + context + review tree";
+    "Step 1: Build diff + context + review tree" -> "Step 2: Dispatch chosen reviewer twice (general pass + security pass, read-only)";
     "Step 2: Dispatch chosen reviewer twice (general pass + security pass, read-only)" -> "Step 3: Parse both pass outputs into one merged list (schema JSON for codex, result envelope for claude)";
     "Step 3: Parse both pass outputs into one merged list (schema JSON for codex, result envelope for claude)" -> "Any findings?";
     "Any findings?" -> "Step 7: Emit summary block for morning report" [label="no"];
@@ -99,6 +101,13 @@ The reviewer needs the full picture of what shipped, not the latest commit only.
 BASE=$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null)
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 PROJECT_DIR=$(git rev-parse --show-toplevel)
+REVIEW_REF=HEAD
+
+REVIEW_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/razorback-review-tree.XXXXXX")
+if ! "$SKILL_DIR/scripts/prepare-review-tree" "$PROJECT_DIR" "$REVIEW_REF" "$REVIEW_ROOT" >/dev/null; then
+  rm -rf -- "$REVIEW_ROOT"
+  exit 1
+fi
 
 # Full diff (what the reviewer reads)
 DIFF=$(git diff "$BASE"..HEAD --no-ext-diff)
@@ -114,6 +123,8 @@ PLAN_PATH="docs/plans/<YYYY-MM-DD>-<feature>.md"   # filled from the in-session 
 ```
 
 Pass all four to the chosen reviewer: `$DIFF`, `$FILE_STAT`, `$COMMIT_LOG`, `$PLAN_PATH`. The reviewer prompts at `reviewer-prompts/*.md` document how to wire them into each CLI's invocation.
+
+`prepare-review-tree` consumes the repository path, reviewed Git ref, and explicit output directory. It exports tracked content only, rejects an output path inside the source repository, omits live `.git` metadata and untracked files, and removes tracked symlinks whose resolved targets escape the output root. The helper does not modify the source worktree.
 
 Optional: if the plan carried a focus area ("focus on the auth boundary", "pay attention to schema migrations"), include it in the prompt. Do not invent a focus the user did not ask for.
 
@@ -134,12 +145,14 @@ When a reviewer is chosen, dispatch the chosen CLI **twice** against the same di
 1. **General pass** — the existing adversarial prompt wiring in the chosen reviewer-prompts file below.
 2. **Security pass** — the canonical security-only prompt at `../security-review/security-adversarial-prompt.txt` (in the razorback plugin), dispatched per the `## Security pass` section of the chosen reviewer-prompts file. Follow that section for the runnable invocation — do not construct the security-pass command here.
 
+Both passes use the same `$REVIEW_ROOT` prepared in Step 1 and run from that directory. If either dispatch fails, remove `"$REVIEW_ROOT"` explicitly before returning the blocker; do not create a second review root.
+
 Immediately after the general pass call, record `external_invocations: 1/2`. Immediately after the security pass call, record `external_invocations: 2/2`. Count the calls even when parsing later fails. Do not dispatch either scope again.
 
 Select the prompt file based on the reviewer choice and invoke the matching reviewer-cli skill. Each file contains a complete runnable invocation for each pass. Every invocation runs the reviewer in adversarial mode with read-only tool access — the reviewer never edits code.
 
-- **codex** → follow [`reviewer-prompts/codex.md`](reviewer-prompts/codex.md). Calls `codex exec --ephemeral --color never --output-schema …` with the shared JSON schema. Background on codex's adversarial-review mode lives in the bundled `razorback:codex-cli` skill.
-- **claude** → follow [`reviewer-prompts/claude.md`](reviewer-prompts/claude.md). Calls `claude -p --no-session-persistence --dangerously-skip-permissions --output-format json --json-schema … --tools "Read,Grep,Glob" --strict-mcp-config --system-prompt-file …` (no `--max-turns`, no `--max-budget-usd` — razorback caps neither the turns nor the spend of a review). The reviewer-prompts file reads the canonical schema and claude-cli's canonical adversarial prompt from the plugin at dispatch time; `razorback:claude-cli` has the background treatment.
+- **codex** → follow [`reviewer-prompts/codex.md`](reviewer-prompts/codex.md). Runs from `$REVIEW_ROOT` with `codex exec --ephemeral --color never --output-schema …` and the non-git/config-ignore flags, using the shared JSON schema. Background on codex's adversarial-review mode lives in the bundled `razorback:codex-cli` skill.
+- **claude** → follow [`reviewer-prompts/claude.md`](reviewer-prompts/claude.md). Runs from `$REVIEW_ROOT` with `claude -p --no-session-persistence --dangerously-skip-permissions --safe-mode --output-format json --json-schema … --tools "Read,Grep,Glob" --strict-mcp-config --system-prompt-file …` (no `--max-turns`, no `--max-budget-usd` — razorback caps neither the turns nor the spend of a review). The reviewer-prompts file reads the canonical schema and claude-cli's canonical adversarial prompt from the plugin at dispatch time; `razorback:claude-cli` has the background treatment.
 
 Both target the shared output schema defined canonically at `../codex-cli/schemas/review-output.schema.json` in the razorback plugin (verdict, summary, findings[severity, title, body, file, line_start, line_end, confidence, recommendation], next_steps). Both reviewer-prompts files read the schema from that canonical file at dispatch time (claude strips the `$schema` key its validator rejects).
 
@@ -165,6 +178,15 @@ jq '.structured_output.findings[]?' < "$OUT_DIR/claude-output.json"   # iterate;
 After Step 3, both reviewer paths produce **one merged list** of normalized findings covering both passes. Tag each finding with the pass that produced it (`general` / `security`) — the tag carries into classification and the morning report. For cost tracking in the morning report's per-reviewer section: claude surfaces `.total_cost_usd` and `.usage.{input_tokens,output_tokens}` in each pass's envelope — sum the two invocations; codex does not surface per-request token counts in its JSON output, so note the absence for codex rather than faking a number.
 
 Malformed or schema-invalid output is a failed required-reviewer pass. Close `blocked` with the consumed invocation count; do not retry and displace the other declared discovery scope.
+
+After both pass outputs are captured and parsed, explicitly remove the shared review root before classifying findings. Run the cleanup on failed parse or dispatch paths too, before returning `blocked`; this lifecycle must not depend on an `EXIT` trap surviving between harness calls.
+
+```bash
+rm -rf -- "$REVIEW_ROOT"
+unset REVIEW_ROOT
+```
+
+This is practical reviewer isolation, not host-wide read confinement: it reduces exposure to live worktree inputs and branch-controlled startup behavior, but it cannot prevent a reviewer process from reading arbitrary absolute host paths when its host or CLI permits that access.
 
 ## Step 4: Verify findings
 

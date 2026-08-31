@@ -8,6 +8,7 @@ Bare relative paths below (like the blocker-taxonomy reference) are relative to 
 
 - `codex --version` returns successfully (the CLI is installed).
 - `codex login status` exits 0 (authenticated via ChatGPT OAuth). If it exits non-zero, this is **blocker taxonomy #1** (credentials broken) — stop the review, surface the blocker, and do not push the branch. See `../../using-razorback/references/blocker-taxonomy.md` in the razorback plugin.
+- `$REVIEW_ROOT` is the temporary exported review tree prepared in pre-merge-review Step 1. It is outside `$PROJECT_DIR` and is shared by the general and security passes; do not run Codex from the live worktree.
 - Step 1 of the pre-merge-review flow has already built `$DIFF`, `$FILE_STAT`, `$COMMIT_LOG`, `$PROJECT_DIR`, and (optionally) `$USER_FOCUS`.
 
 ## Build the adversarial prompt
@@ -32,22 +33,27 @@ CODEX_MODEL="${RAZORBACK_CODEX_REVIEW_MODEL:-}"  # empty = inherit global defaul
 OUT_DIR=$(mktemp -d)
 trap 'rm -rf "$OUT_DIR"' EXIT
 
-cd "$PROJECT_DIR" && echo "$ADVERSARIAL_PROMPT_WITH_DIFF" | codex exec \
+cd "$REVIEW_ROOT" && echo "$ADVERSARIAL_PROMPT_WITH_DIFF" | codex exec \
   --ephemeral --color never \
   -s read-only \
+  --skip-git-repo-check \
+  --ignore-user-config \
+  --ignore-rules \
   ${CODEX_MODEL:+-m "$CODEX_MODEL"} \
   --output-schema "$SCHEMA_FILE" \
   - \
   > "$OUT_DIR/codex-output.json" 2> "$OUT_DIR/codex-stderr.log"
 ```
 
-`OUT_DIR` must live outside the repo (`mktemp -d` creates it under the system temp directory): review findings can carry sensitive detail and must not persist in the worktree, where they risk accidental staging. The `trap` removes the directory after parsing — the same cleanup pattern `razorback:grok-cli` uses.
+`REVIEW_ROOT` and `OUT_DIR` must both live outside the live worktree. The review root is created once by pre-merge-review and is shared across both passes; the caller removes it explicitly after both outputs are captured and parsed. `OUT_DIR` is private per invocation, so its local `trap` only removes reviewer output files and is not the review-root lifecycle.
 
 Flag rationale:
 
 - `--ephemeral` — no persistent session left behind.
 - `--color never` — clean non-interactive output suitable for piping into `jq`.
 - `-s read-only` — sandbox policy that blocks file writes at the CLI layer. This is what actually enforces "the reviewer never edits code"; the prompt's read-only instruction is backup, not the mechanism.
+- `--skip-git-repo-check` — permits review from the exported tree, which intentionally has no `.git` directory.
+- `--ignore-user-config --ignore-rules` — prevents user/project configuration and branch-controlled rules from becoming reviewer control input.
 - `${CODEX_MODEL:+-m "$CODEX_MODEL"}` — explicit model override from `RAZORBACK_CODEX_REVIEW_MODEL`. When unset, the expansion is empty and codex uses its configured default.
 - `--output-schema` — forces codex to return JSON conforming to the shared review-output schema. `reviewer-prompts/claude.md` reads the same canonical file (minus the `$schema` key, which claude's validator rejects), so both reviewers target an identical shape.
 - `-` — read the prompt from stdin (which is the piped `$ADVERSARIAL_PROMPT_WITH_DIFF`).
@@ -123,6 +129,8 @@ When the run includes the dedicated security pass, run codex a second time. The 
 The stdin prompt is NOT the same. You MUST rebuild it from the security template into a distinct variable, `ADVERSARIAL_SECURITY_PROMPT`, using the placeholder-split construction shown in `razorback:codex-cli`'s SKILL.md — the same construction that built the general pass's prompt, but reading the canonical security prompt at `$SKILL_DIR/../security-review/security-adversarial-prompt.txt` in the razorback plugin instead of `$SKILL_DIR/../codex-cli/adversarial-prompt.txt`. The security template carries the same placeholders (`{{TARGET_LABEL}}`, `{{USER_FOCUS}}`, `{{REVIEW_INPUT}}`), substituted identically. Pipe `$ADVERSARIAL_SECURITY_PROMPT` — not the general pass's `$ADVERSARIAL_PROMPT_WITH_DIFF` — into the second `codex exec`. Reusing the general pass's rendered prompt here is an error: it produces two general reviews and no security review.
 
 Capture stdout to a second file in the same private temp directory, `$OUT_DIR/reviewer-output-security.json`, so the general pass's `$OUT_DIR/codex-output.json` is preserved.
+
+Run the second command from the same exported tree: `cd "$REVIEW_ROOT" && … | codex exec …`. Keep `--skip-git-repo-check`, `--ignore-user-config`, and `--ignore-rules` unchanged. Do not switch back to `$PROJECT_DIR` or create a second review root. If this pass fails, remove `"$REVIEW_ROOT"` explicitly before returning the blocker.
 
 Parse rules, cost notes, and error handling are identical to the general pass: apply the Parsing section's shape check, empty-findings rule, and no-retry blocking rule to `$OUT_DIR/reviewer-output-security.json`, and the Cost / token notes unchanged.
 

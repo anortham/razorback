@@ -9,6 +9,7 @@ Bare relative paths below (like the blocker-taxonomy reference) are relative to 
 - `claude --version` returns successfully (the CLI is installed).
 - `claude auth status` exits 0 (logged in via Anthropic OAuth or API key). Exit 1 means not logged in; this is **blocker taxonomy #1** (credentials broken). Stop, surface, do not push. See `../../using-razorback/references/blocker-taxonomy.md` in the razorback plugin.
 - Do not add `--bare`. Current Claude help says bare mode skips OAuth and keychain auth reads, so it breaks the common login path.
+- `$REVIEW_ROOT` is the temporary exported review tree prepared in pre-merge-review Step 1. It is outside `$PROJECT_DIR` and is shared by the general and security passes; do not run Claude from the live worktree.
 - Step 1 of the pre-merge-review flow has already built `$DIFF`, `$FILE_STAT`, `$COMMIT_LOG`, `$PROJECT_DIR`, and (optionally) `$USER_FOCUS`.
 
 ## Build the user prompt
@@ -44,9 +45,10 @@ CLAUDE_MODEL="${RAZORBACK_CLAUDE_REVIEW_MODEL:-}"
 OUT_DIR=$(mktemp -d)
 trap 'rm -rf "$OUT_DIR"' EXIT
 
-cd "$PROJECT_DIR" && claude -p \
+cd "$REVIEW_ROOT" && claude -p \
   --no-session-persistence \
   --dangerously-skip-permissions \
+  --safe-mode \
   --output-format json \
   --json-schema "$SCHEMA_JSON" \
   --tools "Read,Grep,Glob" \
@@ -57,9 +59,9 @@ cd "$PROJECT_DIR" && claude -p \
   < /dev/null > "$OUT_DIR/claude-output.json" 2> "$OUT_DIR/claude-stderr.log"
 ```
 
-`OUT_DIR` must live outside the repo (`mktemp -d` creates it under the system temp directory): review findings can carry sensitive detail and must not persist in the worktree, where they risk accidental staging. The `trap` removes the directory after parsing — the same cleanup pattern `razorback:grok-cli` uses.
+`REVIEW_ROOT` and `OUT_DIR` must both live outside the live worktree. The review root is created once by pre-merge-review and is shared across both passes; the caller removes it explicitly after both outputs are captured and parsed. `OUT_DIR` is private per invocation, so its local `trap` only removes reviewer output files and is not the review-root lifecycle.
 
-The validated baseline flags are: `-p`, `--no-session-persistence`, `--dangerously-skip-permissions`, `--output-format json`, `--json-schema`, `--tools "Read,Grep,Glob"`, `--strict-mcp-config`, optional `${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"}`, `--system-prompt-file`.
+The validated baseline flags are: `-p`, `--no-session-persistence`, `--dangerously-skip-permissions`, `--safe-mode`, `--output-format json`, `--json-schema`, `--tools "Read,Grep,Glob"`, `--strict-mcp-config`, optional `${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"}`, `--system-prompt-file`.
 
 Flag rationale:
 
@@ -67,6 +69,7 @@ Flag rationale:
 - No `--bare` flag - current Claude help says bare mode skips OAuth and keychain auth reads. A working reviewer beats a broken "pure" invocation.
 - `--no-session-persistence` - ephemeral session (parity with codex's `--ephemeral`).
 - `--dangerously-skip-permissions` - required for scripted non-interactive use.
+- `--safe-mode` - disables branch-controlled startup hooks and settings while preserving the explicit read-only tool allowlist.
 - `--output-format json --json-schema …` - structured review output conforming to the shared schema.
 - `--tools "Read,Grep,Glob"` - read-only, enforced at the CLI layer: no tool in the allowlist can write. Do NOT add `Bash` — an unrestricted Bash tool can write files and would make the read-only claim prompt-deep only. The diff and commit log are embedded in the prompt, so the reviewer doesn't need shell access.
 - `--strict-mcp-config` - drops MCP servers inherited from user/project settings, which can carry write-capable tools into an otherwise read-only allowlist.
@@ -127,6 +130,8 @@ When the run includes the dedicated security pass, run `claude -p` a second time
 ```bash
 PROMPT_FILE="$SKILL_DIR/../security-review/security-adversarial-prompt.txt"
 ```
+
+Run the second command from the same exported tree: `cd "$REVIEW_ROOT" && claude -p …`. Do not switch back to `$PROJECT_DIR` or create a second review root. If this pass fails, remove `"$REVIEW_ROOT"` explicitly before returning the blocker.
 
 Build `$DIFF_AND_CONTEXT` exactly as under "Build the user prompt". Capture stdout to a second file in the same private temp directory, `$OUT_DIR/claude-output-security.json`, so the general pass's `$OUT_DIR/claude-output.json` is preserved.
 

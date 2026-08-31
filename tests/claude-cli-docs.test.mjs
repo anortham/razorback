@@ -40,6 +40,16 @@ test('pre-merge claude reviewer prompt keeps auth-compatible defaults', () => {
   assert.equal(commandBlockHasBare(prompt), false);
 });
 
+test('pre-merge claude reviewer invocation enables the verified safe mode', () => {
+  const prompt = read('skills/pre-merge-review/reviewer-prompts/claude.md');
+  const blocks = bashBlocks(prompt).filter((block) => block.includes('claude -p'));
+
+  assert.ok(blocks.length > 0, 'pre-merge claude prompt should document a claude invocation');
+  for (const block of blocks) {
+    assert.match(block, /--safe-mode/, 'pre-merge claude must use the verified safe-mode combination');
+  }
+});
+
 test('README stops advertising bare mode as the default claude-cli path', () => {
   const readme = read('README.md');
 
