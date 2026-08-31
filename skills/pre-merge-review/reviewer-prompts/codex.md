@@ -147,6 +147,8 @@ The stdin prompt is NOT the same. Rebuild the security template into a fresh
 file — not the general pass's payload — into the second `codex exec`. Reusing
 the general pass's rendered prompt here is an error: it produces two general
 reviews and no security review.
+Build the security template from the canonical
+`$SKILL_DIR/../security-review/security-adversarial-prompt.txt` file.
 
 Capture stdout to a second file in the same private temp directory, `$OUT_DIR/reviewer-output-security.json`, so the general pass's `$OUT_DIR/codex-output.json` is preserved.
 
