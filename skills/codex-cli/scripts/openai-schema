@@ -1,0 +1,62 @@
+#!/usr/bin/env node
+
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// OpenAI structured outputs accept a restricted JSON Schema subset. Any of these
+// keywords fails the request with HTTP 400 invalid_json_schema before the model
+// runs, so codex never sees the prompt. The executable validator in
+// validate-review-output enforces the same constraints on the returned object.
+const REJECTED_BY_OPENAI = new Set([
+  '$schema',
+  'minLength',
+  'maxLength',
+  'pattern',
+  'format',
+  'minimum',
+  'maximum',
+  'exclusiveMinimum',
+  'exclusiveMaximum',
+  'multipleOf',
+  'minItems',
+  'maxItems',
+  'uniqueItems',
+  'contains',
+  'minContains',
+  'maxContains',
+  'minProperties',
+  'maxProperties',
+  'patternProperties',
+  'propertyNames',
+  'dependentRequired',
+  'dependentSchemas',
+  'default',
+  'examples',
+]);
+
+function sanitize(value) {
+  if (Array.isArray(value)) return value.map(sanitize);
+  if (value === null || typeof value !== 'object') return value;
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key]) => !REJECTED_BY_OPENAI.has(key))
+      .map(([key, child]) => [key, sanitize(child)]),
+  );
+}
+
+const defaultSchema = join(
+  dirname(fileURLToPath(import.meta.url)),
+  '../schemas/review-output.schema.json',
+);
+
+try {
+  if (process.argv.length > 3) throw new Error('usage: openai-schema [SCHEMA_FILE]');
+  const source = process.argv[2] ?? defaultSchema;
+  const parsed = JSON.parse(readFileSync(source, 'utf8'));
+  process.stdout.write(`${JSON.stringify(sanitize(parsed), null, 2)}\n`);
+} catch (error) {
+  process.stderr.write(`openai-schema failed: ${error instanceof Error ? error.message : 'invalid schema'}\n`);
+  process.exitCode = 1;
+}

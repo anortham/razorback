@@ -37,15 +37,25 @@ or any positional argument.
 
 ## Invocation
 
-Codex's `--output-schema` flag takes a file path, so point it straight at the canonical schema file — no temp copy needed:
+Codex's `--output-schema` flag takes a file path, but OpenAI structured outputs
+reject the canonical schema's `uniqueItems`, `minItems`, `minLength`, and
+`minimum` keywords. Passing that file directly fails the request with HTTP 400
+`invalid_json_schema` before the model runs, so codex never sees the prompt.
+Sanitize it first; `validate-review-output` still enforces every one of those
+constraints on the returned object.
 
 ```bash
-SCHEMA_FILE="$SKILL_DIR/../codex-cli/schemas/review-output.schema.json"
+SCHEMA_FILE=$(mktemp)
+if ! "$SKILL_DIR/../codex-cli/scripts/openai-schema" > "$SCHEMA_FILE"; then
+  rm -f -- "$SCHEMA_FILE"
+  echo "schema preparation failed" >&2
+  exit 1
+fi
 
 CODEX_MODEL="${RAZORBACK_CODEX_REVIEW_MODEL:-}"  # empty = inherit global default
 
 OUT_DIR=$(mktemp -d)
-trap 'rm -rf "$OUT_DIR"' EXIT
+trap 'rm -rf "$OUT_DIR"; rm -f "$SCHEMA_FILE"' EXIT
 
 cd "$REVIEW_ROOT" && cat "$REVIEW_PROMPT_FILE" | codex exec \
   --ephemeral --color never \
@@ -69,7 +79,7 @@ Flag rationale:
 - `--skip-git-repo-check` — permits review from the exported tree, which intentionally has no `.git` directory.
 - `--ignore-user-config --ignore-rules` — prevents user/project configuration and branch-controlled rules from becoming reviewer control input.
 - `${CODEX_MODEL:+-m "$CODEX_MODEL"}` — explicit model override from `RAZORBACK_CODEX_REVIEW_MODEL`. When unset, the expansion is empty and codex uses its configured default.
-- `--output-schema` — forces codex to return JSON conforming to the shared review-output schema. A completed result includes `review_completed: true`, non-empty unique `files_inspected`, a `commands_run` array (which may be empty), and non-empty file/line/observation `evidence`; `needs-attention` requires a finding. `reviewer-prompts/claude.md` reads the same canonical file (minus the `$schema` key, which claude's validator rejects), so both reviewers target an identical shape.
+- `--output-schema` — forces codex to return JSON conforming to the shared review-output schema, sanitized by `openai-schema` for OpenAI's restricted subset. A completed result includes `review_completed: true`, non-empty unique `files_inspected`, a `commands_run` array (which may be empty), and non-empty file/line/observation `evidence`; `needs-attention` requires a finding. Sanitizing drops only the constraint keywords OpenAI refuses; `validate-review-output` enforces all of them on the result. `reviewer-prompts/claude.md` reads the same canonical file (minus the `$schema` key, which claude's validator rejects), so both reviewers target an identical shape.
 - `-` — read the prompt from stdin (which is the piped `$REVIEW_PROMPT_FILE`; for large bundles this is only the concise artifact instruction).
 - `2> "$OUT_DIR/codex-stderr.log"` — keep stdout JSON-only while retaining diagnostics from the same invocation for a blocker report. Do not re-run merely to recover discarded stderr.
 

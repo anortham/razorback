@@ -49,5 +49,23 @@ file, and cited line 1 of that bundle as its only evidence.
 
 ## Scope
 
-Grok-specific. Claude 2.1.251 under the same schema ran 4 turns and returned a
-review the validator accepted. Codex was not measured.
+The one-turn collapse is Grok-specific. Claude 2.1.251 under the same schema ran
+4 turns and returned a review the validator accepted.
+
+## Codex has a different failure
+
+Codex does not collapse to one turn. It never reaches the model at all.
+
+OpenAI structured outputs accept a restricted JSON Schema subset, and the
+canonical schema's `uniqueItems` — added by `90a90bf`, shipped in 0.35.0 —
+fails the request with HTTP 400 `invalid_json_schema`. `minItems`, `minLength`,
+and `minimum` fail the same way once `uniqueItems` is removed. Every
+schema-constrained Codex review has failed since that commit.
+
+`skills/codex-cli/scripts/openai-schema` strips the rejected keywords and leaves
+the canonical schema expressive for Claude and Grok, which accept it. Nothing is
+lost: `validate-review-output` already enforces each stripped constraint on the
+returned object, including the uniqueness of `files_inspected`.
+
+Measured after the fix: Codex returned 4 findings across 2 files with real tool
+use, accepted by the validator.

@@ -270,12 +270,24 @@ redacted before the size decision.
 
 **Step 3: Send with structured output**
 
-Codex's `--output-schema` flag takes a file path, so point it straight at the
-canonical schema this skill ships — no temp file needed. `$SKILL_DIR`
-throughout this skill is the skill's own base directory, announced when the
-skill loads — substitute it before running any command:
+Codex's `--output-schema` flag takes a file path, but OpenAI structured outputs
+accept a restricted JSON Schema subset. The canonical schema's `uniqueItems`,
+`minItems`, `minLength`, and `minimum` keywords fail the request with HTTP 400
+`invalid_json_schema` before the model runs, so codex never sees the prompt.
+Sanitize the schema with `scripts/openai-schema` first. Nothing is lost:
+`validate-review-output` enforces every one of those constraints on the object
+codex returns. `$SKILL_DIR` throughout this skill is the skill's own base
+directory, announced when the skill loads — substitute it before running any
+command:
 
 ```bash
+SCHEMA_FILE=$(mktemp)
+if ! "$SKILL_DIR/scripts/openai-schema" > "$SCHEMA_FILE"; then
+  rm -f -- "$SCHEMA_FILE"
+  echo "schema preparation failed" >&2
+  exit 1
+fi
+
 TEMPLATE=$(cat "$SKILL_DIR/adversarial-prompt.txt")
 HEAD=${TEMPLATE%%'{{TARGET_LABEL}}'*};  REST=${TEMPLATE#*'{{TARGET_LABEL}}'}
 MID=${REST%%'{{USER_FOCUS}}'*};         REST=${REST#*'{{USER_FOCUS}}'}
@@ -330,11 +342,11 @@ if [ "$REVIEW_ARTIFACT" != inline ]; then
     > "$REVIEW_PROMPT_FILE"
 fi
 RESULT_FILE=$(mktemp)
-trap 'rm -f "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE" "$REVIEW_PROMPT_FILE" "$RESULT_FILE"; rm -rf "$REVIEW_ROOT"' EXIT
+trap 'rm -f "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE" "$REVIEW_PROMPT_FILE" "$RESULT_FILE" "$SCHEMA_FILE"; rm -rf "$REVIEW_ROOT"' EXIT
 cat "$REVIEW_PROMPT_FILE" | codex exec --ephemeral --color never \
   -s read-only \
   -C "$REVIEW_ROOT" \
-  --output-schema "$SKILL_DIR/schemas/review-output.schema.json" \
+  --output-schema "$SCHEMA_FILE" \
   -o "$RESULT_FILE" \
   - \
   2>/dev/null
@@ -346,6 +358,10 @@ redacted bundle to `.razorback-review/review-input.md` inside `REVIEW_ROOT` and
 the prompt contains only the concise instruction and artifact path. Do not
 reload that file into an argument, stdin, or `--prompt-file`; `--prompt-file`
 is prompt transport, not a review-artifact mechanism.
+
+Codex answered the same synthetic review in multiple turns with real tool use,
+so it does not share Grok's one-turn collapse under a schema. Its failure mode
+is the 400 above: the request never reaches the model.
 
 The `--output-schema` flag tells Codex to return JSON matching the review
 schema (verdict, summary, findings with severity/file/line/confidence, next
@@ -556,7 +572,7 @@ Every command pattern below still requires the constructed prompt to be filtered
 | Code review (unified prompt) | read-only | Pipe diff: `echo "$PROMPT" \| codex exec --ephemeral --color never -s read-only -C dir - 2>/dev/null` (scope/sizing per Review Targeting) |
 | Code review (codex-native scope) | read-only | `codex exec -C dir -s read-only review --uncommitted -o /tmp/review.txt "focus" < /dev/null 2>/dev/null` (or `--base <branch>` / `--commit <sha>`; exec-level flags like `-C`/`-s` go BEFORE `review`) |
 | Goal tracking | interactive only | `/goal` sets or views a long-running objective; the `goals` feature is stable and enabled by default as of codex 0.143 |
-| Adversarial review | read-only + schema | Add `--output-schema "$SKILL_DIR/schemas/review-output.schema.json"` and build the prompt from `$SKILL_DIR/adversarial-prompt.txt` (see Adversarial Review section). Scope/sizing per Review Targeting. |
+| Adversarial review | read-only + schema | Sanitize the schema with `$SKILL_DIR/scripts/openai-schema > "$SCHEMA_FILE"`, add `--output-schema "$SCHEMA_FILE"`, and build the prompt from `$SKILL_DIR/adversarial-prompt.txt` (see Adversarial Review section). Scope/sizing per Review Targeting. |
 | Delegate (complex) | workspace-write | `codex exec --ephemeral --color never --sandbox workspace-write -C dir "prompt" < /dev/null 2>/dev/null` (no `-a` — removed from `exec` in codex 0.143; replaces the deprecated `--full-auto`; add `--add-dir <DIR>` for extra writable dirs) |
 | Truly fresh reviewer | read-only + isolated | Add `--ignore-user-config --ignore-rules` to skip project AGENTS.md and execpolicy `.rules` |
 | Clean output capture | any | Add `-o <file>` to write the agent's last message to a file instead of mixing it with stderr/banner output |
