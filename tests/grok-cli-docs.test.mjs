@@ -181,6 +181,17 @@ test('grok validation failure reaches the bounded continuation branch', () => {
   );
 });
 
+test('grok status variables reset immediately before each invocation', () => {
+  const skill = read('skills/grok-cli/SKILL.md');
+  const codeReview = skill.slice(
+    skill.indexOf('### Code Review (read-only)'),
+    skill.indexOf('### Standalone Review Completion'),
+  );
+
+  assert.match(codeReview, /GROK_STATUS=0\s+grok --prompt-file/);
+  assert.match(codeReview, /CONTINUATION_STATUS=0\s+grok -c --prompt-file/);
+});
+
 test('grok continuation is one same-session completion attempt', () => {
   const skill = read('skills/grok-cli/SKILL.md');
 

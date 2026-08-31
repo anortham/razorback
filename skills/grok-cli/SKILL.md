@@ -223,6 +223,7 @@ if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PROMPT_FILE" > 
   exit 1
 fi
 
+GROK_STATUS=0
 grok --prompt-file "$REDACTED_PROMPT_FILE" \
   --sandbox read-only \
   --always-approve \
@@ -259,6 +260,7 @@ else
     echo "outbound redaction failed" >&2
     exit 1
   fi
+  CONTINUATION_STATUS=0
   grok -c --prompt-file "$REDACTED_FOLLOW_UP_FILE" \
     --always-approve \
     --cwd /path/to/project \
