@@ -28,6 +28,10 @@ const gitIdentity = [
   'user.name=review-tree-test',
   '-c',
   'commit.gpgsign=false',
+  '-c',
+  'gc.auto=0',
+  '-c',
+  'maintenance.auto=false',
 ];
 
 function git(cwd, ...args) {

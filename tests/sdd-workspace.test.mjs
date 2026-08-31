@@ -12,7 +12,7 @@ const scripts = join(root, 'skills/subagent-driven-development/scripts');
 const testRoot = mkdtempSync(join(tmpdir(), 'sdd-workspace-'));
 test.after(() => rmSync(testRoot, { recursive: true, force: true }));
 
-const gitIdentity = ['-c', 'user.email=t@example.com', '-c', 'user.name=t', '-c', 'commit.gpgsign=false'];
+const gitIdentity = ['-c', 'user.email=t@example.com', '-c', 'user.name=t', '-c', 'commit.gpgsign=false', '-c', 'gc.auto=0', '-c', 'maintenance.auto=false'];
 
 function git(cwd, ...args) {
   const result = spawnSync('git', args, { cwd, encoding: 'utf8' });

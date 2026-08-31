@@ -94,7 +94,9 @@ test('subagent-driven-development keeps SDD artifacts self-ignored and worktree-
     const gitIdentity = [
       '-c', 'user.email=t@example.com',
       '-c', 'user.name=t',
-      '-c', 'commit.gpgsign=false'
+      '-c', 'commit.gpgsign=false',
+      '-c', 'gc.auto=0',
+      '-c', 'maintenance.auto=false'
     ];
     run('git', ['add', 'plan.md'], { cwd: repo });
     run('git', [...gitIdentity, 'commit', '-qm', 'c1'], { cwd: repo });

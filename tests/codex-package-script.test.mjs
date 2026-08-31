@@ -137,6 +137,8 @@ function createFixture() {
   const scriptPath = path.join(repo, 'scripts/package-codex-plugin.sh');
 
   run('git', ['init', '-q', '-b', 'main', repo]);
+  run('git', ['-C', repo, 'config', 'gc.auto', '0']);
+  run('git', ['-C', repo, 'config', 'maintenance.auto', 'false']);
   run('git', ['-C', repo, 'config', 'user.email', 't@example.com']);
   run('git', ['-C', repo, 'config', 'user.name', 't']);
   run('git', ['-C', repo, 'config', 'commit.gpgsign', 'false']);
@@ -220,10 +222,10 @@ function createFixture() {
 function cleanupFixture(fixture, extraPaths = []) {
   for (const extraPath of extraPaths) {
     if (extraPath && fs.existsSync(extraPath)) {
-      fs.rmSync(extraPath, { recursive: true, force: true });
+      fs.rmSync(extraPath, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     }
   }
-  fs.rmSync(fixture.tempRoot, { recursive: true, force: true });
+  fs.rmSync(fixture.tempRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 }
 
 test('packages a rootless Codex-only archive with every skill and no manifest hooks', { skip: !hasZip || !hasTarGz }, () => {

@@ -11,7 +11,7 @@ const config = JSON.parse(fs.readFileSync(path.join(root, '.version-bump.json'),
 function git(dir, ...args) {
   const result = spawnSync(
     'git',
-    ['-C', dir, '-c', 'user.name=Test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgsign=false', ...args],
+    ['-C', dir, '-c', 'user.name=Test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgsign=false', '-c', 'gc.auto=0', '-c', 'maintenance.auto=false', ...args],
     { encoding: 'utf8' }
   );
   assert.equal(result.status, 0, `git ${args.join(' ')} failed:\n${result.stdout}\n${result.stderr}`);
