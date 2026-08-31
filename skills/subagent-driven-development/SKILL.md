@@ -93,7 +93,7 @@ The spawn prompt MUST include (all prompt-resident):
 11. **API-shape evidence requirement** (the implementer must name the Miller evidence used for every symbol name, function signature, config shape, route name, CLI flag, or public contract they rely on)
 12. **Gate invariant requirement** (the implementer must state what each assigned test, replay, metric, or acceptance gate proves)
 13. **architecture-quality context** (the approved architecture, any `No Architecture Impact` note, and the plan mismatch rule)
-14. **Report file path** under the plan's workspace (`.razorback/sdd/<plan-basename>/`), so the worker writes the full report to a file and returns only status, commits, test summary, and concerns
+14. **Report file path** under the plan's workspace (`.razorback/sdd/<plan-key>/`), so the worker writes the full report to a file and returns only status, commits, test summary, and concerns
 
 ### Verification Scope Contract
 
@@ -166,7 +166,7 @@ The helper scripts live in this skill's own `scripts/` directory — NOT in the 
 
 Conversation memory does not survive every long run. Track task completion in the plan's workspace ledger in addition to TaskList state and plan checkboxes.
 
-- Each plan owns a workspace: `"$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE` prints its git-ignored directory (`<repo-root>/.razorback/sdd/<plan-basename>/`) — home to every artifact for THIS plan: ledger, briefs, reports, review packages. Another plan's directory is never yours to read or write.
+- Each plan owns a workspace: `"$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE` prints its git-ignored directory (`<repo-root>/.razorback/sdd/<plan-key>/`) — home to every artifact for THIS plan: ledger, briefs, reports, review packages. Another plan's directory is never yours to read or write.
 - The ledger is `<workspace>/progress.md`. At skill start, read it if it exists. Trust it with `git log` over stale recollection after compaction or resume — but only when its first line names this plan file. This is the resume check: a ledger whose first line names a different plan file — or a stray ledger at the old flat path `.razorback/sdd/progress.md` — is another plan's progress. Leave it in place and start fresh.
 - Create the ledger with its identity as the first line: `# Razorback SDD ledger — plan: <plan file path>`.
 - Record a task complete only after its durable commit exists — the completion line always carries a real commit SHA:

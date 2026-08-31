@@ -85,12 +85,12 @@
 **Approach:** Write behavior tests first for same-basename separation, equivalent-path stability, outside-root rejection, legacy resume, and the no-outside-write symlink case. Keep hashing and path normalization inside `sdd-workspace`; update help text and active skill contracts from `<plan-basename>` to `<plan-key>` without editing historical plans.
 
 **Acceptance criteria:**
-- [ ] Two `plan.md` files under different repository directories resolve to different artifact directories.
-- [ ] Absolute, relative, and normalized spellings of one plan resolve to the same directory.
-- [ ] A plan outside the repository exits 2 without creating an artifact directory.
-- [ ] A matching legacy ledger resumes safely; a mismatched ledger is never shared.
-- [ ] A pre-planted outside symlink remains completely untouched.
-- [ ] Worker-scope verification passes and the change is handed to the lead per `parallel-lead-commit`.
+- [x] Two `plan.md` files under different repository directories resolve to different artifact directories.
+- [x] Absolute, relative, and normalized spellings of one plan resolve to the same directory.
+- [x] A plan outside the repository exits 2 without creating an artifact directory.
+- [x] A matching legacy ledger resumes safely; a mismatched ledger is never shared.
+- [x] A pre-planted outside symlink remains completely untouched.
+- [x] Worker-scope verification passes and the change is handed to the lead per `parallel-lead-commit`.
 
 ### Task 2: Temporary reviewer tree and safe-mode wiring
 

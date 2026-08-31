@@ -24,12 +24,16 @@ function runScript(cwd, script, ...args) {
   return spawnSync('bash', [join(scripts, script), ...args], { cwd, encoding: 'utf8' });
 }
 
-function setupRepo() {
-  const input = join(testRoot, 'repo');
+function setupRepo(name = 'repo') {
+  const input = join(testRoot, name);
   git(testRoot, 'init', '-q', '-b', 'main', input);
   const repo = git(input, 'rev-parse', '--show-toplevel').trim();
   writeFileSync(join(repo, 'plan-a.md'), '# Plan A\n\n## Task 1: First thing\n\nDo the first thing.\n');
   writeFileSync(join(repo, 'plan-b.md'), '# Plan B\n\n## Task 1: Other thing\n\nDo the other thing.\n');
+  mkdirSync(join(repo, 'plans', 'alpha'), { recursive: true });
+  mkdirSync(join(repo, 'plans', 'beta'), { recursive: true });
+  writeFileSync(join(repo, 'plans', 'alpha', 'plan.md'), '# Alpha plan\n');
+  writeFileSync(join(repo, 'plans', 'beta', 'plan.md'), '# Beta plan\n');
   return repo;
 }
 
@@ -55,8 +59,8 @@ test('two plans resolve to two distinct plan-scoped directories', () => {
   assert.equal(b.status, 0, b.stderr);
   const dirA = a.stdout.trim();
   const dirB = b.stdout.trim();
-  assert.equal(dirA, join(sddBase, 'plan-a'));
-  assert.equal(dirB, join(sddBase, 'plan-b'));
+  assert.equal(dirA, join(sddBase, 'plan-a-622bfa9a0830'));
+  assert.equal(dirB, join(sddBase, 'plan-b-26c66ffe5996'));
   assert.notEqual(dirA, dirB);
   assert.ok(existsSync(dirA));
   assert.ok(existsSync(dirB));
@@ -65,12 +69,73 @@ test('two plans resolve to two distinct plan-scoped directories', () => {
 test('the workspace tree self-ignores via .razorback/sdd/.gitignore', () => {
   runScript(repo, 'sdd-workspace', 'plan-a.md');
   assert.equal(readFileSync(join(sddBase, '.gitignore'), 'utf8'), '*\n');
-  writeFileSync(join(sddBase, 'plan-a', 'artifact.md'), 'x\n');
+  writeFileSync(join(sddBase, 'plan-a-622bfa9a0830', 'artifact.md'), 'x\n');
   const status = git(repo, 'status', '--porcelain');
   assert.ok(!status.includes('.razorback'), status);
   git(repo, 'add', '-A');
   const staged = git(repo, 'diff', '--cached', '--name-only');
   assert.ok(!staged.includes('.razorback'), staged);
+});
+
+test('same basenames in different directories resolve to distinct hashed plan keys', () => {
+  const alpha = runScript(repo, 'sdd-workspace', 'plans/alpha/plan.md');
+  const beta = runScript(repo, 'sdd-workspace', 'plans/beta/plan.md');
+  assert.equal(alpha.status, 0, alpha.stderr);
+  assert.equal(beta.status, 0, beta.stderr);
+  assert.equal(alpha.stdout.trim(), join(sddBase, 'plan-03374bad0d91'));
+  assert.equal(beta.stdout.trim(), join(sddBase, 'plan-e610f5aaa9e2'));
+  assert.notEqual(alpha.stdout.trim(), beta.stdout.trim());
+});
+
+test('absolute, relative, and normalized spellings resolve to one plan workspace', () => {
+  const spellings = [
+    join(repo, 'plans', 'alpha', 'plan.md'),
+    'plans/alpha/plan.md',
+    'plans/alpha/../alpha/plan.md'
+  ];
+  const results = spellings.map((plan) => runScript(repo, 'sdd-workspace', plan));
+  for (const result of results) {
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stdout.trim(), join(sddBase, 'plan-03374bad0d91'));
+  }
+});
+
+test('a plan outside the repository exits 2 without creating an artifact directory', () => {
+  const isolatedRepo = setupRepo('outside-repo');
+  const outsidePlan = join(testRoot, 'outside-plan.md');
+  writeFileSync(outsidePlan, '# Outside plan\n');
+
+  const result = runScript(isolatedRepo, 'sdd-workspace', outsidePlan);
+
+  assert.equal(result.status, 2, result.stdout);
+  assert.match(result.stderr, /outside repository/);
+  assert.equal(existsSync(join(isolatedRepo, '.razorback')), false);
+});
+
+test('a matching legacy ledger resumes its basename workspace', () => {
+  const legacyRepo = setupRepo('legacy-repo');
+  const legacyDir = join(legacyRepo, '.razorback', 'sdd', 'plan-a');
+  mkdirSync(legacyDir, { recursive: true });
+  writeFileSync(join(legacyDir, 'progress.md'), '# Razorback SDD ledger — plan: plan-a.md\n');
+
+  const result = runScript(legacyRepo, 'sdd-workspace', 'plan-a.md');
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout.trim(), legacyDir);
+});
+
+test('a mismatched legacy ledger is not shared with another plan', () => {
+  const mismatchRepo = setupRepo('mismatch-repo');
+  const legacyDir = join(mismatchRepo, '.razorback', 'sdd', 'plan-a');
+  mkdirSync(legacyDir, { recursive: true });
+  writeFileSync(join(legacyDir, 'progress.md'), '# Razorback SDD ledger — plan: plan-b.md\n');
+  writeFileSync(join(legacyDir, 'keep.txt'), 'keep\n');
+
+  const result = runScript(mismatchRepo, 'sdd-workspace', 'plan-a.md');
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout.trim(), join(mismatchRepo, '.razorback', 'sdd', 'plan-a-622bfa9a0830'));
+  assert.equal(readFileSync(join(legacyDir, 'keep.txt'), 'utf8'), 'keep\n');
 });
 
 test('a pre-planted .razorback/sdd symlink to an outside directory exits 2 and leaves it untouched', () => {
@@ -90,14 +155,14 @@ test('a pre-planted .razorback/sdd symlink to an outside directory exits 2 and l
   assert.match(result.stderr, /escapes the repository/);
   assert.equal(readFileSync(join(outside, 'keep.txt'), 'utf8'), 'keep\n');
   assert.ok(!existsSync(join(outside, '.gitignore')));
-  assert.deepEqual(readdirSync(outside).filter((name) => name !== 'plan-a'), ['keep.txt']);
+  assert.deepEqual(readdirSync(outside), ['keep.txt']);
 });
 
 test('task-brief writes the brief into its plan directory', () => {
   const result = runScript(repo, 'task-brief', 'plan-a.md', '1');
   assert.equal(result.status, 0, result.stderr);
   const briefPath = result.stdout.match(/^wrote (.*): \d+ lines$/m)?.[1];
-  assert.equal(briefPath, join(sddBase, 'plan-a', 'task-1-brief.md'));
+  assert.equal(briefPath, join(sddBase, 'plan-a-622bfa9a0830', 'task-1-brief.md'));
   assert.match(readFileSync(briefPath, 'utf8'), /## Task 1: First thing/);
 });
 
@@ -115,7 +180,7 @@ test('review-package requires the plan file first and writes into its plan direc
   const result = runScript(repo, 'review-package', 'plan-a.md', 'HEAD~1', 'HEAD');
   assert.equal(result.status, 0, result.stderr);
   const reviewPath = result.stdout.match(/^wrote (.*): \d+ commit/m)?.[1];
-  assert.equal(dirname(reviewPath), join(sddBase, 'plan-a'));
+  assert.equal(dirname(reviewPath), join(sddBase, 'plan-a-622bfa9a0830'));
   assert.match(reviewPath, /review-[0-9a-f]+\.\.[0-9a-f]+\.diff$/);
   assert.match(readFileSync(reviewPath, 'utf8'), /## Diff/);
 });
