@@ -48,14 +48,14 @@ Sandbox startup failures remain terminal for their campaign because no session e
 
 ## Acceptance criteria
 
-- [ ] A complete clean review with evidence validates.
-- [ ] `needs-attention` with empty findings is rejected.
-- [ ] Missing or empty inspected-file and evidence lists are rejected.
-- [ ] Malformed envelopes and malformed `.text` are rejected without partial output.
-- [ ] Grok code review embeds the complete diff and does not treat `--no-plan` or tool use as completion proof.
-- [ ] One invalid placeholder may resume the same session once; no fresh sweep or third invocation is allowed.
-- [ ] Sandbox startup failure cannot consume the continuation path and `grok inspect` is not presented as a capability probe.
-- [ ] Claude standalone and pre-merge review never pass the full diff as a positional argument.
-- [ ] Large redacted Claude payloads are supplied through a temporary file on standard input while `Bash` remains absent from the tool allowlist.
-- [ ] Existing Codex, Claude, and pre-merge structured-output contracts stay compatible with the expanded schema.
-- [ ] Focused tests show RED before implementation and GREEN afterward.
+- [x] A complete clean review with evidence validates.
+- [x] `needs-attention` with empty findings is rejected.
+- [x] Missing or empty inspected-file and evidence lists are rejected.
+- [x] Malformed envelopes and malformed `.text` are rejected without partial output.
+- [x] Grok code review embeds the complete diff and does not treat `--no-plan` or tool use as completion proof.
+- [x] One invalid placeholder may resume the same session once; no fresh sweep or third invocation is allowed.
+- [x] Sandbox startup failure cannot consume the continuation path and `grok inspect` is not presented as a capability probe.
+- [x] Claude standalone and pre-merge review never pass the full diff as a positional argument.
+- [x] Large redacted Claude payloads are supplied through a temporary file on standard input while `Bash` remains absent from the tool allowlist.
+- [x] Existing Codex, Claude, and pre-merge structured-output contracts stay compatible with the expanded schema.
+- [x] Focused tests show RED before implementation and GREEN afterward.
