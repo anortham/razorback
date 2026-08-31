@@ -131,6 +131,19 @@ proceed and add the loud note to the morning report. Policy denies `anthropic`
 → refuse the dispatch and name an allowed alternative; on an autonomous run
 where the user chose this provider, stop per blocker taxonomy #4.
 
+## Outbound Payload Redaction
+
+Immediately before every `claude -p` dispatch, write the fully constructed prompt to `PAYLOAD_FILE` and pass it through `skills/security-review/scripts/redact-outbound`. Use only `REDACTED_PAYLOAD_FILE` for the invocation. If redaction fails, remove both files, emit only a generic error, and stop before Claude receives any input.
+
+```bash
+REDACTED_PAYLOAD_FILE=$(mktemp)
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+```
+
 ## Review Targeting
 
 Scope selection (`--scope auto|working-tree|branch`, `--base <ref>`) and the
@@ -149,14 +162,24 @@ The user wants a fresh Claude's take on an approach, design decision, or
 piece of code. No file changes, no structured output.
 
 ```bash
+PAYLOAD_FILE=$(mktemp)
+REDACTED_PAYLOAD_FILE=$(mktemp)
+printf '%s' "Your prompt here" > "$PAYLOAD_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
+
 cd /path/to/project && claude -p \
   --no-session-persistence \
   --dangerously-skip-permissions \
   --tools "Read,Grep,Glob" --strict-mcp-config \
   ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} \
   ${CLAUDE_EFFORT:+--effort "$CLAUDE_EFFORT"} \
-  "Your prompt here" \
-  < /dev/null 2>/dev/null
+  "$REDACTED_PROMPT" < /dev/null 2>/dev/null
+rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ```
 
 Drop `--json-schema`; a second opinion is free-form text.
@@ -206,6 +229,16 @@ the file:
 ```bash
 SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")
 
+PAYLOAD_FILE=$(mktemp)
+REDACTED_PAYLOAD_FILE=$(mktemp)
+printf '%s' "$PROMPT" > "$PAYLOAD_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
+
 cd /path/to/project && claude -p \
   --no-session-persistence \
   --dangerously-skip-permissions \
@@ -215,8 +248,8 @@ cd /path/to/project && claude -p \
   ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} \
   ${CLAUDE_EFFORT:+--effort "$CLAUDE_EFFORT"} \
   ${CLAUDE_FALLBACK_MODEL:+--fallback-model "$CLAUDE_FALLBACK_MODEL"} \
-  "$PROMPT" \
-  < /dev/null 2>/dev/null
+  "$REDACTED_PROMPT" < /dev/null 2>/dev/null
+rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ```
 
 Same command shape as adversarial review but without the adversarial system
@@ -261,6 +294,16 @@ Review) and point `--system-prompt-file` straight at this skill's canonical
 ```bash
 SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")
 
+PAYLOAD_FILE=$(mktemp)
+REDACTED_PAYLOAD_FILE=$(mktemp)
+printf '%s' "$DIFF_AND_CONTEXT" > "$PAYLOAD_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
+
 cd /path/to/project && claude -p \
   --no-session-persistence \
   --dangerously-skip-permissions \
@@ -271,8 +314,8 @@ cd /path/to/project && claude -p \
   ${CLAUDE_EFFORT:+--effort "$CLAUDE_EFFORT"} \
   ${CLAUDE_FALLBACK_MODEL:+--fallback-model "$CLAUDE_FALLBACK_MODEL"} \
   --system-prompt-file "$SKILL_DIR/adversarial-prompt.txt" \
-  "$DIFF_AND_CONTEXT" \
-  < /dev/null 2>/dev/null
+  "$REDACTED_PROMPT" < /dev/null 2>/dev/null
+rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ```
 
 The `--json-schema` flag tells Claude to return JSON matching the review
@@ -303,10 +346,30 @@ need follow-up capability, drop that flag, then resume with `claude -r`:
 
 ```bash
 # Initial task (persistent session)
-cd /path && claude -p --dangerously-skip-permissions ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} "prompt" < /dev/null 2>/dev/null
+PAYLOAD_FILE=$(mktemp)
+REDACTED_PAYLOAD_FILE=$(mktemp)
+printf '%s' "prompt" > "$PAYLOAD_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
+cd /path && claude -p --dangerously-skip-permissions ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} "$REDACTED_PROMPT" < /dev/null 2>/dev/null
+rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 
 # Resume the last session
-claude -r "follow-up prompt" < /dev/null 2>/dev/null
+PAYLOAD_FILE=$(mktemp)
+REDACTED_PAYLOAD_FILE=$(mktemp)
+printf '%s' "follow-up prompt" > "$PAYLOAD_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
+claude -r "$REDACTED_PROMPT" < /dev/null 2>/dev/null
+rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ```
 
 See the Claude Code CLI reference for session-resume details. Use this when
@@ -323,9 +386,19 @@ There is no `-C`/`--cwd` flag equivalent to codex's working-directory
 override. To review a project other than cwd, `cd` into it first:
 
 ```bash
+PAYLOAD_FILE=$(mktemp)
+REDACTED_PAYLOAD_FILE=$(mktemp)
+printf '%s' "prompt" > "$PAYLOAD_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
 cd ~/source/other-project && claude -p --no-session-persistence \
   --dangerously-skip-permissions --tools "Read,Grep,Glob" --strict-mcp-config ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} \
-  "prompt" < /dev/null 2>/dev/null
+  "$REDACTED_PROMPT" < /dev/null 2>/dev/null
+rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ```
 
 **Self-review with razorback skills loaded:** if you want the reviewer to apply razorback's Miller-first review checklist itself, add `--plugin-dir <path-to-razorback>` so the reviewer session loads the same skills your main session uses. Without it, the reviewer sees only the project's `CLAUDE.md`.

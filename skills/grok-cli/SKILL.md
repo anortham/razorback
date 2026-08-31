@@ -85,6 +85,27 @@ loud note to the morning report. Policy denies `xai` → refuse the dispatch
 and name an allowed alternative; on an autonomous run where the user chose this
 provider, stop per blocker taxonomy #4.
 
+## Outbound Payload Redaction
+
+Immediately before every Grok dispatch, write the fully constructed payload to
+`PAYLOAD_FILE` and pass it through `skills/security-review/scripts/redact-outbound`.
+Use only `REDACTED_PAYLOAD_FILE` for the invocation; never log matched material.
+If redaction fails, remove both files, emit only a generic error, and stop before
+Grok receives any input. Small `-p` payloads may be read into a variable after
+redaction; large review and adversarial payloads must stay in the redacted file
+and use `--prompt-file`.
+
+```bash
+PAYLOAD_FILE=$(mktemp)
+REDACTED_PAYLOAD_FILE=$(mktemp)
+printf '%s' "$PROMPT" > "$PAYLOAD_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+```
+
 ## Pre-flight Check
 
 `grok models` is a full CLI start, not `auth status`. When the binary runs, it
@@ -124,11 +145,22 @@ The user wants Grok's take on an approach, design decision, or piece of code.
 No file changes needed.
 
 ```bash
-grok -p "Your prompt here" \
+PAYLOAD_FILE=$(mktemp)
+REDACTED_PAYLOAD_FILE=$(mktemp)
+printf '%s' "Your prompt here" > "$PAYLOAD_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
+
+grok -p "$REDACTED_PROMPT" \
   --sandbox read-only \
   --always-approve \
   --cwd /path/to/project \
   < /dev/null
+rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ```
 
 `--always-approve` is required even though the sandbox is read-only (see
@@ -175,10 +207,17 @@ reject it; the verified working schema had no `$schema` key):
 ```bash
 SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")
 
-PROMPT_FILE=$(mktemp) && trap 'rm -f "$PROMPT_FILE"' EXIT
+PROMPT_FILE=$(mktemp)
+REDACTED_PROMPT_FILE=$(mktemp)
+trap 'rm -f "$PROMPT_FILE" "$REDACTED_PROMPT_FILE"' EXIT
 printf '%s' "$PROMPT" > "$PROMPT_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PROMPT_FILE" > "$REDACTED_PROMPT_FILE"; then
+  rm -f -- "$PROMPT_FILE" "$REDACTED_PROMPT_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
 
-grok --prompt-file "$PROMPT_FILE" \
+grok --prompt-file "$REDACTED_PROMPT_FILE" \
   --sandbox read-only \
   --always-approve \
   --cwd /path/to/project \
@@ -235,11 +274,18 @@ ADVERSARIAL_PROMPT="${HEAD}${TARGET}${MID}${FOCUS:-none specified}${TAIL}${DIFF}
 ```bash
 SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")
 
-PROMPT_FILE=$(mktemp) && RESULT_FILE=$(mktemp)
-trap 'rm -f "$PROMPT_FILE" "$RESULT_FILE"' EXIT
+PROMPT_FILE=$(mktemp)
+REDACTED_PROMPT_FILE=$(mktemp)
+RESULT_FILE=$(mktemp)
+trap 'rm -f "$PROMPT_FILE" "$REDACTED_PROMPT_FILE" "$RESULT_FILE"' EXIT
 printf '%s' "$ADVERSARIAL_PROMPT" > "$PROMPT_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PROMPT_FILE" > "$REDACTED_PROMPT_FILE"; then
+  rm -f -- "$PROMPT_FILE" "$REDACTED_PROMPT_FILE" "$RESULT_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
 
-grok --prompt-file "$PROMPT_FILE" \
+grok --prompt-file "$REDACTED_PROMPT_FILE" \
   --sandbox read-only \
   --always-approve \
   --cwd /path/to/project \
@@ -266,11 +312,22 @@ The user wants Grok to actually do something: write code, refactor, fix a bug.
 Grok needs write access.
 
 ```bash
-grok -p "Your task instructions here. Apply changes directly." \
+PAYLOAD_FILE=$(mktemp)
+REDACTED_PAYLOAD_FILE=$(mktemp)
+printf '%s' "Your task instructions here. Apply changes directly." > "$PAYLOAD_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
+
+grok -p "$REDACTED_PROMPT" \
   --sandbox workspace \
   --always-approve \
   --cwd /path/to/project \
   < /dev/null
+rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ```
 
 `--sandbox workspace` gives Grok write access inside the workspace;
@@ -311,16 +368,53 @@ agent. Always pair resume with `-p` or `--prompt-file`:
 
 ```bash
 # Continue the most recent session for the current directory
-grok -c -p "follow-up prompt" --always-approve < /dev/null
+PAYLOAD_FILE=$(mktemp)
+REDACTED_PAYLOAD_FILE=$(mktemp)
+printf '%s' "follow-up prompt" > "$PAYLOAD_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
+grok -c -p "$REDACTED_PROMPT" --always-approve < /dev/null
+rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 
 # Resume a specific session by ID (or the most recent if omitted)
-grok -r <SESSION_ID> -p "follow-up prompt" --always-approve < /dev/null
+PAYLOAD_FILE=$(mktemp)
+REDACTED_PAYLOAD_FILE=$(mktemp)
+printf '%s' "follow-up prompt" > "$PAYLOAD_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
+grok -r <SESSION_ID> -p "$REDACTED_PROMPT" --always-approve < /dev/null
+rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 
 # Fork instead of reusing the original session id
-grok -r <SESSION_ID> --fork-session -p "follow-up prompt" --always-approve < /dev/null
+PAYLOAD_FILE=$(mktemp)
+REDACTED_PAYLOAD_FILE=$(mktemp)
+printf '%s' "follow-up prompt" > "$PAYLOAD_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
+grok -r <SESSION_ID> --fork-session -p "$REDACTED_PROMPT" --always-approve < /dev/null
+rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 
 # Large follow-up prompt: swap -p for --prompt-file (never both)
-grok -c --prompt-file "$PROMPT_FILE" --always-approve < /dev/null
+REDACTED_PROMPT_FILE=$(mktemp)
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PROMPT_FILE" > "$REDACTED_PROMPT_FILE"; then
+  rm -f -- "$PROMPT_FILE" "$REDACTED_PROMPT_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+grok -c --prompt-file "$REDACTED_PROMPT_FILE" --always-approve < /dev/null
+rm -f -- "$PROMPT_FILE" "$REDACTED_PROMPT_FILE"
 ```
 
 A resumed session keeps the sandbox profile it was created with. Passing a
@@ -342,7 +436,17 @@ confirm what it will load with `grok inspect`. To review a project other than
 cwd, point `--cwd` at it:
 
 ```bash
-grok -p "prompt" --sandbox read-only --always-approve --cwd ~/source/other-project < /dev/null
+PAYLOAD_FILE=$(mktemp)
+REDACTED_PAYLOAD_FILE=$(mktemp)
+printf '%s' "prompt" > "$PAYLOAD_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
+grok -p "$REDACTED_PROMPT" --sandbox read-only --always-approve --cwd ~/source/other-project < /dev/null
+rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ```
 
 There is no `--ignore-user-config` equivalent to codex's; Grok inherits the
@@ -444,13 +548,17 @@ the same review campaign. A new explicit user-approved campaign may use
 `--sandbox off` with the read-only tool allowlist `--tools "Read,Grep,Glob"`,
 while kernel filesystem and child-network enforcement are disabled.
 
+The command patterns below assume the final payload has already passed the
+Outbound Payload Redaction guard. Use `$REDACTED_PROMPT` only for small `-p`
+payloads and `$REDACTED_PROMPT_FILE` for large `--prompt-file` payloads.
+
 | Use case | Mode | Command pattern |
 |---|---|---|
-| Second opinion | read-only + approve | `grok -p "prompt" --sandbox read-only --always-approve --cwd dir < /dev/null` |
-| Code review | read-only + approve + schema | `grok --prompt-file "$PROMPT_FILE" --json-schema "$SCHEMA_JSON" --sandbox read-only --always-approve --cwd dir` (no `-p`), where `SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")`. Scope/sizing per Review Targeting. |
+| Second opinion | read-only + approve | `grok -p "$REDACTED_PROMPT" --sandbox read-only --always-approve --cwd dir < /dev/null` |
+| Code review | read-only + approve + schema | `grok --prompt-file "$REDACTED_PROMPT_FILE" --json-schema "$SCHEMA_JSON" --sandbox read-only --always-approve --cwd dir` (no `-p`), where `SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")`. Scope/sizing per Review Targeting. |
 | Adversarial review | read-only + approve + schema | Build the prompt from `$SKILL_DIR/adversarial-prompt.txt` (see Adversarial Review), then the code-review command. |
-| Delegate (complex) | workspace + approve | `grok -p "prompt" --sandbox workspace --always-approve --cwd dir < /dev/null` (add `-w` for an isolated worktree) |
+| Delegate (complex) | workspace + approve | `grok -p "$REDACTED_PROMPT" --sandbox workspace --always-approve --cwd dir < /dev/null` (add `-w` for an isolated worktree) |
 | Pre-flight / auth check | any | `"$GROK_BIN" models` with stderr kept. Ready only if stdout contains `You are logged in with grok.com.` Empty/timeout/exit 127 is not logout. `You are not authenticated.` + missing `~/.grok/auth.json` is the only `grok login` case. |
 | Apply explicit model/effort | any | Add `--model "$GROK_MODEL"` / `--effort "$GROK_EFFORT"` when set |
-| Resume session | persistent | `grok -c -p "prompt" --always-approve` (most recent) or `grok -r <ID> -p "prompt" --always-approve` (`--fork-session` to branch). `-c`/`-r` never take the prompt — omit `-p` and you get the interactive TUI. Omit `--sandbox` on resume; still pass `--always-approve`. |
+| Resume session | persistent | `grok -c -p "$REDACTED_PROMPT" --always-approve` (most recent) or `grok -r <ID> -p "$REDACTED_PROMPT" --always-approve` (`--fork-session` to branch). `-c`/`-r` never take the prompt — omit `-p` and you get the interactive TUI. Omit `--sandbox` on resume; still pass `--always-approve`. |
 | Structured output shape | any | Envelope: `.structuredOutput` (parsed object), `.text` (JSON string), `.usage`, `.total_cost_usd` |

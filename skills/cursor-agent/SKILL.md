@@ -41,6 +41,19 @@ loud note to the morning report. Policy denies `cursor` → refuse the dispatch
 and name an allowed alternative; on an autonomous run where the user chose this
 provider, stop per blocker taxonomy #4.
 
+## Outbound Payload Redaction
+
+Immediately before every `cursor-agent -p` dispatch, write the fully constructed prompt to `PAYLOAD_FILE` and pass it through `skills/security-review/scripts/redact-outbound`. Use only `REDACTED_PAYLOAD_FILE` for the invocation. If redaction fails, remove both files, emit only a generic error, and stop before Cursor receives any input.
+
+```bash
+REDACTED_PAYLOAD_FILE=$(mktemp)
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+```
+
 ## Preflight
 
 Before the first run, verify the CLI exists: `cursor-agent --version`
@@ -115,6 +128,13 @@ run.
 ```bash
 WORKSPACE="/path/to/project"
 PROMPT_FILE="/tmp/cursor-task.md"
+REDACTED_PROMPT_FILE=$(mktemp)
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PROMPT_FILE" > "$REDACTED_PROMPT_FILE"; then
+  rm -f -- "$PROMPT_FILE" "$REDACTED_PROMPT_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+IFS= read -r -d '' PROMPT < "$REDACTED_PROMPT_FILE" || true
 
 cursor-agent -p \
   --workspace "$WORKSPACE" \
@@ -122,7 +142,8 @@ cursor-agent -p \
   --trust \
   --force \
   --output-format json \
-  "$(cat "$PROMPT_FILE")"
+  "$PROMPT"
+rm -f -- "$PROMPT_FILE" "$REDACTED_PROMPT_FILE"
 ```
 
 ### Windows
@@ -145,10 +166,18 @@ command discovery resolves the `.ps1`/`.cmd` shim) and build the prompt with
 
 ```powershell
 $Workspace = "C:\path\to\project"
-$Prompt = Get-Content -Raw "$env:TEMP\cursor-task.md"   # never let line 1 start with '&'
+$PromptFile = "$env:TEMP\cursor-task.md"
+$RedactedPromptFile = [IO.Path]::GetTempFileName()
+& node "$SKILL_DIR/../security-review/scripts/redact-outbound" < $PromptFile > $RedactedPromptFile
+if ($LASTEXITCODE -ne 0) {
+  Remove-Item -Force $PromptFile, $RedactedPromptFile
+  throw "outbound redaction failed"
+}
+$Prompt = Get-Content -Raw $RedactedPromptFile
 
 cursor-agent -p --workspace $Workspace --model composer-2.5-fast `
   --trust --force --output-format json $Prompt
+Remove-Item -Force $PromptFile, $RedactedPromptFile
 ```
 
 After the command returns:
@@ -168,6 +197,14 @@ pickers and error out in non-interactive shells.
 ```bash
 WORKSPACE="/path/to/project"
 CHAT_ID="$(cursor-agent create-chat)"
+PROMPT_FILE="/tmp/cursor-task.md"
+REDACTED_PROMPT_FILE=$(mktemp)
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PROMPT_FILE" > "$REDACTED_PROMPT_FILE"; then
+  rm -f -- "$PROMPT_FILE" "$REDACTED_PROMPT_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+IFS= read -r -d '' PROMPT < "$REDACTED_PROMPT_FILE" || true
 
 cursor-agent -p \
   --workspace "$WORKSPACE" \
@@ -176,13 +213,23 @@ cursor-agent -p \
   --force \
   --output-format json \
   --resume "$CHAT_ID" \
-  "$(cat /tmp/cursor-task.md)"
+  "$PROMPT"
+rm -f -- "$PROMPT_FILE" "$REDACTED_PROMPT_FILE"
 ```
 
 The lead then reviews the result. When review finds issues, send only concrete
 findings and the expected end state:
 
 ```bash
+PROMPT_FILE="/tmp/cursor-fix.md"
+REDACTED_PROMPT_FILE=$(mktemp)
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PROMPT_FILE" > "$REDACTED_PROMPT_FILE"; then
+  rm -f -- "$PROMPT_FILE" "$REDACTED_PROMPT_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+IFS= read -r -d '' PROMPT < "$REDACTED_PROMPT_FILE" || true
+
 cursor-agent -p \
   --workspace "$WORKSPACE" \
   --model composer-2.5-fast \
@@ -190,7 +237,8 @@ cursor-agent -p \
   --force \
   --output-format json \
   --resume "$CHAT_ID" \
-  "$(cat /tmp/cursor-fix.md)"
+  "$PROMPT"
+rm -f -- "$PROMPT_FILE" "$REDACTED_PROMPT_FILE"
 ```
 
 Review cap: 3 iterations. Re-review after every fix. If the third fix still

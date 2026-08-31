@@ -68,6 +68,22 @@ Run this before any diff or repo content leaves the machine — at every enforce
 
 **Security pass:** whenever a reviewer is chosen for a run, pre-merge review runs a dedicated security pass built from this skill's `security-adversarial-prompt.txt`. Trigger semantics and invocation mechanics live in razorback:pre-merge-review.
 
+## Outbound Payload Redaction
+
+The dependency-free helper at `skills/security-review/scripts/redact-outbound` consumes the fully constructed prompt, diff, or report on standard input and writes the same payload shape with sensitive matches replaced by `<REDACTED>`. It never prints matched material. Every enforcement point runs it immediately before dispatch and passes only the redacted artifact to the external model. A nonzero helper status is a failed dispatch: remove temporary artifacts, report the generic failure, and stop before invoking the provider.
+
+```bash
+PAYLOAD_FILE=$(mktemp)
+REDACTED_PAYLOAD_FILE=$(mktemp)
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+```
+
+Write the final payload to `PAYLOAD_FILE`, dispatch from `REDACTED_PAYLOAD_FILE`, and remove both temporary files after the provider returns. Do not log the original payload or any matched value while handling a failure.
+
 ## Security Checklist
 
 These five questions are the canonical security checklist. They are duplicated verbatim (test-guarded) at `skills/requesting-code-review/code-reviewer.md` (the standalone reviewer prompt) and `skills/subagent-driven-development/code-quality-reviewer-prompt.md` (the lead's inline review). If you edit the questions here, update those two copies to match — the same convention `skills/architecture-quality/SKILL.md` uses for its checklist.

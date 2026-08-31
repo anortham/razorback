@@ -50,6 +50,19 @@ loud note to the morning report. Policy denies `openai` → refuse the dispatch
 and name an allowed alternative; on an autonomous run where the user chose this
 provider, stop per blocker taxonomy #4.
 
+## Outbound Payload Redaction
+
+Immediately before every `codex exec` dispatch, write the fully constructed prompt to `PAYLOAD_FILE` and pass it through `skills/security-review/scripts/redact-outbound`. Use only `REDACTED_PAYLOAD_FILE` for the invocation. If redaction fails, remove both files, emit only a generic error, and stop before Codex receives any input.
+
+```bash
+REDACTED_PAYLOAD_FILE=$(mktemp)
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+```
+
 ## Review Targeting
 
 Scope selection (`--scope auto|working-tree|branch`, `--base <ref>`) and the
@@ -68,11 +81,22 @@ The user wants Codex's take on an approach, design decision, or piece of code.
 No file changes needed.
 
 ```bash
+PAYLOAD_FILE=$(mktemp)
+REDACTED_PAYLOAD_FILE=$(mktemp)
+printf '%s' "Your prompt here" > "$PAYLOAD_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
+
 codex exec --ephemeral --color never \
   -s read-only \
   -C /path/to/project \
-  "Your prompt here" \
+  "$REDACTED_PROMPT" \
   < /dev/null 2>/dev/null
+rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ```
 
 Codex runs in the project directory and can read files on its own. If you need
@@ -92,11 +116,21 @@ unless the user or environment explicitly selects a model.
 
 ```bash
 # Quick scoped review of uncommitted changes
+PAYLOAD_FILE=$(mktemp)
+REDACTED_PAYLOAD_FILE=$(mktemp)
+printf '%s' "Focus on error handling and concurrency safety." > "$PAYLOAD_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
 codex exec --color never -C /path/to/project -s read-only \
   review --uncommitted --ephemeral \
   -o /tmp/review.txt \
-  "Focus on error handling and concurrency safety." \
+  "$REDACTED_PROMPT" \
   < /dev/null 2>/dev/null
+rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 cat /tmp/review.txt
 ```
 
@@ -128,11 +162,20 @@ $DIFF"
 **Step 3: Send to Codex**
 
 ```bash
-echo "$PROMPT" | codex exec --ephemeral --color never \
+PAYLOAD_FILE=$(mktemp)
+REDACTED_PAYLOAD_FILE=$(mktemp)
+printf '%s' "$PROMPT" > "$PAYLOAD_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+cat "$REDACTED_PAYLOAD_FILE" | codex exec --ephemeral --color never \
   -s read-only \
   -C /path/to/project \
   - \
   2>/dev/null
+rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ```
 
 **After**: Present Codex's review, then add your own assessment. Highlight
@@ -168,13 +211,22 @@ TAIL=${REST%%'{{REVIEW_INPUT}}'*}
 ADVERSARIAL_PROMPT="${HEAD}${TARGET}${MID}${FOCUS:-none specified}${TAIL}${DIFF}"
 
 RESULT_FILE=$(mktemp) && trap 'rm -f "$RESULT_FILE"' EXIT
-echo "$ADVERSARIAL_PROMPT" | codex exec --ephemeral --color never \
+PAYLOAD_FILE=$(mktemp)
+REDACTED_PAYLOAD_FILE=$(mktemp)
+printf '%s' "$ADVERSARIAL_PROMPT" > "$PAYLOAD_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+cat "$REDACTED_PAYLOAD_FILE" | codex exec --ephemeral --color never \
   -s read-only \
   -C /path/to/project \
   --output-schema "$SKILL_DIR/schemas/review-output.schema.json" \
   -o "$RESULT_FILE" \
   - \
   2>/dev/null
+rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 cat "$RESULT_FILE"  # Clean JSON, no banner/transcript noise
 ```
 
@@ -193,11 +245,21 @@ The user wants Codex to actually do something: write code, refactor, fix a
 bug. Codex needs tool access.
 
 ```bash
+PAYLOAD_FILE=$(mktemp)
+REDACTED_PAYLOAD_FILE=$(mktemp)
+printf '%s' "Your task instructions here. Apply changes directly." > "$PAYLOAD_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
 codex exec --ephemeral --color never \
   --sandbox workspace-write \
   -C /path/to/project \
-  "Your task instructions here. Apply changes directly." \
+  "$REDACTED_PROMPT" \
   < /dev/null 2>/dev/null
+rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ```
 
 `--sandbox workspace-write` gives Codex write access inside the workspace
@@ -236,10 +298,30 @@ capability, drop the `--ephemeral` flag:
 
 ```bash
 # Initial task (persistent session)
-codex exec --color never -C /path "prompt" < /dev/null 2>/dev/null
+PAYLOAD_FILE=$(mktemp)
+REDACTED_PAYLOAD_FILE=$(mktemp)
+printf '%s' "prompt" > "$PAYLOAD_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
+codex exec --color never -C /path "$REDACTED_PROMPT" < /dev/null 2>/dev/null
+rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 
 # Resume the last session
-codex exec resume --last "follow-up prompt" < /dev/null 2>/dev/null
+PAYLOAD_FILE=$(mktemp)
+REDACTED_PAYLOAD_FILE=$(mktemp)
+printf '%s' "follow-up prompt" > "$PAYLOAD_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
+codex exec resume --last "$REDACTED_PROMPT" < /dev/null 2>/dev/null
+rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ```
 
 Use this when you need a multi-turn conversation with Codex (e.g., iterating
@@ -254,16 +336,36 @@ AGENTS.md, Codex will follow it automatically. Maximum 32KB of project docs.
 To review a project other than cwd:
 
 ```bash
-codex exec --ephemeral --color never -C ~/source/other-project "prompt" < /dev/null 2>/dev/null
+PAYLOAD_FILE=$(mktemp)
+REDACTED_PAYLOAD_FILE=$(mktemp)
+printf '%s' "prompt" > "$PAYLOAD_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
+codex exec --ephemeral --color never -C ~/source/other-project "$REDACTED_PROMPT" < /dev/null 2>/dev/null
+rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ```
 
 **Truly fresh reviewer (no project context bias):** if the reviewing instance should *not* inherit AGENTS.md or `.rules` from the project being reviewed (e.g., adversarial review where project conventions might rationalize the change), add `--ignore-user-config` and `--ignore-rules`:
 
 ```bash
+PAYLOAD_FILE=$(mktemp)
+REDACTED_PAYLOAD_FILE=$(mktemp)
+printf '%s' "prompt" > "$PAYLOAD_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
 codex exec --ephemeral --color never \
   -C ~/source/other-project \
   --ignore-user-config --ignore-rules \
-  "prompt" < /dev/null 2>/dev/null
+  "$REDACTED_PROMPT" < /dev/null 2>/dev/null
+rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ```
 
 Auth still uses `CODEX_HOME` even with `--ignore-user-config`, so login isn't affected.
@@ -322,6 +424,8 @@ See `references/follow-goals.md` for the verified `/goal` surface and setup note
 All non-piped patterns must include `< /dev/null` (bash) or `< NUL` (Windows cmd/PowerShell) to prevent codex from blocking on stdin EOF — see the Defaults section.
 
 On **Windows**, if codex's sandbox fails to spawn (`CreateProcessAsUserW failed: 5`, common on locked-down Enterprise/LTSC hosts), re-run with `-s danger-full-access` — including for read-only review — since codex otherwise reads zero files. On hosts where it recurs, pass it from the start. See the Windows sandbox notes in Defaults and Error Handling.
+
+Every command pattern below still requires the constructed prompt to be filtered through `skills/security-review/scripts/redact-outbound` immediately before dispatch; pass only the redacted artifact to Codex.
 
 | Use case | Mode | Command pattern |
 |---|---|---|

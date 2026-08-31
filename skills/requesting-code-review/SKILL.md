@@ -45,6 +45,19 @@ For planned pre-merge external review in an approved execution flow, use
 `razorback:pre-merge-review` instead. That skill owns the stricter
 branch-gate, chosen-reviewer, finding-classification, fix, and report flow.
 
+Before Mode 2 sends the constructed reviewer prompt to any external CLI, write it to `PAYLOAD_FILE` and pass it through `skills/security-review/scripts/redact-outbound`. Dispatch only the resulting `REDACTED_PAYLOAD_FILE`; if redaction fails, remove both files, emit only a generic error, and stop before dispatch.
+
+After filling the two-file reviewer template, treat the completed dispatch message as the payload. The harness-native `spawn_agent` or `Task` call must receive the contents of `REDACTED_PAYLOAD_FILE`; never interpolate the unredacted template, diff, or target description into the message.
+
+```bash
+REDACTED_PAYLOAD_FILE=$(mktemp)
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+```
+
 **1. Get git SHAs:**
 ```bash
 # Prefer the branch merge base so review covers the whole feature branch.

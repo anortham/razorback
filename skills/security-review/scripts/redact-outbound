@@ -1,0 +1,113 @@
+#!/usr/bin/env node
+
+const REDACTED = '<REDACTED>';
+const SENSITIVE_ENV_NAME = /(?:^|[_-])(?:token|key|secret|password|passwd|credential|connection(?:[_-]?string)?)(?:$|[_-])/i;
+const PRIVATE_KEY_START = /-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----/i;
+const PRIVATE_KEY = /-----BEGIN ([A-Z0-9 ]*PRIVATE KEY)-----[\s\S]*?-----END \1-----/gi;
+const PROVIDER_TOKENS = [
+  /\bgh[pousr]_[A-Za-z0-9]{20,}\b/g,
+  /\bglpat-[A-Za-z0-9_-]{20,}\b/g,
+  /\bxox[baprs]-[A-Za-z0-9-]{20,}\b/g,
+  /\bsk-[A-Za-z0-9_-]{20,}\b/g,
+  /\bAIza[A-Za-z0-9_-]{30,}\b/g,
+  /\b(?:hf_|npm_|xai-)[A-Za-z0-9_-]{20,}\b/g,
+  /\b(?:sk|rk)_live_[A-Za-z0-9]{16,}\b/g,
+  /\bAKIA[0-9A-Z]{16}\b/g,
+  /\b(?:pypi-|dop_v1_)[A-Za-z0-9_-]{20,}\b/g,
+  /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g,
+];
+const CREDENTIAL_URL = /\b([A-Za-z][A-Za-z0-9+.-]*:\/\/)[^/\s?#:@]+:[^/\s?#@]+@/g;
+const ASSIGNMENT_KEY = '(?:(?:[A-Za-z0-9]+[_-])*)(?:api[_-]?key|access[_-]?token|auth[_-]?token|refresh[_-]?token|client[_-]?secret|service[_-]?token|token|secret|password|passwd|credential|connection[_-]?string|private[_-]?key|key)';
+const ASSIGNMENT_SEPARATOR = '\\s*(?:=>|=(?!>)|:)\\s*';
+const ASSIGNMENT_PREFIX = `(^|[^A-Za-z0-9_])(["']?)`;
+const QUOTED_ASSIGNMENT = new RegExp(`${ASSIGNMENT_PREFIX}(${ASSIGNMENT_KEY})\\2(${ASSIGNMENT_SEPARATOR})(["'])([\\s\\S]*?)\\5`, 'gim');
+const QUOTED_ASSIGNMENT_START = new RegExp(`${ASSIGNMENT_PREFIX}(${ASSIGNMENT_KEY})\\2(${ASSIGNMENT_SEPARATOR})(["'])`, 'gim');
+const UNQUOTED_ASSIGNMENT = new RegExp(`${ASSIGNMENT_PREFIX}(${ASSIGNMENT_KEY})\\2(${ASSIGNMENT_SEPARATOR})(?!["'])(?!${REDACTED})([^\\s,;&]+)`, 'gim');
+
+function sensitiveEnvironmentValues(environment) {
+  return Object.entries(environment)
+    .filter(([name, value]) => SENSITIVE_ENV_NAME.test(name) && value)
+    .map(([, value]) => value)
+    .sort((left, right) => right.length - left.length)
+    .filter((value, index, values) => values.indexOf(value) === index);
+}
+
+function replaceEnvironmentValues(payload, environment) {
+  let redacted = payload;
+  for (const value of sensitiveEnvironmentValues(environment)) {
+    if (value.length < 8) {
+      if (payload.includes(value)) throw new Error('short sensitive environment value in payload');
+      continue;
+    }
+    redacted = redacted.split(value).join(REDACTED);
+  }
+  return redacted;
+}
+
+function hasClosingQuote(payload, start, quote) {
+  let escaped = false;
+  for (let index = start; index < payload.length; index += 1) {
+    const character = payload[index];
+    if (escaped) {
+      escaped = false;
+    } else if (character === '\\') {
+      escaped = true;
+    } else if (character === quote) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function assertQuotedAssignmentsClosed(payload) {
+  QUOTED_ASSIGNMENT_START.lastIndex = 0;
+  let match;
+  while ((match = QUOTED_ASSIGNMENT_START.exec(payload)) !== null) {
+    if (!hasClosingQuote(payload, QUOTED_ASSIGNMENT_START.lastIndex, match[5])) {
+      QUOTED_ASSIGNMENT_START.lastIndex = 0;
+      throw new Error('unterminated quoted sensitive assignment');
+    }
+  }
+  QUOTED_ASSIGNMENT_START.lastIndex = 0;
+}
+
+function redactAssignments(payload) {
+  assertQuotedAssignmentsClosed(payload);
+  const quoted = payload.replace(
+    QUOTED_ASSIGNMENT,
+    `$1$2$3$2$4$5${REDACTED}$5`,
+  );
+  return quoted.replace(
+    UNQUOTED_ASSIGNMENT,
+    `$1$2$3$2$4${REDACTED}`,
+  );
+}
+
+function redact(payload, environment) {
+  let redacted = replaceEnvironmentValues(payload, environment);
+  redacted = redacted.replace(PRIVATE_KEY, REDACTED);
+  for (const tokenPattern of PROVIDER_TOKENS) {
+    redacted = redacted.replace(tokenPattern, REDACTED);
+  }
+  redacted = redacted.replace(CREDENTIAL_URL, `$1${REDACTED}@`);
+  redacted = redactAssignments(redacted);
+  if (PRIVATE_KEY_START.test(redacted)) throw new Error('unterminated private key block');
+  return redacted;
+}
+
+async function readStdin() {
+  let payload = '';
+  process.stdin.setEncoding('utf8');
+  for await (const chunk of process.stdin) payload += chunk;
+  return payload;
+}
+
+async function main() {
+  const payload = await readStdin();
+  process.stdout.write(redact(payload, process.env));
+}
+
+main().catch(() => {
+  process.stderr.write('redact-outbound: unable to process input\n');
+  process.exitCode = 1;
+});

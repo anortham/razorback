@@ -156,6 +156,27 @@ Select the prompt file based on the reviewer choice and invoke the matching revi
 
 Both target the shared output schema defined canonically at `../codex-cli/schemas/review-output.schema.json` in the razorback plugin (verdict, summary, findings[severity, title, body, file, line_start, line_end, confidence, recommendation], next_steps). Both reviewer-prompts files read the schema from that canonical file at dispatch time (claude strips the `$schema` key its validator rejects).
 
+### Redact each pass payload
+
+Immediately before each reviewer-prompt invocation, filter the final constructed payload through `skills/security-review/scripts/redact-outbound`: Claude's `$DIFF_AND_CONTEXT` or Codex's `$ADVERSARIAL_PROMPT_WITH_DIFF`. Keep the existing single `$REVIEW_ROOT` for both passes; redaction adds only per-pass payload artifacts and never changes the exported tree. Replace the selected variable with the redacted content before invoking the prompt file. On helper failure, remove the payload files and explicitly clean `$REVIEW_ROOT` before returning the blocker.
+
+```bash
+PAYLOAD_FILE=$(mktemp)
+REDACTED_PAYLOAD_FILE=$(mktemp)
+printf '%s' "$DIFF_AND_CONTEXT" > "$PAYLOAD_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  rm -rf -- "$REVIEW_ROOT"
+  unset REVIEW_ROOT
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+IFS= read -r -d '' DIFF_AND_CONTEXT < "$REDACTED_PAYLOAD_FILE" || true
+IFS= read -r -d '' ADVERSARIAL_PROMPT_WITH_DIFF < "$REDACTED_PAYLOAD_FILE" || true
+```
+
+Use the redacted `$DIFF_AND_CONTEXT` for exactly one pass, then remove `"$PAYLOAD_FILE"` and `"$REDACTED_PAYLOAD_FILE"` before constructing and filtering the next pass. The final explicit `rm -rf -- "$REVIEW_ROOT"` lifecycle remains required after both outputs are parsed.
+
 ## Step 3: Parse findings
 
 Two parse paths, because each CLI's output shape differs — and two outputs per review, because each pass writes its own output file. Both files live in `$OUT_DIR`, the private temp directory the reviewer-prompts invocation creates outside the worktree. Apply the chosen CLI's rules below to both pass outputs.

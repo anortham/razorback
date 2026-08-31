@@ -15,6 +15,21 @@ The lead and every selected external reviewer gather independent evidence in a b
 
 Every participating model's provider must be allowed by the external-model policy check in razorback:security-review. Check every selected provider before campaign setup. No policy block in the target repo's instructions means proceed and add the loud note to the morning report. A denied reviewer named by the user or approved plan blocks under blocker taxonomy #4.
 
+## Outbound Payload Redaction
+
+Immediately before each participating reviewer dispatch, write the fully constructed campaign prompt to `PAYLOAD_FILE` and pass it through `skills/security-review/scripts/redact-outbound`. Use only `REDACTED_PAYLOAD_FILE` for the reviewer invocation. If redaction fails, remove both files, emit only a generic error, and stop before any provider receives campaign content.
+
+Each harness-native reviewer call must receive the contents of `REDACTED_PAYLOAD_FILE`; do not pass the original findings, diff, or campaign prompt directly to a reviewer channel.
+
+```bash
+REDACTED_PAYLOAD_FILE=$(mktemp)
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+```
+
 ## Campaign Setup
 
 Select the different-model reviewers explicitly requested or deliberately chosen for this campaign before the first sweep. Availability and policy are gates, not reasons to enroll every installed model. Users may run with one selected external reviewer or several. Omit unavailable optional reviewers before setup and record the omission. A reviewer named by the user or approved plan is required; if unavailable, emit a `blocked` campaign status instead of substituting another model or degrading to same-model review.
