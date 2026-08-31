@@ -50,6 +50,28 @@ loud note to the morning report. Policy denies `openai` → refuse the dispatch
 and name an allowed alternative; on an autonomous run where the user chose this
 provider, stop per blocker taxonomy #4.
 
+## Running These Recipes
+
+Every recipe below is one shell script, split into numbered steps for reading.
+Run all steps of a recipe in ONE shell invocation. Shell variables do not
+survive between harness tool calls, so a step run on its own sees an empty
+`$SKILL_DIR`, `$REVIEW_ROOT`, `$DIFF`, and `$TARGET`. That sends an empty or
+truncated payload, or fails on a helper path that starts with `/../`.
+Concatenate the step blocks into a single command and run it once.
+
+Make these two lines the start of that command, ahead of every step:
+
+```bash
+SKILL_DIR=<absolute path to this skill's own directory>
+set -u
+```
+
+`$SKILL_DIR` is the directory that holds this SKILL.md — the skill's base
+directory, announced when the skill loads. Substitute the literal path before
+you run anything; the recipes reach shared helpers through `$SKILL_DIR/..`.
+`set -u` stops the run on an unset recipe variable instead of dispatching a
+payload with a hole in it.
+
 ## Outbound Payload Redaction
 
 Immediately before every `codex exec` dispatch, write the fully constructed prompt to `PAYLOAD_FILE` and pass it through `skills/security-review/scripts/redact-outbound`. Use only `REDACTED_PAYLOAD_FILE` for the invocation. If redaction fails, remove both files, emit only a generic error, and stop before Codex receives any input.
