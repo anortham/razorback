@@ -164,6 +164,23 @@ test('grok code review embeds the complete diff and validates completion evidenc
   assert.doesNotMatch(skill, /--no-plan/);
 });
 
+test('grok validation failure reaches the bounded continuation branch', () => {
+  const skill = read('skills/grok-cli/SKILL.md');
+  const codeReview = skill.slice(
+    skill.indexOf('### Code Review (read-only)'),
+    skill.indexOf('### Standalone Review Completion'),
+  );
+  const validation = codeReview.indexOf('validate-review-output" "$RESULT_FILE"');
+  const continuation = codeReview.indexOf('grok -c --prompt-file');
+
+  assert.ok(validation >= 0, 'code review must validate the first result');
+  assert.ok(continuation > validation, 'validation failure must branch to continuation');
+  assert.match(
+    codeReview,
+    /if[\s\S]*validate-review-output" "\$RESULT_FILE"[\s\S]*else[\s\S]*if \[ "\$SESSION_CREATED" != true \][\s\S]*exit 1[\s\S]*fi[\s\S]*grok -c --prompt-file/,
+  );
+});
+
 test('grok continuation is one same-session completion attempt', () => {
   const skill = read('skills/grok-cli/SKILL.md');
 

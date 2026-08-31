@@ -108,10 +108,10 @@ Unavailability triggers:
 - **Rate limit exhausted** (Claude plan's rolling usage limits tripped) → **blocker taxonomy #1** - credentials work but the backing service is unavailable. Suggest retry-after-cooldown or dropping the reviewer-choice to `none` on the next run.
 - **Old `--bare` snippet copied into the command** → do not dispatch. Current Claude help says bare mode skips OAuth and keychain auth reads. If it was dispatched and failed, that pass's invocation is consumed and the campaign blocks.
 - **Empty stdout** → **blocker taxonomy #1**. Use the captured `$OUT_DIR/claude-stderr.log` in the blocker note. The invocation is consumed; do not re-run it.
-- **The 30-minute failsafe trips with no schema-valid partial output** → **blocker taxonomy #1**. The process hung or died; the diff was not too big. Do NOT raise the timeout and re-run, do NOT split the diff and re-run, and do NOT add `--max-turns` to make the next run finish sooner. One burned attempt is enough — block and let the human decide.
+- **The 30-minute failsafe trips without a complete output** → **blocker taxonomy #1**. The process hung or died; the diff was not too big. Do NOT raise the timeout and re-run, do NOT split the diff and re-run, and do NOT add `--max-turns` to make the next run finish sooner. One burned attempt is enough — block and let the human decide.
 - **Schema violation or malformed output** → **blocker taxonomy #5** (unresolvable — the reviewer produced unusable output). The invocation is consumed; do not re-run it.
 
-If a schema-valid partial output exists despite the failure (the run is cut short mid-stream but `.findings[]` parses), use it and note the truncation in the morning report. Otherwise, block.
+A truncated result is incomplete and must be rejected by `validate-review-output`; block the campaign and record the captured diagnostics.
 
 **Not a blocker:**
 

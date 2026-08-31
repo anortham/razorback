@@ -180,7 +180,10 @@ test('schema declares completion evidence as required', () => {
   for (const property of ['review_completed', 'files_inspected', 'commands_run', 'evidence']) {
     assert.ok(schema.required.includes(property), `${property} must be required`);
   }
-  assert.equal(schema.properties.review_completed.const, true);
+  assert.equal(schema.properties.review_completed.type, 'boolean');
+  assert.deepEqual(schema.properties.review_completed.enum, [true]);
+  assert.equal(schema.properties.review_completed.const, undefined);
+  assert.equal(schema.allOf, undefined);
   assert.equal(schema.properties.files_inspected.minItems, 1);
   assert.equal(schema.properties.files_inspected.uniqueItems, true);
   assert.equal(schema.properties.commands_run.type, 'array');

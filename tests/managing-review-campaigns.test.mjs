@@ -21,7 +21,9 @@ test('campaign setup is immutable and budgets external invocations separately fr
   assert.match(skill, /each (?:external )?CLI call counts as one external invocation/i);
   assert.match(skill, /rounds and total (?:external )?reviewer invocations are hard-capped/i);
   assert.match(skill, /no per-invocation turn\/spend caps/i);
-  assert.match(skill, /\| Standalone external \| One selected reviewer \| Lead \| 2 \| 2/);
+  assert.match(skill, /\| Standalone external \| One selected reviewer \| Lead \| 1 \| 2/);
+  assert.match(skill, /\| Standalone Grok completion \| One selected reviewer \| Lead \| 2 \| 2/);
+  assert.doesNotMatch(skill, /\| Standalone external \| One selected reviewer \| Lead \| 2 \| 2/);
   assert.match(skill, /completion validation/i);
   assert.match(skill, /same current-directory session/i);
   assert.match(skill, /no third call|third invocation/i);

@@ -210,12 +210,12 @@ reject it; the verified working schema had no `$schema` key):
 
 ```bash
 SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")
-RESULT_FILE=$(mktemp)
-NORMALIZED_RESULT_FILE=$(mktemp)
-trap 'rm -f "$PROMPT_FILE" "$REDACTED_PROMPT_FILE" "$RESULT_FILE" "$NORMALIZED_RESULT_FILE"' EXIT
-
 PROMPT_FILE=$(mktemp)
 REDACTED_PROMPT_FILE=$(mktemp)
+RESULT_FILE=$(mktemp)
+NORMALIZED_RESULT_FILE=$(mktemp)
+STDERR_FILE=$(mktemp)
+trap 'rm -f "$PROMPT_FILE" "$REDACTED_PROMPT_FILE" "$RESULT_FILE" "$NORMALIZED_RESULT_FILE" "$STDERR_FILE"' EXIT
 printf '%s' "$PROMPT" > "$PROMPT_FILE"
 if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PROMPT_FILE" > "$REDACTED_PROMPT_FILE"; then
   rm -f -- "$PROMPT_FILE" "$REDACTED_PROMPT_FILE"
@@ -230,13 +230,52 @@ grok --prompt-file "$REDACTED_PROMPT_FILE" \
   --json-schema "$SCHEMA_JSON" \
   ${GROK_MODEL:+--model "$GROK_MODEL"} \
   ${GROK_EFFORT:+--effort "$GROK_EFFORT"} \
-  < /dev/null > "$RESULT_FILE"
+  < /dev/null > "$RESULT_FILE" 2> "$STDERR_FILE" || GROK_STATUS=$?
+cat "$STDERR_FILE" >&2
 
-if ! "$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$RESULT_FILE" > "$NORMALIZED_RESULT_FILE"; then
-  echo "Grok review did not provide a completed review" >&2
+if grep -Eiq 'sandbox profile resolve failed|runtime-socket|denied paths unprotected|missing or unusable .?bwrap.?' "$STDERR_FILE"; then
+  echo "Grok sandbox startup failed before a session was created" >&2
   exit 1
 fi
-cat "$NORMALIZED_RESULT_FILE"
+if [ "${GROK_STATUS:-0}" -ne 0 ]; then
+  echo "Grok review invocation failed before completion validation" >&2
+  exit 1
+fi
+SESSION_CREATED=true
+
+if "$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$RESULT_FILE" > "$NORMALIZED_RESULT_FILE"; then
+  cat "$NORMALIZED_RESULT_FILE"
+else
+  if [ "$SESSION_CREATED" != true ]; then
+    echo "Grok review did not create a resumable session" >&2
+    exit 1
+  fi
+
+  FOLLOW_UP_FILE=$(mktemp)
+  REDACTED_FOLLOW_UP_FILE=$(mktemp)
+  printf '%s' "Complete the existing review. Return only the required schema with review_completed=true, files_inspected, commands_run, and concrete file/line evidence. Do not start a new sweep or review a post-fix diff." > "$FOLLOW_UP_FILE"
+  if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$FOLLOW_UP_FILE" > "$REDACTED_FOLLOW_UP_FILE"; then
+    rm -f -- "$FOLLOW_UP_FILE" "$REDACTED_FOLLOW_UP_FILE"
+    echo "outbound redaction failed" >&2
+    exit 1
+  fi
+  grok -c --prompt-file "$REDACTED_FOLLOW_UP_FILE" \
+    --always-approve \
+    --cwd /path/to/project \
+    --json-schema "$SCHEMA_JSON" \
+    < /dev/null > "$RESULT_FILE" 2> "$STDERR_FILE" || CONTINUATION_STATUS=$?
+  cat "$STDERR_FILE" >&2
+  rm -f -- "$FOLLOW_UP_FILE" "$REDACTED_FOLLOW_UP_FILE"
+  if [ "${CONTINUATION_STATUS:-0}" -ne 0 ]; then
+    echo "Grok completion continuation failed" >&2
+    exit 1
+  fi
+  if ! "$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$RESULT_FILE" > "$NORMALIZED_RESULT_FILE"; then
+    echo "Grok completion continuation did not provide a completed review" >&2
+    exit 1
+  fi
+  cat "$NORMALIZED_RESULT_FILE"
+fi
 ```
 
 No `-p` here — `--prompt-file` supplies the headless prompt on its own.
@@ -276,30 +315,11 @@ external_invocations: 0/2
 
 After the first result is captured, run `validate-review-output RESULT_FILE`.
 The first invocation failed completion validation when this check returns
-non-zero.
-If validation fails but the CLI created a session, one continuation may resume
-that same current-directory session and ask only for completion of the existing
-review. Count it as invocation 2/2, validate its result, and close the campaign
-if it is still invalid. The continuation is not a fresh sweep or a post-fix
-review. No third call is allowed:
-
-```bash
-FOLLOW_UP_FILE=$(mktemp)
-REDACTED_FOLLOW_UP_FILE=$(mktemp)
-printf '%s' "Complete the existing review. Return only the required schema with review_completed=true, files_inspected, commands_run, and concrete file/line evidence. Do not start a new sweep or review a post-fix diff." > "$FOLLOW_UP_FILE"
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$FOLLOW_UP_FILE" > "$REDACTED_FOLLOW_UP_FILE"; then
-  rm -f -- "$FOLLOW_UP_FILE" "$REDACTED_FOLLOW_UP_FILE"
-  echo "outbound redaction failed" >&2
-  exit 1
-fi
-grok -c --prompt-file "$REDACTED_FOLLOW_UP_FILE" \
-  --always-approve \
-  --cwd /path/to/project \
-  --json-schema "$SCHEMA_JSON" \
-  < /dev/null > "$RESULT_FILE"
-rm -f -- "$FOLLOW_UP_FILE" "$REDACTED_FOLLOW_UP_FILE"
-"$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$RESULT_FILE" > "$NORMALIZED_RESULT_FILE"
-```
+non-zero, and the Code Review `else` branch permits exactly one continuation
+when that invocation created a session. It resumes the same current-directory session,
+asks only for completion of the existing review, counts as invocation
+2/2, and is not a fresh sweep or a post-fix review. A second invalid result
+closes the campaign; no third call is allowed.
 
 If a sandbox startup failure occurs before a session exists, no session exists
 for continuation and the campaign is terminal. The only supported recovery is a new explicit

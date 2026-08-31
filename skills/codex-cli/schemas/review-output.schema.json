@@ -47,7 +47,8 @@
       "items": { "type": "string", "minLength": 1 }
     },
     "review_completed": {
-      "const": true
+      "type": "boolean",
+      "enum": [true]
     },
     "files_inspected": {
       "type": "array",
@@ -74,14 +75,5 @@
         }
       }
     }
-  },
-  "allOf": [
-    {
-      "if": {
-        "properties": { "verdict": { "const": "needs-attention" } },
-        "required": ["verdict"]
-      },
-      "then": { "properties": { "findings": { "minItems": 1 } } }
-    }
-  ]
+  }
 }

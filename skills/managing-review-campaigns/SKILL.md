@@ -71,19 +71,22 @@ Extra reviewers never add rounds. They add Round 1 evidence and consume the pred
 | Workflow | Discovery | Confirmation | Default external budget | Max rounds |
 |---|---|---|---:|---:|
 | Ordinary lead-only | Lead sweep | Lead | 0 | 2 |
-| Standalone external | One selected reviewer | Lead | 2 | 2 |
+| Standalone external | One selected reviewer | Lead | 1 | 2 |
+| Standalone Grok completion | One selected reviewer | Lead | 2 | 2 |
 | Pre-merge | General plus security once | Lead | 2 | 2 |
 | Cross-model convergence | Selected reviewers once | At most one targeted external confirmer | selected reviewers + 1 | 3 |
 | Exceptional regression | None | One targeted confirmer | +1 only when predeclared | 1 |
 
 Callers may choose a stricter profile, never a looser one.
 
-### Completion-aware standalone calls
+### Completion-aware Grok standalone calls
 
-A standalone external reviewer gets one initial discovery invocation and one bounded continuation. The continuation is allowed only when the first call created a session but failed `validate-review-output` completion validation. It
-resumes the same current-directory session (the same session), repeats the shared
-schema, and asks only for completion of the existing review. It is only allowed after failed completion validation. It is not a fresh
-sweep or a post-fix review. No third call is allowed. A second invalid result closes the
+The Grok standalone completion profile gets one initial discovery invocation and
+one bounded continuation. The continuation is only allowed after failed completion validation when the first call created a session. It
+resumes the same current-directory session (the same session), repeats the
+shared schema, and asks only for completion of the existing review. It is only
+allowed after failed completion validation. It is not a fresh sweep or a
+post-fix review. No third call is allowed. A second invalid result closes the
 campaign `blocked` or `capped` with the counters recorded at `2/2`.
 
 Sandbox startup failure creates no session and therefore cannot use the

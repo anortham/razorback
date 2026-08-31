@@ -129,6 +129,24 @@ test('large Claude review payloads use redacted-file stdin instead of a position
   }
 });
 
+test('active reviewer docs never accept schema-valid partial output', () => {
+  const docs = [
+    'skills/claude-cli/SKILL.md',
+    'skills/codex-cli/SKILL.md',
+    'skills/pre-merge-review/SKILL.md',
+    'skills/pre-merge-review/reviewer-prompts/claude.md',
+    'skills/pre-merge-review/reviewer-prompts/codex.md',
+  ];
+
+  for (const rel of docs) {
+    assert.doesNotMatch(
+      read(rel),
+      /schema-valid partial output exists[\s\S]*?(?:use it|proceed with)/i,
+      `${rel} must not accept partial output as completion evidence`,
+    );
+  }
+});
+
 test('file and stdin transport preserve a 276 KiB review payload without one positional argument', () => {
   const payload = 'review-payload-'.repeat(Math.ceil((276 * 1024) / 15)).slice(0, 276 * 1024);
   const script = 'const fs = require("node:fs"); process.stdout.write(process.argv[1] === "file" ? fs.readFileSync(process.argv[2]) : fs.readFileSync(0));';
