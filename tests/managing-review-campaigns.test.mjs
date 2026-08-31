@@ -24,8 +24,8 @@ test('campaign setup is immutable and budgets external invocations separately fr
   assert.match(skill, /\| Standalone external \| One selected reviewer \| Lead \| 1 \| 2/);
   assert.match(skill, /\| Standalone Grok completion \| One selected reviewer \| Lead \| 2 \| 2/);
   assert.doesNotMatch(skill, /\| Standalone external \| One selected reviewer \| Lead \| 2 \| 2/);
-  assert.match(skill, /completion validation/i);
-  assert.match(skill, /same current-directory session/i);
+  assert.match(skill, /structuring pass/i);
+  assert.match(skill, /resumes the session the first call named with `--session-id`/i);
   assert.match(skill, /no third call|third invocation/i);
 });
 
@@ -106,15 +106,23 @@ test('discipline counters the observed runaway-review rationalizations', () => {
   assert.match(skill, /campaign_closed: yes.*terminal/is);
 });
 
-test('campaign completion continuation cannot become a fresh sweep', () => {
+test('campaign structuring pass cannot become a fresh sweep', () => {
   const skill = read('skills/managing-review-campaigns/SKILL.md');
 
-  assert.match(skill, /one bounded continuation/i);
-  assert.match(skill, /same session/i);
-  assert.match(skill, /only.*failed completion validation/i);
-  assert.match(skill, /sandbox startup failure.*no session.*cannot.*continuation/is);
-  assert.match(skill, /second invalid.*blocked|capped/is);
+  assert.match(skill, /invocation 1\/2 is the free-form review and invocation 2\/2 is the structuring\s+pass/is);
+  assert.match(skill, /resumes the session the first call named with `--session-id`/i);
+  assert.match(skill, /neither is a retry/i);
+  assert.match(skill, /buys no extra discovery/i);
+  assert.match(skill, /sandbox startup failure.*no session.*cannot use the\s+structuring pass/is);
+  assert.match(skill, /rejected structured\s+result closes the campaign `blocked` or `capped`/is);
   assert.doesNotMatch(skill, /--no-plan/);
+});
+
+test('campaign treats a one-turn grok review pass as a failed invocation', () => {
+  const skill = read('skills/managing-review-campaigns/SKILL.md');
+
+  assert.match(skill, /returns after one turn inspected nothing/i);
+  assert.match(skill, /failed invocation, not as evidence/i);
 });
 
 test('README lists the canonical campaign skill', () => {

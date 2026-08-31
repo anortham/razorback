@@ -189,3 +189,84 @@ test('schema declares completion evidence as required', () => {
   assert.equal(schema.properties.commands_run.type, 'array');
   assert.equal(schema.properties.evidence.minItems, 1);
 });
+
+test('accepts the final turn when the envelope text holds several turns', () => {
+  const planning = {
+    ...completeReview,
+    verdict: 'needs-attention',
+    summary: 'I will read the review bundle and inspect the code.',
+    findings: [],
+    next_steps: ['Read the review bundle'],
+  };
+  const text = `${JSON.stringify(planning)}${JSON.stringify(completeReview)}`;
+
+  const result = runValidator({ text }, 'multi-turn-text.json');
+
+  assert.equal(result.status, 0, result.diagnostic);
+  assert.deepEqual(JSON.parse(result.stdout), completeReview);
+});
+
+test('rejects a multi-turn envelope whose final turn is still incomplete', () => {
+  const planning = {
+    ...completeReview,
+    verdict: 'needs-attention',
+    summary: 'I will keep reading the bundle.',
+    findings: [],
+    next_steps: ['Read the rest'],
+  };
+  const text = `${JSON.stringify(completeReview)}${JSON.stringify(planning)}`;
+
+  const result = runValidator({ text }, 'multi-turn-unfinished.json');
+
+  assert.notEqual(result.status, 0);
+  assert.equal(result.stdout, '');
+});
+
+test('rejects a review that cites only the razorback review bundle', () => {
+  const bundleOnly = {
+    ...completeReview,
+    files_inspected: ['/tmp/razorback-review-tree.AbC123/.razorback-review/review-input.md'],
+    evidence: [
+      {
+        file: '/tmp/razorback-review-tree.AbC123/.razorback-review/review-input.md',
+        line_start: 1,
+        line_end: 1,
+        observation: 'Starting review bundle read',
+      },
+    ],
+  };
+
+  const result = runValidator(bundleOnly, 'bundle-only.json');
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.diagnostic, /only the review bundle/);
+  assert.equal(result.stdout, '');
+});
+
+test('accepts a review that reads the bundle and also cites reviewed files', () => {
+  const bundlePlusCode = {
+    ...completeReview,
+    files_inspected: [
+      '/tmp/razorback-review-tree.AbC123/.razorback-review/review-input.md',
+      'src/cart.js',
+    ],
+    evidence: [
+      {
+        file: '/tmp/razorback-review-tree.AbC123/.razorback-review/review-input.md',
+        line_start: 1,
+        line_end: 1,
+        observation: 'Read the bundle to find the review scope.',
+      },
+      {
+        file: 'src/cart.js',
+        line_start: 3,
+        line_end: 5,
+        observation: 'The loop runs past the final index.',
+      },
+    ],
+  };
+
+  const result = runValidator(bundlePlusCode, 'bundle-plus-code.json');
+
+  assert.equal(result.status, 0, result.diagnostic);
+});

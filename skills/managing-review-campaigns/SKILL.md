@@ -81,18 +81,26 @@ Callers may choose a stricter profile, never a looser one.
 
 ### Completion-aware Grok standalone calls
 
-The Grok standalone completion profile gets one initial discovery invocation and
-one bounded continuation. The continuation is only allowed after failed completion validation when the first call created a session. It
-resumes the same current-directory session (the same session), repeats the
-shared schema, and asks only for completion of the existing review. It is only
-allowed after failed completion validation. It is not a fresh sweep or a
-post-fix review. No third call is allowed. A second invalid result closes the
-campaign `blocked` or `capped` with the counters recorded at `2/2`.
+The Grok standalone completion profile spends both invocations on one review,
+because Grok cannot review and emit the schema in the same call. Constrained by
+`--json-schema`, it answers on its first turn with no tool use and no findings.
+So invocation 1/2 is the free-form review and invocation 2/2 is the structuring
+pass, which resumes the session the first call named with `--session-id` and
+asks only for the schema. Both are required; neither is a retry, and the pair
+buys no extra discovery. A resume that finds no session exits non-zero and
+closes the campaign there. No third call is allowed. A rejected structured
+result closes the campaign `blocked` or `capped` with the counters recorded at
+`2/2`.
+
+A review pass that returns after one turn inspected nothing. Treat it as a
+failed invocation, not as evidence.
 
 Sandbox startup failure creates no session and therefore cannot use the
-continuation. The caller must close that campaign; any `--sandbox off` retry is
-a new explicit user-approved campaign. `grok inspect` is configuration output,
-not a sandbox capability probe.
+structuring pass. The caller must close that campaign. `--sandbox read-only` and
+`--sandbox strict` refuse to start where a container-runtime deny path cannot be
+resolved; `--sandbox workspace` with a `Read,Grep,Glob` tool allowlist is the
+supported recovery, and `--sandbox off` needs explicit user approval. `grok
+inspect` is configuration output, not a sandbox capability probe.
 
 ## Close on Evidence
 

@@ -166,20 +166,57 @@ test('grok code review transports large bundles through the shared artifact cont
   assert.doesNotMatch(skill, /--no-plan/);
 });
 
-test('grok validation failure reaches the bounded continuation branch', () => {
+test('grok runs the review free-form and structures it in a second pass', () => {
   const skill = read('skills/grok-cli/SKILL.md');
   const codeReview = skill.slice(
     skill.indexOf('### Code Review (read-only)'),
     skill.indexOf('### Standalone Review Completion'),
   );
-  const validation = codeReview.indexOf('validate-review-output" "$RESULT_FILE"');
-  const continuation = codeReview.indexOf('grok -c --prompt-file');
 
-  assert.ok(validation >= 0, 'code review must validate the first result');
-  assert.ok(continuation > validation, 'validation failure must branch to continuation');
-  assert.match(
-    codeReview,
-    /if[\s\S]*validate-review-output" "\$RESULT_FILE"[\s\S]*else[\s\S]*if \[ "\$SESSION_CREATED" != true \][\s\S]*exit 1[\s\S]*fi[\s\S]*grok -c --prompt-file/,
+  const reviewCall = codeReview.indexOf('grok --prompt-file "$REVIEW_PROMPT_FILE"');
+  const structureCall = codeReview.indexOf('grok -r "$REVIEW_SESSION_ID" --prompt-file');
+  const validation = codeReview.indexOf('validate-review-output" "$RESULT_FILE"');
+
+  assert.ok(reviewCall >= 0, 'the review pass must run');
+  assert.ok(structureCall > reviewCall, 'the structuring pass must follow the review pass');
+  assert.ok(validation > structureCall, 'validation must judge the structured result');
+
+  const reviewCommand = codeReview.slice(
+    reviewCall,
+    codeReview.indexOf('|| GROK_STATUS=$?', reviewCall),
+  );
+  assert.doesNotMatch(
+    reviewCommand,
+    /--json-schema/,
+    'a schema-constrained review call ends after one turn without reviewing anything',
+  );
+  assert.match(reviewCommand, /--tools "Read,Grep,Glob"/);
+  assert.match(codeReview.slice(structureCall), /--json-schema "\$SCHEMA_JSON"/);
+});
+
+test('grok names the review session instead of trusting the most recent one', () => {
+  const skill = read('skills/grok-cli/SKILL.md');
+  const codeReview = skill.slice(
+    skill.indexOf('### Code Review (read-only)'),
+    skill.indexOf('### Standalone Review Completion'),
+  );
+
+  const generated = codeReview.indexOf('REVIEW_SESSION_ID=$(uuidgen)');
+  const named = codeReview.indexOf('--session-id "$REVIEW_SESSION_ID"');
+  const resumed = codeReview.indexOf('grok -r "$REVIEW_SESSION_ID"');
+
+  assert.ok(generated >= 0, 'the recipe must generate its own session id');
+  assert.ok(named > generated, 'the first call must name that session');
+  assert.ok(resumed > named, 'the continuation must resume that exact session');
+});
+
+test('grok does not claim a session exists without proof', () => {
+  const skill = read('skills/grok-cli/SKILL.md');
+
+  assert.doesNotMatch(
+    skill,
+    /SESSION_CREATED/,
+    'a self-set flag cannot prove a session exists — let the resume fail loudly instead',
   );
 });
 
@@ -191,19 +228,25 @@ test('grok status variables reset immediately before each invocation', () => {
   );
 
   assert.match(codeReview, /GROK_STATUS=0\s+grok --prompt-file/);
-  assert.match(codeReview, /CONTINUATION_STATUS=0\s+grok -c --prompt-file/);
+  assert.match(codeReview, /STRUCTURE_STATUS=0\s+grok -r "\$REVIEW_SESSION_ID" --prompt-file/);
 });
 
-test('grok continuation is one same-session completion attempt', () => {
+test('grok rejects a one-turn answer as proof of nothing', () => {
+  const skill = read('skills/grok-cli/SKILL.md');
+
+  assert.match(skill, /num_turns/);
+  assert.match(skill, /one turn without inspecting anything/i);
+  assert.match(skill, /answers? in one turn|ends? (?:at|after) .*one turn/i);
+});
+
+test('grok structured review is two predeclared invocations, not a retry', () => {
   const skill = read('skills/grok-cli/SKILL.md');
 
   assert.match(skill, /external_invocation_budget.*2/i);
-  assert.match(skill, /first.*failed completion validation/i);
-  assert.match(skill, /same current-directory session/i);
-  assert.match(skill, /grok -c --prompt-file/);
-  assert.match(skill, /omit[s]? `--sandbox`|without `--sandbox`/i);
+  assert.match(skill, /structuring pass is 2\/2/i);
+  assert.match(skill, /not a retry/i);
+  assert.match(skill, /resumes that exact session/i);
   assert.match(skill, /no third call|third invocation/i);
-  assert.match(skill, /not a fresh sweep|not.*post-fix/i);
 });
 
 test('grok sandbox fallback does not use inspect as a capability probe', () => {

@@ -280,17 +280,29 @@ The reviewer must report completion evidence from the complete bundle. Tool use
 is not completion proof; future-tense planning and a successful CLI exit do not
 prove that the review completed.
 
-**Step 3: Send to Grok with structured output**
+**Step 3: Run the review — no `--json-schema` on this call**
 
-`--json-schema` takes a JSON string. `$SKILL_DIR` throughout this skill is the
-skill's own base directory, announced when the skill loads — substitute it
-before running any command. Read the JSON string from the canonical schema file
-(`$SKILL_DIR/../codex-cli/schemas/review-output.schema.json` — all razorback
-reviewers share it), stripping the `$schema` key defensively (some validators
-reject it; the verified working schema had no `$schema` key):
+`--json-schema` constrains Grok to emit conforming JSON on its **first** turn.
+A schema-constrained review call therefore ends at `num_turns: 1` with zero tool
+calls, and Grok fills the required fields with its intent: `review_completed:
+true`, a future-tense summary, `findings: []`, and the bundle file itself cited
+as the only evidence. Measured on Grok 1.0.13 / grok-4.x, both inline and
+artifact transport, at 933-byte and 384-byte prompts. Payload size is not the
+cause; the schema is. Run the review free-form so Grok keeps its agent loop, and
+structure the result in Step 4.
+
+`$SKILL_DIR` throughout this skill is the skill's own base directory, announced
+when the skill loads — substitute it before running any command.
+
+Use `--sandbox workspace` with an explicit `--tools "Read,Grep,Glob"` allowlist.
+`--sandbox read-only` and `--sandbox strict` carry a container-runtime deny list
+and refuse to start on any host where a denied socket path cannot be resolved
+(`sandbox profile resolve failed: runtime-socket deny resolution failed`). The
+reviewer runs in a throwaway `.git`-free export and holds no write tool, so
+`workspace` gives the same practical read-only reviewer on every host.
 
 ```bash
-SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")
+REVIEW_SESSION_ID=$(uuidgen)
 RESULT_FILE=$(mktemp)
 NORMALIZED_RESULT_FILE=$(mktemp)
 STDERR_FILE=$(mktemp)
@@ -298,10 +310,12 @@ trap 'rm -f "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE" "$REVIEW_PROMPT_FILE" "$RES
 
 GROK_STATUS=0
 grok --prompt-file "$REVIEW_PROMPT_FILE" \
-  --sandbox read-only \
+  --session-id "$REVIEW_SESSION_ID" \
+  --sandbox workspace \
+  --tools "Read,Grep,Glob" \
   --always-approve \
   --cwd "$REVIEW_ROOT" \
-  --json-schema "$SCHEMA_JSON" \
+  --output-format json \
   ${GROK_MODEL:+--model "$GROK_MODEL"} \
   ${GROK_EFFORT:+--effort "$GROK_EFFORT"} \
   < /dev/null > "$RESULT_FILE" 2> "$STDERR_FILE" || GROK_STATUS=$?
@@ -315,56 +329,68 @@ if [ "${GROK_STATUS:-0}" -ne 0 ]; then
   echo "Grok review invocation failed before completion validation" >&2
   exit 1
 fi
-SESSION_CREATED=true
-
-if "$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$RESULT_FILE" > "$NORMALIZED_RESULT_FILE"; then
-  cat "$NORMALIZED_RESULT_FILE"
-else
-  if [ "$SESSION_CREATED" != true ]; then
-    echo "Grok review did not create a resumable session" >&2
-    exit 1
-  fi
-
-  FOLLOW_UP_FILE=$(mktemp)
-  REDACTED_FOLLOW_UP_FILE=$(mktemp)
-  printf '%s' "Complete the existing review. Return only the required schema with review_completed=true, files_inspected, commands_run, and concrete file/line evidence. Do not start a new sweep or review a post-fix diff." > "$FOLLOW_UP_FILE"
-  if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$FOLLOW_UP_FILE" > "$REDACTED_FOLLOW_UP_FILE"; then
-    rm -f -- "$FOLLOW_UP_FILE" "$REDACTED_FOLLOW_UP_FILE"
-    echo "outbound redaction failed" >&2
-    exit 1
-  fi
-  CONTINUATION_STATUS=0
-  grok -c --prompt-file "$REDACTED_FOLLOW_UP_FILE" \
-    --always-approve \
-    --cwd "$REVIEW_ROOT" \
-    --json-schema "$SCHEMA_JSON" \
-    < /dev/null > "$RESULT_FILE" 2> "$STDERR_FILE" || CONTINUATION_STATUS=$?
-  cat "$STDERR_FILE" >&2
-  rm -f -- "$FOLLOW_UP_FILE" "$REDACTED_FOLLOW_UP_FILE"
-  if [ "${CONTINUATION_STATUS:-0}" -ne 0 ]; then
-    echo "Grok completion continuation failed" >&2
-    exit 1
-  fi
-  if ! "$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$RESULT_FILE" > "$NORMALIZED_RESULT_FILE"; then
-    echo "Grok completion continuation did not provide a completed review" >&2
-    exit 1
-  fi
-  cat "$NORMALIZED_RESULT_FILE"
+if [ "$(jq -r '.num_turns // 0' < "$RESULT_FILE")" -lt 2 ]; then
+  echo "Grok answered in one turn without inspecting anything — not a review" >&2
+  exit 1
 fi
 ```
 
-No `-p` here — `--prompt-file` supplies the headless prompt on its own.
-Always include `--always-approve` with `--sandbox read-only` (see Defaults).
+**Step 4: Structure the completed review**
 
-**After**: `--output-format json` (implied by `--json-schema`) returns a
-**result envelope**, not the model response directly. Run
-`validate-review-output RESULT_FILE` before accepting it. The validator
-normalizes `.structuredOutput`, the JSON object encoded in `.text`, and direct
-schema objects; it rejects malformed, contradictory, or incomplete output and
-writes only the normalized completed review. It never parses Grok's private
-transcript format. The schema requires `review_completed: true`, a non-empty
-unique `files_inspected` list, a `commands_run` array (which may be empty), and
-non-empty file/line/observation `evidence`; `needs-attention` requires a finding.
+Resume the same session and ask only for the schema. The review is already in
+that session's context, so a single turn is the correct shape here — nothing is
+left to discover. `--json-schema` takes a JSON string; read it from the
+canonical schema file (`$SKILL_DIR/../codex-cli/schemas/review-output.schema.json`
+— all razorback reviewers share it), stripping the `$schema` key defensively
+(some validators reject it; the verified working schema had no `$schema` key).
+Omit `--sandbox` on the resume: Grok reuses the session's saved profile and
+refuses a different one.
+
+```bash
+SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")
+STRUCTURE_FILE=$(mktemp)
+REDACTED_STRUCTURE_FILE=$(mktemp)
+printf '%s' "Return your completed review as JSON matching the required schema. Use only the findings you already established. Set review_completed=true, list the repository files you inspected in files_inspected, and give concrete file/line evidence. Do not start a new review." > "$STRUCTURE_FILE"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$STRUCTURE_FILE" > "$REDACTED_STRUCTURE_FILE"; then
+  rm -f -- "$STRUCTURE_FILE" "$REDACTED_STRUCTURE_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+
+STRUCTURE_STATUS=0
+grok -r "$REVIEW_SESSION_ID" --prompt-file "$REDACTED_STRUCTURE_FILE" \
+  --always-approve \
+  --cwd "$REVIEW_ROOT" \
+  --json-schema "$SCHEMA_JSON" \
+  < /dev/null > "$RESULT_FILE" 2> "$STDERR_FILE" || STRUCTURE_STATUS=$?
+cat "$STDERR_FILE" >&2
+rm -f -- "$STRUCTURE_FILE" "$REDACTED_STRUCTURE_FILE"
+if [ "${STRUCTURE_STATUS:-0}" -ne 0 ]; then
+  echo "Grok structuring pass failed: no resumable session, or the resume errored" >&2
+  exit 1
+fi
+
+if ! "$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$RESULT_FILE" > "$NORMALIZED_RESULT_FILE"; then
+  echo "Grok did not return a completed review" >&2
+  exit 1
+fi
+cat "$NORMALIZED_RESULT_FILE"
+```
+
+No `-p` on either call — `--prompt-file` supplies the headless prompt on its
+own. Always include `--always-approve`; a headless run cannot show a permission
+prompt, and a cancelled approval discards the whole turn (see Defaults).
+
+**After**: `--output-format json` returns a **result envelope**, not the model
+response directly. The validator normalizes `.structuredOutput`, the JSON object
+encoded in `.text`, and direct schema objects. When `.text` holds several
+concatenated objects — one per turn — it takes the last one. It rejects
+malformed, contradictory, or incomplete output, and it rejects a review whose
+`files_inspected` and `evidence` cite only the `.razorback-review/` bundle
+instead of the reviewed files. The schema requires `review_completed: true`, a
+non-empty unique `files_inspected` list, a `commands_run` array (which may be
+empty), and non-empty file/line/observation `evidence`; `needs-attention`
+requires a finding.
 
 ```bash
 # The validator's normalized output is the only accepted review result.
@@ -374,6 +400,7 @@ jq '.findings[]?' < normalized.json
 
 Present findings, add your own assessment. Highlight agreements and
 disagreements. Call out anything Grok missed.
+
 
 ### Standalone Review Completion
 
@@ -388,18 +415,24 @@ round: 0/2
 external_invocations: 0/2
 ```
 
-After the first result is captured, run `validate-review-output RESULT_FILE`.
-The first invocation failed completion validation when this check returns
-non-zero, and the Code Review `else` branch permits exactly one continuation
-when that invocation created a session. It resumes the same current-directory session,
-asks only for completion of the existing review, counts as invocation
-2/2, and is not a fresh sweep or a post-fix review. A second invalid result
-closes the campaign; no third call is allowed.
+Both invocations are predeclared, and both are required: the free-form review
+is 1/2 and the structuring pass is 2/2. The structuring pass is not a retry and
+buys no extra discovery. The recipe names the session with
+`--session-id "$REVIEW_SESSION_ID"` on the first call, so the second call
+resumes that exact session with `-r "$REVIEW_SESSION_ID"` instead of trusting
+`-c` to pick the right one. Do not set a flag to record that a session exists —
+a successful exit does not prove it. If no session was created, the resume exits
+non-zero and the campaign closes there.
 
-If a sandbox startup failure occurs before a session exists, no session exists
-for continuation and the campaign is terminal. The only supported recovery is a new explicit
-user-approved campaign with `--sandbox off`. `grok inspect` reports
-configuration, but it is not a sandbox capability probe.
+Run `validate-review-output RESULT_FILE` on the structuring pass. A rejected
+result closes the campaign `blocked` or `capped` at 2/2. No third call is
+allowed, and a fresh sweep is never the answer to a rejected result.
+
+A sandbox startup failure creates no session, so the campaign is terminal there.
+Recover with `--sandbox workspace` plus the `--tools "Read,Grep,Glob"`
+allowlist, which is what the recipe already uses; drop to `--sandbox off` only
+with explicit user approval, and only when `workspace` also refuses to start.
+`grok inspect` reports configuration, but it is not a sandbox capability probe.
 
 ### Adversarial Review (read-only + schema)
 
@@ -478,14 +511,32 @@ if [ "$REVIEW_ARTIFACT" != inline ]; then
     > "$REVIEW_PROMPT_FILE"
 fi
 
-trap 'rm -f "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE" "$REVIEW_PROMPT_FILE" "$RESULT_FILE" "$NORMALIZED_RESULT_FILE"; rm -rf "$REVIEW_ROOT"' EXIT
+REVIEW_SESSION_ID=$(uuidgen)
+STRUCTURE_FILE=$(mktemp)
+trap 'rm -f "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE" "$REVIEW_PROMPT_FILE" "$RESULT_FILE" "$NORMALIZED_RESULT_FILE" "$STRUCTURE_FILE"; rm -rf "$REVIEW_ROOT"' EXIT
+
+# Pass 1: adversarial review, free-form so Grok keeps its agent loop.
 grok --prompt-file "$REVIEW_PROMPT_FILE" \
-  --sandbox read-only \
+  --session-id "$REVIEW_SESSION_ID" \
+  --sandbox workspace \
+  --tools "Read,Grep,Glob" \
+  --always-approve \
+  --cwd "$REVIEW_ROOT" \
+  --output-format json \
+  ${GROK_MODEL:+--model "$GROK_MODEL"} \
+  ${GROK_EFFORT:+--effort "$GROK_EFFORT"} \
+  < /dev/null > "$RESULT_FILE"
+if [ "$(jq -r '.num_turns // 0' < "$RESULT_FILE")" -lt 2 ]; then
+  echo "Grok answered in one turn without inspecting anything — not a review" >&2
+  exit 1
+fi
+
+# Pass 2: same session, schema only.
+printf '%s' "Return your completed adversarial review as JSON matching the required schema. Use only the findings you already established. Set review_completed=true, list the repository files you inspected in files_inspected, and give concrete file/line evidence. Do not start a new review." > "$STRUCTURE_FILE"
+grok -r "$REVIEW_SESSION_ID" --prompt-file "$STRUCTURE_FILE" \
   --always-approve \
   --cwd "$REVIEW_ROOT" \
   --json-schema "$SCHEMA_JSON" \
-  ${GROK_MODEL:+--model "$GROK_MODEL"} \
-  ${GROK_EFFORT:+--effort "$GROK_EFFORT"} \
   < /dev/null > "$RESULT_FILE"
 "$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$RESULT_FILE" > "$NORMALIZED_RESULT_FILE"
 cat "$NORMALIZED_RESULT_FILE"
@@ -497,7 +548,10 @@ the prompt contains only the concise instruction and artifact path. Do not
 reload that file into an argument, stdin, or `--prompt-file`; `--prompt-file`
 is prompt transport, not a review-artifact mechanism.
 
-Always include `--always-approve` with `--sandbox read-only` (see Defaults).
+Always include `--always-approve` (see Defaults). The review pass carries no
+`--json-schema`: a schema-constrained call ends after one turn with no tool use
+and no findings (see Code Review Step 3). The structuring pass carries the
+schema and nothing else to discover.
 The `--json-schema` flag tells Grok to return JSON matching the review schema
 (verdict, summary, findings with severity/file/line/confidence, next steps, and
 completion evidence). A completed review requires `review_completed: true`, a
@@ -772,10 +826,10 @@ accepted.
 | Use case | Mode | Command pattern |
 |---|---|---|
 | Second opinion | read-only + approve | `grok -p "$REDACTED_PROMPT" --sandbox read-only --always-approve --cwd dir < /dev/null` |
-| Code review | read-only + approve + schema | `grok --prompt-file "$REVIEW_PROMPT_FILE" --json-schema "$SCHEMA_JSON" --sandbox read-only --always-approve --cwd "$REVIEW_ROOT"` (no `-p`), after `prepare-review-artifact` selects inline vs artifact transport. Scope/sizing per Review Targeting. |
+| Code review | workspace + read-only tools + approve | Two passes. 1) `grok --prompt-file "$REVIEW_PROMPT_FILE" --session-id "$REVIEW_SESSION_ID" --sandbox workspace --tools "Read,Grep,Glob" --always-approve --cwd "$REVIEW_ROOT" --output-format json` — **no** `--json-schema`, or Grok answers in one turn without reviewing. 2) `grok -r "$REVIEW_SESSION_ID" --prompt-file <structuring prompt> --json-schema "$SCHEMA_JSON"`. Scope/sizing per Review Targeting. |
 | Adversarial review | read-only + approve + schema | Build the prompt from `$SKILL_DIR/adversarial-prompt.txt` (see Adversarial Review), then the code-review command. |
 | Delegate (complex) | workspace + approve | `grok -p "$REDACTED_PROMPT" --sandbox workspace --always-approve --cwd dir < /dev/null` (add `-w` for an isolated worktree) |
 | Pre-flight / auth check | any | `"$GROK_BIN" models` with stderr kept. Ready only if stdout contains `You are logged in with grok.com.` Empty/timeout/exit 127 is not logout. `You are not authenticated.` + missing `~/.grok/auth.json` is the only `grok login` case. |
 | Apply explicit model/effort | any | Add `--model "$GROK_MODEL"` / `--effort "$GROK_EFFORT"` when set |
-| Resume session | persistent | `grok -c --prompt-file "$REDACTED_FOLLOW_UP_FILE" --always-approve` for the one bounded standalone continuation (most recent), or `grok -r <ID> -p "$REDACTED_PROMPT" --always-approve` for a user-requested conversation follow-up. `-c`/`-r` never take the prompt — omit `-p` / `--prompt-file` and you get the interactive TUI. Omit `--sandbox` on resume; still pass `--always-approve`. |
+| Resume session | persistent | `grok -r "$REVIEW_SESSION_ID" --prompt-file "$REDACTED_STRUCTURE_FILE" --always-approve --json-schema "$SCHEMA_JSON"` for the structuring pass (the session the first call named with `--session-id`), or `grok -r <ID> -p "$REDACTED_PROMPT" --always-approve` for a user-requested conversation follow-up. `-c`/`-r` never take the prompt — omit `-p` / `--prompt-file` and you get the interactive TUI. Omit `--sandbox` on resume; still pass `--always-approve`. |
 | Structured output shape | any | Envelope: `.structuredOutput` (parsed object), `.text` (JSON string), `.usage`, `.total_cost_usd`; normalize and validate with `validate-review-output RESULT_FILE`. |
