@@ -159,12 +159,12 @@
 **Approach:** Start with table-driven literal fixtures that name the leak each case catches. Include multiple occurrences, empty input, ordinary lookalikes that must survive, secret values from environment variables, private keys, tokens, URLs, and assignments. Never log original matches, and fail closed if input processing fails.
 
 **Acceptance criteria:**
-- [ ] Every supported secret form is replaced with exactly `<REDACTED>` and benign input remains unchanged.
-- [ ] Exact sensitive environment values are redacted without printing those values elsewhere.
-- [ ] All seven enforcement points invoke the helper on the constructed outbound payload.
-- [ ] Dispatch halts on redaction failure.
-- [ ] `CLAUDE.md` contains the exact approved provider and reviewer policy values.
-- [ ] Focused worker verification passes and the worker commits owned files per `serial-worker-commit`.
+- [x] Every supported secret form is replaced with exactly `<REDACTED>` and benign input remains unchanged.
+- [x] Exact sensitive environment values are redacted without printing those values elsewhere.
+- [x] All seven enforcement points invoke the helper on the constructed outbound payload.
+- [x] Dispatch halts on redaction failure.
+- [x] `CLAUDE.md` contains the exact approved provider and reviewer policy values.
+- [x] Focused worker verification passes and the worker commits owned files per `serial-worker-commit`.
 
 ### Task 4: Close the four consistency drifts
 
