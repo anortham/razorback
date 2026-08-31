@@ -194,12 +194,12 @@
 **Approach:** Write the guard first with one assertion per named gap. Use canonical wording or a direct cross-reference instead of copying the whole cap contract. Keep Miller refresh in the parallel-dispatch flow where file-write batches actually occur.
 
 **Acceptance criteria:**
-- [ ] The standalone reviewer Testing checklist requires the mutation check.
-- [ ] Requesting-code-review, cursor-agent, and blocker taxonomy point to the three-way cap contract.
-- [ ] The spec-reviewer prompt points to the task brief instead of embedding full task text.
-- [ ] SDD requires Miller refresh after a write batch and before another dispatch.
-- [ ] No unrelated cleanup enters the diff.
-- [ ] Focused worker verification passes and the worker commits owned files per `serial-worker-commit`.
+- [x] The standalone reviewer Testing checklist requires the mutation check.
+- [x] Requesting-code-review, cursor-agent, and blocker taxonomy point to the three-way cap contract.
+- [x] The spec-reviewer prompt points to the task brief instead of embedding full task text.
+- [x] SDD requires Miller refresh after a write batch and before another dispatch.
+- [x] No unrelated cleanup enters the diff.
+- [x] Focused worker verification passes and the worker commits owned files per `serial-worker-commit`.
 
 ### Task 5: Close durable project state
 
