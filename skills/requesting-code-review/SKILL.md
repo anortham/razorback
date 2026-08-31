@@ -34,6 +34,8 @@ When using `razorback:subagent-driven-development`, the **lead does inline revie
 
 **If issues found:** Route the fix back to an implementer using the harness-native follow-up path. Resume the existing implementer on Claude Code or Codex when possible, or dispatch a fresh implementer with fix context where resume is unavailable. They fix and re-report. Review cap: 3 iterations.
 
+The canonical three-way cap contract is in `razorback:subagent-driven-development` Step 3 ("Cap adjudication").
+
 ## Mode 2: Standalone Review (Ad-Hoc / Baseline)
 
 For work done outside plan execution, dispatch the `razorback:code-reviewer` agent.
@@ -44,6 +46,19 @@ ad-hoc work.
 For planned pre-merge external review in an approved execution flow, use
 `razorback:pre-merge-review` instead. That skill owns the stricter
 branch-gate, chosen-reviewer, finding-classification, fix, and report flow.
+
+Before Mode 2 sends the constructed reviewer prompt to any external CLI, write it to `PAYLOAD_FILE` and pass it through `skills/security-review/scripts/redact-outbound`. Dispatch only the resulting `REDACTED_PAYLOAD_FILE`; if redaction fails, remove both files, emit only a generic error, and stop before dispatch.
+
+After filling the two-file reviewer template, treat the completed dispatch message as the payload. The harness-native `spawn_agent` or `Task` call must receive the contents of `REDACTED_PAYLOAD_FILE`; never interpolate the unredacted template, diff, or target description into the message.
+
+```bash
+REDACTED_PAYLOAD_FILE=$(mktemp)
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+  echo "outbound redaction failed" >&2
+  exit 1
+fi
+```
 
 **1. Get git SHAs:**
 ```bash

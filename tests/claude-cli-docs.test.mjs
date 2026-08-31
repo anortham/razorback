@@ -1,11 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { tmpdir } from 'node:os';
 
 const expectedRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const root = expectedRoot;
+const reviewArtifactHelper = join(root, 'skills/security-review/scripts/prepare-review-artifact');
 
 function read(relativePath) {
   return readFileSync(join(root, relativePath), 'utf8');
@@ -38,6 +41,16 @@ test('pre-merge claude reviewer prompt keeps auth-compatible defaults', () => {
 
   assert.match(prompt, /Do not add `--bare`[\s\S]*?OAuth/i);
   assert.equal(commandBlockHasBare(prompt), false);
+});
+
+test('pre-merge claude reviewer invocation enables the verified safe mode', () => {
+  const prompt = read('skills/pre-merge-review/reviewer-prompts/claude.md');
+  const blocks = bashBlocks(prompt).filter((block) => block.includes('claude -p'));
+
+  assert.ok(blocks.length > 0, 'pre-merge claude prompt should document a claude invocation');
+  for (const block of blocks) {
+    assert.match(block, /--safe-mode/, 'pre-merge claude must use the verified safe-mode combination');
+  }
 });
 
 test('README stops advertising bare mode as the default claude-cli path', () => {
@@ -104,6 +117,79 @@ test('every documented claude --tools value pins the read-only allowlist, inline
       [],
       `${rel} documents a --tools value other than the canonical "Read,Grep,Glob" allowlist outside the "Do NOT treat" anti-pattern warning`,
     );
+  }
+});
+
+test('Claude review payloads use the shared prompt file instead of a positional argument', () => {
+  for (const rel of ['skills/claude-cli/SKILL.md', 'skills/pre-merge-review/reviewer-prompts/claude.md']) {
+    const text = read(rel);
+    const blocks = bashBlocks(text).filter((block) => block.includes('claude -p') && (block.includes('--output-format json') || rel.includes('reviewer-prompts/claude.md')));
+    assert.ok(blocks.some((block) => /< "\$REVIEW_PROMPT_FILE"/.test(block)), `${rel} must redirect the selected prompt file to Claude`);
+    for (const block of blocks.filter((candidate) => /REVIEW_PROMPT_FILE/.test(candidate))) {
+      assert.doesNotMatch(block, /"\$REDACTED_PROMPT"\s*</, `${rel} must not pass a large prompt as a positional argument`);
+    }
+  }
+});
+
+test('active reviewer docs never accept schema-valid partial output', () => {
+  const docs = [
+    'skills/claude-cli/SKILL.md',
+    'skills/codex-cli/SKILL.md',
+    'skills/pre-merge-review/SKILL.md',
+    'skills/pre-merge-review/reviewer-prompts/claude.md',
+    'skills/pre-merge-review/reviewer-prompts/codex.md',
+  ];
+
+  for (const rel of docs) {
+    assert.doesNotMatch(
+      read(rel),
+      /schema-valid partial output exists[\s\S]*?(?:use it|proceed with)/i,
+      `${rel} must not accept partial output as completion evidence`,
+    );
+  }
+});
+
+test('file and stdin transport preserve a 276 KiB review payload without one positional argument', () => {
+  const metadata = [
+    'Target: branch feature: 4 files changed, main..HEAD',
+    'File stat:',
+    '  4 files changed, 200 insertions(+), 20 deletions(-)',
+    'Commit log:',
+    'abc1234 review transport',
+    'Diff:',
+    '',
+  ].join('\n');
+  const payload = `${metadata}${'review-payload-'.repeat(Math.ceil((276 * 1024) / 15))}`.slice(0, 276 * 1024);
+  const script = 'const fs = require("node:fs"); process.stdout.write(process.argv[1] === "file" ? fs.readFileSync(process.argv[2]) : fs.readFileSync(0));';
+  const file = join(expectedRoot, 'tests', `.payload-${process.pid}`);
+  const workspace = mkdtempSync(join(tmpdir(), 'review-artifact-'));
+  const bundle = join(workspace, 'bundle.md');
+  try {
+    writeFileSync(file, payload);
+    const fromFile = spawnSync(process.execPath, ['-e', script, 'file', file], { encoding: 'utf8' });
+    const fromStdin = spawnSync(process.execPath, ['-e', script, 'stdin', '-'], { input: payload, encoding: 'utf8' });
+
+    assert.equal(fromFile.status, 0, fromFile.stderr);
+    assert.equal(fromStdin.status, 0, fromStdin.stderr);
+    assert.equal(fromFile.stdout, payload);
+    assert.equal(fromStdin.stdout, payload);
+    assert.equal(fromFile.error, undefined);
+    assert.equal(fromStdin.error, undefined);
+
+    writeFileSync(bundle, payload, { mode: 0o600 });
+    const artifactResult = spawnSync(reviewArtifactHelper, [workspace, bundle], { encoding: 'utf8' });
+    assert.equal(artifactResult.status, 0, artifactResult.stderr);
+    const artifact = artifactResult.stdout.trim();
+    assert.match(artifact, /\.razorback-review\/review-input\.md$/);
+    assert.equal(readFileSync(artifact, 'utf8'), payload);
+    assert.equal(statSync(artifact).mode & 0o777, 0o600);
+    const prompt = `Read the complete redacted review bundle at: ${artifact}`;
+    assert.ok(Buffer.byteLength(prompt) < 4096);
+    assert.doesNotMatch(prompt, /review-payload-/);
+    assert.equal(existsSync(join(workspace, '.git')), false);
+  } finally {
+    rmSync(file, { force: true });
+    rmSync(workspace, { recursive: true, force: true });
   }
 });
 

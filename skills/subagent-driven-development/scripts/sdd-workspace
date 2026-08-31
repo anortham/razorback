@@ -3,7 +3,7 @@
 # short-lived artifacts: task briefs, implementer reports, review packages,
 # and the progress ledger. Print the plan directory's absolute path.
 #
-# One directory per plan (.razorback/sdd/<plan-basename>/) so a follow-up
+# One directory per plan (.razorback/sdd/<plan-key>/) so a follow-up
 # plan in the same working tree can never read or overwrite another plan's
 # artifacts. A stale ledger misread as current progress makes leads skip
 # whole task sequences — plan-scoping removes that failure structurally.
@@ -28,25 +28,153 @@ fi
 plan=$1
 [ -f "$plan" ] || { echo "no such plan file: $plan" >&2; exit 2; }
 
-slug=$(basename "$plan" .md)
-[ -n "$slug" ] && [ "$slug" != "." ] && [ "$slug" != ".." ] \
-  || { echo "cannot derive a workspace name from: $plan" >&2; exit 2; }
+root=$(git rev-parse --show-toplevel 2>/dev/null) \
+  || { echo "not in a git repository: $plan" >&2; exit 2; }
 
-root=$(git rev-parse --show-toplevel)
-base="$root/.razorback/sdd"
-dir="$base/$slug"
-mkdir -p "$dir"
+exec node - "$plan" "$root" <<'NODE'
+const fs = require('node:fs');
+const path = require('node:path');
+const { createHash } = require('node:crypto');
 
-# A pre-planted symlink at .razorback or .razorback/sdd would redirect the
-# .gitignore write and the Step 5 `rm -rf` outside the repository. Require the
-# physical workspace path to stay inside the physical repo root before touching it.
-physical_root=$(cd "$root" && pwd -P)
-physical_dir=$(cd "$dir" && pwd -P)
-expected="$physical_root/.razorback/sdd/$slug"
-if [ "$physical_dir" != "$expected" ]; then
-  echo "workspace escapes the repository: $dir resolves to $physical_dir (expected $expected)" >&2
-  exit 2
-fi
+const planArg = process.argv[2];
+const rootArg = process.argv[3];
 
-printf '*\n' > "$base/.gitignore"
-printf '%s\n' "$physical_dir"
+function fail(message) {
+  process.stderr.write(`${message}\n`);
+  process.exit(2);
+}
+
+function isWithin(parent, candidate) {
+  const relative = path.relative(parent, candidate);
+  return relative === ''
+    || (relative !== '..'
+      && !relative.startsWith(`..${path.sep}`)
+      && !path.isAbsolute(relative));
+}
+
+function existingAncestor(target) {
+  let current = target;
+  while (true) {
+    try {
+      fs.lstatSync(current);
+      return current;
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+      const parent = path.dirname(current);
+      if (parent === current) throw error;
+      current = parent;
+    }
+  }
+}
+
+function assertContained(target, label, root) {
+  const absolute = path.resolve(target);
+  if (!isWithin(root, absolute)) {
+    fail(`${label} escapes the repository: ${target}`);
+  }
+
+  const ancestor = existingAncestor(absolute);
+  const physicalAncestor = fs.realpathSync(ancestor);
+  if (!isWithin(root, physicalAncestor)) {
+    fail(`${label} escapes the repository: ${target} resolves to ${physicalAncestor}`);
+  }
+}
+
+function canonicalPlanPath(planValue) {
+  const candidate = path.resolve(process.cwd(), planValue);
+  const canonical = fs.realpathSync(candidate);
+  if (!fs.statSync(canonical).isFile()) {
+    fail(`no such plan file: ${planValue}`);
+  }
+  return canonical;
+}
+
+function canonicalLedgerPath(identity, root) {
+  const candidates = path.isAbsolute(identity)
+    ? [identity]
+    : [path.resolve(process.cwd(), identity), path.resolve(root, identity)];
+  for (const candidate of candidates) {
+    try {
+      return fs.realpathSync(candidate);
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+    }
+  }
+  return null;
+}
+
+function legacyMatches(legacyDir, planPath, root) {
+  let stat;
+  try {
+    stat = fs.statSync(legacyDir);
+  } catch (error) {
+    if (error.code === 'ENOENT') return false;
+    throw error;
+  }
+  if (!stat.isDirectory()) return false;
+
+  const ledger = path.join(legacyDir, 'progress.md');
+  assertContained(ledger, 'ledger', root);
+  let firstLine;
+  try {
+    firstLine = fs.readFileSync(ledger, 'utf8').split(/\r?\n/, 1)[0];
+  } catch (error) {
+    if (error.code === 'ENOENT') return false;
+    throw error;
+  }
+  const match = firstLine.match(/^# Razorback SDD ledger — plan: (.+)$/);
+  if (!match) return false;
+  return canonicalLedgerPath(match[1].trim(), root) === planPath;
+}
+
+try {
+  const rootPath = fs.realpathSync(rootArg);
+  const planPath = canonicalPlanPath(planArg);
+  if (!isWithin(rootPath, planPath)) {
+    fail(`plan outside repository: ${planArg}`);
+  }
+
+  const relativePlan = path.relative(rootPath, planPath).split(path.sep).join('/');
+  if (!relativePlan || relativePlan === '..' || relativePlan.startsWith('../')) {
+    fail(`plan outside repository: ${planArg}`);
+  }
+
+  const filename = path.basename(planPath);
+  const basename = filename.endsWith('.md') ? filename.slice(0, -3) : filename;
+  if (!basename || basename === '.' || basename === '..') {
+    fail(`cannot derive a workspace name from: ${planArg}`);
+  }
+
+  const digest = createHash('sha256').update(relativePlan, 'utf8').digest('hex').slice(0, 12);
+  const key = `${basename}-${digest}`;
+  const base = path.join(rootPath, '.razorback', 'sdd');
+  const keyDir = path.join(base, key);
+  const legacyDir = path.join(base, basename);
+  const ignoreFile = path.join(base, '.gitignore');
+
+  assertContained(base, 'workspace', rootPath);
+  assertContained(keyDir, 'workspace', rootPath);
+  assertContained(legacyDir, 'legacy workspace', rootPath);
+  assertContained(ignoreFile, 'workspace ignore file', rootPath);
+
+  const useLegacy = legacyMatches(legacyDir, planPath, rootPath);
+  if (!useLegacy) {
+    fs.mkdirSync(base, { recursive: true });
+    assertContained(keyDir, 'workspace', rootPath);
+    fs.mkdirSync(keyDir, { recursive: true });
+  }
+
+  const dir = useLegacy ? legacyDir : keyDir;
+  assertContained(dir, 'workspace', rootPath);
+  const physicalDir = fs.realpathSync(dir);
+  if (!isWithin(rootPath, physicalDir)) {
+    fail(`workspace escapes the repository: ${dir} resolves to ${physicalDir}`);
+  }
+
+  assertContained(ignoreFile, 'workspace ignore file', rootPath);
+  fs.writeFileSync(ignoreFile, '*\n');
+  process.stdout.write(`${physicalDir}\n`);
+} catch (error) {
+  fail(error instanceof Error ? error.message : String(error));
+}
+NODE

@@ -67,6 +67,7 @@ If your review does not cite Miller-assisted investigation and API-shape evidenc
 - Edge cases covered?
 - Integration tests where needed?
 - Required verification scopes passing?
+- Run the mutation check from `test-driven-development/writing-good-tests.md`: mentally mutate the production code; a test should fail for each realistic mutation.
 
 **Requirements:**
 - All plan requirements met?

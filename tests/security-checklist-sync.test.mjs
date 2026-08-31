@@ -33,6 +33,7 @@ const CHECKLIST_LINE_COUNT = 5;
 const REDACT_MARKER = '**Redact:**';
 const REDACT_LINE_COUNT = 3;
 const REDACT_COPY = 'skills/systematic-debugging/SKILL.md';
+const REDACTION_HELPER = /(?:skills\/security-review\/scripts\/redact-outbound|\$SKILL_DIR\/\.\.\/security-review\/scripts\/redact-outbound)/;
 
 function markerBlock(text, marker, lineCount) {
   const lines = text.split('\n');
@@ -216,6 +217,31 @@ test('every enforcement point references razorback:security-review', () => {
       `${rel} no longer references razorback:security-review — restore its policy-gate reference so the dispatch checks the external-model policy before repo content leaves the machine`,
     );
   }
+});
+
+test('every enforcement point redacts its payload and fails closed before dispatch', () => {
+  for (const rel of ENFORCEMENT_POINTS) {
+    const text = read(rel);
+    const guarded = [...text.matchAll(new RegExp(REDACTION_HELPER.source, 'g'))].some(({ index }) =>
+      new RegExp(`${REDACTION_HELPER.source}[\\s\\S]{0,1000}(?:exit|return) 1`).test(text.slice(index)),
+    );
+    assert.ok(
+      guarded,
+      `${rel} does not invoke ${REDACTION_HELPER} with a nonzero failure guard — redact the final payload before dispatch and stop on helper failure`,
+    );
+  }
+});
+
+test('the repository declares the exact external-model policy values', () => {
+  const policy = [
+    '## External model policy',
+    'Allowed providers: anthropic, openai',
+    'Reviewer choices permitted: codex, claude',
+  ].join('\n');
+  assert.ok(
+    read('CLAUDE.md').includes(policy),
+    `CLAUDE.md lost the exact approved external-model policy block — restore:\n${policy}`,
+  );
 });
 
 test('the canonical home documents the policy block, provider mapping, and scan scopes', () => {

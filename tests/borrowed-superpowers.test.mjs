@@ -64,7 +64,10 @@ test('subagent-driven-development defines artifact helpers and durable ledger', 
   }
 
   assert.match(read('skills/subagent-driven-development/scripts/sdd-workspace'), /\.razorback\/sdd/);
-  assert.match(read('skills/subagent-driven-development/scripts/task-brief'), /Default OUTFILE: <repo-root>\/\.razorback\/sdd\/<plan-basename>\/task-<N>-brief\.md/);
+  assert.match(read('skills/subagent-driven-development/scripts/task-brief'), /Default OUTFILE: <repo-root>\/\.razorback\/sdd\/<plan-key>\/task-<N>-brief\.md/);
+  assert.match(skill, /\.razorback\/sdd\/<plan-key>/);
+  assert.match(read('skills/subagent-driven-development/implementer-prompt.md'), /\.razorback\/sdd\/<plan-key>/);
+  assert.match(read('skills/subagent-driven-development/fix-prompt.md'), /\.razorback\/sdd\/<plan-key>/);
   assert.match(read('skills/subagent-driven-development/scripts/review-package'), /git diff -U10/);
   assert.match(skill, /## File Handoffs/);
   assert.match(skill, /## Durable Progress/);
@@ -97,7 +100,7 @@ test('subagent-driven-development keeps SDD artifacts self-ignored and worktree-
     run('git', [...gitIdentity, 'commit', '-qm', 'c1'], { cwd: repo });
 
     const dir = run(workspaceScript, ['plan.md'], { cwd: repo }).trim();
-    assert.equal(dir, path.join(repo, '.razorback', 'sdd', 'plan'));
+    assert.equal(dir, path.join(repo, '.razorback', 'sdd', 'plan-0bbe5bc4573b'));
     assert.equal(fs.readFileSync(path.join(repo, '.razorback', 'sdd', '.gitignore'), 'utf8'), '*\n');
 
     fs.writeFileSync(path.join(dir, 'artifact.md'), 'x\n');
@@ -122,7 +125,7 @@ test('subagent-driven-development keeps SDD artifacts self-ignored and worktree-
     const worktreeRoot = run('git', ['rev-parse', '--show-toplevel'], { cwd: worktree }).trim();
     const worktreeDir = run(workspaceScript, ['plan.md'], { cwd: worktree }).trim();
 
-    assert.equal(worktreeDir, path.join(worktreeRoot, '.razorback', 'sdd', 'plan'));
+    assert.equal(worktreeDir, path.join(worktreeRoot, '.razorback', 'sdd', 'plan-0bbe5bc4573b'));
     assert.notEqual(worktreeDir, dir);
 
     fs.writeFileSync(path.join(worktreeDir, 'artifact.md'), 'y\n');

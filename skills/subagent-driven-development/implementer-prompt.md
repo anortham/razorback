@@ -11,7 +11,7 @@ Dispatch one implementer subagent:
     ## Task Brief
 
     Read this first — it is your requirements, with the exact values to use
-    verbatim: [brief path printed by task-brief, .razorback/sdd/<plan-basename>/task-N-brief.md]
+    verbatim: [brief path printed by task-brief, .razorback/sdd/<plan-key>/task-N-brief.md]
 
     The brief is the single source of task requirements. The task text and every
     exact value (numbers, magic strings, signatures, test cases) live there, not
@@ -120,7 +120,7 @@ Dispatch one implementer subagent:
     6. Report back
 
     Work from: [directory]
-    Report file: [path under the plan's workspace, .razorback/sdd/<plan-basename>/]
+    Report file: [path under the plan's workspace, .razorback/sdd/<plan-key>/]
 
     ## Verification Scope
 

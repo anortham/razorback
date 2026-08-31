@@ -1,0 +1,97 @@
+#!/usr/bin/env node
+
+import {
+  chmodSync,
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import { isAbsolute, join, relative, resolve, sep } from 'node:path';
+
+const LARGE_REVIEW_PAYLOAD_THRESHOLD = 128 * 1024;
+const ARTIFACT_DIRECTORY = '.razorback-review';
+const ARTIFACT_NAME = 'review-input.md';
+const REQUIRED_SECTIONS = ['Target:', 'File stat:', 'Commit log:', 'Diff:'];
+
+function fail(message) {
+  throw new Error(`prepare-review-artifact: ${message}`);
+}
+
+function isInside(root, candidate) {
+  const relativePath = relative(root, candidate);
+  return relativePath === '' ||
+    (!relativePath.startsWith(`..${sep}`) && relativePath !== '..' && !isAbsolute(relativePath));
+}
+
+function existingDirectory(pathName, label) {
+  if (!existsSync(pathName)) return false;
+  const entry = lstatSync(pathName);
+  if (entry.isSymbolicLink()) fail(`${label} must not be a symlink`);
+  if (!entry.isDirectory()) fail(`${label} must be a directory`);
+  return true;
+}
+
+function main() {
+  const args = process.argv.slice(2);
+  if (args.length !== 2) {
+    fail('usage: prepare-review-artifact REVIEW_ROOT REDACTED_PAYLOAD_FILE');
+  }
+
+  const [reviewRootArg, payloadFileArg] = args;
+  const reviewRoot = resolve(reviewRootArg);
+  const payloadFile = resolve(payloadFileArg);
+  if (!existingDirectory(reviewRoot, 'review root')) fail(`review root does not exist: ${reviewRoot}`);
+  const canonicalRoot = realpathSync(reviewRoot);
+  if (existsSync(join(canonicalRoot, '.git'))) fail('review root must not contain .git metadata');
+  if (!existsSync(payloadFile) || lstatSync(payloadFile).isSymbolicLink()) {
+    fail('payload file must exist and must not be a symlink');
+  }
+  if (!lstatSync(payloadFile).isFile()) fail('payload file must be a regular file');
+
+  const payload = readFileSync(payloadFile);
+  const payloadLines = payload.toString('utf8').split(/\r?\n/);
+  let previousSectionLine = -1;
+  for (const section of REQUIRED_SECTIONS) {
+    const sectionLine = payloadLines.findIndex((line) => line.startsWith(section));
+    if (sectionLine < 0) fail(`payload is missing required section: ${section}`);
+    if (sectionLine <= previousSectionLine) fail(`payload sections are out of order at: ${section}`);
+    previousSectionLine = sectionLine;
+  }
+  if (payload.byteLength <= LARGE_REVIEW_PAYLOAD_THRESHOLD) {
+    process.stdout.write('inline\n');
+    return;
+  }
+
+  const artifactDirectory = join(canonicalRoot, ARTIFACT_DIRECTORY);
+  if (existsSync(artifactDirectory)) {
+    const directoryStat = lstatSync(artifactDirectory);
+    if (directoryStat.isSymbolicLink()) fail('artifact directory must not be a symlink');
+    if (!directoryStat.isDirectory()) fail('artifact directory must be a directory');
+  } else {
+    mkdirSync(artifactDirectory, { mode: 0o700 });
+  }
+  chmodSync(artifactDirectory, 0o700);
+
+  const artifactPath = join(artifactDirectory, ARTIFACT_NAME);
+  if (existsSync(artifactPath)) {
+    const artifactStat = lstatSync(artifactPath);
+    if (artifactStat.isSymbolicLink()) fail('artifact file must not be a symlink');
+    fail(`artifact file already exists: ${artifactPath}`);
+  }
+  if (!isInside(canonicalRoot, artifactPath)) fail('artifact path escaped the review root');
+  writeFileSync(artifactPath, payload, { mode: 0o600, flag: 'wx' });
+  chmodSync(artifactPath, 0o600);
+  if ((statSync(artifactPath).mode & 0o777) !== 0o600) fail('artifact file permissions are not restrictive');
+  process.stdout.write(`${artifactPath}\n`);
+}
+
+try {
+  main();
+} catch (error) {
+  process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+  process.exitCode = 2;
+}

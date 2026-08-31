@@ -61,8 +61,8 @@ test('pre-merge reviewer prompts consume malformed output without retrying a pas
   for (const reviewer of ['codex', 'claude']) {
     const prompt = await read(`skills/pre-merge-review/reviewer-prompts/${reviewer}.md`);
 
-    assert.match(prompt, /Malformed or schema-invalid output consumes this pass's invocation and blocks the campaign; do not retry\./);
-    assert.match(prompt, /schema-valid partial output exists[\s\S]*use it/i);
+    assert.match(prompt, /Malformed, incomplete, or schema-invalid output consumes this pass's invocation and blocks the campaign; do not retry\./);
+    assert.doesNotMatch(prompt, /schema-valid partial output exists[\s\S]*use it/i);
     assert.doesNotMatch(prompt, /retry \*\*once\*\*/i);
     assert.doesNotMatch(prompt, /single-retry rule/i);
     assert.doesNotMatch(prompt, /persists after one retry/i);
