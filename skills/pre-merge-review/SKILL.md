@@ -17,10 +17,10 @@ Both passes run from one temporary export of the reviewed Git ref, created outsi
 
 Invoked by:
 
-- `executing-plans` Step 3 (between task execution and `finishing-a-development-branch`)
-- `subagent-driven-development` Step 4a (same position in that flow)
+- `razorback:executing-plans` Step 3 (between task execution and `razorback:finishing-a-development-branch`)
+- `razorback:subagent-driven-development` Step 4a (same position in that flow)
 
-Skip this skill entirely if the reviewer choice is `none`. The choice is fixed by `writing-plans` during execution handoff and does not change mid-run.
+Skip this skill entirely if the reviewer choice is `none`. The choice is fixed by `razorback:writing-plans` during execution handoff and does not change mid-run.
 
 **Pre-conditions:**
 
@@ -143,7 +143,7 @@ Before the diff is sent, re-read the policy and apply the external-model policy 
 When a reviewer is chosen, dispatch the chosen CLI **twice** against the same diff and the same shared schema:
 
 1. **General pass** — the existing adversarial prompt wiring in the chosen reviewer-prompts file below.
-2. **Security pass** — the canonical security-only prompt at `../security-review/security-adversarial-prompt.txt` (in the razorback plugin), dispatched per the `## Security pass` section of the chosen reviewer-prompts file. Follow that section for the runnable invocation — do not construct the security-pass command here.
+2. **Security pass** — the canonical security-only prompt — the `razorback:security-review` skill's `security-adversarial-prompt.txt` — dispatched per the `## Security pass` section of the chosen reviewer-prompts file. Follow that section for the runnable invocation — do not construct the security-pass command here.
 
 Both passes use the same `$REVIEW_ROOT` prepared in Step 1 and run from that directory. If either dispatch fails, remove `"$REVIEW_ROOT"` explicitly before returning the blocker; do not create a second review root.
 
@@ -154,7 +154,7 @@ Select the prompt file based on the reviewer choice and invoke the matching revi
 - **codex** → follow [`reviewer-prompts/codex.md`](reviewer-prompts/codex.md). Runs from `$REVIEW_ROOT` with `codex exec --ephemeral --color never --output-schema …` and the non-git/config-ignore flags, using the shared JSON schema. Background on codex's adversarial-review mode lives in the bundled `razorback:codex-cli` skill.
 - **claude** → follow [`reviewer-prompts/claude.md`](reviewer-prompts/claude.md). Runs from `$REVIEW_ROOT` with `claude -p --no-session-persistence --dangerously-skip-permissions --safe-mode --output-format json --json-schema … --tools "Read,Grep,Glob" --strict-mcp-config --system-prompt-file …` (no `--max-turns`, no `--max-budget-usd` — razorback caps neither the turns nor the spend of a review). The reviewer-prompts file reads the canonical schema and claude-cli's canonical adversarial prompt from the plugin at dispatch time; `razorback:claude-cli` has the background treatment.
 
-Both target the shared output schema defined canonically at `../codex-cli/schemas/review-output.schema.json` in the razorback plugin (verdict, summary, findings[severity, title, body, file, line_start, line_end, confidence, recommendation], next_steps, `review_completed: true`, non-empty unique `files_inspected`, `commands_run`, and non-empty file/line/observation `evidence`). Both reviewer-prompts files read the schema from that canonical file at dispatch time (claude strips the `$schema` key its validator rejects).
+Both target the shared output schema defined canonically in the `razorback:codex-cli` skill's `schemas/review-output.schema.json` (verdict, summary, findings[severity, title, body, file, line_start, line_end, confidence, recommendation], next_steps, `review_completed: true`, non-empty unique `files_inspected`, `commands_run`, and non-empty file/line/observation `evidence`). Both reviewer-prompts files read the schema from that canonical file at dispatch time (claude strips the `$schema` key its validator rejects).
 
 ### Redact each pass payload
 
@@ -163,7 +163,7 @@ review prompt — full review instruction, optional user focus, and the labelled
 Target/File stat/Commit log/Diff bundle — then filter it through
 `skills/security-review/scripts/redact-outbound`: Claude's
 `$DIFF_AND_CONTEXT` or Codex's `$ADVERSARIAL_PROMPT_WITH_DIFF`. Apply the
-shared [`review-payload.md`](../security-review/review-payload.md) contract with
+shared `review-payload.md` (in the `razorback:security-review` skill) contract with
 `prepare-review-artifact`. The complete redacted review prompt remains the
 source of truth, and a large prompt is exposed through its review artifact
 path. Keep the existing single `$REVIEW_ROOT` for both passes; the helper writes
@@ -288,7 +288,7 @@ After all delegated fix workers report DONE and commit their changes, or after t
 If verification fails after fixes:
 
 1. If the failure is a straightforward issue introduced by the fix and the implementer missed it, apply one more focused fix round with the failure context. Dispatch a fresh fix worker when delegation exists, or fix inline on a no-delegation run. One retry, not a loop.
-2. If the retry fails or the failure looks structural, this is **blocker taxonomy #5** (unresolvable test failures) — see `../using-razorback/references/blocker-taxonomy.md` (in the razorback plugin). Stop and write the blocker into the morning report. Do not push a red branch.
+2. If the retry fails or the failure looks structural, this is **blocker taxonomy #5** (unresolvable test failures) — see the `razorback:using-razorback` skill's `references/blocker-taxonomy.md`. Stop and write the blocker into the morning report. Do not push a red branch.
 
 If verification passes, proceed to Step 7.
 
@@ -343,17 +343,17 @@ The caller (`executing-plans` Step 3 or `subagent-driven-development` Step 4a) t
 
 **Called by:**
 
-- `executing-plans` — at Step 3, between task execution and `finishing-a-development-branch`
-- `subagent-driven-development` — at Step 4a, same position
+- `razorback:executing-plans` — at Step 3, between task execution and `razorback:finishing-a-development-branch`
+- `razorback:subagent-driven-development` — at Step 4a, same position
 
 **Calls:**
 
-- `managing-review-campaigns` skill — owns immutable setup, counters, and terminal status
-- `codex-cli` skill (when reviewer = codex) — see `reviewer-prompts/codex.md`
-- `claude-cli` skill (when reviewer = claude) — see `reviewer-prompts/claude.md`
+- `razorback:managing-review-campaigns` — owns immutable setup, counters, and terminal status
+- `razorback:codex-cli` (when reviewer = codex) — see `reviewer-prompts/codex.md`
+- `razorback:claude-cli` (when reviewer = claude) — see `reviewer-prompts/claude.md`
 
 **References:**
 
-- `../using-razorback/references/blocker-taxonomy.md` (in the razorback plugin) — stop-versus-proceed rules
-- `../finishing-a-development-branch/morning-report-template.md` — shape of the summary block emitted in Step 7
-- `../codex-cli/schemas/review-output.schema.json` (in the razorback plugin) — the shared finding shape both reviewers target
+- The `razorback:using-razorback` skill's `references/blocker-taxonomy.md` — stop-versus-proceed rules
+- The `razorback:finishing-a-development-branch` skill's `morning-report-template.md` — shape of the summary block emitted in Step 7
+- The `razorback:codex-cli` skill's `schemas/review-output.schema.json` — the shared finding shape both reviewers target

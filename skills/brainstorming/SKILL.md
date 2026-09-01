@@ -62,7 +62,7 @@ Every project goes through this process. A todo list, a single-function utility,
 4. **Spec self-review** - quick inline check for placeholders, contradictions, ambiguity, scope (see below)
 5. **User reviews written spec** - ask user to review the spec file before proceeding
 6. **Create isolated workspace** - **REQUIRED SUB-SKILL:** razorback:using-git-worktrees. Move the design doc into the worktree and commit it there as the branch's first commit (untracked files do NOT follow into a new worktree); the plan is then written and executed in that worktree.
-7. **Transition to implementation** - invoke writing-plans skill
+7. **Transition to implementation** - invoke razorback:writing-plans
 
 **Full process** (requirements unclear or multiple approaches):
 1. **Explore project context** — use Miller to orient on the relevant codebase area, check recent commits
@@ -76,7 +76,7 @@ Every project goes through this process. A todo list, a single-function utility,
 9. **Doubt pass (conditional)** - if architecture-quality rated the risk medium/high, run the Doubt Pass from `razorback:cross-model-convergence` and fold surviving objections into the spec. This is lead work inside the flow, not a user gate.
 10. **User reviews written spec** - ask user to review the spec file before proceeding
 11. **Create isolated workspace** - **REQUIRED SUB-SKILL:** razorback:using-git-worktrees. Move the design doc into the worktree and commit it there as the branch's first commit (untracked files do NOT follow into a new worktree); the plan is then written and executed in that worktree.
-12. **Transition to implementation** - invoke writing-plans skill to create implementation plan
+12. **Transition to implementation** - invoke razorback:writing-plans to create the implementation plan
 
 **Terminal states:** Either invoke writing-plans (full/fast path) or proceed to lightweight implementation (see below). These are the only two exits from brainstorming.
 
@@ -138,7 +138,7 @@ Wait for the user's response. If they request changes, make them and re-run the 
 - **REQUIRED SUB-SKILL:** razorback:using-git-worktrees — set up the isolated workspace the implementation will run in. Skip only with explicit user consent (small same-session work on a plain feature branch).
 
 **Full/fast path → writing-plans:**
-- Invoke the writing-plans skill (in the worktree) to create an implementation plan
+- Invoke razorback:writing-plans (in the worktree) to create an implementation plan
 
 **Lightweight → direct implementation:**
 - See "Lightweight Implementation" below

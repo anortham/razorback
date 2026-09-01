@@ -308,7 +308,7 @@ Can't check all boxes? You skipped TDD. Start over.
 
 ## Debugging Integration
 
-Bug found? Write failing test reproducing it. Follow TDD cycle. Test proves fix and prevents regression.
+Bug found? Diagnose the root cause first with razorback:systematic-debugging, then write the failing test that reproduces it and follow the TDD cycle. The test proves the fix and prevents regression.
 
 Never fix bugs without a test.
 

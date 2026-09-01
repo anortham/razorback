@@ -1,5 +1,14 @@
 # Skill Review Findings and Remediation Plan — 2026-09-01
 
+## Status
+
+- **Tier 1: DONE** (commit "fix: eight verified defects from the skill review"). All 8 items fixed; rule-copies and full suite green. `.cursor/rules/razorback.mdc` is `.mdc`, not `.md` — include it in any sweep of the synced copies.
+- **Tier 2: DONE.** All path refs converted to the house form ("the `razorback:<skill>` skill's `<file>`"); bare names prefixed; REQUIRED markers added. Notes:
+  - Left as-is deliberately: `architecture-quality:46`, `security-review:89,100`, `managing-review-campaigns:107` — maintenance notes that name the exact files of test-guarded verbatim copies; converting them loses precision. Runnable `$SKILL_DIR/...` paths and their surrounding prose also stay.
+  - Extra sites found beyond the original list (the reviewers only read SKILL.md files): `subagent-driven-development/SKILL.md` (5 sites), `pre-merge-review/SKILL.md:146,157,166`, `pre-merge-review/reviewer-prompts/{claude,codex}.md:10`.
+  - `## Blockers` is a byte-twinned section between `executing-plans` and `subagent-driven-development` (`tests/twin-sections.test.mjs`) — any edit there must be mirrored in both.
+- **Tier 3: NOT STARTED.** Blocked slices wait on the four open design decisions below; unblocked slices (intra-skill dedupe, missing sections) can proceed once decision 4 (testing bar) is set.
+
 ## How this review was produced
 
 - Rubric: `razorback:writing-skills` (structure, description rules, token efficiency, cross-reference hygiene, discipline bulletproofing).

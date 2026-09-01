@@ -102,7 +102,7 @@ path.
 
 Use this skill only when the user asks for Cursor/Composer specifically.
 Otherwise use the normal harness-native execution path from
-`subagent-driven-development`.
+`razorback:subagent-driven-development`.
 
 Good fit:
 - The lead makes the plan and hands a narrow implementation task to Composer.

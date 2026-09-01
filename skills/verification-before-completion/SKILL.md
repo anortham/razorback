@@ -50,7 +50,7 @@ Skip any step = lying, not verifying
 | Requirements met | Line-by-line checklist against the plan or spec | Tests passing alone | Miller `inspect(target)` each symbol the requirement names — the code, not the claim |
 | Architecture decision followed | Approved architecture visible in the diff, ADR note, or verified implementation | "Looks aligned", verbal recall | Miller `trace(target)` the boundary it must respect; `impact(target)` for what the change actually reaches |
 | Review finding fixed | Fresh verification at the affected scope shows the specific reviewer finding no longer reproduces | Code changed, assumed fixed | Miller `inspect(target, depth=full)` the fixed symbol and read the body |
-| Work is integrated | `git log --oneline <base>..<branch>` per worktree: every commit landed, pushed, or named in the report | Tests pass, task marked done | Check B of `../using-razorback/references/source-control-hygiene.md` |
+| Work is integrated | `git log --oneline <base>..<branch>` per worktree: every commit landed, pushed, or named in the report | Tests pass, task marked done | Check B of the `razorback:using-razorback` skill's `references/source-control-hygiene.md` |
 | Nothing is stranded | `git worktree list` plus `git -C <path> status --short --branch` for each: no unreported dirty tree, no unreported unmerged branch | `git worktree list` alone — that is an inventory, not a cleanliness check | Status every listed path, not just the current one |
 
 ## Tool-Assisted Verification

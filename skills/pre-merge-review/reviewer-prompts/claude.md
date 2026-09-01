@@ -7,7 +7,7 @@ Bare relative paths below (like the blocker-taxonomy reference) are relative to 
 ## Preconditions
 
 - `claude --version` returns successfully (the CLI is installed).
-- `claude auth status` exits 0 (logged in via Anthropic OAuth or API key). Exit 1 means not logged in; this is **blocker taxonomy #1** (credentials broken). Stop, surface, do not push. See `../../using-razorback/references/blocker-taxonomy.md` in the razorback plugin.
+- `claude auth status` exits 0 (logged in via Anthropic OAuth or API key). Exit 1 means not logged in; this is **blocker taxonomy #1** (credentials broken). Stop, surface, do not push. See the `razorback:using-razorback` skill's `references/blocker-taxonomy.md`.
 - Do not add `--bare`. Current Claude help says bare mode skips OAuth and keychain auth reads, so it breaks the common login path.
 - `$REVIEW_ROOT` is the temporary exported review tree prepared in pre-merge-review Step 1. It is outside `$PROJECT_DIR` and is shared by the general and security passes; do not run Claude from the live worktree.
 - Step 1 of the pre-merge-review flow has already built `$DIFF`, `$FILE_STAT`, `$COMMIT_LOG`, `$PROJECT_DIR`, and (optionally) `$USER_FOCUS`.

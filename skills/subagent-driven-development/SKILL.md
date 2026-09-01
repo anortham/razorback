@@ -12,7 +12,7 @@ Execute a plan by dispatching fresh subagents per task, with the lead doing inli
 **Dispatch mechanism:**
 - **Claude Code:** `Agent` tool (one call per subagent; multiple calls in one turn run in parallel).
 - **opencode:** `Task` tool (one call per subagent; multiple calls in one turn run in parallel). The built-in `general` subagent is suitable for most implementer work; `@mention` also works for manual invocation.
-- **Codex:** `spawn_agent(task_name="task-N-<slug>", message=<filled prompt>)` (one call per subagent; multiple calls in one turn run in parallel). Keep the returned agent ID, `followup_task(target=<agent-id>, message=...)` feeds follow-ups (the closest thing to Claude Code's resume), and `wait_agent(timeout_ms=...)` blocks until agent completion. Surface verified on codex 0.144.3 — trust the live tool list over these names (see `../using-razorback/references/codex-tools.md`).
+- **Codex:** `spawn_agent(task_name="task-N-<slug>", message=<filled prompt>)` (one call per subagent; multiple calls in one turn run in parallel). Keep the returned agent ID, `followup_task(target=<agent-id>, message=...)` feeds follow-ups (the closest thing to Claude Code's resume), and `wait_agent(timeout_ms=...)` blocks until agent completion. Surface verified on codex 0.144.3 — trust the live tool list over these names (see the `razorback:using-razorback` skill's `references/codex-tools.md`).
 - **Explicit Cursor/Composer delegation from another harness:** use `razorback:cursor-agent`, which owns the Cursor CLI invocation. The current lead still owns planning, review, fix routing, and final verification; Cursor Agent is only the implementation worker.
 
 Use the harness default model unless the user, environment, or lead explicitly
@@ -327,13 +327,13 @@ After `pre-merge-review` returns, proceed to Step 5 (Complete → `razorback:fin
 When all tasks are approved and marked complete:
 
 1. **Final verification:** Run the plan's `branch-gate` scope, or reuse a passing verification-ledger entry for the same HEAD and scope. Add any `expensive-specialist` scopes required by touched areas. The branch-gate run includes the plan's declared Security scope commands (`security-secrets`, `security-deps` — `razorback:security-review`); `none declared` skips them and is rendered in the morning report.
-2. **Reconcile source-control state:** run Check B of `../using-razorback/references/source-control-hygiene.md`. Status every worktree this run created — including any a subagent reported working in — and every branch the plan produced. Land stranded commits on this branch (re-run the branch gate afterward; the diff changed) or carry them forward as named items for the morning report. Subagents report the path, branch, commit, and dirty state they used; the lead cannot reconcile a path nobody reported.
+2. **Reconcile source-control state:** run Check B of the `razorback:using-razorback` skill's `references/source-control-hygiene.md`. Status every worktree this run created — including any a subagent reported working in — and every branch the plan produced. Land stranded commits on this branch (re-run the branch gate afterward; the diff changed) or carry them forward as named items for the morning report. Subagents report the path, branch, commit, and dirty state they used; the lead cannot reconcile a path nobody reported.
 3. **Clean up the workspace:** when the final review is clean (final verification passed, and Step 4a — if chosen — returned), re-resolve the workspace path with `"$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE` immediately before deleting — the script verifies the path stays inside the repository — then delete only the path it prints: `rm -rf <printed path>`. Never `rm -rf` a remembered workspace path. Git history is the record now. Sibling directories under `.razorback/sdd/` belong to other plans; leave them alone.
 4. **Finish:** Use `razorback:finishing-a-development-branch`.
 
 ## Blockers
 
-The authoritative taxonomy is `../using-razorback/references/blocker-taxonomy.md` (in the razorback plugin). Consult it before stopping.
+The authoritative taxonomy is the `razorback:using-razorback` skill's `references/blocker-taxonomy.md`. Consult it before stopping.
 
 **Bias rules:**
 - When in doubt, press on and flag. A line in the morning report is cheaper than a false wake-up.
@@ -430,7 +430,7 @@ Implementer (resumed): all three addressed, tests passing, committed ghi789.
 
 **Required workflow skills:**
 - **razorback:using-git-worktrees** — Set up isolated workspace before starting; its Step 0b inventories outstanding worktrees and branches first. Skip only with explicit user consent (small, single-session work where a feature branch is sufficient).
-- **`../using-razorback/references/source-control-hygiene.md`** — Check A before creating a worktree, Check B before Step 5 declares the run done.
+- The `razorback:using-razorback` skill's `references/source-control-hygiene.md` — Check A before creating a worktree, Check B before Step 5 declares the run done.
 - **razorback:writing-plans** — Creates the plan this skill executes
 - **razorback:requesting-code-review** — Review criteria the lead applies during inline review
 - **razorback:managing-review-campaigns** — Bounds any broad or external review campaign without replacing routine scoped fix review
@@ -443,5 +443,5 @@ Implementer (resumed): all three addressed, tests passing, committed ghi789.
 - **razorback:executing-plans** — Use for parallel-session, single-agent, or no-delegation execution
 
 **Codex-specific:**
-- Collaboration tools (`spawn_agent` / `followup_task` / `send_message` / `wait_agent` / `interrupt_agent` / `list_agents`) are enabled by default on current codex (verified 0.144.3); older versions needed `multi_agent = true` in `~/.codex/config.toml` (see `../using-razorback/references/codex-tools.md`). Trust the live tool list over these names.
+- Collaboration tools (`spawn_agent` / `followup_task` / `send_message` / `wait_agent` / `interrupt_agent` / `list_agents`) are enabled by default on current codex (verified 0.144.3); older versions needed `multi_agent = true` in `~/.codex/config.toml` (see the `razorback:using-razorback` skill's `references/codex-tools.md`). Trust the live tool list over these names.
 - Use `interrupt_agent(target=<agent-id>)` to cancel a worker that is stuck or no longer needed (e.g. after cap adjudication rules its open findings); there is no separate close/free step on current codex.

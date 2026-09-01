@@ -42,7 +42,7 @@ Report with branch state:
 
 **Step 0 answers "am I isolated?". This step answers "what else is already outstanding?".** Skipping it is how a phase-2 worktree gets created beside a phase-1 worktree whose work never landed.
 
-Run Check A of `../using-razorback/references/source-control-hygiene.md`:
+Run Check A of the `razorback:using-razorback` skill's `references/source-control-hygiene.md`:
 
 ```bash
 git worktree list
@@ -250,9 +250,9 @@ Ready to implement <feature-name>
 ## Integration
 
 **Called by:**
-- **brainstorming** (Phase 4) - REQUIRED when design is approved and implementation follows
-- **subagent-driven-development** - REQUIRED before executing any tasks
-- **executing-plans** - REQUIRED before executing any tasks
+- **razorback:brainstorming** (Phase 4) - REQUIRED when design is approved and implementation follows
+- **razorback:subagent-driven-development** - REQUIRED before executing any tasks
+- **razorback:executing-plans** - REQUIRED before executing any tasks
 - Any skill needing isolated workspace
 
 **Escape hatch:** The "REQUIRED" callers above default to worktree isolation. The user can opt out with explicit consent for small, same-session work where a feature branch on the current workspace is sufficient. Record the consent and proceed — don't silently skip worktree setup.
@@ -260,4 +260,4 @@ Ready to implement <feature-name>
 **Never called by:** razorback:fixing-small-issues. Quick-fix-tier work happens on the current checkout by policy — no worktree, no baseline verification, and no consent question needed, because this skill is never invoked for that tier.
 
 **Pairs with:**
-- **finishing-a-development-branch** - REQUIRED for cleanup after work complete
+- **razorback:finishing-a-development-branch** - REQUIRED for cleanup after work complete

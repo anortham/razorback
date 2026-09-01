@@ -224,7 +224,7 @@ from the sizing heuristic or explicit `--wait`/`--background`).
 
 **Step 2: Build the prompt**
 
-Use the shared [`review-payload.md`](../security-review/review-payload.md)
+Use the shared `review-payload.md` (in the `razorback:security-review` skill)
 contract. For a standalone review, export the reviewed `HEAD` tree first so a
 large bundle has a readable, `.git`-free workspace:
 
@@ -351,7 +351,7 @@ confidence in the change.
 **Step 1: Apply Review Targeting** (same as Code Review)
 
 **Step 2: Build the user prompt** with the shared
-[`review-payload.md`](../security-review/review-payload.md) contract. For a
+`review-payload.md` (in the `razorback:security-review` skill) contract. For a
 standalone review, use the `.git`-free `REVIEW_ROOT` exported from the reviewed
 `HEAD` tree. The user prompt carries the adversarial instruction and either the
 small redacted bundle or the path to the large bundle; it never carries a large

@@ -42,7 +42,7 @@ WHEN receiving code review feedback:
 **Unclear external-review items during an approved autonomous run (the common
 case):** verify the clear items, fix independently verifiable real issues,
 flag the unclear item for review and continue — noting it in the report —
-unless it matches the blocker taxonomy. Do not let one vague external
+unless it matches the blocker taxonomy (the `razorback:using-razorback` skill's `references/blocker-taxonomy.md`). Do not let one vague external
 suggestion block unrelated safe fixes, and do not stop the run to ask about it.
 
 **Unclear human direction blocks implementation (interactive review from the

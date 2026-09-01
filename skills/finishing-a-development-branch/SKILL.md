@@ -68,7 +68,7 @@ Use `$BASE_SHA` for any `base..HEAD` range computation (e.g. `git diff --stat $B
 
 ### Step 2a: Reconcile source-control state
 
-Run Check B of `../using-razorback/references/source-control-hygiene.md`. This is the run's last chance to notice work that is finished but not integrated — after this, the report says "Complete".
+Run Check B of the `razorback:using-razorback` skill's `references/source-control-hygiene.md`. This is the run's last chance to notice work that is finished but not integrated — after this, the report says "Complete".
 
 ```bash
 git status --short --branch
@@ -330,7 +330,7 @@ Check whether the captured path is a listed worktree:
 git worktree list | grep "$WORKTREE_PATH"
 ```
 
-**Provenance rule** (canonical definition: `../using-razorback/references/source-control-hygiene.md`): a worktree is yours to remove when this run created it, or when its path lies under a razorback-managed location — `.worktrees/`, `worktrees/`, or `~/.config/razorback/worktrees/<project>/`. These are the locations `razorback:using-git-worktrees` Step 1b actually creates. A worktree anywhere else belongs to the host or the user: leave it in place and report its path instead.
+**Provenance rule** (canonical definition: the `razorback:using-razorback` skill's `references/source-control-hygiene.md`): a worktree is yours to remove when this run created it, or when its path lies under a razorback-managed location — `.worktrees/`, `worktrees/`, or `~/.config/razorback/worktrees/<project>/`. These are the locations `razorback:using-git-worktrees` Step 1b actually creates. A worktree anywhere else belongs to the host or the user: leave it in place and report its path instead.
 
 If the path is listed **and** provenance says it is yours:
 ```bash
@@ -343,7 +343,7 @@ Then report: "Removed worktree $WORKTREE_PATH for branch $FEATURE_BRANCH."
 
 ### Step 6: Reconcile Remaining Source-Control State
 
-Run Check B of `../using-razorback/references/source-control-hygiene.md` before reporting the branch finished. Report one line per outstanding item — a worktree still holding uncommitted changes, or a branch with commits absent from the base and from any PR opened here. Land it or name it; do not report "done" with the state unaccounted for.
+Run Check B of the `razorback:using-razorback` skill's `references/source-control-hygiene.md` before reporting the branch finished. Report one line per outstanding item — a worktree still holding uncommitted changes, or a branch with commits absent from the base and from any PR opened here. Land it or name it; do not report "done" with the state unaccounted for.
 
 ## Quick Reference
 
@@ -375,7 +375,7 @@ Run Check B of `../using-razorback/references/source-control-hygiene.md` before 
 ## Red Flags
 
 **Never:**
-- Claim the work is finished without running Check B (`../using-razorback/references/source-control-hygiene.md`)
+- Claim the work is finished without running Check B (the `razorback:using-razorback` skill's `references/source-control-hygiene.md`)
 - Leave commits stranded in another worktree or branch without naming them in the report
 - Remove a worktree outside a razorback-managed location
 - Proceed with failing tests
@@ -401,5 +401,5 @@ Run Check B of `../using-razorback/references/source-control-hygiene.md` before 
 - Direct user invocation ("finish this branch") — Interactive mode
 
 **Pairs with:**
-- **using-git-worktrees** - Cleans up worktree created by that skill (Interactive Mode, Options 1 & 4)
+- **razorback:using-git-worktrees** - Cleans up worktree created by that skill (Interactive Mode, Options 1 & 4)
 - **morning-report-template.md** (this directory) — template rendered by Autonomous Mode Step 3

@@ -22,7 +22,7 @@ Load plan, review critically, execute all tasks, report when complete.
 ### Step 1: Load and Review Plan
 1. Read plan file
 2. Review critically: use Miller to check that the plan's file paths and symbol references are still valid against current code
-3. If you find a real blocker per `../using-razorback/references/blocker-taxonomy.md` (in the razorback plugin) (especially #3, plan-contradicting data, or #4, safety-critical ambiguity with no plan answer), stop and report
+3. If you find a real blocker per the `razorback:using-razorback` skill's `references/blocker-taxonomy.md` (especially #3, plan-contradicting data, or #4, safety-critical ambiguity with no plan answer), stop and report
 4. For any other design-quality questions, decide the plan-consistent answer and note it in your eventual report (file:line + reason)
 5. Create tasks (TaskCreate) and proceed
 
@@ -64,14 +64,14 @@ After `razorback:pre-merge-review` returns its morning-report summary block, pro
 ### Step 4: Complete Development
 
 After all tasks complete and verified (and pre-merge review, if any, has run):
-- **Reconcile source-control state first:** run Check B of `../using-razorback/references/source-control-hygiene.md`. Status every worktree this run created and every branch the plan produced. Land stranded commits on this branch (re-run the branch gate afterward; the diff changed) or carry them forward as named items for the morning report. Do not proceed to the finish skill with the state unaccounted for.
+- **Reconcile source-control state first:** run Check B of the `razorback:using-razorback` skill's `references/source-control-hygiene.md`. Status every worktree this run created and every branch the plan produced. Land stranded commits on this branch (re-run the branch gate afterward; the diff changed) or carry them forward as named items for the morning report. Do not proceed to the finish skill with the state unaccounted for.
 - Announce: "I'm using the finishing-a-development-branch skill to complete this work."
 - **REQUIRED SUB-SKILL:** Use razorback:finishing-a-development-branch
 - Follow that skill in Autonomous Mode to verify the branch gate, push, create the PR, write the report, and stop before merge
 
 ## Blockers
 
-The authoritative taxonomy is `../using-razorback/references/blocker-taxonomy.md` (in the razorback plugin). Consult it before stopping.
+The authoritative taxonomy is the `razorback:using-razorback` skill's `references/blocker-taxonomy.md`. Consult it before stopping.
 
 **Bias rules:**
 - When in doubt, press on and flag. A line in the morning report is cheaper than a false wake-up.
@@ -130,7 +130,7 @@ For any unattended goal or continuation predicate, `campaign_closed: yes` is ter
 
 **Required workflow skills:**
 - **razorback:using-git-worktrees** - Set up isolated workspace before starting; its Step 0b inventories outstanding worktrees and branches first. Skip only with explicit user consent (small, single-session work where a feature branch is sufficient).
-- **`../using-razorback/references/source-control-hygiene.md`** - Check A before creating a worktree, Check B before Step 4 hands off to the finish skill.
+- The `razorback:using-razorback` skill's `references/source-control-hygiene.md` - Check A before creating a worktree, Check B before Step 4 hands off to the finish skill.
 - **razorback:writing-plans** - Creates the plan this skill executes; propagates `reviewer_choice` and verification strategy as inputs.
 - **razorback:pre-merge-review** - Invoked at Step 3 when `reviewer_choice` is `codex` / `claude`. Skipped if the choice is `none`.
 - **razorback:managing-review-campaigns** - Provides the immutable campaign state preserved across checkpoints and continuation.

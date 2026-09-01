@@ -82,8 +82,8 @@ HEAD_SHA=$(git rev-parse HEAD)
 ### Policy Gate
 
 Before any dispatch from the table above sends the diff or repo content to an
-external CLI, apply the external-model policy check in
-razorback:security-review, using that CLI's provider from the mapping there.
+external CLI, apply the external-model policy check
+(**REQUIRED SUB-SKILL:** razorback:security-review), using that CLI's provider from the mapping there.
 No policy block in the target repo's project instructions → proceed and add the
 loud note to the morning report. Policy denies the provider → refuse the
 dispatch and name an allowed alternative; on an autonomous run where the user
@@ -97,7 +97,7 @@ chose that provider, stop per blocker taxonomy #4.
 - `{DESCRIPTION}` - Brief summary
 
 **3. Act on feedback:**
-Route the findings through `razorback:receiving-code-review` — verify each item against the code before implementing, push back with reasoning where the reviewer is wrong, and fix what survives verification.
+**REQUIRED SUB-SKILL:** razorback:receiving-code-review — verify each item against the code before implementing, push back with reasoning where the reviewer is wrong, and fix what survives verification.
 
 ## When to Request Review
 

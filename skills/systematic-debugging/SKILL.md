@@ -193,7 +193,7 @@ You MUST complete each phase before proceeding to the next.
    - Automated test if possible
    - One-off test script if no framework
    - MUST have before fixing
-   - Use the `razorback:test-driven-development` skill for writing proper failing tests
+   - **REQUIRED SUB-SKILL:** razorback:test-driven-development — write the failing test properly
 
 2. **Implement Single Fix**
    - Before writing the fix, assess the blast radius: Miller `impact(target='<symbol being changed>')` returns the impacted symbols plus the likely tests

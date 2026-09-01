@@ -49,7 +49,7 @@ Use for any complaint about time, throughput, or resource use:
 **Route elsewhere when:**
 
 - The output is wrong, not late → `razorback:systematic-debugging`
-- The test is flaky from timing, not slow → `systematic-debugging/condition-based-waiting.md`
+- The test is flaky from timing, not slow → the `razorback:systematic-debugging` skill's `condition-based-waiting.md`
 - Three fixes failed and each one exposed new coupling → `razorback:architecture-quality`
 
 **A performance change is not quick-fix tier.** `razorback:fixing-small-issues` covers small

@@ -28,7 +28,7 @@ Placeholders use {{double-brace}} syntax.
 ## Judgment calls (non-blocking decisions made)
 - `{{file_path}}:{{line}}` — Chose {{choice_x}} over {{choice_y}} because {{reason}}.
 <!-- repeat for every non-obvious decision; examples:
-- `skills/executing-plans/SKILL.md:42` — Chose bullet list over table because the section only has 3 items.
+- `src/report/render.ts:42` — Chose bullet list over table because the section only has 3 items.
 - `skills/finishing-a-development-branch/SKILL.md:17` — Named the mode "autonomous" instead of "unattended" because the design doc uses "autonomous" throughout.
 -->
 
