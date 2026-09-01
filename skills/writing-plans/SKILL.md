@@ -316,6 +316,17 @@ When a full plan has exactly one task, use `## Task Structure` above unchanged �
 - Complete code in plan (not "add validation")
 - Exact project-defined verification commands with expected output
 
+## Plan Self-Review
+
+After writing the plan, look at it with fresh eyes before announcing it:
+
+1. **Placeholder scan:** Any TODOs, "TBD", or steps too vague to act on? Fix them.
+2. **Spec alignment:** Does the plan cover every spec requirement, with no scope creep?
+3. **Task decomposition:** Clear boundaries, actionable steps, correct dependency ordering?
+4. **Buildability:** Every file path and symbol the plan names must be real — Miller `search(query='<path>', mode=file)` and `inspect(target='<symbol>', depth=overview)`. Fix any API the plan invents.
+
+Fix issues inline. When the session can dispatch subagents, you may instead dispatch a plan reviewer using `plan-document-reviewer-prompt.md` (this directory).
+
 ## Execution Handoff
 
 **Step 1, announce plan save and request approval.** The plan's visual digest — `<plan>.html` beside the markdown, sibling basename, composed per the `razorback:using-razorback` skill's `references/digest-kit.md` — is opt-in: write it only when the user asked for a digest in this session or in project instructions. Never generate one unprompted. After saving the plan (and the digest, when requested), announce:

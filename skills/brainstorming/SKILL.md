@@ -113,7 +113,7 @@ Every project goes through this process. A todo list, a single-function utility,
 
 **Documentation (all paths):**
 - Write the validated design to `docs/plans/YYYY-MM-DD-<topic>-design.md`
-- Commit the design document to git
+- Do NOT commit yet — the design doc is committed in the task worktree as the branch's first commit (isolated-workspace step below)
 
 **Spec Self-Review:**
 After writing the spec document, look at it with fresh eyes:
@@ -123,12 +123,12 @@ After writing the spec document, look at it with fresh eyes:
 3. **Scope check:** Is this focused enough for a single implementation plan, or does it need decomposition?
 4. **Ambiguity check:** Could any requirement be interpreted two different ways? If so, pick one and make it explicit.
 
-Fix any issues inline. No need to re-review, just fix and move on.
+Fix any issues inline. No need to re-review, just fix and move on. When the session can dispatch subagents, you may instead dispatch a fresh-eyes reviewer using `spec-document-reviewer-prompt.md` (this directory).
 
 **User Review Gate:**
 After the spec review loop passes, ask the user to review the written spec before proceeding. The spec's visual digest — `<design-doc>.html` beside the markdown, sibling basename, composed per the `razorback:using-razorback` skill's `references/digest-kit.md` — is opt-in: write it only when the user asked for a digest in this session or in project instructions. Never generate one unprompted.
 
-> "Spec written and committed to `<path>`. Please review it and let me know if you want to make any changes before we start writing out the implementation plan."
+> "Spec written to `<path>`. Please review it and let me know if you want to make any changes before we start writing out the implementation plan."
 
 When a digest was requested, add to the ask: "with a visual digest at `<design-doc>.html`".
 

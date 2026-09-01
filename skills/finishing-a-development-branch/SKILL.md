@@ -396,7 +396,7 @@ Run Check B of `../using-razorback/references/source-control-hygiene.md` before 
 ## Integration
 
 **Called by:**
-- `razorback:executing-plans` (Step 5) — Autonomous mode when the execution skill finishes cleanly
+- `razorback:executing-plans` (Step 4) — Autonomous mode when the execution skill finishes cleanly
 - `razorback:subagent-driven-development` (Step 5 or 4a+finish) — Autonomous mode
 - Direct user invocation ("finish this branch") — Interactive mode
 

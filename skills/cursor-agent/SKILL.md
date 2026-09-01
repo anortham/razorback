@@ -188,10 +188,13 @@ command discovery resolves the `.ps1`/`.cmd` shim) and build the prompt with
 
 ```powershell
 $Workspace = "C:\path\to\project"
+$SkillDir = "C:\path\to\razorback\skills\cursor-agent"
 $PromptFile = "$env:TEMP\cursor-task.md"
 $RedactedPromptFile = [IO.Path]::GetTempFileName()
-& node "$SKILL_DIR/../security-review/scripts/redact-outbound" < $PromptFile > $RedactedPromptFile
-if ($LASTEXITCODE -ne 0) {
+$redact = Start-Process node -ArgumentList @("$SkillDir\..\security-review\scripts\redact-outbound") `
+  -RedirectStandardInput $PromptFile -RedirectStandardOutput $RedactedPromptFile `
+  -NoNewWindow -Wait -PassThru
+if ($redact.ExitCode -ne 0) {
   Remove-Item -Force $PromptFile, $RedactedPromptFile
   throw "outbound redaction failed"
 }

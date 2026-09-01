@@ -110,7 +110,7 @@ payload with a hole in it.
 ## Outbound Payload Redaction
 
 Immediately before every Grok dispatch, write the fully constructed payload to
-`PAYLOAD_FILE` and pass it through `skills/security-review/scripts/redact-outbound`.
+`PAYLOAD_FILE` and pass it through `$SKILL_DIR/../security-review/scripts/redact-outbound`.
 Use only `REDACTED_PAYLOAD_FILE` for the invocation; never log matched material.
 If redaction fails, remove both files, emit only a generic error, and stop before
 Grok receives any input. Review and adversarial bundles use the shared
