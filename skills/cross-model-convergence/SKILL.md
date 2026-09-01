@@ -5,9 +5,21 @@ description: Use when the user wants two models to check each other's work until
 
 # Cross-Model Convergence
 
+## Overview
+
 The lead and every selected external reviewer gather independent evidence in a bounded review campaign. At least one reviewer must be a different model from the lead, and every call reported as cross-model evidence must come from a different model. Calling your own model's CLI is self-review and cannot satisfy an explicit cross-model requirement.
 
+**Core principle:** The setup block is immutable — participants, budget, and rounds are fixed before the first dispatch, and every terminal state closes the campaign for good.
+
+**Violating the letter of the campaign contract is violating its spirit.**
+
 **Announce at start:** "I'm using the cross-model-convergence skill with [selected reviewers] on [problem class]."
+
+## When to Use
+
+Use when the user asks two or more models to check each other's work to a stated end state, when an audit runs to convergence under `/loop` or another goal-driven runner, or when a design decision needs one adversarial refutation pass before building (the Doubt Pass below).
+
+**Not here:** planned pre-merge external review — `razorback:pre-merge-review` owns that fixed two-pass budget. A single ad-hoc review with no convergence goal is `razorback:requesting-code-review`.
 
 **REQUIRED SUB-SKILLS:** razorback:managing-review-campaigns, razorback:architecture-quality (Audit Mode), one or more reviewer channels (razorback:codex-cli, razorback:claude-cli, razorback:grok-cli, or razorback:cursor-agent in read-only mode) pointing at models that differ from the lead, razorback:receiving-code-review, razorback:test-driven-development, razorback:verification-before-completion.
 
@@ -34,32 +46,7 @@ fi
 
 Select the different-model reviewers explicitly requested or deliberately chosen for this campaign before the first sweep. Availability and policy are gates, not reasons to enroll every installed model. Users may run with one selected external reviewer or several. Omit unavailable optional reviewers before setup and record the omission. A reviewer named by the user or approved plan is required; if unavailable, emit a `blocked` campaign status instead of substituting another model or degrading to same-model review.
 
-When no different-model reviewer is available before setup, emit one auditable zero-call record instead of inventing a participant:
-
-```text
-REVIEW CAMPAIGN
-scope: <problem class and approved change range>
-workflow: convergence
-participants: lead
-required_reviewers: at least one different-model reviewer (unavailable)
-evidence_target: cross-model-reviewed
-severity_floor: <default medium>
-discovery_scopes: <problem class>
-external_invocation_budget: 0
-max_rounds: 3
-round: 0/3
-external_invocations: 0/0
-
-REVIEW CAMPAIGN STATUS
-state: blocked
-evidence: lead-only
-round: 0/3
-external_invocations: 0/0
-open_critical_high: 0
-open_medium_low: 0
-open_above_floor: 0
-campaign_closed: yes
-```
+When no different-model reviewer is available before setup, emit one auditable zero-call record instead of inventing a participant: the canonical setup block below with `participants: lead`, `required_reviewers: at least one different-model reviewer (unavailable)`, `external_invocation_budget: 0`, and `external_invocations: 0/0`, immediately followed by the terminal status block with `state: blocked`, `evidence: lead-only`, zero open counts, and `campaign_closed: yes`.
 
 Do not start another campaign automatically if availability changes; a new campaign requires a new explicit user request.
 
@@ -91,7 +78,7 @@ Replace the budget placeholders with integers before dispatch: one selected exte
 5. Present the merged list once for approval. In an unattended goal-driven run, the pre-approved setup plus a Goldfish checkpoint satisfies this gate.
 6. Fix approved findings with TDD and verify them with `razorback:verification-before-completion`.
 
-Reviewer proposals outside the approved scope are recorded for the final report and cannot extend the campaign. A required discovery obligation is satisfied once that reviewer supplies usable evidence for every declared required discovery scope. Unavailability, errors, or unusable output before then closes the campaign as `blocked`. An optional participant lost after setup is not retried or replaced; use the strongest label actually earned and continue only if at least one different-model review still satisfies the explicit cross-model requirement.
+Reviewer proposals outside the approved scope are recorded for the final report and cannot extend the campaign. A required discovery obligation is satisfied once that reviewer supplies usable evidence for every declared required discovery scope. Unavailability, errors, or unusable output before then closes the campaign as `blocked`. An optional participant lost after setup follows Failure Handling below.
 
 ## Round 2 — Scoped Confirmation
 
@@ -148,3 +135,10 @@ A design doubt pass is a separate, stricter convergence campaign. Emit the canon
 | "A new medium issue deserves Round 3." | Only a lead-verified fix-induced critical/high regression opens Round 3. |
 | "Reset the counters after compaction." | Checkpoints preserve the setup and monotonically increasing counters. |
 | "The campaign is capped, but the goal is not successful." | Every `campaign_closed: yes` state is terminal. |
+
+## It's working if
+
+- The setup block was emitted once and nothing in it changed afterward.
+- `external_invocations` never exceeded the budget, and no dispatch happened after a terminal status.
+- Every finding carried `file:line` evidence and a triaged disposition; praise bought nothing.
+- A missing different-model reviewer produced a zero-call `blocked` record, not a same-model substitute.
