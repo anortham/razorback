@@ -35,16 +35,10 @@ test suite — use `razorback:diagnosing-performance`. A defect has a wrong answ
 to a wrong line; slowness has no wrong line, so it needs measurement instead of tracing.
 
 **Use this ESPECIALLY when:**
-- Under time pressure (emergencies make guessing tempting)
-- "Just one quick fix" seems obvious
-- You've already tried multiple fixes
-- Previous fix didn't work
+- Under time pressure or told to fix it NOW — emergencies make guessing tempting, and systematic is faster than thrashing
+- "Just one quick fix" seems obvious, or the issue seems simple — simple bugs have root causes too
+- You've already tried fixes that didn't work
 - You don't fully understand the issue
-
-**Don't skip when:**
-- Issue seems simple (simple bugs have root causes too)
-- You're in a hurry (rushing guarantees rework)
-- Manager wants it fixed NOW (systematic is faster than thrashing)
 
 ## The Four Phases
 
@@ -277,6 +271,13 @@ If systematic investigation reveals issue is truly environmental, timing-depende
 4. Add monitoring/logging for future investigation
 
 **But:** 95% of "no root cause" cases are incomplete investigation.
+
+## It's working if
+
+- A written hypothesis preceded every fix, and each fix changed exactly one thing.
+- The fix has a failing-test reproduction that now passes.
+- No fourth fix was attempted without questioning the architecture.
+- Nothing secret appeared unredacted in any output you showed or sent.
 
 ## Supporting Techniques
 

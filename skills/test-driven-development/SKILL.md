@@ -61,10 +61,10 @@ digraph tdd_cycle {
     verify_red -> green [label="yes"];
     verify_red -> red [label="wrong\nfailure"];
     green -> verify_green;
-    verify_green -> refactor [label="yes"];
+    verify_green -> refactor [label="yes -\nclean up"];
     verify_green -> green [label="no"];
     refactor -> verify_green [label="stay\ngreen"];
-    verify_green -> next;
+    verify_green -> next [label="yes -\ndone"];
     next -> red;
 }
 ```
@@ -233,53 +233,9 @@ Next failing test for next feature.
 - Test passes immediately
 - Can't explain why test failed
 - Tests added "later"
-- Rationalizing "just this once"
-- "I already manually tested it"
-- "Tests after achieve the same purpose"
-- "It's about spirit not ritual"
-- "Keep as reference" or "adapt existing code"
-- "Already spent X hours, deleting is wasteful"
-- "TDD is dogmatic, I'm being pragmatic"
-- "This is different because..."
+- Any excuse from the Rationalizations table — "just this once", "keep as reference", "it's about spirit not ritual", "this is different because..."
 
 **All of these mean: Delete code. Start over with TDD.**
-
-## Example: Bug Fix
-
-**Bug:** Empty email accepted
-
-**RED**
-```typescript
-test('rejects empty email', async () => {
-  const result = await submitForm({ email: '' });
-  expect(result.error).toBe('Email required');
-});
-```
-
-**Verify RED**
-```bash
-$ <project-defined worker-scope command>
-FAIL: expected 'Email required', got undefined
-```
-
-**GREEN**
-```typescript
-function submitForm(data: FormData) {
-  if (!data.email?.trim()) {
-    return { error: 'Email required' };
-  }
-  // ...
-}
-```
-
-**Verify GREEN**
-```bash
-$ <project-defined worker-scope command>
-PASS
-```
-
-**REFACTOR**
-Extract validation for multiple fields if needed.
 
 ## Verification Checklist
 
@@ -322,9 +278,4 @@ When writing or changing any test, read [writing-good-tests.md](writing-good-tes
 
 ## Final Rule
 
-```
-Production code → test exists and failed first
-Otherwise → not TDD
-```
-
-Exceptions are only the planned exceptions above: they must be explicit in the user request or approved plan and logged. Missing exception language is not a mid-run permission stop; follow TDD or classify the issue under the blocker taxonomy.
+Production code requires a test that existed and failed first — otherwise it is not TDD. Exceptions are only the planned exceptions above: they must be explicit in the user request or approved plan and logged. Missing exception language is not a mid-run permission stop; follow TDD or classify the issue under the blocker taxonomy.
