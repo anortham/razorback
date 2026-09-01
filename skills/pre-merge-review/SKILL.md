@@ -7,7 +7,7 @@ description: Use after all tasks are complete and branch verification passes, be
 
 ## Overview
 
-Run a fresh, isolated external reviewer (codex / claude) against the full branch diff after all tasks are done and the plan's branch-gate verification scope is green, then route verified findings through razorback's own fix flow. The review is two passes of the same reviewer CLI, both against the full branch diff: a **general adversarial pass**, then a **dedicated security pass** driven by a security-only prompt. The lead verifies every finding against the code with Miller, classifies it (real-bug / real-improvement / false-positive / out-of-scope), fixes what's real, dismisses what isn't (with a written reason), and flags what needs human judgment. Each pass runs once — fixes receive local confirmation without a post-fix external re-review. The output is a summary block that slots into the morning report's External review section, so the user sees exactly what the reviewer said, what the lead did with it, and why.
+The chosen external reviewer (codex / claude) gets exactly one shot at the full branch diff: a **general adversarial pass**, then a **dedicated security pass** driven by a security-only prompt, inside a hard budget of two invocations. Each pass runs once — fixes receive local confirmation without a post-fix external re-review. The lead, not the reviewer, decides what is real: every finding is verified against the code with Miller, classified (real-bug / real-improvement / false-positive / out-of-scope), then fixed, dismissed with a written reason, or flagged for human judgment. The output is a summary block that slots into the morning report's External review section, so the user sees exactly what the reviewer said, what the lead did with it, and why.
 
 Both passes run from one temporary export of the reviewed Git ref, created outside the live worktree and removed explicitly after the pass outputs are parsed.
 
@@ -55,42 +55,7 @@ The general and security calls consume the entire immutable external budget. The
 
 ## The Process
 
-```dot
-digraph pre_merge_review {
-    rankdir=TB;
-
-    "Reviewer choice (codex/claude)" [shape=box];
-    "Step 1: Build diff + context + review tree" [shape=box];
-    "Step 2: Dispatch chosen reviewer twice (general pass + security pass, read-only)" [shape=box];
-    "Step 3: Parse both pass outputs into one merged list (schema JSON for codex, result envelope for claude)" [shape=box];
-    "Any findings?" [shape=diamond];
-    "Step 4: Lead verifies each finding with Miller" [shape=box];
-    "Classify: real-bug / real-improvement / false-positive / out-of-scope" [shape=box];
-    "Any verified fixes?" [shape=diamond];
-    "Step 5: Apply verified fixes" [shape=box];
-    "Step 6: Run required verification scope" [shape=box];
-    "Verification green?" [shape=diamond];
-    "Step 7: Emit summary block for morning report" [shape=box style=filled fillcolor=lightgreen];
-    "Return to caller (proceed to finishing-a-development-branch)" [shape=box style=filled fillcolor=lightgreen];
-    "Blocker per taxonomy (stop + report)" [shape=box style=filled fillcolor=lightpink];
-
-    "Reviewer choice (codex/claude)" -> "Step 1: Build diff + context + review tree";
-    "Step 1: Build diff + context + review tree" -> "Step 2: Dispatch chosen reviewer twice (general pass + security pass, read-only)";
-    "Step 2: Dispatch chosen reviewer twice (general pass + security pass, read-only)" -> "Step 3: Parse both pass outputs into one merged list (schema JSON for codex, result envelope for claude)";
-    "Step 3: Parse both pass outputs into one merged list (schema JSON for codex, result envelope for claude)" -> "Any findings?";
-    "Any findings?" -> "Step 7: Emit summary block for morning report" [label="no"];
-    "Any findings?" -> "Step 4: Lead verifies each finding with Miller" [label="yes"];
-    "Step 4: Lead verifies each finding with Miller" -> "Classify: real-bug / real-improvement / false-positive / out-of-scope";
-    "Classify: real-bug / real-improvement / false-positive / out-of-scope" -> "Any verified fixes?";
-    "Any verified fixes?" -> "Step 7: Emit summary block for morning report" [label="no (all dismissed/flagged)"];
-    "Any verified fixes?" -> "Step 5: Apply verified fixes" [label="yes"];
-    "Step 5: Apply verified fixes" -> "Step 6: Run required verification scope";
-    "Step 6: Run required verification scope" -> "Verification green?";
-    "Verification green?" -> "Step 7: Emit summary block for morning report" [label="yes"];
-    "Verification green?" -> "Blocker per taxonomy (stop + report)" [label="no (after fixes)"];
-    "Step 7: Emit summary block for morning report" -> "Return to caller (proceed to finishing-a-development-branch)";
-}
-```
+Seven steps, in order: build the diff and review tree (1), dispatch the two passes (2), parse both outputs into one merged list (3), verify and classify every finding (4), apply verified fixes (5), run the required verification scope (6), emit the summary block and return to the caller (7). A verification failure after fixes stops per the blocker taxonomy; a clean parse with no findings jumps straight to Step 7.
 
 ## Step 1: Build diff + context
 
@@ -221,19 +186,14 @@ carry only the small prompt wrapper when the artifact branch is selected.
 
 Two parse paths, because each CLI's output shape differs — and two outputs per review, because each pass writes its own output file. Both files live in `$OUT_DIR`, the private temp directory the reviewer-prompts invocation creates outside the worktree. Apply the chosen CLI's rules below to both pass outputs.
 
-**codex (strict schema, no envelope):** `--output-schema` makes the CLI enforce the JSON schema directly on stdout. Run `validate-review-output` against the direct object, then iterate the normalized result — a clean review has `findings: []`, and `jq -e '.findings[]'` exits 4 on a valid empty array, which would misread success as a parse failure.
+Only the input shape differs — **codex (strict schema, no envelope):** `--output-schema` makes the CLI enforce the JSON schema directly on stdout. **claude (result envelope):** `--output-format json` wraps the response in a result envelope: `{type, subtype, result, structured_output, usage, total_cost_usd, …}`; with `--json-schema`, the parsed object lands in `.structured_output` and `.result` holds the same JSON as a string. `validate-review-output` normalizes both shapes; run it on each pass output before accepting anything:
 
 ```bash
-"$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$OUT_DIR/codex-output.json" > "$OUT_DIR/codex-normalized.json"
-jq '.findings[]?' < "$OUT_DIR/codex-normalized.json"                              # iterate; empty = clean review
+"$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$OUT_DIR/<reviewer>-output.json" > "$OUT_DIR/<reviewer>-normalized.json"
+jq '.findings[]?' < "$OUT_DIR/<reviewer>-normalized.json"   # iterate; empty = clean review
 ```
 
-**claude (result envelope):** `--output-format json` wraps the response in a result envelope: `{type, subtype, result, structured_output, usage, total_cost_usd, …}`. With `--json-schema`, the parsed object lands in `.structured_output`; `.result` holds the same JSON as a string. Run `validate-review-output` before accepting it.
-
-```bash
-"$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$OUT_DIR/claude-output.json" > "$OUT_DIR/claude-normalized.json"
-jq '.findings[]?' < "$OUT_DIR/claude-normalized.json"   # iterate; empty = clean review
-```
+A clean review has `findings: []` — `jq -e '.findings[]'` exits 4 on a valid empty array, which would misread success as a parse failure.
 
 After Step 3, both reviewer paths produce **one merged list** of normalized findings covering both passes. Tag each finding with the pass that produced it (`general` / `security`) — the tag carries into classification and the morning report. For cost tracking in the morning report's per-reviewer section: claude surfaces `.total_cost_usd` and `.usage.{input_tokens,output_tokens}` in each pass's envelope — sum the two invocations; codex does not surface per-request token counts in its JSON output, so note the absence for codex rather than faking a number.
 
@@ -327,7 +287,19 @@ Every state with `campaign_closed: yes` is terminal. The caller must not dispatc
 
 The caller (`executing-plans` Step 3 or `subagent-driven-development` Step 4a) takes this block and hands it forward to `finishing-a-development-branch`, which renders it into the PR description (summary form) and the full worktree report.
 
+## Rationalizations
+
+| Excuse | Reality |
+|--------|---------|
+| "One more review pass will catch what the fixes changed" | The budget is two invocations, ever. Fixes get local confirmation, never a re-review. |
+| "Cap the reviewer so this run costs less" | A cap truncates the review mid-flight, and a truncated review gets re-run in full. Scope lives in the prompt. |
+| "The reviewer output was garbage — dispatch again" | The invocation is consumed. Malformed output closes the campaign `blocked`. |
+| "Skip the security pass, the general pass covered it" | Half a review silently downgrades an explicit user choice. Both passes, or blocked. |
+| "The finding is probably right, just fix it" | Verify with Miller first. Reviewers emit noise; rubber-stamping cuts both ways. |
+
 ## Red flags
+
+Violating the letter of these rules is violating their spirit.
 
 **Never:**
 
@@ -357,3 +329,10 @@ The caller (`executing-plans` Step 3 or `subagent-driven-development` Step 4a) t
 - The `razorback:using-razorback` skill's `references/blocker-taxonomy.md` — stop-versus-proceed rules
 - The `razorback:finishing-a-development-branch` skill's `morning-report-template.md` — shape of the summary block emitted in Step 7
 - The `razorback:codex-cli` skill's `schemas/review-output.schema.json` — the shared finding shape both reviewers target
+
+## It's working if
+
+- Exactly two external invocations were recorded, none after `campaign_closed: yes`.
+- Every finding ended fixed, dismissed with a written reason, or flagged with a why-uncertain note.
+- The fix diff passed the required verification scope before Step 7 emitted the summary.
+- `$REVIEW_ROOT` and every payload temp file are gone.
