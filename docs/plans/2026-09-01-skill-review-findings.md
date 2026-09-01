@@ -146,7 +146,16 @@ House-style models to copy from: systematic-debugging:240-257, diagnosing-perfor
 
 26 of 28 exceed 500. Worst: subagent-driven-development 5,513; grok-cli 5,442; codex-cli 4,105; claude-cli 3,898; pre-merge-review 3,873; writing-plans 2,992; finishing-a-development-branch 2,943; writing-skills 2,521; brainstorming 2,456. Under target: grounding-in-current-docs (453). **`using-razorback` is ~970 words and loads into every session against a <200 target** — the one place the target is not advisory.
 
-## Open design decisions (need user input before executing)
+## Open design decisions — RESOLVED 2026-09-01 (user approved)
+
+1. using-razorback: **keep the Miller table** (toolchain floor for Codex/OpenCode); trim the Skill Priority / Skill Types / User Instructions restatements instead.
+2. Redaction snippet: **one runnable copy per file**; every other occurrence in that file becomes a one-line pointer to it.
+3. writing-plans: **extract the task templates** to a supporting template file; body keeps one short example + pointer.
+4. Tier 3 testing bar: **npm test everywhere + one GREEN subagent scenario per rewritten discipline skill** (brainstorming, pre-merge-review, subagent-driven-development, receiving-code-review, architecture-quality, finishing-a-development-branch). No baseline RED runs.
+
+**Tier 3 corrections found during execution:** the "blocker taxonomy reprinted in full" dedupe items for `executing-plans` (81-88) and `subagent-driven-development` (342-348) are WRONG — `tests/twin-sections.test.mjs` invariants require the five blocker lines present in both `## Blockers` sections. That duplication is guard-mandated; leave it.
+
+## Original decision framing (for the record)
 
 1. **using-razorback Miller table (L92-119, ~¼ of the always-loaded file).** In Claude Code sessions it triplicates content (Miller MCP instructions + SubagentStart hook) and has already drifted (36 vs 40). BUT Codex/OpenCode users see this file without Miller's MCP instructions necessarily present. Options: keep (fix drift only); slim to capability names; move to a per-harness mechanism. Not a mechanical trim.
 2. **Redaction-snippet canonicalization pattern** — one statement in security-review + "wrap every payload" pointer elsewhere? Affects 6 skills and their runnable blocks.

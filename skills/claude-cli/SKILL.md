@@ -10,6 +10,13 @@ changes, or run adversarial security/correctness reviews from a fresh Claude
 instance. The value is a new session and an independent prompt, not a
 different underlying model.
 
+## When to Use
+
+Use when the user names Claude as the second perspective. The reviewer may be
+the same model build as the author — the independence is the fresh session and
+prompt, not the model. When the user wants a different model without naming
+one, use razorback:codex-cli; when they name Grok, razorback:grok-cli.
+
 ## Pre-flight Checklist
 
 Before invoking `claude -p`, run this readiness check. Tell the user what's
@@ -185,13 +192,8 @@ piece of code. No file changes, no structured output.
 
 ```bash
 PAYLOAD_FILE=$(mktemp)
-REDACTED_PAYLOAD_FILE=$(mktemp)
 printf '%s' "Your prompt here" > "$PAYLOAD_FILE"
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
-  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
-  echo "outbound redaction failed" >&2
-  exit 1
-fi
+# Run the Outbound Payload Redaction block, then:
 
 cd /path/to/project && claude -p \
   --no-session-persistence \
@@ -350,89 +352,20 @@ confidence in the change.
 
 **Step 1: Apply Review Targeting** (same as Code Review)
 
-**Step 2: Build the user prompt** with the shared
-`review-payload.md` (in the `razorback:security-review` skill) contract. For a
-standalone review, use the `.git`-free `REVIEW_ROOT` exported from the reviewed
-`HEAD` tree. The user prompt carries the adversarial instruction and either the
-small redacted bundle or the path to the large bundle; it never carries a large
-diff inline.
-
-**Step 3: Send with structured output and the adversarial system prompt**
-
-Read the schema from the canonical file (stripping `$schema`, as in Code
-Review) and point `--system-prompt-file` straight at this skill's canonical
-`adversarial-prompt.txt` — no temp file needed:
+**Step 2: Build the user prompt.** Run Code Review Step 2 unchanged, with one
+delta — the instruction line becomes:
 
 ```bash
-SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")
-
 REVIEW_INSTRUCTION="Perform an adversarial review of the complete code-change bundle. Return only the required completion schema with review_completed=true, files_inspected, commands_run, and concrete file/line evidence."
-PAYLOAD_FILE=$(mktemp)
-REDACTED_PAYLOAD_FILE=$(mktemp)
-{
-  printf '%s\n\n' "$REVIEW_INSTRUCTION"
-  if [ -n "${FOCUS:-}" ]; then
-    printf 'Focus area: %s\n\n' "$FOCUS"
-  fi
-  printf 'Target: %s\n' "$TARGET"
-  printf 'File stat:\n%s\n' "$FILE_STAT"
-  printf 'Commit log:\n%s\n' "$COMMIT_LOG"
-  printf 'Diff:\n%s' "$DIFF"
-} > "$PAYLOAD_FILE"
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" \
-  < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
-  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
-  rm -rf -- "$REVIEW_ROOT"
-  echo "outbound redaction failed" >&2
-  exit 1
-fi
-if ! REVIEW_ARTIFACT=$("$SKILL_DIR/../security-review/scripts/prepare-review-artifact" \
-  "$REVIEW_ROOT" "$REDACTED_PAYLOAD_FILE"); then
-  rm -f -- "$REDACTED_PAYLOAD_FILE"
-  rm -rf -- "$REVIEW_ROOT"
-  echo "review artifact preparation failed" >&2
-  exit 1
-fi
-REVIEW_PROMPT_FILE="$REDACTED_PAYLOAD_FILE"
-if [ "$REVIEW_ARTIFACT" != inline ]; then
-  REVIEW_PROMPT_FILE=$(mktemp)
-  printf '%s\n\n%s\n%s\n%s\n\n%s\n' \
-    'Read and follow the complete redacted review bundle at:' \
-    "$REVIEW_ARTIFACT" \
-    'The bundle contains the complete review instructions; follow them.' \
-    'Use the available read-only tools to inspect that file.' \
-    'Return only the required completion schema with review_completed=true, files_inspected, commands_run, and concrete file/line evidence.' \
-    > "$REVIEW_PROMPT_FILE"
-fi
-
-cd "$REVIEW_ROOT" && claude -p \
-  --no-session-persistence \
-  --dangerously-skip-permissions \
-  --output-format json \
-  --json-schema "$SCHEMA_JSON" \
-  --tools "Read,Grep,Glob" --strict-mcp-config \
-  ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} \
-  ${CLAUDE_EFFORT:+--effort "$CLAUDE_EFFORT"} \
-  ${CLAUDE_FALLBACK_MODEL:+--fallback-model "$CLAUDE_FALLBACK_MODEL"} \
-  --system-prompt-file "$SKILL_DIR/adversarial-prompt.txt" \
-  < "$REVIEW_PROMPT_FILE" 2>/dev/null
-rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE" "$REVIEW_PROMPT_FILE"
-rm -rf -- "$REVIEW_ROOT"
 ```
 
-For payloads over 128 KiB, `prepare-review-artifact` writes the complete
-redacted bundle to `.razorback-review/review-input.md` inside `REVIEW_ROOT` and
-the prompt contains only the concise instruction and artifact path. Do not
-reload that file into an argument, stdin, or `--prompt-file`; `--prompt-file`
-is prompt transport, not a review-artifact mechanism.
+**Step 3: Send with the adversarial system prompt.** Run Code Review Step 3
+with one flag added before the stdin redirect — no temp file needed, it points
+straight at this skill's canonical template:
 
-The `--json-schema` flag tells Claude to return JSON matching the review
-schema (verdict, summary, findings with severity/file/line/confidence, next
-steps, and completion evidence). A completed review requires
-`review_completed: true`, a non-empty unique `files_inspected` list, a
-`commands_run` array (which may be empty), and non-empty file/line/observation
-`evidence`; `needs-attention` requires at least one finding. No turn cap and no
-spend cap are set — the reviewer runs to completion.
+```bash
+  --system-prompt-file "$SKILL_DIR/adversarial-prompt.txt" \
+```
 
 **After**: Run `validate-review-output RESULT_FILE` to normalize and enforce
 the completion contract before accepting the result. Present findings grouped
@@ -456,31 +389,18 @@ keep the three in sync when editing any.
 By default, `--no-session-persistence` means sessions aren't saved. If you
 need follow-up capability, drop that flag, then resume with `claude -r`:
 
+Every prompt passes the Outbound Payload Redaction guard first
+(`PAYLOAD_FILE=$(mktemp)`, `printf '%s' "prompt" > "$PAYLOAD_FILE"`, run the
+guard block, then
+`IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true`):
+
 ```bash
 # Initial task (persistent session)
-PAYLOAD_FILE=$(mktemp)
-REDACTED_PAYLOAD_FILE=$(mktemp)
-printf '%s' "prompt" > "$PAYLOAD_FILE"
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
-  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
-  echo "outbound redaction failed" >&2
-  exit 1
-fi
-IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
 cd /path && claude -p --dangerously-skip-permissions ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} "$REDACTED_PROMPT" < /dev/null 2>/dev/null
-rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 
-# Resume the last session
-PAYLOAD_FILE=$(mktemp)
-REDACTED_PAYLOAD_FILE=$(mktemp)
-printf '%s' "follow-up prompt" > "$PAYLOAD_FILE"
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
-  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
-  echo "outbound redaction failed" >&2
-  exit 1
-fi
-IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
+# Resume the last session (redact the follow-up prompt the same way)
 claude -r "$REDACTED_PROMPT" < /dev/null 2>/dev/null
+
 rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ```
 
@@ -500,13 +420,8 @@ override. To review a project other than cwd, `cd` into it first:
 
 ```bash
 PAYLOAD_FILE=$(mktemp)
-REDACTED_PAYLOAD_FILE=$(mktemp)
 printf '%s' "prompt" > "$PAYLOAD_FILE"
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
-  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
-  echo "outbound redaction failed" >&2
-  exit 1
-fi
+# Run the Outbound Payload Redaction block, then:
 IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
 cd ~/source/other-project && claude -p --no-session-persistence \
   --dangerously-skip-permissions --tools "Read,Grep,Glob" --strict-mcp-config ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} \
@@ -600,3 +515,9 @@ assuming a command that exists in one exists in the other.
 | Apply explicit effort | any | Add `--effort "$CLAUDE_EFFORT"` (low/medium/high/xhigh/max) when the environment sets it |
 | Survive overload | autonomous | Add `--fallback-model "$CLAUDE_FALLBACK_MODEL"` so the run doesn't hard-fail on capacity |
 | Self-review with razorback skills | any | Add `--plugin-dir <path-to-razorback>` so the reviewer loads the same skill set |
+
+## It's working if
+
+- The dispatch used only the redacted payload file, and the temp files are gone afterward.
+- A review result carried `review_completed: true` and passed `validate-review-output`.
+- The user got the reviewer's view AND your own agree/disagree assessment, not a relay.

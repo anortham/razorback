@@ -9,6 +9,20 @@ Use the Codex CLI (`codex exec`) to get a second opinion, review code changes,
 run adversarial security/correctness reviews, or delegate tasks to OpenAI
 models.
 
+## Overview
+
+Codex is razorback's default cross-model reviewer: a genuinely different model
+from the authoring Claude, so its blind spots are less correlated. Two
+constraints shape the recipes. First, OpenAI structured outputs accept only a
+restricted JSON Schema subset — sanitize the canonical schema with
+`scripts/openai-schema` or the request fails with HTTP 400 before the model
+runs. Second, every outbound payload passes the Outbound Payload Redaction
+guard exactly once; recipes use only the redacted output.
+
+Use this skill when the user names Codex/OpenAI, or asks for a second opinion
+from a different model without naming one. When they name Claude as the fresh
+perspective, use razorback:claude-cli; for Grok, razorback:grok-cli.
+
 ## Defaults
 
 - **Model**: inherit the current Codex default unless the user or environment
@@ -104,13 +118,8 @@ No file changes needed.
 
 ```bash
 PAYLOAD_FILE=$(mktemp)
-REDACTED_PAYLOAD_FILE=$(mktemp)
 printf '%s' "Your prompt here" > "$PAYLOAD_FILE"
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
-  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
-  echo "outbound redaction failed" >&2
-  exit 1
-fi
+# Run the Outbound Payload Redaction block, then:
 IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
 
 codex exec --ephemeral --color never \
@@ -139,13 +148,8 @@ unless the user or environment explicitly selects a model.
 ```bash
 # Quick scoped review of uncommitted changes
 PAYLOAD_FILE=$(mktemp)
-REDACTED_PAYLOAD_FILE=$(mktemp)
 printf '%s' "Focus on error handling and concurrency safety." > "$PAYLOAD_FILE"
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
-  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
-  echo "outbound redaction failed" >&2
-  exit 1
-fi
+# Run the Outbound Payload Redaction block, then:
 IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
 codex exec --color never -C /path/to/project -s read-only \
   review --uncommitted --ephemeral \
@@ -262,11 +266,20 @@ change.
 
 **Step 1: Apply Review Targeting** (same as Code Review)
 
-**Step 2: Build the adversarial prompt** with the shared
-`review-payload.md` (in the `razorback:security-review` skill) contract. For a
-standalone review, export the reviewed `HEAD` tree first so a large bundle has
-a readable, `.git`-free workspace. The complete rendered adversarial bundle is
-redacted before the size decision.
+**Step 2: Build the adversarial prompt.** Run Code Review Step 2 unchanged up
+to its `REVIEW_INSTRUCTION=` line. In its place, render the instruction from
+the canonical template (after `$TARGET` resolves), then finish Step 2's
+payload build with `$ADVERSARIAL_INSTRUCTION` substituted for
+`$REVIEW_INSTRUCTION` and the `Focus area:` lines dropped — focus is already
+rendered into the template:
+
+```bash
+TEMPLATE=$(cat "$SKILL_DIR/adversarial-prompt.txt")
+HEAD=${TEMPLATE%%'{{TARGET_LABEL}}'*};  REST=${TEMPLATE#*'{{TARGET_LABEL}}'}
+MID=${REST%%'{{USER_FOCUS}}'*};         REST=${REST#*'{{USER_FOCUS}}'}
+TAIL=${REST%%'{{REVIEW_INPUT}}'*}
+ADVERSARIAL_INSTRUCTION="${HEAD}${TARGET}${MID}${FOCUS:-none specified}${TAIL}"
+```
 
 **Step 3: Send with structured output**
 
@@ -276,9 +289,7 @@ accept a restricted JSON Schema subset. The canonical schema's `uniqueItems`,
 `invalid_json_schema` before the model runs, so codex never sees the prompt.
 Sanitize the schema with `scripts/openai-schema` first. Nothing is lost:
 `validate-review-output` enforces every one of those constraints on the object
-codex returns. `$SKILL_DIR` throughout this skill is the skill's own base
-directory, announced when the skill loads — substitute it before running any
-command:
+codex returns:
 
 ```bash
 SCHEMA_FILE=$(mktemp)
@@ -286,60 +297,6 @@ if ! "$SKILL_DIR/scripts/openai-schema" > "$SCHEMA_FILE"; then
   rm -f -- "$SCHEMA_FILE"
   echo "schema preparation failed" >&2
   exit 1
-fi
-
-TEMPLATE=$(cat "$SKILL_DIR/adversarial-prompt.txt")
-HEAD=${TEMPLATE%%'{{TARGET_LABEL}}'*};  REST=${TEMPLATE#*'{{TARGET_LABEL}}'}
-MID=${REST%%'{{USER_FOCUS}}'*};         REST=${REST#*'{{USER_FOCUS}}'}
-TAIL=${REST%%'{{REVIEW_INPUT}}'*}
-PROJECT_DIR=$(git rev-parse --show-toplevel)
-REVIEW_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/razorback-review-tree.XXXXXX")
-if ! "$SKILL_DIR/../pre-merge-review/scripts/prepare-review-tree" \
-  "$PROJECT_DIR" HEAD "$REVIEW_ROOT" >/dev/null; then
-  rm -rf -- "$REVIEW_ROOT"
-  exit 1
-fi
-if [ -n "${RANGE:-}" ]; then
-  FILE_STAT=$(git -C "$PROJECT_DIR" diff --stat "$RANGE")
-  COMMIT_LOG=$(git -C "$PROJECT_DIR" log --oneline "$RANGE")
-else
-  FILE_STAT=$(git -C "$PROJECT_DIR" diff --stat --cached; git -C "$PROJECT_DIR" diff --stat)
-  COMMIT_LOG=$(git -C "$PROJECT_DIR" log -1 --oneline HEAD)
-fi
-ADVERSARIAL_INSTRUCTION="${HEAD}${TARGET}${MID}${FOCUS:-none specified}${TAIL}"
-PAYLOAD_FILE=$(mktemp)
-REDACTED_PAYLOAD_FILE=$(mktemp)
-{
-  printf '%s\n' "$ADVERSARIAL_INSTRUCTION"
-  printf 'Target: %s\n' "$TARGET"
-  printf 'File stat:\n%s\n' "$FILE_STAT"
-  printf 'Commit log:\n%s\n' "$COMMIT_LOG"
-  printf 'Diff:\n%s' "$DIFF"
-} > "$PAYLOAD_FILE"
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" \
-  < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
-  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
-  rm -rf -- "$REVIEW_ROOT"
-  echo "outbound redaction failed" >&2
-  exit 1
-fi
-if ! REVIEW_ARTIFACT=$("$SKILL_DIR/../security-review/scripts/prepare-review-artifact" \
-  "$REVIEW_ROOT" "$REDACTED_PAYLOAD_FILE"); then
-  rm -f -- "$REDACTED_PAYLOAD_FILE"
-  rm -rf -- "$REVIEW_ROOT"
-  echo "review artifact preparation failed" >&2
-  exit 1
-fi
-REVIEW_PROMPT_FILE="$REDACTED_PAYLOAD_FILE"
-if [ "$REVIEW_ARTIFACT" != inline ]; then
-  REVIEW_PROMPT_FILE=$(mktemp)
-  printf '%s\n\n%s\n%s\n%s\n\n%s\n' \
-    'Read and follow the complete redacted review bundle at:' \
-    "$REVIEW_ARTIFACT" \
-    'The bundle contains the complete review instructions; follow them.' \
-    'Use the available read-only tools to inspect that file.' \
-    'Return only the required completion schema with review_completed=true, files_inspected, commands_run, and concrete file/line evidence.' \
-    > "$REVIEW_PROMPT_FILE"
 fi
 RESULT_FILE=$(mktemp)
 trap 'rm -f "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE" "$REVIEW_PROMPT_FILE" "$RESULT_FILE" "$SCHEMA_FILE"; rm -rf "$REVIEW_ROOT"' EXIT
@@ -352,12 +309,6 @@ cat "$REVIEW_PROMPT_FILE" | codex exec --ephemeral --color never \
   2>/dev/null
 cat "$RESULT_FILE"  # Clean JSON, no banner/transcript noise
 ```
-
-For payloads over 128 KiB, `prepare-review-artifact` writes the complete
-redacted bundle to `.razorback-review/review-input.md` inside `REVIEW_ROOT` and
-the prompt contains only the concise instruction and artifact path. Do not
-reload that file into an argument, stdin, or `--prompt-file`; `--prompt-file`
-is prompt transport, not a review-artifact mechanism.
 
 Codex answered the same synthetic review in multiple turns with real tool use,
 so it does not share Grok's one-turn collapse under a schema. Its failure mode
@@ -385,13 +336,8 @@ bug. Codex needs tool access.
 
 ```bash
 PAYLOAD_FILE=$(mktemp)
-REDACTED_PAYLOAD_FILE=$(mktemp)
 printf '%s' "Your task instructions here. Apply changes directly." > "$PAYLOAD_FILE"
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
-  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
-  echo "outbound redaction failed" >&2
-  exit 1
-fi
+# Run the Outbound Payload Redaction block, then:
 IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
 codex exec --ephemeral --color never \
   --sandbox workspace-write \
@@ -435,31 +381,18 @@ keep the three in sync when editing any.
 By default, `--ephemeral` means sessions aren't saved. If you need follow-up
 capability, drop the `--ephemeral` flag:
 
+Every prompt passes the Outbound Payload Redaction guard first
+(`PAYLOAD_FILE=$(mktemp)`, `printf '%s' "prompt" > "$PAYLOAD_FILE"`, run the
+guard block, then
+`IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true`):
+
 ```bash
 # Initial task (persistent session)
-PAYLOAD_FILE=$(mktemp)
-REDACTED_PAYLOAD_FILE=$(mktemp)
-printf '%s' "prompt" > "$PAYLOAD_FILE"
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
-  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
-  echo "outbound redaction failed" >&2
-  exit 1
-fi
-IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
 codex exec --color never -C /path "$REDACTED_PROMPT" < /dev/null 2>/dev/null
-rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 
-# Resume the last session
-PAYLOAD_FILE=$(mktemp)
-REDACTED_PAYLOAD_FILE=$(mktemp)
-printf '%s' "follow-up prompt" > "$PAYLOAD_FILE"
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
-  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
-  echo "outbound redaction failed" >&2
-  exit 1
-fi
-IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
+# Resume the last session (redact the follow-up prompt the same way)
 codex exec resume --last "$REDACTED_PROMPT" < /dev/null 2>/dev/null
+
 rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ```
 
@@ -476,13 +409,8 @@ To review a project other than cwd:
 
 ```bash
 PAYLOAD_FILE=$(mktemp)
-REDACTED_PAYLOAD_FILE=$(mktemp)
 printf '%s' "prompt" > "$PAYLOAD_FILE"
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
-  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
-  echo "outbound redaction failed" >&2
-  exit 1
-fi
+# Run the Outbound Payload Redaction block, then:
 IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
 codex exec --ephemeral --color never -C ~/source/other-project "$REDACTED_PROMPT" < /dev/null 2>/dev/null
 rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
@@ -491,15 +419,7 @@ rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 **Truly fresh reviewer (no project context bias):** if the reviewing instance should *not* inherit AGENTS.md or `.rules` from the project being reviewed (e.g., adversarial review where project conventions might rationalize the change), add `--ignore-user-config` and `--ignore-rules`:
 
 ```bash
-PAYLOAD_FILE=$(mktemp)
-REDACTED_PAYLOAD_FILE=$(mktemp)
-printf '%s' "prompt" > "$PAYLOAD_FILE"
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
-  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
-  echo "outbound redaction failed" >&2
-  exit 1
-fi
-IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
+# Same as above, with the two isolation flags added:
 codex exec --ephemeral --color never \
   -C ~/source/other-project \
   --ignore-user-config --ignore-rules \
@@ -564,7 +484,7 @@ All non-piped patterns must include `< /dev/null` (bash) or `< NUL` (Windows cmd
 
 On **Windows**, if codex's sandbox fails to spawn (`CreateProcessAsUserW failed: 5`, common on locked-down Enterprise/LTSC hosts), re-run with `-s danger-full-access` — including for read-only review — since codex otherwise reads zero files. On hosts where it recurs, pass it from the start. See the Windows sandbox notes in Defaults and Error Handling.
 
-Every command pattern below still requires the constructed prompt to be filtered through `skills/security-review/scripts/redact-outbound` immediately before dispatch; pass only the redacted artifact to Codex.
+Every command pattern below still requires the constructed prompt to be filtered through `$SKILL_DIR/../security-review/scripts/redact-outbound` immediately before dispatch; pass only the redacted artifact to Codex.
 
 | Use case | Mode | Command pattern |
 |---|---|---|
@@ -577,3 +497,9 @@ Every command pattern below still requires the constructed prompt to be filtered
 | Truly fresh reviewer | read-only + isolated | Add `--ignore-user-config --ignore-rules` to skip project AGENTS.md and execpolicy `.rules` |
 | Clean output capture | any | Add `-o <file>` to write the agent's last message to a file instead of mixing it with stderr/banner output |
 | Resume session | persistent | Drop `--ephemeral`, use `codex exec resume --last "prompt" < /dev/null 2>/dev/null` |
+
+## It's working if
+
+- The dispatch used only the redacted payload file, and the temp files are gone afterward.
+- A structured review passed `validate-review-output` with `review_completed: true`.
+- The user got Codex's view AND your own agree/disagree assessment, not a relay.

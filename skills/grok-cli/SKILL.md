@@ -700,3 +700,9 @@ accepted.
 | Apply explicit model/effort | any | Add `--model "$GROK_MODEL"` / `--effort "$GROK_EFFORT"` when set |
 | Resume session | persistent | `grok -r "$REVIEW_SESSION_ID" --prompt-file "$REDACTED_STRUCTURE_FILE" --always-approve --json-schema "$SCHEMA_JSON"` for the structuring pass (the session the first call named with `--session-id`), or `grok -r <ID> -p "$REDACTED_PROMPT" --always-approve` for a user-requested conversation follow-up. `-c`/`-r` never take the prompt — omit `-p` / `--prompt-file` and you get the interactive TUI. Omit `--sandbox` on resume; still pass `--always-approve`. |
 | Structured output shape | any | Envelope: `.structuredOutput` (parsed object), `.text` (JSON string), `.usage`, `.total_cost_usd`; normalize and validate with `validate-review-output RESULT_FILE`. |
+
+## It's working if
+
+- The dispatch used only the redacted payload file, and the temp files are gone afterward.
+- The review pass ran with `num_turns >= 2` and no `--json-schema`; the structuring pass passed `validate-review-output`.
+- The user got Grok's view AND your own agree/disagree assessment, not a relay.
