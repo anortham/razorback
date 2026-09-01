@@ -134,7 +134,8 @@ test('light and compact plan forms each carry the parallel-contract task fields'
     /\*\*Dependency reason:\*\*/,
   ];
 
-  const lightPlan = section(skill, '## Light Plan Task Structure');
+  const templates = read('skills/writing-plans/task-templates.md');
+  const lightPlan = section(templates, '## Light Plan Task Template');
   const compact = section(skill, '## Compact Single-Task Full-Plan Form');
 
   for (const field of fields) {

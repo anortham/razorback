@@ -15,6 +15,8 @@ Write implementation plans scaled to the situation. The right level of detail de
 
 **Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
 
+**When NOT to use:** a moderate, same-session task with an agreed design takes razorback:brainstorming's lightweight path (the design doc is the plan); a small local defect takes razorback:fixing-small-issues. A formal plan that would only restate the design adds process, not safety.
+
 Once the plan is approved, razorback runs to completion; it stops only for real blockers (see the `razorback:using-razorback` skill's `references/blocker-taxonomy.md`). A blocker is real only when the agent cannot resolve it through reasonable plan-consistent judgment.
 
 ## Plan Depth: Full vs. Light
@@ -206,103 +208,26 @@ Completion follows commit mode:
 
 ## Task Structure
 
-````markdown
-### Task N: [Slice or component name]
+Copy the task template from `task-templates.md` (this directory). Both plan
+types share the same header block — Files, Interfaces, Contract inputs, File
+ownership, Serialization required, Dependency reason — then diverge:
 
-**Files:**
-- Create: `exact/path/to/file.py`
-- Modify: `exact/path/to/existing.py:123-145`
-- Test: `tests/exact/path/to/test.py`
+- **Full plan tasks** choreograph TDD step by step: the failing test (actual
+  test code), the verify-fail run, the minimal implementation (actual code),
+  the verify-pass run, then commit mode.
+- **Light plan tasks** replace the steps with **What to build** and
+  **Approach** notes; the implementer supplies the TDD choreography.
 
-**Interfaces:**
-- Consumes: [what this task uses from earlier tasks — exact symbols, signatures, data shape, or user-facing contract]
-- Produces: [what later tasks rely on — exact function names, parameter and return types, file formats, CLI flags, routes, or events. A task's implementer sees only their own task; this block is how they learn neighboring contracts.]
-
-**Contract inputs:** [Exact shared constraints, prior-task outputs, fixtures, tool contracts, or public strings this task may rely on]
-
-**File ownership:** [Copy the ownership entry from `## Parallel Execution Contract` verbatim]
-
-**Serialization required:** [No / Yes / Not applicable - single task.]
-
-**Dependency reason:** [Required reason from `## Parallel Execution Contract`]
-
-**Step 1: Write the failing test**
-
-```python
-def test_specific_behavior():
-    result = function(input)
-    assert result == expected
-```
-
-**Step 2: Run test to verify it fails**
-
-Run: `<project-defined worker red/green command for this behavior>`
-Expected: FAIL with "function not defined"
-
-**Step 3: Write minimal implementation**
-
-```python
-def function(input):
-    return expected
-```
-
-**Step 4: Run test to verify it passes**
-
-Run: `<project-defined worker red/green command for this behavior>`
-Expected: PASS
-
-**Step 5: Apply commit mode**
-
-- `serial-worker-commit`: after assigned verification passes, create the owned-file
-  worker commit and record the resulting SHA.
-- `parallel-lead-commit`: do not commit from the worker lane. Hand the verified
-  change to the lead for staging and commit after inline review.
-
-**Acceptance criteria:**
-- [ ] [Specific, testable requirement for this task]
-- [ ] Tests pass and the change is either committed by the worker or handed to the lead per commit mode
-````
-
-The execution skills tick these `[ ]` → `[x]` as each task completes, so every task carries a tickable progress marker regardless of plan type.
+Every task ends with tickable `- [ ]` acceptance criteria. The execution
+skills tick these `[ ]` → `[x]` as each task completes, so every task carries
+a tickable progress marker regardless of plan type.
 
 ## Compact Single-Task Full-Plan Form
 
-When a full plan has exactly one task, use `## Task Structure` above unchanged — full TDD steps and all. Only two things differ, so do not re-template the task:
+When a full plan has exactly one task, use the full-plan template from `task-templates.md` unchanged — full TDD steps and all. Only two things differ, so do not re-template the task:
 
 - Collapse `## Parallel Execution Contract` to a single row: `Parallel batch` is `None - serial`, `File ownership` carries the task's exact ownership, and both `Serialization required` and `Dependency reason` read `Not applicable - single task.`
 - Copy those same values into the task body: **Contract inputs:** and **File ownership:** carry their normal exact values, while **Serialization required:** and **Dependency reason:** both read `Not applicable - single task.`
-
-## Light Plan Task Structure
-
-````markdown
-### Task N: [Slice or component name]
-
-**Files:**
-- Create: `exact/path/to/file.py`
-- Modify: `exact/path/to/existing.py:123-145`
-- Test: `tests/exact/path/to/test.py`
-
-**Interfaces:**
-- Consumes: [exact contract this task depends on]
-- Produces: [exact contract future tasks depend on. A task's implementer sees only their own task, so include names and shapes here.]
-
-**Contract inputs:** [Exact shared constraints, prior-task outputs, fixtures, tool contracts, or public strings this task may rely on]
-
-**File ownership:** [Copy the ownership entry from `## Parallel Execution Contract` verbatim]
-
-**Serialization required:** [No / Yes / Not applicable - single task.]
-
-**Dependency reason:** [Required reason from `## Parallel Execution Contract`]
-
-**What to build:** [2-3 sentences describing the feature/change and why]
-
-**Approach:** [Key decisions — which pattern to follow, what to call things, edge cases to handle]
-
-**Acceptance criteria:**
-- [ ] [Specific, testable requirement]
-- [ ] [Another requirement]
-- [ ] Worker-scope verification passes and the change is either committed by the worker or handed to the lead per commit mode
-````
 
 ## Remember
 
@@ -347,5 +272,11 @@ If the target repo's project instructions declare an `## External model policy` 
 
 - **When subagent delegation is available:** `razorback:subagent-driven-development`
 - **For single-task, tightly-sequential, or no-delegation plans:** `razorback:executing-plans`
+
+## It's working if
+
+- Every path, symbol, and command in the plan came from Miller or the repo's docs, never from memory.
+- Each task ends compilable, with tickable acceptance criteria and exact file ownership.
+- The self-review ran before the approval ask, and execution started only after an explicit "approved".
 
 Starting execution after approval is the default. If the user requested a separate-session handoff before approval, guide them to open a new session in the worktree and use `razorback:executing-plans` there.

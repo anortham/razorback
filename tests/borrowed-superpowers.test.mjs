@@ -160,11 +160,12 @@ test('miller guidance forbids guessed API shapes in active workflows', () => {
 
 test('writing-plans carries global constraints and per-task interfaces', () => {
   const skill = read('skills/writing-plans/SKILL.md');
+  const templates = read('skills/writing-plans/task-templates.md');
 
   assert.match(skill, /## Global Constraints/);
   assert.match(skill, /version floors, dependency limits/);
-  assert.match(skill, /\*\*Interfaces:\*\*/);
-  assert.match(skill, /Consumes:/);
-  assert.match(skill, /Produces:/);
-  assert.match(skill, /A task's implementer sees only their own task/);
+  assert.match(templates, /\*\*Interfaces:\*\*/);
+  assert.match(templates, /Consumes:/);
+  assert.match(templates, /Produces:/);
+  assert.match(templates, /A task's implementer sees only their own task/);
 });
