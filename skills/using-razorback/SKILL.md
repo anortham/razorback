@@ -77,17 +77,9 @@ Executing an implementation plan:
 
 `subagent-driven-development` is the delegated path on every plugin-tier harness. If this session cannot delegate (e.g. it is already a subagent), fall back to `executing-plans`. The lead reviews inline (spec compliance + code quality) either way.
 
-## Skill Priority
+## Applying Skills
 
-Process skills first (brainstorming, debugging) — they set HOW to approach the task. Domain skills second — they guide execution. "Let's build X" → brainstorming first. "Fix this bug" → debugging first.
-
-## Skill Types
-
-**Rigid** (TDD, debugging): follow exactly, never adapt away discipline. **Flexible** (patterns): adapt to context. The skill tells you which.
-
-## User Instructions
-
-Instructions say WHAT, not HOW. "Add X" or "Fix Y" doesn't mean skip workflows.
+Process skills first (brainstorming, debugging) — they set HOW; domain skills second. Rigid skills (TDD, debugging) are followed exactly, never adapted away; flexible ones adapt to context — the skill says which. User instructions say WHAT, not HOW: "Add X" or "Fix Y" doesn't mean skip workflows.
 
 ## Your Toolchain
 
