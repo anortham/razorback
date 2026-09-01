@@ -27,6 +27,12 @@ Swift). Example: `# razorback: global lock, per-account locks if throughput matt
 
 **Announce at start:** "I'm using the harvesting-debt skill to build the debt ledger."
 
+## When to Use
+
+Use for any request to account for the deliberate shortcuts marked with `razorback:` comments — a read-only ledger of what was deferred.
+
+**Not here:** generic TODO/FIXME/HACK audits — that is Miller `search(mode=markers)`. Paying a marker down is a separate change: it re-enters razorback:fixing-small-issues triage (or the standard flow) on its own merits.
+
 ## Scan
 
 Search the indexed workspace with Miller first:
@@ -97,5 +103,8 @@ Nothing found: `No razorback: debt markers. Clean ledger.`
 - **Does not persist state.** The ledger is the report. If the user asks for it on disk, ask first, then write it where they say (e.g. `RAZORBACK-DEBT.md`).
 - **One-shot.** Run, report, done. It is not a mode and does not stay on.
 
-Paying a marker down is a separate change: it re-enters
-razorback:fixing-small-issues triage (or the standard flow) on its own merits.
+## It's working if
+
+- Every ledger row came from a real comment marker, with the ceiling and trigger quoted, not invented.
+- Markers without an upgrade trigger carry the `no-trigger` tag, and the closing count names them.
+- The run changed no files and left no state behind.
