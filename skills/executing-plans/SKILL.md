@@ -7,7 +7,7 @@ description: Use when executing a written implementation plan single-agent — s
 
 ## Overview
 
-Load plan, review critically, execute all tasks, report when complete.
+One agent executes the approved plan end to end, with no inter-task pauses. The defining constraint: after approval, the run stops only for the blocker taxonomy and the final PR — every other judgment call is decided plan-consistently and noted in the report.
 
 **When to use this vs. subagent-driven-development:** Use this skill for single-task plans, tightly sequential work, separate-session execution, or any run where delegation is unavailable. For plans with 2+ independent tasks in the same session, prefer `razorback:subagent-driven-development` for parallel execution with inline review.
 
@@ -89,11 +89,7 @@ Anything else: pick the plan-consistent option, note the choice in your report, 
 
 ## When to Revisit Earlier Steps
 
-**Return to Review (Step 1) when:**
-- New codebase evidence flags plan-contradicting state. Re-read the plan and use Miller (`context` + `inspect`) to check current state. If the plan is still valid, continue. If not, stop per blocker taxonomy #3 (plan-contradicting data).
-- Fundamental approach needs rethinking
-
-**Don't force through real blockers.** Stop and report per the taxonomy.
+Return to the Step 1 review when new codebase evidence contradicts the plan or the fundamental approach needs rethinking: re-check with Miller (`context` + `inspect`); if the plan holds, continue; if not, that is blocker taxonomy #3. Don't force through real blockers — stop and report per the taxonomy.
 
 ## Checkpoints
 
@@ -135,3 +131,9 @@ For any unattended goal or continuation predicate, `campaign_closed: yes` is ter
 - **razorback:pre-merge-review** - Invoked at Step 3 when `reviewer_choice` is `codex` / `claude`. Skipped if the choice is `none`.
 - **razorback:managing-review-campaigns** - Provides the immutable campaign state preserved across checkpoints and continuation.
 - **razorback:finishing-a-development-branch** - Complete development after all tasks (and pre-merge review, if any)
+
+## It's working if
+
+- Every task's acceptance checkboxes flipped to `[x]` as it completed, with no pause between tasks.
+- Non-required refactor ideas landed in the report as candidates, never in the diff.
+- The run stopped only for taxonomy blockers, and Check B ran before the finish skill took over.

@@ -13,6 +13,19 @@ Ensure work happens in an isolated workspace. Prefer your platform's native work
 
 **Announce at start:** "I'm using the using-git-worktrees skill to set up an isolated workspace."
 
+## When to Use
+
+Use when starting feature work that needs isolation from the current
+workspace, and before executing any implementation plan.
+
+Do NOT use for:
+- Quick-fix-tier work — razorback:fixing-small-issues runs on the current
+  checkout by policy and never invokes this skill.
+- A session already inside a linked worktree — Step 0 detects that and skips
+  creation.
+- Small same-session work where the user has explicitly consented to a plain
+  feature branch instead.
+
 ## Step 0: Detect Existing Isolation
 
 **Before creating anything, check if you are already in an isolated workspace.**
@@ -232,20 +245,17 @@ Ready to implement <feature-name>
 - Remove or reuse a worktree outside a razorback-managed location without saying so
 - Create a worktree when Step 0 detects existing isolation
 - Use `git worktree add` when you have a native worktree tool (e.g., `EnterWorktree`). This is the #1 mistake — if you have it, use it.
-- Skip Step 1a by jumping straight to Step 1b's git commands
 - Create worktree without verifying it's ignored (project-local)
 - Skip baseline verification
 - Proceed with failing baseline unless the plan explicitly allows it
 - Stop to ask for a worktree directory preference (default to `.worktrees/`)
 
-**Always:**
-- Run Step 0 detection first, then the Step 0b inventory
-- State what the inventory found and which choice you made (continuation / sibling / reuse)
-- Prefer native tools over git fallback
-- Follow directory priority: existing > global > CLAUDE.md > default
-- Verify directory is ignored for project-local
-- Auto-detect and run project setup
-- Verify clean baseline
+## It's working if
+
+- Step 0 and the Step 0b inventory ran before anything was created, and the report names the choice made (continuation / sibling / reuse).
+- The worktree came from the native tool wherever one exists.
+- Baseline verification passed — or the report says manual-verify-only and why — before implementation started.
+- Nothing was created silently beside unmerged or uncommitted work.
 
 ## Integration
 
