@@ -11,6 +11,10 @@ Code review requires technical evaluation, not emotional performance.
 
 **Core principle:** Verify before implementing. Ask before assuming. Technical correctness over social comfort.
 
+## When to Use
+
+Use when acting on any review feedback — external reviewer or user — before implementing a single suggestion. NOT for choosing or dispatching reviewers: that is razorback:requesting-code-review (standalone) or razorback:pre-merge-review (planned).
+
 ## The Response Pattern
 
 ```
@@ -190,12 +194,6 @@ State the correction factually and move on.
 
 ## Real Examples
 
-**Performative Agreement (Bad):**
-```
-Reviewer: "Remove legacy code"
-❌ "You're absolutely right! Let me remove that..."
-```
-
 **Technical Verification (Good):**
 ```
 Reviewer: "Remove legacy code"
@@ -208,16 +206,24 @@ Reviewer: "Implement proper metrics tracking with database, date filters, CSV ex
 ✅ "Grepped codebase - nothing calls this endpoint. Remove it (YAGNI)? Or is there usage I'm missing?"
 ```
 
-**Unclear Item (Good, interactive):**
-```
-User: "Fix items 1-6"
-You understand 1,2,3,6. Unclear on 4,5.
-✅ "Understand 1,2,3,6. Need clarification on 4 and 5 before implementing."
-```
-
 ## GitHub Thread Replies
 
 When replying to inline review comments on GitHub, reply in the comment thread (`gh api repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies`), not as a top-level PR comment.
+
+## Rationalizations
+
+| Excuse | Reality |
+|--------|---------|
+| "The reviewer is probably right, just implement it" | Verify against the codebase first. Reviewers lack context; blind implementation ships their mistakes as yours. |
+| "It's faster to agree and move on" | Performative agreement is review theater. State the requirement or act. |
+| "I'll do the clear items now and circle back" | Interactive review: clarify everything first — items interact. Autonomous run: fix the verifiable, flag the unclear in the report. |
+| "Pushing back looks defensive" | Technical correctness beats social comfort. Push back with evidence, involve the user if architectural. |
+
+## It's working if
+
+- Every implemented item was verified against the code first; every dismissed one carries technical reasoning.
+- Replies contain zero gratitude or agreement filler — requirements restated, or fixes shown.
+- Fixes landed one at a time, each tested, blocking issues first.
 
 ## The Bottom Line
 

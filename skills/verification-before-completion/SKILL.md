@@ -7,7 +7,7 @@ description: Use when about to claim work is complete, fixed, or passing, before
 
 ## Overview
 
-Claiming work is complete without verification is dishonesty, not efficiency.
+Claiming work is complete without verification is dishonesty, not efficiency — a false "passing" is worse than a true "failing".
 
 **Core principle:** Evidence before claims, always.
 
@@ -89,11 +89,7 @@ Skip any step = lying, not verifying
 
 ## Key Patterns
 
-**Tests:**
-```
-✅ [Run project-defined command for required scope] [See: 34/34 pass] "Required verification passes"
-❌ "Should pass now" / "Looks correct"
-```
+The table above names the evidence; two claims also have a required sequence:
 
 **Regression tests (TDD Red-Green):**
 ```
@@ -101,32 +97,11 @@ Skip any step = lying, not verifying
 ❌ "I've written a regression test" (without red-green verification)
 ```
 
-**Build:**
-```
-✅ [Run build] [See: exit 0] "Build passes"
-❌ "Linter passed" (linter doesn't check compilation)
-```
-
-**Requirements:**
-```
-✅ Re-read plan → Create checklist → Verify each → Report gaps or completion
-❌ "Tests pass, phase complete"
-```
-
 **Agent delegation:**
 ```
 ✅ Agent reports success → Check VCS diff → Verify changes → Report actual state
 ❌ Trust agent report
 ```
-
-## Why This Matters
-
-Unverified completion claims are how trust breaks:
-- The user stops believing "done" - every later claim gets re-checked
-- Undefined functions ship - would crash
-- Missing requirements ship - incomplete features
-- Time is wasted on false completion → redirect → rework
-- Honesty about state is the contract; a false "passing" is worse than a true "failing"
 
 ## When To Apply
 
@@ -144,10 +119,11 @@ Unverified completion claims are how trust breaks:
 - Implications of success
 - ANY communication suggesting completion/correctness
 
-## The Bottom Line
+**The rule gates claims, not progress notes:** describing what you did without asserting it works needs no evidence. Anything that implies success does.
 
-**No shortcuts for verification.**
+## It's working if
 
-Run the command. Read the output. THEN claim the result.
-
-This is non-negotiable.
+- Every success claim sits next to its evidence — the command and output, or a ledger entry covering current HEAD and the required scope.
+- Status reports contain zero "should", "probably", or "seems to".
+- Agent success reports were checked against the VCS diff before being repeated.
+- Every worktree the run created was statused before "complete" was said.

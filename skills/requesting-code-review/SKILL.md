@@ -7,7 +7,7 @@ description: Use when the lead needs inline-review criteria during plan executio
 
 Two review modes, depending on context.
 
-**Core principle:** Review early, review often.
+**Core principle:** During plan execution the lead reviews inline — a reviewer subagent is never dispatched for planned work. Standalone reviewer dispatch exists only for work done outside an approved plan.
 
 ## Mode 1: Inline Review (Plan Execution)
 
@@ -77,7 +77,7 @@ HEAD_SHA=$(git rev-parse HEAD)
 | Codex | `spawn_agent(task_name="code-review", message=<see two-file note below>)` |
 | OpenCode | `Task` tool with `general` subagent (message built as in the two-file note below) |
 
-**Two-file note (Codex / OpenCode inline-prompt harnesses):** The reviewer uses two files. `agents/code-reviewer.md` holds the reviewer's system-prompt body (its behavioral spec). `requesting-code-review/code-reviewer.md` is the task template with placeholders (`{WHAT_WAS_IMPLEMENTED}`, `{PLAN_OR_REQUIREMENTS}`, `{BASE_SHA}`, `{HEAD_SHA}`, `{DESCRIPTION}`). On Claude Code / Cursor the agent discovery wires these together automatically. On Codex and OpenCode, build the dispatch message by concatenating: (1) `agents/code-reviewer.md` body (strip the frontmatter), then (2) the filled-in `requesting-code-review/code-reviewer.md` template. Send that as the subagent's task message (Codex `spawn_agent` `message` or OpenCode `Task` prompt).
+**Two-file note (Codex / OpenCode inline-prompt harnesses):** The reviewer uses two files. `agents/code-reviewer.md` holds the reviewer's system-prompt body (its behavioral spec). `requesting-code-review/code-reviewer.md` is the task template with the placeholders listed below. On Claude Code / Cursor the agent discovery wires these together automatically. On Codex and OpenCode, build the dispatch message by concatenating: (1) `agents/code-reviewer.md` body (strip the frontmatter), then (2) the filled-in `requesting-code-review/code-reviewer.md` template. Send that as the subagent's task message (Codex `spawn_agent` `message` or OpenCode `Task` prompt).
 
 ### Policy Gate
 
@@ -137,3 +137,9 @@ chose that provider, stop per blocker taxonomy #4.
 - Request clarification
 
 See template at: requesting-code-review/code-reviewer.md
+
+## It's working if
+
+- Plan-execution reviews happened inline by the lead; no reviewer subagent was dispatched for planned work.
+- Every standalone dispatch sent only the redacted payload.
+- Findings were routed through razorback:receiving-code-review, never implemented blind.
