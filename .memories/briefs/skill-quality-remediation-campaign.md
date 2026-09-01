@@ -1,9 +1,9 @@
 ---
 id: skill-quality-remediation-campaign
 title: Skill-quality remediation campaign
-status: active
+status: completed
 created: 2026-09-01T13:02:05.623Z
-updated: 2026-09-01T13:02:05.623Z
+updated: 2026-09-01T14:17:53.414Z
 tags:
   - skill-review
   - remediation
