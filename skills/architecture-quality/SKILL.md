@@ -5,11 +5,21 @@ description: Use when planning or reviewing non-trivial code changes, refactorin
 
 # Architecture Quality
 
-Use this skill before you plan or review non-trivial code changes. If the work is mechanical, fast exit. If it changes module boundaries, caller-facing interfaces, seams, adapters, or test surface, this skill must run. If the cleanup is itself the request — reduce complexity, remove duplication, clean up an area — with no specific change in flight, use Audit Mode.
+## Overview
 
-Read `architecture-language.md` for the shared vocabulary. Use `analysis-heuristics.md` when Gate Mode finds structural signals or Audit Mode is sweeping. Use `interface-design.md` when the interface shape has more than one plausible lane or the blast radius is medium/high. Use `deepening.md` when a refactor candidate is accepted, to classify its dependencies and choose the test strategy across the seam.
+Architecture review runs in three modes: a gate before non-trivial planning and during review, candidates for concrete refactors, and audits when cleanup is itself the request. Mechanical work fast-exits; anything that changes module boundaries, caller-facing interfaces, seams, adapters, or test surface must run the gate.
 
-The interface is the test surface. Tests should prove behavior through the caller-facing interface, not through private plumbing.
+**Core principle:** The interface is the test surface. Tests should prove behavior through the caller-facing interface, not through private plumbing.
+
+## When to Use
+
+- **Gate Mode** — before planning or reviewing any non-trivial code change.
+- **Candidate Mode** — when structural friction is real and a concrete refactor deserves review.
+- **Audit Mode** — when the cleanup is itself the request ("reduce complexity," "find duplication," "clean up this area") and no specific change is in flight.
+
+**Not here:** work on the Fast Exit list below — take the fast exit and move on.
+
+Supporting files: `architecture-language.md` for the shared vocabulary; `analysis-heuristics.md` when Gate Mode finds structural signals or Audit Mode is sweeping; `interface-design.md` when the interface shape has more than one plausible lane or the blast radius is medium/high; `deepening.md` when a refactor candidate is accepted, to classify its dependencies and choose the test strategy across the seam.
 
 ## Fast Exit
 
@@ -74,7 +84,7 @@ Candidates are approval-gated. Folding non-required candidates into the current 
 
 ## Audit Mode
 
-Use Audit Mode when the cleanup is itself the request — "reduce complexity," "find duplication," "clean up this area" — and no specific change is in flight. Audit Mode finds friction and emits candidates; it never implements during the sweep.
+Audit Mode finds friction and emits candidates; it never implements during the sweep.
 
 1. **Read `docs/adr/` first.** Recorded decisions are not re-litigated. Surface a candidate that contradicts an ADR only when the friction is strong enough to justify reopening the decision, and flag the conflict on the candidate. If `docs/adr/` is absent or empty, note that and continue.
 2. **Scope the sweep.** Orient with Miller `context(query)` on the area the user named. If no area was named, rank targets by two signals together: recent churn (`git log --oneline` over a meaningful window — deepening pays off where change keeps landing) and caller count (Miller `trace`/`impact` on the obvious entry points — blast radius). High-churn, high-caller modules first. State what you scoped to — do not boil the whole repo.
@@ -84,7 +94,7 @@ Use Audit Mode when the cleanup is itself the request — "reduce complexity," "
 
 Strength calibration: **strong** means the evidence is in hand and the deletion test clearly favors the change; **worth exploring** means the smell is real but the payoff is uncertain; **speculative** means the pattern matches but the evidence is thin. Stop the sweep when another heuristic pass adds no new candidates; emit the few worth reviewing and say what was skipped, rather than an exhaustive list.
 
-Audit candidates are approval-gated like all candidates. An audit that finds no real friction says so — do not manufacture candidates to look productive.
+An audit that finds no real friction says so — do not manufacture candidates to look productive.
 
 ## Durable Decisions
 
@@ -112,3 +122,20 @@ What agents should do or avoid when touching this area.
 ```
 
 Do not write an ADR for minor cleanup or when Gate Mode fast-exits with no architecture impact.
+
+## Rationalizations
+
+| Excuse | Reality |
+|--------|---------|
+| "This change is small, skip the gate" | Small diffs move boundaries too. If the work is not on the Fast Exit list, run Gate Mode. |
+| "I'll fold this refactor in while I'm here" | Candidates are approval-gated. Record the candidate; do not silently widen the plan. |
+| "The audit should just fix what it finds" | An audit sweeps and emits candidates. Implementation starts only after approval. |
+| "That ADR is old, ignore it" | Recorded decisions are not re-litigated. Flag the conflict on the candidate instead. |
+| "More candidates looks more thorough" | Manufactured findings bury the real ones. No friction found is a valid result. |
+
+## It's working if
+
+- Every non-trivial plan or review carries a Gate Mode block — `No Architecture Impact` with a reason, or the full shape with a risk rating.
+- Refactor work started only from an approved candidate, never from "while I'm here".
+- Audit sweeps ended with ranked candidates and one top recommendation, not code changes.
+- Accepted boundary changes left an ADR behind.
