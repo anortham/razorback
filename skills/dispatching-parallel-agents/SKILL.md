@@ -7,9 +7,7 @@ description: Use when facing 2+ independent tasks that can be worked on without 
 
 ## Overview
 
-You delegate tasks to specialized agents with isolated context. By precisely crafting their instructions and context, you ensure they stay focused and succeed at their task. They should never inherit your session's context or history; you construct exactly what they need. This also preserves your own context for coordination work.
-
-When you have multiple unrelated failures (different test files, different subsystems, different bugs), investigating them sequentially wastes time. Each investigation is independent and can happen in parallel.
+Each dispatched agent works from isolated context: it never inherits your session's history — you construct exactly what it needs. That keeps the agent focused and preserves your own context for coordination. When failures are unrelated (different test files, different subsystems, different bugs), sequential investigation wastes time.
 
 **Core principle:** Dispatch one agent per independent problem domain. Let them work concurrently.
 
@@ -42,7 +40,7 @@ Each domain is independent - fixing tool approval doesn't affect abort tests.
 
 ### 2. Create Focused Agent Tasks
 
-Each agent gets:
+Each agent prompt is focused (one clear problem domain) and self-contained (all context needed — paste the error messages and test names). Each agent gets:
 - **Specific scope:** One test file or subsystem
 - **Clear goal:** Make these tests pass
 - **Constraints:** Don't change other code
@@ -56,7 +54,32 @@ Each agent gets:
   - **Prove API shapes** — use Miller evidence for symbol names, function signatures, config shapes, route names, CLI flags, and public contracts before relying on them
   - Do NOT use Glob → Read → Grep chains. Miller returns targeted context in 1-2 calls.
 
+Example prompt:
+
+```markdown
+Fix the 3 failing tests in src/agents/agent-tool-abort.test.ts:
+
+1. "should abort tool with partial output capture" - expects 'interrupted at' in message
+2. "should handle mixed completed and aborted tools" - fast tool aborted instead of completed
+3. "should properly track pendingToolCount" - expects 3 results but gets 0
+
+These are timing/race condition issues. Your task:
+
+1. Read the test file and understand what each test verifies
+2. Identify root cause - timing issues or actual bugs?
+3. Fix by:
+   - Replacing arbitrary timeouts with event-based waiting
+   - Fixing bugs in abort implementation if found
+   - Adjusting test expectations if testing changed behavior
+
+Do NOT just increase timeouts - find the real issue.
+
+Return: Summary of what you found and what you fixed.
+```
+
 ### 3. Dispatch in Parallel
+
+Model choice is left to the lead agent and the harness default unless the user or environment explicitly requests an override. If a lane has hidden invariants, shared lifecycle behavior, weak tests, gate interpretation, or repeated failures, keep it in the lead session or give the worker tighter instructions.
 
 Make all dispatch calls in a single turn so they run concurrently. The dispatch tool differs per harness — use the **Dispatch mechanism** list in `razorback:subagent-driven-development`, plus its **Parallel Dispatch** notes for the per-harness completion and state calls. Ad-hoc dispatch uses the same mechanism as plan execution; only the task source differs.
 
@@ -80,39 +103,6 @@ When agents return:
 - **Spot check** — agents can make systematic errors; don't trust the summaries alone
 - **Integrate all changes**
 
-Model choice is left to the lead agent and the harness default unless the user or
-environment explicitly requests an override. If a lane has hidden invariants,
-shared lifecycle behavior, weak tests, gate interpretation, or repeated
-failures, keep it in the lead session or give the worker tighter instructions.
-
-## Agent Prompt Structure
-
-Good agent prompts are:
-1. **Focused** - One clear problem domain
-2. **Self-contained** - All context needed to understand the problem
-3. **Specific about output** - What should the agent return?
-
-```markdown
-Fix the 3 failing tests in src/agents/agent-tool-abort.test.ts:
-
-1. "should abort tool with partial output capture" - expects 'interrupted at' in message
-2. "should handle mixed completed and aborted tools" - fast tool aborted instead of completed
-3. "should properly track pendingToolCount" - expects 3 results but gets 0
-
-These are timing/race condition issues. Your task:
-
-1. Read the test file and understand what each test verifies
-2. Identify root cause - timing issues or actual bugs?
-3. Fix by:
-   - Replacing arbitrary timeouts with event-based waiting
-   - Fixing bugs in abort implementation if found
-   - Adjusting test expectations if testing changed behavior
-
-Do NOT just increase timeouts - find the real issue.
-
-Return: Summary of what you found and what you fixed.
-```
-
 ## Common Mistakes
 
 **❌ Too broad:** "Fix all the tests" - agent gets lost
@@ -126,3 +116,10 @@ Return: Summary of what you found and what you fixed.
 
 **❌ Vague output:** "Fix it" - you don't know what changed
 **✅ Specific:** "Return summary of root cause and changes"
+
+## It's working if
+
+- Every dispatch call went out in one turn, and no two agents touched the same files.
+- Each agent prompt named its scope, constraints, gate invariant, and expected output.
+- The integration scope ran after return — the fixes were verified together, not just individually.
+- Related failures were investigated by one agent, not split across several.
