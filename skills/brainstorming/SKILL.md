@@ -7,9 +7,7 @@ description: "Use when starting any creative work - creating a feature, building
 
 ## Overview
 
-Help turn ideas into fully formed designs and specs through natural collaborative dialogue.
-
-Start by understanding the current project context, then ask questions one at a time to refine the idea. Once you understand what you're building, present the design and get user approval.
+Turn ideas into approved designs through natural collaborative dialogue, before any implementation begins. The defining constraint: no code, no scaffolding, no implementation skill until a written design exists and the user has approved it — however simple the task looks.
 
 <HARD-GATE>
 Do NOT invoke any implementation skill, write any code, scaffold any project, or take any implementation action until you have a design and the user has approved it.
@@ -21,7 +19,7 @@ Do NOT invoke any implementation skill, write any code, scaffold any project, or
 
 Before choosing a path, check the tier. A reported defect or a small tweak that meets the quick-fix criteria (≤ 2 source files, ~20 changed lines, no contract changes, reversible — see razorback:fixing-small-issues) is repair work, not design work: route it to razorback:fixing-small-issues instead of running this skill. Investigation happens there first; if the issue outgrows the criteria, it escalates back here with its evidence.
 
-This is a measured gate, not a judgment call. "Feels simple" is not a criterion — the anti-pattern below still applies to everything that doesn't measurably fit the quick-fix tier. Brainstorming remains mandatory for creating features, building components, adding functionality, or changing designed behavior.
+This is a measured gate, not a judgment call. "Feels simple" is not a criterion — the Rationalizations table below still applies to everything that doesn't measurably fit the quick-fix tier. Brainstorming remains mandatory for creating features, building components, adding functionality, or changing designed behavior.
 
 ## Choosing the Right Path
 
@@ -40,29 +38,19 @@ Three paths, scaled to the situation:
 
 The anti-rationalization check: can you articulate the agreed design in concrete terms (components, data flow, key decisions)? If yes, fast path or lightweight. If you're hand-waving with "it's basically just X," you need the full process. The choice between fast path and lightweight depends on task size and complexity, not on how well you understand it.
 
-## Anti-Pattern: "This Is Too Simple To Need A Design"
-
-Every project goes through this process. A todo list, a single-function utility, a config change: all of them. "Simple" projects are where unexamined assumptions cause the most wasted work. The design can be short for truly simple projects, but you MUST present it and get approval. Note: the fast path above still produces a design; it just doesn't force re-discovery of things already agreed.
-
 ## Checklist
+
+Every path ends in the same tail — the "After the Design" sequence below (doc → self-review → doubt pass when triggered → user gate → worktree → exit). The paths differ only in how the design gets agreed:
 
 **Lightweight** (design agreed, moderate task, same-session):
 1. **Explore project context** — use Miller to orient, check recent commits
-2. **Summarize agreed design with acceptance criteria** - present for user confirmation. Note the approved module/interface shape, or `No Architecture Impact` for mechanical work.
-3. **Write design doc** - save to `docs/plans/YYYY-MM-DD-<topic>-design.md`, do NOT commit yet (committing now would land it on the current branch — often `main`). Include acceptance criteria checklist; this is the implementer's spec.
-4. **Spec self-review** - quick inline check for placeholders, contradictions, ambiguity, scope (see below)
-5. **User reviews written spec** - ask user to review the spec file before proceeding
-6. **Create isolated workspace** - **REQUIRED SUB-SKILL:** razorback:using-git-worktrees (skip only with explicit user consent for small same-session work on a plain feature branch). Move the design doc into the worktree and commit it there as the branch's first commit — untracked files do NOT follow into a new worktree.
-7. **Dispatch implementer directly** - see "Lightweight Implementation" section below
+2. **Summarize agreed design with acceptance criteria** - present for user confirmation. Note the approved module/interface shape, or `No Architecture Impact` for mechanical work. The design doc doubles as the implementer's spec — include the acceptance criteria checklist.
+3. **Run "After the Design"** — exit: dispatch the implementer directly ("Lightweight Implementation" below)
 
 **Fast path** (design agreed, large or multi-session task):
 1. **Explore project context** — use Miller to orient, check recent commits
 2. **Summarize agreed design** - present concrete summary for user confirmation. Note the approved module/interface shape, or `No Architecture Impact` for mechanical work — writing-plans copies this into the plan's Architecture Quality header.
-3. **Write design doc** - save to `docs/plans/YYYY-MM-DD-<topic>-design.md`, do NOT commit yet (that would land it on the current branch — often `main`)
-4. **Spec self-review** - quick inline check for placeholders, contradictions, ambiguity, scope (see below)
-5. **User reviews written spec** - ask user to review the spec file before proceeding
-6. **Create isolated workspace** - **REQUIRED SUB-SKILL:** razorback:using-git-worktrees. Move the design doc into the worktree and commit it there as the branch's first commit (untracked files do NOT follow into a new worktree); the plan is then written and executed in that worktree.
-7. **Transition to implementation** - invoke razorback:writing-plans
+3. **Run "After the Design"** — exit: invoke razorback:writing-plans (in the worktree)
 
 **Full process** (requirements unclear or multiple approaches):
 1. **Explore project context** — use Miller to orient on the relevant codebase area, check recent commits
@@ -71,14 +59,9 @@ Every project goes through this process. A todo list, a single-function utility,
 4. **Propose 2-3 approaches** - with trade-offs and your recommendation
 5. **Run `razorback:architecture-quality`** - for non-trivial work, capture the approved module/interface shape before presenting the design. If the task has no architecture impact, note `No Architecture Impact`.
 6. **Present design** - in sections scaled to their complexity, get user approval after each section
-7. **Write design doc** - save to `docs/plans/YYYY-MM-DD-<topic>-design.md`, do NOT commit yet (that would land it on the current branch — often `main`)
-8. **Spec self-review** - quick inline check for placeholders, contradictions, ambiguity, scope (see below)
-9. **Doubt pass (conditional)** - if architecture-quality rated the risk medium/high, run the Doubt Pass from `razorback:cross-model-convergence` and fold surviving objections into the spec. This is lead work inside the flow, not a user gate.
-10. **User reviews written spec** - ask user to review the spec file before proceeding
-11. **Create isolated workspace** - **REQUIRED SUB-SKILL:** razorback:using-git-worktrees. Move the design doc into the worktree and commit it there as the branch's first commit (untracked files do NOT follow into a new worktree); the plan is then written and executed in that worktree.
-12. **Transition to implementation** - invoke razorback:writing-plans to create the implementation plan
+7. **Run "After the Design"** — exit: invoke razorback:writing-plans (in the worktree)
 
-**Terminal states:** Either invoke writing-plans (full/fast path) or proceed to lightweight implementation (see below). These are the only two exits from brainstorming.
+**Terminal states:** Either invoke razorback:writing-plans (full/fast path) or proceed to lightweight implementation (see below). These are the only two exits from brainstorming.
 
 ## The Process
 
@@ -125,7 +108,10 @@ After writing the spec document, look at it with fresh eyes:
 
 Fix any issues inline. No need to re-review, just fix and move on. When the session can dispatch subagents, you may instead dispatch a fresh-eyes reviewer using `spec-document-reviewer-prompt.md` (this directory).
 
-**User Review Gate:**
+**Doubt pass (full process only, conditional):**
+If `razorback:architecture-quality` rated the risk medium/high, run the Doubt Pass from `razorback:cross-model-convergence` and fold surviving objections into the spec. This is lead work inside the flow, not a user gate.
+
+**User Review Gate:** User reviews written spec.
 After the spec review loop passes, ask the user to review the written spec before proceeding. The spec's visual digest — `<design-doc>.html` beside the markdown, sibling basename, composed per the `razorback:using-razorback` skill's `references/digest-kit.md` — is opt-in: write it only when the user asked for a digest in this session or in project instructions. Never generate one unprompted.
 
 > "Spec written to `<path>`. Please review it and let me know if you want to make any changes before we start writing out the implementation plan."
@@ -136,6 +122,7 @@ Wait for the user's response. If they request changes, make them and re-run the 
 
 **Isolated workspace (all paths, after spec approval):**
 - **REQUIRED SUB-SKILL:** razorback:using-git-worktrees — set up the isolated workspace the implementation will run in. Skip only with explicit user consent (small same-session work on a plain feature branch).
+- Move the design doc into the worktree and commit it there as the branch's first commit — untracked files do NOT follow into a new worktree. The plan is then written and executed in that worktree.
 
 **Full/fast path → writing-plans:**
 - Invoke razorback:writing-plans (in the worktree) to create an implementation plan
@@ -197,3 +184,29 @@ If they agree to the companion, read the detailed guide before proceeding:
 - **Explore alternatives** - Always propose 2-3 approaches before settling
 - **Incremental validation** - Present design, get approval before moving on
 - **Be flexible** - Go back and clarify when something doesn't make sense
+
+## Rationalizations
+
+| Excuse | Reality |
+|--------|---------|
+| "This is too simple to need a design" | A todo list, a one-function utility, a config change — all go through this. Simple work is where unexamined assumptions waste the most; the design can be short, but you MUST present it and get approval. |
+| "The user already told me what to build" | An instruction is not a design. Summarize it and get confirmation — that is the fast path, and it costs minutes. |
+| "I'll just scaffold while we talk" | Scaffolding is implementation. The gate bars it until approval. |
+| "A quick prototype will settle this" | Only through the razorback:prototyping off-ramp, with a one-line go-ahead. Throwaway instrument, never production code. |
+| "The design is obvious from the codebase" | Then the summary costs one message. Write it and get the yes. |
+
+## Red Flags — STOP
+
+- Any production file write before the user approved a design
+- Invoking writing-plans or an implementer before spec approval
+- "While you review that, I'll get started on..."
+- A design doc committed on the current branch instead of the task worktree
+
+All of these mean: stop, return to the gate, get the approval.
+
+## It's working if
+
+- A written, user-approved design doc exists before any implementation action.
+- The doc landed in the task worktree as the branch's first commit, not on `main`.
+- Questions went out one at a time, each carrying a falsifiable guess.
+- The session exited through one of the two terminal states, nothing else.
