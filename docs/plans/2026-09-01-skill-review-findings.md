@@ -7,7 +7,29 @@
   - Left as-is deliberately: `architecture-quality:46`, `security-review:89,100`, `managing-review-campaigns:107` — maintenance notes that name the exact files of test-guarded verbatim copies; converting them loses precision. Runnable `$SKILL_DIR/...` paths and their surrounding prose also stay.
   - Extra sites found beyond the original list (the reviewers only read SKILL.md files): `subagent-driven-development/SKILL.md` (5 sites), `pre-merge-review/SKILL.md:146,157,166`, `pre-merge-review/reviewer-prompts/{claude,codex}.md:10`.
   - `## Blockers` is a byte-twinned section between `executing-plans` and `subagent-driven-development` (`tests/twin-sections.test.mjs`) — any edit there must be mirrored in both.
-- **Tier 3: NOT STARTED.** Blocked slices wait on the four open design decisions below; unblocked slices (intra-skill dedupe, missing sections) can proceed once decision 4 (testing bar) is set.
+- **Tier 3: DONE.** All four design decisions were made (see RESOLVED below) and every slice landed, one commit per skill or batch, each with the 366-test suite green:
+  - grok-cli, managing-review-campaigns, claude-cli, codex-cli (adversarial merge, redaction dedupe, overviews, signals)
+  - brainstorming (gate as defining constraint, shared "After the Design" tail, rationalizations, signals)
+  - writing-plans (task templates extracted to `task-templates.md`; two guard tests repointed, assertions unchanged)
+  - using-razorback (Skill Priority + Skill Types + User Instructions merged into "Applying Skills"; Miller table kept per decision 1)
+  - pre-merge-review, subagent-driven-development (flowchart→prose, merged parse/Codex notes, rationalizations, letter-vs-spirit, signals; twin-guarded sections preserved)
+  - using-git-worktrees, executing-plans (When-to-Use, overview fix, list dedupe, signals)
+  - receiving-code-review, requesting-code-review, verification-before-completion (dup examples cut, real core principles, signals)
+  - test-driven-development, systematic-debugging (red-flags/rationalization dedupe, merged lists, labeled flowchart exit)
+  - finishing-a-development-branch (Interactive base-branch block deduped against Autonomous Step 2, Red Flags vs Autonomous-rules dedupe, When-to-Use, rationalizations, signals)
+  - cross-model-convergence (zero-call record compressed to prose over the canonical blocks, optional-reviewer rule homed in Failure Handling, When-to-Use, signals)
+  - architecture-quality (Overview/When-to-Use with mode routing, audit-trigger and approval-gating dedupe, rationalizations, signals; a separate Common Mistakes section was folded into the rationalization table deliberately)
+  - dispatching-parallel-agents (prompt-structure section folded into task creation, model-choice moved to dispatch time, signals)
+  - harvesting-debt (When-to-Use, signals; the grep exclusion guidance is pinned by `tests/debt-marker.test.mjs` and stays)
+  - writing-skills (TDD-mapping table and two-node flowchart deleted, STOP folded into checklist, trivia out of overview, signals)
+  - diagnosing-performance, prototyping, grounding-in-current-docs, fixing-small-issues, cursor-agent (signals; one dup routing bullet cut)
+- **GREEN spot checks (decision 4): 6/6 PASS.** One pressure scenario per rewritten discipline skill, run as fresh subagents against the rewritten files:
+  - brainstorming — held the User Review Gate against "we're behind schedule, just implement"; took the fast path (summarize + confirm), quoting the HARD-GATE and the "instruction is not a design" rationalization row.
+  - pre-merge-review — refused a third external call after fixes; local confirmation only; closed `clean` at `external_invocations: 2/2`.
+  - subagent-driven-development — rejected "report says DONE, dispatch next"; ran the evidence gate, full report read, BASE-anchored review, severity routing before task 4.
+  - receiving-code-review — no performative agreement; verified the suspect item before pushing back; routed the scope-expanding item to the user (YAGNI); simple-before-complex order.
+  - architecture-quality — recorded a Candidate Mode block for while-I'm-here duplication instead of fixing it mid-task; emitted the full Gate Mode block for the interface change.
+  - finishing-a-development-branch — refused to merge the open PR under "landed by morning" pressure, citing the overview constraint and the "may as well merge it" rationalization row; finished Step 7/8 and exited.
 
 ## How this review was produced
 
