@@ -15,10 +15,6 @@ You write test cases (pressure scenarios with subagents), watch them fail (basel
 
 **REQUIRED BACKGROUND:** You MUST understand razorback:test-driven-development before using this skill. That skill defines the fundamental RED-GREEN-REFACTOR cycle.
 
-**Personal skills** live in agent-specific directories: `~/.claude/skills` for Claude Code, `~/.agents/skills/` for Codex.
-
-**Official guidance:** anthropic-best-practices.md in this directory carries Anthropic's official skill-authoring guidance, which complements the rules here.
-
 ## What is a Skill?
 
 A **skill** is a reference guide for proven techniques, patterns, or tools. Skills help future Claude instances find and apply effective approaches.
@@ -26,21 +22,6 @@ A **skill** is a reference guide for proven techniques, patterns, or tools. Skil
 **Skills are:** Reusable techniques, patterns, tools, reference guides
 
 **Skills are NOT:** Narratives about how you solved a problem once. "In session 2025-10-03, we found empty projectDir caused..." is too specific to reuse.
-
-## TDD Mapping for Skills
-
-| TDD Concept | Skill Creation |
-|-------------|----------------|
-| **Test case** | Pressure scenario with subagent |
-| **Production code** | Skill document (SKILL.md) |
-| **Test fails (RED)** | Agent violates rule without skill (baseline) |
-| **Test passes (GREEN)** | Agent complies with skill present |
-| **Refactor** | Close loopholes while maintaining compliance |
-| **Write test first** | Run baseline scenario BEFORE writing skill |
-| **Watch it fail** | Document exact rationalizations agent uses |
-| **Minimal code** | Write skill addressing those specific violations |
-| **Watch it pass** | Verify agent now complies |
-| **Refactor cycle** | Find new rationalizations → plug → re-verify |
 
 ## When to Create a Skill
 
@@ -55,6 +36,10 @@ A **skill** is a reference guide for proven techniques, patterns, or tools. Skil
 ## File Organization
 
 **Flat namespace** - all skills in one searchable namespace.
+
+**Personal skills** live in agent-specific directories: `~/.claude/skills` for Claude Code, `~/.agents/skills/` for Codex.
+
+**Official guidance:** anthropic-best-practices.md in this directory carries Anthropic's official skill-authoring guidance, which complements the rules here.
 
 **Keep inline:** principles, concepts, code patterns (< 50 lines), everything else.
 
@@ -168,20 +153,7 @@ Use skill name only, with explicit requirement markers:
 
 ## Flowchart Usage
 
-```dot
-digraph when_flowchart {
-    "Need to show information?" [shape=diamond];
-    "Decision where I might go wrong?" [shape=diamond];
-    "Use markdown" [shape=box];
-    "Small inline flowchart" [shape=box];
-
-    "Need to show information?" -> "Decision where I might go wrong?" [label="yes"];
-    "Decision where I might go wrong?" -> "Small inline flowchart" [label="yes"];
-    "Decision where I might go wrong?" -> "Use markdown" [label="no"];
-}
-```
-
-**ONLY for:** non-obvious decision points, process loops where you might stop too early, "when to use A vs B" decisions.
+**ONLY for:** non-obvious decision points, process loops where you might stop too early, "when to use A vs B" decisions. Everything else is markdown.
 
 **Never for:**
 - Reference material → tables, lists
@@ -278,18 +250,9 @@ Skills that enforce discipline (like TDD) need to resist rationalization. Agents
 
 **Testing methodology:** testing-skills-with-subagents.md covers writing pressure scenarios, pressure types (time, sunk cost, authority, exhaustion), plugging holes systematically, and meta-testing.
 
-## STOP: Before Moving to Next Skill
-
-**After writing ANY skill, you MUST STOP and complete the deployment process.**
-
-**Do NOT:**
-- Create multiple skills in batch without testing each
-- Move to next skill before current one is verified
-- Skip testing because "batching is more efficient"
-
-**The deployment checklist below is MANDATORY for EACH skill.**
-
 ## Skill Creation Checklist (TDD Adapted)
+
+**MANDATORY for EACH skill before moving to the next.** Never batch: one skill is written, tested, and deployed before the next starts — "batching is more efficient" is a rationalization.
 
 **IMPORTANT: Use TaskCreate to create a task for EACH checklist item below.**
 
@@ -324,6 +287,13 @@ Skills that enforce discipline (like TDD) need to resist rationalization. Agents
 **Deployment:**
 - [ ] Commit skill to git and push to your fork (if configured)
 - [ ] Consider contributing back via PR (if broadly useful)
+
+## It's working if
+
+- Every new or edited skill has a documented baseline (RED) run and a passing (GREEN) run.
+- The rationalization table quotes what baseline agents actually said, not what you imagined.
+- The description names triggers only — reading it tells you when, not how.
+- Word counts sit inside the token targets, and every sentence survives the no-op test.
 
 ## The Bottom Line
 
