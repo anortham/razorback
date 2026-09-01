@@ -41,3 +41,9 @@ This applies to dispatched implementers too: if a task touches a staleness-risk 
 | "It compiles / tests pass" | Tests rarely encode semantics like caching, defaults, or ordering. Verify the documented behavior. |
 | "Fetching docs wastes tokens" | One bounded fetch is cheaper than a wrong-semantics bug found in review — or in production. |
 | "The blog post / old answer says…" | Secondary sources fossilize old versions. Official docs for the version in the lockfile. |
+
+## It's working if
+
+- Code against a staleness-risk API was preceded by a repo-pattern check or a doc fetch, and the surface it uses matches what was verified.
+- Behavior that differs from common knowledge carries the doc URL in the task notes or commit message.
+- Each feature was verified once per session, not re-fetched ceremonially.

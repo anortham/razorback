@@ -316,3 +316,10 @@ gates.
 | Read-only analysis | `cursor-agent -p --workspace "$WORKSPACE" --model composer-2.5-fast --trust --mode ask "$PROMPT"` |
 | List models | `cursor-agent models` |
 | Create chat id | `cursor-agent create-chat` |
+
+## It's working if
+
+- Every dispatch went through the redaction helper, and only the redacted payload reached Cursor.
+- Cursor touched only its assigned files; the lead reviewed the diff and owned final verification.
+- Recipes ran as single shell invocations with `$SKILL_DIR` substituted and `set -u` active.
+- No run started a Cloud Agent, pushed, released, or ran destructive git.

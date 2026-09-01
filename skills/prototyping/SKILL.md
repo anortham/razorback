@@ -74,3 +74,10 @@ Main keeps only the validated decision; the raw exploration stays one `git switc
 - The prototype grew tests, persistence, or a second question
 
 **All of these mean: stop, restate the question, return to the instrument.**
+
+## It's working if
+
+- The question was written down and announced before any prototype code existed.
+- The user drove the instrument and rendered the verdict; you never announced the answer.
+- The prototype lives on a `prototype/<slug>` branch, referenced from the design doc — not deleted, not in main.
+- No production code was written until the verdict went back through brainstorming.

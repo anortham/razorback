@@ -50,7 +50,6 @@ Use for any complaint about time, throughput, or resource use:
 
 - The output is wrong, not late → `razorback:systematic-debugging`
 - The test is flaky from timing, not slow → the `razorback:systematic-debugging` skill's `condition-based-waiting.md`
-- Three fixes failed and each one exposed new coupling → `razorback:architecture-quality`
 
 **A performance change is not quick-fix tier.** `razorback:fixing-small-issues` covers small
 reversible repairs; a performance fix carries a measurement obligation that the quick-fix tier
@@ -263,6 +262,13 @@ Every row below — your own thought or a redirection from the user — means th
 | **2. Locate** | Split time by layer, count operations, profile the hot layer | You know WHERE the time goes |
 | **3. Name** | Map to catalog, state hypothesis with the number, confirm cheaply | You know WHY it is slow |
 | **4. Prove** | One change, re-measure identically, guard the fix | Before and after numbers, plus a regression guard |
+
+## It's working if
+
+- Every performance change reports a before number and an after number from the same workload.
+- The hypothesis carried a measurement before any code changed.
+- Fixes landed one at a time, and the ones that did not help were reverted.
+- The fix left a guard behind — a count assertion, a benchmark, or (last resort) a timing check.
 
 ## Supporting Techniques
 

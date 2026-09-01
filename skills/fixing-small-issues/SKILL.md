@@ -104,6 +104,13 @@ Downscaling abuse and ceremony reflex are both violations.
 - Proceeding while a criterion is unmeasured
 - Continuing past an escalation trigger
 
+## It's working if
+
+- The tier was announced with its measurements ("N files, ~M lines") before any fix landed.
+- The affected scope ran and the original symptom is gone; the full suite never ran in the inner loop.
+- Any deliberate corner carries a `# razorback:` marker, and the closing summary lists the markers or says none were left.
+- Escalation triggers were honored the moment they fired — no "almost done" push past them.
+
 ## Integration
 
 **Entered from:** the user's request directly, razorback:brainstorming triage, or razorback:systematic-debugging Phase 4.
