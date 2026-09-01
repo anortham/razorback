@@ -11,6 +11,18 @@ A reviewer invocation may run deeply, but the campaign around it must end. Round
 
 **REQUIRED SUB-SKILL:** Use razorback:receiving-code-review to verify findings before accepting them. Apply the blocker semantics from razorback:using-razorback.
 
+## When to Use
+
+Use for any review that may repeat after fixes, involves more than one
+reviewer or model CLI, or must terminate cleanly with no user watching.
+
+Do NOT use for:
+- The lead's inline review of a single task during plan execution — that is
+  razorback:requesting-code-review criteria, not a campaign.
+- A subagent fix loop inside razorback:subagent-driven-development — attempt
+  limits there are task mechanics, not campaign rounds.
+- A single ad-hoc review with no repeat and no external reviewer.
+
 ## Start Once
 
 Before the first review invocation, emit this immutable setup:
@@ -81,26 +93,23 @@ Callers may choose a stricter profile, never a looser one.
 
 ### Completion-aware Grok standalone calls
 
-The Grok standalone completion profile spends both invocations on one review,
-because Grok cannot review and emit the schema in the same call. Constrained by
-`--json-schema`, it answers on its first turn with no tool use and no findings.
-So invocation 1/2 is the free-form review and invocation 2/2 is the structuring
-pass, which resumes the session the first call named with `--session-id` and
-asks only for the schema. Both are required; neither is a retry, and the pair
+The Grok standalone profile spends both invocations on one review because Grok
+cannot review and emit the schema in the same call (CLI mechanics in
+`razorback:grok-cli`). Invocation 1/2 is the free-form review and invocation 2/2 is the structuring
+pass, which
+resumes the session the first call named with `--session-id` and asks only
+for the schema. Both are required; neither is a retry, and the pair
 buys no extra discovery. A resume that finds no session exits non-zero and
 closes the campaign there. No third call is allowed. A rejected structured
-result closes the campaign `blocked` or `capped` with the counters recorded at
-`2/2`.
+result closes the campaign `blocked` or `capped` with the counters recorded
+at `2/2`.
 
 A review pass that returns after one turn inspected nothing. Treat it as a
 failed invocation, not as evidence.
 
-Sandbox startup failure creates no session and therefore cannot use the
-structuring pass. The caller must close that campaign. `--sandbox read-only` and
-`--sandbox strict` refuse to start where a container-runtime deny path cannot be
-resolved; `--sandbox workspace` with a `Read,Grep,Glob` tool allowlist is the
-supported recovery, and `--sandbox off` needs explicit user approval. `grok
-inspect` is configuration output, not a sandbox capability probe.
+A sandbox startup failure creates no session and therefore cannot use the
+structuring pass; the caller must close that campaign. Recovery profiles and
+approval rules are in `razorback:grok-cli`.
 
 ## Close on Evidence
 
@@ -141,3 +150,11 @@ campaign_closed: yes
 - Continuing after `campaign_closed: yes`; it is terminal
 
 Any red flag means stop dispatching and emit the terminal status.
+
+## It's working if
+
+- The immutable setup block was emitted before the first reviewer invocation.
+- Counters only ever increased, and survived compaction.
+- Every external CLI call maps to one counted invocation.
+- The campaign ended in one of the three terminal states with the status block emitted.
+- Nothing was dispatched after `campaign_closed: yes`.

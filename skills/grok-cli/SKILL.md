@@ -9,6 +9,18 @@ Use the Grok CLI (`grok -p`) to get a second opinion, review code changes,
 run adversarial security/correctness reviews, or delegate tasks to xAI's Grok
 models.
 
+## Overview
+
+Two constraints shape every recipe here. First, never pass `--json-schema` on
+a review pass: a schema-constrained call ends after one turn with no tool use
+and no findings. Review free-form, then structure the result in a second pass
+that resumes the same session (Code Review Steps 3-4). Second, every outbound
+payload passes the Outbound Payload Redaction guard exactly once; recipes use
+only the redacted output.
+
+Use this skill only when the user names Grok/xAI. For a generic second opinion
+with no model named, razorback:codex-cli is the default.
+
 ## Defaults
 
 - **Model**: inherit the current Grok default (`grok-4.5` at time of writing)
@@ -168,14 +180,8 @@ The user wants Grok's take on an approach, design decision, or piece of code.
 No file changes needed.
 
 ```bash
-PAYLOAD_FILE=$(mktemp)
-REDACTED_PAYLOAD_FILE=$(mktemp)
-printf '%s' "Your prompt here" > "$PAYLOAD_FILE"
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
-  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
-  echo "outbound redaction failed" >&2
-  exit 1
-fi
+PROMPT="Your prompt here"
+# Run the Outbound Payload Redaction block, then:
 IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
 
 grok -p "$REDACTED_PROMPT" \
@@ -290,9 +296,6 @@ as the only evidence. Measured on Grok 1.0.13 / grok-4.x, both inline and
 artifact transport, at 933-byte and 384-byte prompts. Payload size is not the
 cause; the schema is. Run the review free-form so Grok keeps its agent loop, and
 structure the result in Step 4.
-
-`$SKILL_DIR` throughout this skill is the skill's own base directory, announced
-when the skill loads — substitute it before running any command.
 
 Use `--sandbox workspace` with an explicit `--tools "Read,Grep,Glob"` allowlist.
 `--sandbox read-only` and `--sandbox strict` carry a container-runtime deny list
@@ -442,122 +445,28 @@ change.
 
 **Step 1: Apply Review Targeting** (same as Code Review)
 
-**Step 2: Build the adversarial prompt** with the shared
-`review-payload.md` (in the `razorback:security-review` skill) contract. For a
-standalone review, use a `.git`-free `REVIEW_ROOT` exported from the reviewed
-`HEAD` tree. The complete rendered bundle is redacted before the size decision.
+**Step 2: Build the adversarial prompt.** Run Code Review Step 2 unchanged up
+to its `REVIEW_INSTRUCTION=` line. In its place, render the instruction from
+the canonical template (after `$TARGET` resolves), then finish Step 2's
+payload build with `$ADVERSARIAL_INSTRUCTION` substituted for
+`$REVIEW_INSTRUCTION`:
 
 ```bash
 TEMPLATE=$(cat "$SKILL_DIR/adversarial-prompt.txt")
 HEAD=${TEMPLATE%%'{{TARGET_LABEL}}'*};  REST=${TEMPLATE#*'{{TARGET_LABEL}}'}
 MID=${REST%%'{{USER_FOCUS}}'*};         REST=${REST#*'{{USER_FOCUS}}'}
 TAIL=${REST%%'{{REVIEW_INPUT}}'*}
-PROJECT_DIR=$(git rev-parse --show-toplevel)
-REVIEW_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/razorback-review-tree.XXXXXX")
-if ! "$SKILL_DIR/../pre-merge-review/scripts/prepare-review-tree" \
-  "$PROJECT_DIR" HEAD "$REVIEW_ROOT" >/dev/null; then
-  rm -rf -- "$REVIEW_ROOT"
-  exit 1
-fi
-if [ -n "${RANGE:-}" ]; then
-  FILE_STAT=$(git -C "$PROJECT_DIR" diff --stat "$RANGE")
-  COMMIT_LOG=$(git -C "$PROJECT_DIR" log --oneline "$RANGE")
-else
-  FILE_STAT=$(git -C "$PROJECT_DIR" diff --stat --cached; git -C "$PROJECT_DIR" diff --stat)
-  COMMIT_LOG=$(git -C "$PROJECT_DIR" log -1 --oneline HEAD)
-fi
 ADVERSARIAL_INSTRUCTION="${HEAD}${TARGET}${MID}${FOCUS:-none specified}${TAIL}"
 ```
 
-**Step 3: Send with structured output**
-
-```bash
-SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")
-
-RESULT_FILE=$(mktemp)
-NORMALIZED_RESULT_FILE=$(mktemp)
-PAYLOAD_FILE=$(mktemp)
-REDACTED_PAYLOAD_FILE=$(mktemp)
-{
-  printf '%s\n' "$ADVERSARIAL_INSTRUCTION"
-  printf 'Target: %s\n' "$TARGET"
-  printf 'File stat:\n%s\n' "$FILE_STAT"
-  printf 'Commit log:\n%s\n' "$COMMIT_LOG"
-  printf 'Diff:\n%s' "$DIFF"
-} > "$PAYLOAD_FILE"
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" \
-  < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
-  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE" "$RESULT_FILE"
-  rm -rf -- "$REVIEW_ROOT"
-  echo "outbound redaction failed" >&2
-  exit 1
-fi
-if ! REVIEW_ARTIFACT=$("$SKILL_DIR/../security-review/scripts/prepare-review-artifact" \
-  "$REVIEW_ROOT" "$REDACTED_PAYLOAD_FILE"); then
-  rm -f -- "$REDACTED_PAYLOAD_FILE"
-  rm -rf -- "$REVIEW_ROOT"
-  echo "review artifact preparation failed" >&2
-  exit 1
-fi
-REVIEW_PROMPT_FILE="$REDACTED_PAYLOAD_FILE"
-if [ "$REVIEW_ARTIFACT" != inline ]; then
-  REVIEW_PROMPT_FILE=$(mktemp)
-  printf '%s\n\n%s\n%s\n%s\n\n%s\n' \
-    'Read and follow the complete redacted review bundle at:' \
-    "$REVIEW_ARTIFACT" \
-    'The bundle contains the complete review instructions; follow them.' \
-    'Use the available read-only tools to inspect that file.' \
-    'Return only the required completion schema with review_completed=true, files_inspected, commands_run, and concrete file/line evidence.' \
-    > "$REVIEW_PROMPT_FILE"
-fi
-
-REVIEW_SESSION_ID=$(uuidgen)
-STRUCTURE_FILE=$(mktemp)
-trap 'rm -f "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE" "$REVIEW_PROMPT_FILE" "$RESULT_FILE" "$NORMALIZED_RESULT_FILE" "$STRUCTURE_FILE"; rm -rf "$REVIEW_ROOT"' EXIT
-
-# Pass 1: adversarial review, free-form so Grok keeps its agent loop.
-grok --prompt-file "$REVIEW_PROMPT_FILE" \
-  --session-id "$REVIEW_SESSION_ID" \
-  --sandbox workspace \
-  --tools "Read,Grep,Glob" \
-  --always-approve \
-  --cwd "$REVIEW_ROOT" \
-  --output-format json \
-  ${GROK_MODEL:+--model "$GROK_MODEL"} \
-  ${GROK_EFFORT:+--effort "$GROK_EFFORT"} \
-  < /dev/null > "$RESULT_FILE"
-if [ "$(jq -r '.num_turns // 0' < "$RESULT_FILE")" -lt 2 ]; then
-  echo "Grok answered in one turn without inspecting anything — not a review" >&2
-  exit 1
-fi
-
-# Pass 2: same session, schema only.
-printf '%s' "Return your completed adversarial review as JSON matching the required schema. Use only the findings you already established. Set review_completed=true, list the repository files you inspected in files_inspected, and give concrete file/line evidence. Do not start a new review." > "$STRUCTURE_FILE"
-grok -r "$REVIEW_SESSION_ID" --prompt-file "$STRUCTURE_FILE" \
-  --always-approve \
-  --cwd "$REVIEW_ROOT" \
-  --json-schema "$SCHEMA_JSON" \
-  < /dev/null > "$RESULT_FILE"
-"$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$RESULT_FILE" > "$NORMALIZED_RESULT_FILE"
-cat "$NORMALIZED_RESULT_FILE"
-```
-
-For payloads over 128 KiB, `prepare-review-artifact` writes the complete
-redacted bundle to `.razorback-review/review-input.md` inside `REVIEW_ROOT` and
-the prompt contains only the concise instruction and artifact path. Do not
-reload that file into an argument, stdin, or `--prompt-file`; `--prompt-file`
-is prompt transport, not a review-artifact mechanism.
-
-Always include `--always-approve` (see Defaults). The review pass carries no
-`--json-schema`: a schema-constrained call ends after one turn with no tool use
-and no findings (see Code Review Step 3). The structuring pass carries the
-schema and nothing else to discover.
-The `--json-schema` flag tells Grok to return JSON matching the review schema
-(verdict, summary, findings with severity/file/line/confidence, next steps, and
-completion evidence). A completed review requires `review_completed: true`, a
-non-empty unique `files_inspected` list, a `commands_run` array (which may be
-empty), and non-empty file/line/observation `evidence`; `needs-attention`
-requires at least one finding.
+**Steps 3-4: Identical to Code Review Steps 3 and 4.** Free-form review pass
+first — no `--json-schema`, or Grok answers in one turn without reviewing —
+then the same-session structuring pass, validated with
+`validate-review-output`. The only delta is the structuring prompt: "Return
+your completed adversarial review as JSON matching the required schema. Use
+only the findings you already established. Set review_completed=true, list the
+repository files you inspected in files_inspected, and give concrete file/line
+evidence. Do not start a new review."
 
 **After**: Parse the normalized output from `validate-review-output` (see Code
 Review). Present findings grouped by severity (critical first). For
@@ -571,14 +480,8 @@ The user wants Grok to actually do something: write code, refactor, fix a bug.
 Grok needs write access.
 
 ```bash
-PAYLOAD_FILE=$(mktemp)
-REDACTED_PAYLOAD_FILE=$(mktemp)
-printf '%s' "Your task instructions here. Apply changes directly." > "$PAYLOAD_FILE"
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
-  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
-  echo "outbound redaction failed" >&2
-  exit 1
-fi
+PROMPT="Your task instructions here. Apply changes directly."
+# Run the Outbound Payload Redaction block, then:
 IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
 
 grok -p "$REDACTED_PROMPT" \
@@ -629,55 +532,25 @@ treats the prompt as the positional argument that opens the **interactive TUI**,
 which hangs or errors (`Device not configured (os error 6)`) in a headless
 agent. Always pair resume with `-p` or `--prompt-file`:
 
+Every follow-up prompt passes the Outbound Payload Redaction guard first
+(`PROMPT="follow-up prompt"`, run the guard block, then
+`IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true`).
+The variants differ only in the resume flags:
+
 ```bash
 # Continue the most recent session for the current directory
-PAYLOAD_FILE=$(mktemp)
-REDACTED_PAYLOAD_FILE=$(mktemp)
-printf '%s' "follow-up prompt" > "$PAYLOAD_FILE"
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
-  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
-  echo "outbound redaction failed" >&2
-  exit 1
-fi
-IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
 grok -c -p "$REDACTED_PROMPT" --always-approve < /dev/null
-rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 
 # Resume a specific session by ID (or the most recent if omitted)
-PAYLOAD_FILE=$(mktemp)
-REDACTED_PAYLOAD_FILE=$(mktemp)
-printf '%s' "follow-up prompt" > "$PAYLOAD_FILE"
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
-  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
-  echo "outbound redaction failed" >&2
-  exit 1
-fi
-IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
 grok -r <SESSION_ID> -p "$REDACTED_PROMPT" --always-approve < /dev/null
-rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 
 # Fork instead of reusing the original session id
-PAYLOAD_FILE=$(mktemp)
-REDACTED_PAYLOAD_FILE=$(mktemp)
-printf '%s' "follow-up prompt" > "$PAYLOAD_FILE"
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
-  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
-  echo "outbound redaction failed" >&2
-  exit 1
-fi
-IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
 grok -r <SESSION_ID> --fork-session -p "$REDACTED_PROMPT" --always-approve < /dev/null
-rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 
 # Large follow-up prompt: swap -p for --prompt-file (never both)
-REDACTED_PROMPT_FILE=$(mktemp)
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PROMPT_FILE" > "$REDACTED_PROMPT_FILE"; then
-  rm -f -- "$PROMPT_FILE" "$REDACTED_PROMPT_FILE"
-  echo "outbound redaction failed" >&2
-  exit 1
-fi
-grok -c --prompt-file "$REDACTED_PROMPT_FILE" --always-approve < /dev/null
-rm -f -- "$PROMPT_FILE" "$REDACTED_PROMPT_FILE"
+grok -c --prompt-file "$REDACTED_PAYLOAD_FILE" --always-approve < /dev/null
+
+rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ```
 
 A resumed session keeps the sandbox profile it was created with. Passing a
@@ -699,14 +572,8 @@ skills, MCP servers, and permissions for the target directory automatically.
 To review a project other than cwd, point `--cwd` at it:
 
 ```bash
-PAYLOAD_FILE=$(mktemp)
-REDACTED_PAYLOAD_FILE=$(mktemp)
-printf '%s' "prompt" > "$PAYLOAD_FILE"
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
-  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
-  echo "outbound redaction failed" >&2
-  exit 1
-fi
+PROMPT="prompt"
+# Run the Outbound Payload Redaction block, then:
 IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
 grok -p "$REDACTED_PROMPT" --sandbox read-only --always-approve --cwd ~/source/other-project < /dev/null
 rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
