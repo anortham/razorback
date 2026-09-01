@@ -318,7 +318,7 @@ If the reviewer choice propagated from `writing-plans` (via the execution handof
 
 If the choice is `none` (or absent), skip Step 4a.
 
-Pre-merge-review builds the full branch diff, starts its canonical bounded campaign, runs one general pass plus one security pass with the chosen reviewer in adversarial read-only mode, classifies findings (real-bug / real-improvement / false-positive / out-of-scope), dispatches fresh implementer subagents for verified fixes, runs the required verification scope for the resulting HEAD, and emits its terminal `REVIEW CAMPAIGN STATUS` plus a summary block for the morning report. Each external pass runs once; fixes are verified locally without a post-fix external re-review.
+Pre-merge-review owns the rest — the bounded campaign, one general pass plus one security pass, classification, fix dispatch, required verification, and the terminal `REVIEW CAMPAIGN STATUS` plus summary block. Each external pass runs once; fixes are verified locally without a post-fix external re-review.
 
 After `pre-merge-review` returns, proceed to Step 5 (Complete → `razorback:finishing-a-development-branch`).
 
@@ -371,7 +371,7 @@ On detecting a resumed run (post-compaction note, mismatch between expected and 
 4. Read the plan file, noting which acceptance-criteria checkboxes are already `[x]`.
 5. Check the TaskList for completed / in-progress / pending tasks.
 6. `git log --oneline <base>..HEAD` — verify what is actually committed.
-7. Reconcile `parallel-lead-commit` gaps: re-read this plan's ledger (`<workspace>/progress.md`, identity and resume check per Durable Progress), then for any progress line marked complete whose commit SHA is missing, `pending`, or absent from `git log`, run `git status` and inspect the working tree for that task's owned files. If approved edits are uncommitted, re-review and commit them (staging per the Commit Mode Contract) before advancing; if nothing is there, treat the task as incomplete and re-dispatch. Do not trust a completion record that has no verifiable commit.
+7. Reconcile `parallel-lead-commit` gaps: re-read this plan's ledger (identity and resume check per Durable Progress) and run Step 1's completion-line check — a missing, `pending`, or unverifiable SHA means inspect the owned files, then commit approved edits per the Commit Mode Contract or re-dispatch. Do not trust a completion record that has no verifiable commit.
 8. Identify the next incomplete task and resume execution.
 
 For any unattended goal or continuation predicate, `campaign_closed: yes` is terminal. Remaining findings in a `capped` campaign do not authorize another review campaign or reviewer dispatch.
@@ -400,7 +400,19 @@ Implementer (resumed): all three addressed, tests passing, committed ghi789.
 [All tasks done: lead runs branch-gate scope, updates the ledger, deletes the plan workspace, then razorback:finishing-a-development-branch]
 ```
 
+## Rationalizations
+
+| Excuse | Reality |
+|--------|---------|
+| "This batch looks safe, but serialize to be careful" | Serializing a safe batch requires a recorded dependency or tool limitation. Caution is not one. |
+| "`git add -A` just this once — the tree looks clean" | Sibling workers may hold unreviewed in-flight edits. Stage owned files plus the plan file, nothing else. |
+| "Record the task complete now, commit in a moment" | A completion record without a verifiable SHA strands work in the crash window. Commit first, then record. |
+| "The fix is close — one more round past the cap" | Three attempts, then the reframed 4th, then adjudication. The cap is the mechanism, not a suggestion. |
+| "The worker's diff looks fine, skip the re-review" | Every fix gets a scoped re-review. "Attempted" is not ADDRESSED. |
+
 ## Red Flags
+
+Violating the letter of these rules is violating their spirit.
 
 **Never:**
 - Start implementation on main/master branch without explicit user consent
@@ -443,5 +455,11 @@ Implementer (resumed): all three addressed, tests passing, committed ghi789.
 - **razorback:executing-plans** — Use for parallel-session, single-agent, or no-delegation execution
 
 **Codex-specific:**
-- Collaboration tools (`spawn_agent` / `followup_task` / `send_message` / `wait_agent` / `interrupt_agent` / `list_agents`) are enabled by default on current codex (verified 0.144.3); older versions needed `multi_agent = true` in `~/.codex/config.toml` (see the `razorback:using-razorback` skill's `references/codex-tools.md`). Trust the live tool list over these names.
-- Use `interrupt_agent(target=<agent-id>)` to cancel a worker that is stuck or no longer needed (e.g. after cap adjudication rules its open findings); there is no separate close/free step on current codex.
+- Beyond the dispatch surface at the top of this skill: `interrupt_agent(target=<agent-id>)` cancels a worker that is stuck or no longer needed (e.g. after cap adjudication rules its open findings) — there is no separate close/free step. Older codex versions needed `multi_agent = true` in `~/.codex/config.toml`; current codex enables the collaboration tools by default.
+
+## It's working if
+
+- Every completion line in the ledger carries a verifiable commit SHA.
+- Parallel batches matched the plan's contract; nothing was serialized without a recorded reason.
+- Every fix round ended in a scoped re-review verdict, and the cap produced recorded rulings, never silence.
+- The run paused only for blocker-taxonomy stops, and Step 5 statused every worktree the run created.
