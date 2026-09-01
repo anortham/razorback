@@ -7,11 +7,17 @@ description: Use when implementation is complete, branch verification passes, an
 
 ## Overview
 
-Guide completion of development work by selecting a mode, then executing the appropriate flow (autonomous push+PR or interactive menu).
+Development work ends in one of two flows: an autonomous push-and-PR, or an interactive 4-option menu. Both start behind the same gate — the project-defined branch verification must pass before anything is pushed, merged, or offered. In Autonomous Mode the run always stops at PR creation; merge is never automatic.
 
-**Core principle:** Verify the project-defined branch gate -> choose mode (autonomous default) -> execute -> clean up.
+**Core principle:** Verify the branch gate -> choose mode (autonomous default) -> execute -> reconcile source-control state.
 
 **Announce at start:** "I'm using the finishing-a-development-branch skill to complete this work."
+
+## When to Use
+
+Use when implementation is complete and the branch is ready to integrate. The execution skills (`razorback:executing-plans`, `razorback:subagent-driven-development`) invoke it as their final step; the user can also invoke it directly ("finish this branch").
+
+**Not here:** choosing or running a pre-merge external reviewer — `razorback:pre-merge-review` already ran before this skill starts. Quick-fix-tier work (`razorback:fixing-small-issues`) finishes on the current checkout and never reaches this skill.
 
 ## Mode Selection
 
@@ -201,34 +207,16 @@ Stop. Don't proceed to Step 2.
 
 ### Step 2: Determine Base Branch
 
-`git merge-base` returns a commit SHA, not a branch name. Downstream steps need the branch **name** (`git checkout <base-branch>`, `gh pr create --base`), so resolve both values the same way Autonomous Step 2 does:
+Resolve `$BASE_BRANCH` and `$BASE_SHA` with the same lookup chain as Autonomous Step 2 (explicit plan/user base -> remote default branch -> `main` -> `master`), with two Interactive-only differences.
+
+First, capture the values Step 5 needs before Step 4 changes branch and directory:
 
 ```bash
-# Capture now: Step 4 changes branch and directory before Step 5 needs these values.
 FEATURE_BRANCH=$(git branch --show-current)
 WORKTREE_PATH=$(git rev-parse --show-toplevel)
-
-# Prefer an explicit base from the plan/user, then the remote's default branch,
-# then main/master. Merge-base-with-main alone is wrong for repos whose PRs
-# target another branch (develop, release/*) — main almost always shares history.
-if [ -n "$PLAN_BASE" ]; then
-  BASE_BRANCH="$PLAN_BASE"
-elif DEFAULT_REF=$(git symbolic-ref --quiet refs/remotes/origin/HEAD 2>/dev/null); then
-  BASE_BRANCH="${DEFAULT_REF#refs/remotes/origin/}"
-elif git show-ref --verify --quiet refs/heads/main; then
-  BASE_BRANCH=main
-elif git show-ref --verify --quiet refs/heads/master; then
-  BASE_BRANCH=master
-fi
-
-if [ -z "$BASE_BRANCH" ] || ! BASE_SHA=$(git merge-base HEAD "$BASE_BRANCH" 2>/dev/null); then
-  echo "Cannot determine base branch/merge-base." >&2
-  # Interactive Mode: nothing resolved, so ask the user instead of guessing.
-  # Do NOT proceed to Step 3 until the base branch is confirmed.
-fi
 ```
 
-If nothing resolves, ask: "This branch split from main - is that correct?"
+Second, resolution failure is not a blocker here — ask: "This branch split from main - is that correct?" Do not proceed to Step 3 until the base branch is confirmed.
 
 ### Step 3: Present Options
 
@@ -356,10 +344,6 @@ Run Check B of the `razorback:using-razorback` skill's `references/source-contro
 
 ## Common Mistakes
 
-**Skipping test verification**
-- **Problem:** Merge broken code, create failing PR
-- **Fix:** Always verify tests before offering options
-
 **Open-ended questions**
 - **Problem:** "What should I do next?" -> ambiguous
 - **Fix:** Present exactly 4 structured options
@@ -372,26 +356,37 @@ Run Check B of the `razorback:using-razorback` skill's `references/source-contro
 - **Problem:** Accidentally delete work
 - **Fix:** Require typed "discard" confirmation
 
+## Rationalizations
+
+| Excuse | Reality |
+|--------|---------|
+| "Tests passed earlier, the gate is a formality" | The gate needs evidence for the current HEAD. Stale evidence is no evidence. |
+| "The PR is open, the run may as well merge it" | Stopping at PR creation is the design. Merge is a separate human (or agent) action after review. |
+| "The push failed — I'll just show the menu" | Mid-run fallback breaks the autonomous contract. Report `Blocked` and exit. |
+| "The other worktree isn't this run's problem" | Unaccounted state makes the report a lie. Land it or name it. |
+| "Removing the worktree now saves the user a step" | The branch is live behind an open PR. Disposition is the user's call. |
+
 ## Red Flags
 
 **Never:**
-- Claim the work is finished without running Check B (the `razorback:using-razorback` skill's `references/source-control-hygiene.md`)
-- Leave commits stranded in another worktree or branch without naming them in the report
+- Claim the work is finished without running Check B (the `razorback:using-razorback` skill's `references/source-control-hygiene.md`), or with stranded commits unnamed in the report
 - Remove a worktree outside a razorback-managed location
-- Proceed with failing tests
-- Merge without verifying tests on result
-- Delete work without confirmation
+- Merge, push, or offer options with the branch gate failing or unverified
+- Delete work without typed confirmation
 - Force-push without explicit request
-- Merge in autonomous mode — merge is always a separate human (or agent) action after PR review
-- Fall back to Interactive Mode mid-autonomous-run — if autonomous mode can't complete (e.g. every forge-ladder rung fails), emit a partial report with status `Blocked` and let the user resolve; don't prompt for an option
+- Break an Autonomous Mode rule — that list is the contract, not advice
 
 **Always:**
 - Reconcile source-control state (Check B) before reporting the work finished
-- Verify tests before offering options (Interactive) or before pushing (Autonomous)
-- In Interactive Mode, present exactly 4 options
-- Get typed confirmation for Option 4
-- Clean up worktree for Options 1 & 4 only
+- In Interactive Mode, present exactly 4 options and clean up the worktree for Options 1 & 4 only
 - In Autonomous Mode, emit the morning report to all three destinations (PR summary, `.memories/` file, terminal one-liner) regardless of outcome
+
+## It's working if
+
+- The branch gate passed (or a current-HEAD ledger entry was cited) before any push, merge, or menu.
+- Autonomous runs ended at an open PR plus a committed `.memories/` report — no merge, no menu, no prompt.
+- Every worktree and branch the inventory named is landed, riding along, or named in the report.
+- Interactive runs removed only worktrees the provenance rule says are razorback's.
 
 ## Integration
 
