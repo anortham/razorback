@@ -57,7 +57,7 @@ CODEX_MODEL="${RAZORBACK_CODEX_REVIEW_MODEL:-}"  # empty = inherit global defaul
 OUT_DIR=$(mktemp -d)
 trap 'rm -rf "$OUT_DIR"; rm -f "$SCHEMA_FILE"' EXIT
 
-cd "$REVIEW_ROOT" && cat "$REVIEW_PROMPT_FILE" | codex exec \
+cd "$REVIEW_ROOT" && cat "$REVIEW_PROMPT_FILE" | "$SKILL_DIR/../codex-cli/scripts/codex-exec" \
   --ephemeral --color never \
   -s read-only \
   --skip-git-repo-check \
@@ -73,6 +73,7 @@ cd "$REVIEW_ROOT" && cat "$REVIEW_PROMPT_FILE" | codex exec \
 
 Flag rationale:
 
+- `"$SKILL_DIR/../codex-cli/scripts/codex-exec"` — forwards every argument to `codex exec`. On Windows it first runs a sandbox preflight: codex spawns the first `pwsh` on PATH, and the Microsoft Store build under `WindowsApps` rejects the restricted sandbox token (`CreateProcessAsUserW failed: 5`), which makes codex read zero files while the invocation is still consumed. The wrapper prefers the MSI `pwsh` and proves the spawn with `codex sandbox` before any model turn.
 - `--ephemeral` — no persistent session left behind.
 - `--color never` — clean non-interactive output suitable for piping into `jq`.
 - `-s read-only` — sandbox policy that blocks file writes at the CLI layer. This is what actually enforces "the reviewer never edits code"; the prompt's read-only instruction is backup, not the mechanism.
@@ -147,6 +148,7 @@ Unavailability triggers:
 
 - **Auth failure** (`codex login status` exits non-zero) → **blocker taxonomy #1** (credentials broken). Tell the user to run `codex login`.
 - **Rate limit exhausted** (ChatGPT plan's rolling 5-hour limits tripped) → **blocker taxonomy #1** — credentials work but the backing service is unavailable. Suggest retry-after-cooldown in the blocker note.
+- **Wrapper preflight failure** (`codex-exec` exits 2 before any model turn, stderr names the `pwsh` it could not spawn) → **not a consumed invocation** and not a reviewer verdict. Fix the host (install the MSI PowerShell 7 or set `RAZORBACK_PWSH_DIR`) and dispatch again; the invocation budget has not moved.
 - **Empty stdout** → **blocker taxonomy #1**. Use the captured `$OUT_DIR/codex-stderr.log` in the blocker note. Common causes: bad schema path, missing network. The invocation is consumed; do not re-run it.
 - **Schema violation or malformed output** → **blocker taxonomy #5** (unresolvable — the reviewer produced unusable output). The invocation is consumed; do not re-run it.
 - **The 30-minute failsafe trips without a complete output** → **blocker taxonomy #1**. The process hung or died; the diff was not too big. Do NOT raise the timeout and re-run, and do NOT split the diff and re-run — splitting also breaks the reviewer's ability to reason about cross-file interactions. One burned attempt is enough — block and let the human decide.

@@ -109,7 +109,9 @@ failed invocation, not as evidence.
 
 A sandbox startup failure creates no session and therefore cannot use the
 structuring pass; the caller must close that campaign. Recovery profiles and
-approval rules are in `razorback:grok-cli`.
+approval rules are in `razorback:grok-cli`. A wrapper preflight that refuses
+to dispatch (codex `codex-exec` exit 2) happens before any model turn and
+consumes no invocation: the counters do not move, fix the host, and dispatch.
 
 ## Close on Evidence
 

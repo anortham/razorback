@@ -184,6 +184,8 @@ test('exports without external realpath or GNU-only tar flags', () => {
   assert.equal(readFileSync(join(output, 'tracked.txt'), 'utf8'), 'tracked\n');
 });
 
+const CODEX_EXEC = '"$SKILL_DIR/../codex-cli/scripts/codex-exec"';
+
 test('runs both reviewer adapters from the exported tree with their approved isolation flags', () => {
   const skill = read('skills/pre-merge-review/SKILL.md');
   const claude = read('skills/pre-merge-review/reviewer-prompts/claude.md');
@@ -200,9 +202,9 @@ test('runs both reviewer adapters from the exported tree with their approved iso
   assert.match(claudeBlock, /--tools "Read,Grep,Glob"/);
   assert.match(claudeBlock, /--strict-mcp-config/);
 
-  const codexBlock = bashBlocks(codex).find((block) => block.includes('codex exec'));
-  assert.ok(codexBlock, 'pre-merge Codex prompt should document a codex invocation');
-  assert.match(codexBlock, /cd "\$REVIEW_ROOT"[\s\S]*codex exec/);
+  const codexBlock = bashBlocks(codex).find((block) => block.includes(CODEX_EXEC));
+  assert.ok(codexBlock, 'pre-merge Codex prompt should dispatch through the codex-exec wrapper');
+  assert.match(codexBlock, /cd "\$REVIEW_ROOT"[\s\S]*"\$SKILL_DIR\/\.\.\/codex-cli\/scripts\/codex-exec"/);
   assert.match(codexBlock, /-s read-only/);
   assert.match(codexBlock, /--skip-git-repo-check/);
   assert.match(codexBlock, /--ignore-user-config/);
@@ -219,14 +221,14 @@ test('pre-merge adapters use the selected prompt file on stdin', () => {
   const prompt = read('skills/pre-merge-review/reviewer-prompts/claude.md');
   const codex = read('skills/pre-merge-review/reviewer-prompts/codex.md');
   const blocks = bashBlocks(prompt).filter((block) => block.includes('claude -p'));
-  const codexBlocks = bashBlocks(codex).filter((block) => block.includes('codex exec'));
+  const codexBlocks = bashBlocks(codex).filter((block) => block.includes(CODEX_EXEC));
 
   assert.ok(blocks.some((block) => /< "\$REVIEW_PROMPT_FILE"/.test(block)));
   for (const block of blocks) {
     assert.doesNotMatch(block, /"\$DIFF_AND_CONTEXT"/);
     assert.doesNotMatch(block, /IFS= read -r -d '' DIFF_AND_CONTEXT/);
   }
-  assert.ok(codexBlocks.some((block) => /cat "\$REVIEW_PROMPT_FILE" \| codex exec/.test(block)));
+  assert.ok(codexBlocks.some((block) => /cat "\$REVIEW_PROMPT_FILE" \| "\$SKILL_DIR\/\.\.\/codex-cli\/scripts\/codex-exec"/.test(block)));
   for (const block of codexBlocks) {
     assert.doesNotMatch(block, /echo "\$ADVERSARIAL_PROMPT_WITH_DIFF"/);
   }

@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Wraps `codex exec`. On Windows, codex runs the first `pwsh` on PATH inside a
+# restricted-token sandbox. The Microsoft Store build lives under WindowsApps,
+# whose ACL rejects that token (CreateProcessAsUserW failed: 5), so codex reads
+# zero files and returns a useless result while the invocation is still consumed.
+# This wrapper prefers the MSI build and proves the sandbox can spawn the shell
+# before any model turn. Off Windows it is a transparent pass-through.
+set -u
+
+windows_host() {
+  [ "${OS:-}" = "Windows_NT" ]
+}
+
+resolve_pwsh() {
+  command -v pwsh.exe 2>/dev/null || command -v pwsh 2>/dev/null
+}
+
+native_path() {
+  if command -v cygpath >/dev/null 2>&1; then
+    cygpath -w "$1"
+  else
+    printf '%s' "$1"
+  fi
+}
+
+if windows_host; then
+  MSI_PWSH_DIR="${RAZORBACK_PWSH_DIR:-/c/Program Files/PowerShell/7}"
+  PWSH=$(resolve_pwsh || true)
+  case "$PWSH" in
+    *WindowsApps*)
+      if [ -x "$MSI_PWSH_DIR/pwsh.exe" ]; then
+        export PATH="$MSI_PWSH_DIR:$PATH"
+        PWSH=$(resolve_pwsh || true)
+      fi
+      ;;
+  esac
+
+  if [ -n "$PWSH" ]; then
+    PROBE_ERR=$(codex sandbox -- "$(native_path "$PWSH")" -NoProfile -Command exit </dev/null 2>&1 >/dev/null) || {
+      printf 'codex-exec: the codex sandbox cannot spawn %s\n%s\n' "$PWSH" "$PROBE_ERR" >&2
+      printf 'codex-exec: install the MSI PowerShell 7 or set RAZORBACK_PWSH_DIR to a non-Store pwsh directory. No codex invocation was consumed.\n' >&2
+      exit 2
+    }
+  fi
+fi
+
+exec codex exec "$@"

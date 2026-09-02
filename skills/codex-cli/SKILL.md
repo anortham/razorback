@@ -30,7 +30,7 @@ perspective, use razorback:claude-cli; for Grok, razorback:grok-cli.
 - **Reasoning**: inherit the current Codex default unless the user or environment
   explicitly selects reasoning effort.
 - **Sandbox mode**: `-s, --sandbox <MODE>` accepts `read-only | workspace-write | danger-full-access`. Use `read-only` for review (the reviewer can investigate but cannot edit). For delegate flows use `--sandbox workspace-write` alone — `codex exec` is non-interactive and never prompts for approval, and codex 0.143 removed `-a/--ask-for-approval` from `exec` entirely (passing it now errors with `unexpected argument '-a'`; the flag remains valid only on interactive `codex`). The old `--full-auto` shorthand still parses on `exec` but is deprecated. Pair with `--dangerously-bypass-approvals-and-sandbox` only when the user explicitly asks and the environment is externally sandboxed.
-- **Windows sandbox**: on locked-down Windows hosts codex's sandbox can fail to spawn (`CreateProcessAsUserW failed: 5` / `windows sandbox failed: spawn setup`) and codex then reads zero files. See Error Handling for the `-s danger-full-access` fallback and its caveats.
+- **Dispatch through the wrapper**: every recipe calls `scripts/codex-exec` (in this skill's directory) in place of `codex exec`; it forwards all arguments unchanged. On Windows the wrapper runs a preflight first: codex spawns the first `pwsh` on PATH inside its restricted-token sandbox, and the Microsoft Store build under `WindowsApps` rejects that token (`CreateProcessAsUserW failed: 5`), so codex reads zero files while the invocation is still consumed. The wrapper prefers the MSI build (`C:/Program Files/PowerShell/7`, override with `RAZORBACK_PWSH_DIR`) and proves the sandbox can spawn the shell with `codex sandbox` before any model turn. A failed preflight exits 2, consumes no invocation, and prints the fix. Off Windows the wrapper is a pass-through.
 - **Always use**: `--ephemeral --color never` for clean non-interactive output
 - **Always append**: `2>/dev/null` to suppress stderr noise (session banner, transcript)
 - **Always redirect stdin**: append `< /dev/null` to every invocation that doesn't pipe a prompt. `codex exec` reads stdin even when a prompt is passed as an argument (it prints "Reading additional input from stdin..." and waits for EOF). On macOS/Linux bash this is harmless because the shell closes stdin, but on Windows (Git Bash / Claude Code Bash tool) stdin can stay open and codex blocks forever with no output — this is the cause of the 30+ minute Windows hang. Use `< /dev/null` on bash; on Windows native cmd/PowerShell use `< NUL`.
@@ -122,7 +122,7 @@ printf '%s' "Your prompt here" > "$PAYLOAD_FILE"
 # Run the Outbound Payload Redaction block, then:
 IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
 
-codex exec --ephemeral --color never \
+"$SKILL_DIR/scripts/codex-exec" --ephemeral --color never \
   -s read-only \
   -C /path/to/project \
   "$REDACTED_PROMPT" \
@@ -151,7 +151,7 @@ PAYLOAD_FILE=$(mktemp)
 printf '%s' "Focus on error handling and concurrency safety." > "$PAYLOAD_FILE"
 # Run the Outbound Payload Redaction block, then:
 IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
-codex exec --color never -C /path/to/project -s read-only \
+"$SKILL_DIR/scripts/codex-exec" --color never -C /path/to/project -s read-only \
   review --uncommitted --ephemeral \
   -o /tmp/review.txt \
   "$REDACTED_PROMPT" \
@@ -246,7 +246,7 @@ mechanism. Payloads at or below the threshold remain the normal prompt file.
 **Step 3: Send to Codex**
 
 ```bash
-cat "$REVIEW_PROMPT_FILE" | codex exec --ephemeral --color never \
+cat "$REVIEW_PROMPT_FILE" | "$SKILL_DIR/scripts/codex-exec" --ephemeral --color never \
   -s read-only \
   -C "$REVIEW_ROOT" \
   - \
@@ -300,7 +300,7 @@ if ! "$SKILL_DIR/scripts/openai-schema" > "$SCHEMA_FILE"; then
 fi
 RESULT_FILE=$(mktemp)
 trap 'rm -f "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE" "$REVIEW_PROMPT_FILE" "$RESULT_FILE" "$SCHEMA_FILE"; rm -rf "$REVIEW_ROOT"' EXIT
-cat "$REVIEW_PROMPT_FILE" | codex exec --ephemeral --color never \
+cat "$REVIEW_PROMPT_FILE" | "$SKILL_DIR/scripts/codex-exec" --ephemeral --color never \
   -s read-only \
   -C "$REVIEW_ROOT" \
   --output-schema "$SCHEMA_FILE" \
@@ -339,7 +339,7 @@ PAYLOAD_FILE=$(mktemp)
 printf '%s' "Your task instructions here. Apply changes directly." > "$PAYLOAD_FILE"
 # Run the Outbound Payload Redaction block, then:
 IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
-codex exec --ephemeral --color never \
+"$SKILL_DIR/scripts/codex-exec" --ephemeral --color never \
   --sandbox workspace-write \
   -C /path/to/project \
   "$REDACTED_PROMPT" \
@@ -388,10 +388,10 @@ guard block, then
 
 ```bash
 # Initial task (persistent session)
-codex exec --color never -C /path "$REDACTED_PROMPT" < /dev/null 2>/dev/null
+"$SKILL_DIR/scripts/codex-exec" --color never -C /path "$REDACTED_PROMPT" < /dev/null 2>/dev/null
 
 # Resume the last session (redact the follow-up prompt the same way)
-codex exec resume --last "$REDACTED_PROMPT" < /dev/null 2>/dev/null
+"$SKILL_DIR/scripts/codex-exec" resume --last "$REDACTED_PROMPT" < /dev/null 2>/dev/null
 
 rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ```
@@ -412,7 +412,7 @@ PAYLOAD_FILE=$(mktemp)
 printf '%s' "prompt" > "$PAYLOAD_FILE"
 # Run the Outbound Payload Redaction block, then:
 IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
-codex exec --ephemeral --color never -C ~/source/other-project "$REDACTED_PROMPT" < /dev/null 2>/dev/null
+"$SKILL_DIR/scripts/codex-exec" --ephemeral --color never -C ~/source/other-project "$REDACTED_PROMPT" < /dev/null 2>/dev/null
 rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ```
 
@@ -420,7 +420,7 @@ rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 
 ```bash
 # Same as above, with the two isolation flags added:
-codex exec --ephemeral --color never \
+"$SKILL_DIR/scripts/codex-exec" --ephemeral --color never \
   -C ~/source/other-project \
   --ignore-user-config --ignore-rules \
   "$REDACTED_PROMPT" < /dev/null 2>/dev/null
@@ -469,7 +469,7 @@ think it's wrong, and your evidence.
 - **Codex not installed**: Check with `codex --version`. Install via
   `npm install -g @openai/codex` if missing.
 - **Windows hang (no output for many minutes)**: `codex exec` reads stdin even when a prompt argument is supplied. On Windows (Git Bash via Claude Code's Bash tool, PowerShell, cmd.exe) stdin can stay open with no producer, so codex blocks on stdin EOF forever and never starts the model run. Always add `< /dev/null` (bash) or `< NUL` (cmd/PowerShell) to non-piped invocations. If you've already triggered the hang, kill the process — it will not recover.
-- **Windows sandbox spawn failure (`CreateProcessAsUserW failed: 5` / `windows sandbox failed: spawn setup`)**: codex's `read-only`/`workspace-write` sandbox needs to spawn a restricted-token child process, which locked-down Windows (Enterprise/LTSC, GPO process-creation restrictions) denies. Codex then can't run any shell command, so it reads zero files and the review/delegate returns nothing useful. This is **not** a finding about the code under review — it's the sandbox failing to start. Fix: re-run with `-s danger-full-access` so codex skips its own sandbox (the host harness still constrains the run; `read-only` is then enforced by the prompt, not the sandbox). On a host where this recurs, pass the flag from the start. Do not work around it by inlining file contents into the prompt. Retrying the same sandbox mode on the affected host fails identically; if you control the host, the native Windows sandbox setup or WSL2 may restore sandboxing.
+- **Windows sandbox spawn failure (`CreateProcessAsUserW failed: 5` / `windows sandbox failed: spawn setup`)**: the sandbox is fine; the shell is the problem. Codex resolves `pwsh` through PATH, and a terminal started from the Microsoft Store PowerShell prepends its `WindowsApps` package directory. The `WindowsApps` ACL denies the restricted sandbox token, so every shell command fails and codex reads zero files. This is **not** a finding about the code under review. `"$SKILL_DIR/scripts/codex-exec"` prevents it by putting the MSI `pwsh` first on PATH and probing `codex sandbox -- <pwsh> -NoProfile -Command exit` before dispatch. If the wrapper exits 2, the probe failed and no invocation was consumed: install the MSI PowerShell 7 (or set `RAZORBACK_PWSH_DIR` to a non-Store `pwsh` directory) and dispatch again. Do not inline file contents into the prompt, and do not drop to `-s danger-full-access` without explicit user approval — it removes the sandbox for the whole run.
 - **`--full-auto` deprecation warning**: codex 0.134+ prints `warning: --full-auto is deprecated; use --sandbox workspace-write instead`. Replace `--full-auto` with `--sandbox workspace-write` alone.
 - **`unexpected argument '-a' found`**: codex 0.143 removed `-a/--ask-for-approval` from `codex exec` (non-interactive runs never prompt, so the flag was meaningless there). Drop `-a never` from `exec` invocations; the flag still exists on interactive `codex`.
 
@@ -482,21 +482,21 @@ See `references/follow-goals.md` for the verified `/goal` surface and setup note
 
 All non-piped patterns must include `< /dev/null` (bash) or `< NUL` (Windows cmd/PowerShell) to prevent codex from blocking on stdin EOF — see the Defaults section.
 
-On **Windows**, if codex's sandbox fails to spawn (`CreateProcessAsUserW failed: 5`, common on locked-down Enterprise/LTSC hosts), re-run with `-s danger-full-access` — including for read-only review — since codex otherwise reads zero files. On hosts where it recurs, pass it from the start. See the Windows sandbox notes in Defaults and Error Handling.
+Every pattern dispatches through `"$SKILL_DIR/scripts/codex-exec"`, which forwards its arguments to `codex exec`. On **Windows** the wrapper first swaps the Microsoft Store `pwsh` for the MSI build and proves the sandbox can spawn it; a failed preflight exits 2 with no invocation consumed. See the Windows sandbox notes in Defaults and Error Handling.
 
 Every command pattern below still requires the constructed prompt to be filtered through `$SKILL_DIR/../security-review/scripts/redact-outbound` immediately before dispatch; pass only the redacted artifact to Codex.
 
 | Use case | Mode | Command pattern |
 |---|---|---|
-| Second opinion | read-only | `codex exec --ephemeral --color never -s read-only -C dir "prompt" < /dev/null 2>/dev/null` |
-| Code review (unified prompt) | read-only | Pipe diff: `echo "$PROMPT" \| codex exec --ephemeral --color never -s read-only -C dir - 2>/dev/null` (scope/sizing per Review Targeting) |
-| Code review (codex-native scope) | read-only | `codex exec -C dir -s read-only review --uncommitted -o /tmp/review.txt "focus" < /dev/null 2>/dev/null` (or `--base <branch>` / `--commit <sha>`; exec-level flags like `-C`/`-s` go BEFORE `review`) |
+| Second opinion | read-only | `"$SKILL_DIR/scripts/codex-exec" --ephemeral --color never -s read-only -C dir "prompt" < /dev/null 2>/dev/null` |
+| Code review (unified prompt) | read-only | Pipe diff: `echo "$PROMPT" \| "$SKILL_DIR/scripts/codex-exec" --ephemeral --color never -s read-only -C dir - 2>/dev/null` (scope/sizing per Review Targeting) |
+| Code review (codex-native scope) | read-only | `"$SKILL_DIR/scripts/codex-exec" -C dir -s read-only review --uncommitted -o /tmp/review.txt "focus" < /dev/null 2>/dev/null` (or `--base <branch>` / `--commit <sha>`; exec-level flags like `-C`/`-s` go BEFORE `review`) |
 | Goal tracking | interactive only | `/goal` sets or views a long-running objective; the `goals` feature is stable and enabled by default as of codex 0.143 |
 | Adversarial review | read-only + schema | Sanitize the schema with `$SKILL_DIR/scripts/openai-schema > "$SCHEMA_FILE"`, add `--output-schema "$SCHEMA_FILE"`, and build the prompt from `$SKILL_DIR/adversarial-prompt.txt` (see Adversarial Review section). Scope/sizing per Review Targeting. |
-| Delegate (complex) | workspace-write | `codex exec --ephemeral --color never --sandbox workspace-write -C dir "prompt" < /dev/null 2>/dev/null` (no `-a` — removed from `exec` in codex 0.143; replaces the deprecated `--full-auto`; add `--add-dir <DIR>` for extra writable dirs) |
+| Delegate (complex) | workspace-write | `"$SKILL_DIR/scripts/codex-exec" --ephemeral --color never --sandbox workspace-write -C dir "prompt" < /dev/null 2>/dev/null` (no `-a` — removed from `exec` in codex 0.143; replaces the deprecated `--full-auto`; add `--add-dir <DIR>` for extra writable dirs) |
 | Truly fresh reviewer | read-only + isolated | Add `--ignore-user-config --ignore-rules` to skip project AGENTS.md and execpolicy `.rules` |
 | Clean output capture | any | Add `-o <file>` to write the agent's last message to a file instead of mixing it with stderr/banner output |
-| Resume session | persistent | Drop `--ephemeral`, use `codex exec resume --last "prompt" < /dev/null 2>/dev/null` |
+| Resume session | persistent | Drop `--ephemeral`, use `"$SKILL_DIR/scripts/codex-exec" resume --last "prompt" < /dev/null 2>/dev/null` |
 
 ## It's working if
 
