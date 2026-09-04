@@ -11,6 +11,7 @@ const DELEGATION_SKILLS = [
   'skills/codex-cli/SKILL.md',
   'skills/grok-cli/SKILL.md',
   'skills/cursor-agent/SKILL.md',
+  'skills/agy-cli/SKILL.md',
 ];
 
 const HEADING = '## Running These Recipes';

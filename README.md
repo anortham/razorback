@@ -235,6 +235,7 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 | cursor-agent | Invokes Cursor Agent / Composer 2.5 Fast for bounded implementation while the current lead owns planning, review, and verification |
 | claude-cli | Invokes `claude -p` for second opinions and adversarial review; omits `--bare` because it breaks OAuth auth |
 | grok-cli | Invokes `grok -p` for second opinions, adversarial review, and delegation to xAI's Grok models |
+| agy-cli | Invokes `agy -p` for second opinions, adversarial review, and delegation to Google Antigravity / Gemini models |
 | security-review | Security lane: the `security-secrets` and `security-deps` branch-gate scopes, the external-model policy gate every outbound dispatch checks, and the canonical security checklist and redaction rules |
 
 ## Prompt templates and scripts

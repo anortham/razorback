@@ -22,7 +22,7 @@ Use when the user asks two or more models to check each other's work to a stated
 
 **Not here:** planned pre-merge external review — `razorback:pre-merge-review` owns that fixed two-pass budget. A single ad-hoc review with no convergence goal is `razorback:requesting-code-review`.
 
-**REQUIRED SUB-SKILLS:** razorback:managing-review-campaigns, razorback:architecture-quality (Audit Mode), one or more reviewer channels (razorback:codex-cli, razorback:claude-cli, razorback:grok-cli, or razorback:cursor-agent in read-only mode) pointing at models that differ from the lead, razorback:receiving-code-review, razorback:test-driven-development, razorback:verification-before-completion.
+**REQUIRED SUB-SKILLS:** razorback:managing-review-campaigns, razorback:architecture-quality (Audit Mode), one or more reviewer channels (razorback:codex-cli, razorback:claude-cli, razorback:grok-cli, razorback:agy-cli, or razorback:cursor-agent in read-only mode) pointing at models that differ from the lead, razorback:receiving-code-review, razorback:test-driven-development, razorback:verification-before-completion.
 
 ## Policy Gate
 

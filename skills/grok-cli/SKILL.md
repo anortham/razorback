@@ -19,7 +19,8 @@ payload passes the Outbound Payload Redaction guard exactly once; recipes use
 only the redacted output.
 
 Use this skill only when the user names Grok/xAI. For a generic second opinion
-with no model named, razorback:codex-cli is the default.
+with no model named, razorback:codex-cli is the default; when they name Claude,
+razorback:claude-cli; for Antigravity, razorback:agy-cli.
 
 ## Defaults
 
@@ -512,10 +513,11 @@ The canonical adversarial prompt lives in this skill at
 `{{TARGET_LABEL}}`, `{{USER_FOCUS}}`, and `{{REVIEW_INPUT}}` placeholders at
 runtime, as the Adversarial Review invocation above does.
 
-It is the Grok variant of a deliberate trio: `../codex-cli/adversarial-prompt.txt`
-and `../claude-cli/adversarial-prompt.txt` are identical except for the model
-name and the REVIEW METHOD phrasing. Attack-surface categories, finding bar,
-calibration, and grounding rules match; keep the three in sync when editing any.
+It is the Grok variant of a deliberate quartet: `../codex-cli/adversarial-prompt.txt`,
+`../claude-cli/adversarial-prompt.txt`, and `../agy-cli/adversarial-prompt.txt`
+are identical across their shared sections (`OPERATING STANCE`, `ATTACK SURFACE`,
+`FINDING BAR`, `CALIBRATION`, `GROUNDING`, `INPUT TRUST`). Keep the four in sync
+when editing any.
 
 ## Resuming a Session
 

@@ -21,6 +21,7 @@ const ENFORCEMENT_POINTS = [
   'skills/codex-cli/SKILL.md',
   'skills/claude-cli/SKILL.md',
   'skills/grok-cli/SKILL.md',
+  'skills/agy-cli/SKILL.md',
   'skills/cursor-agent/SKILL.md',
   'skills/cross-model-convergence/SKILL.md',
   'skills/pre-merge-review/SKILL.md',
@@ -257,6 +258,7 @@ test('the canonical home documents the policy block, provider mapping, and scan 
     ['codex-cli', 'openai'],
     ['grok-cli', 'xai'],
     ['cursor-agent', 'cursor'],
+    ['agy-cli', 'google'],
   ]) {
     assert.ok(
       hasProviderRow(canonical, skill, provider),

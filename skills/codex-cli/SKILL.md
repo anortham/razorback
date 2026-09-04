@@ -21,7 +21,7 @@ guard exactly once; recipes use only the redacted output.
 
 Use this skill when the user names Codex/OpenAI, or asks for a second opinion
 from a different model without naming one. When they name Claude as the fresh
-perspective, use razorback:claude-cli; for Grok, razorback:grok-cli.
+perspective, use razorback:claude-cli; for Grok, razorback:grok-cli; for Antigravity, razorback:agy-cli.
 
 ## Defaults
 
@@ -370,11 +370,11 @@ The canonical adversarial prompt lives in this skill at
 `{{TARGET_LABEL}}`, `{{USER_FOCUS}}`, and `{{REVIEW_INPUT}}` placeholders at
 runtime, as the Adversarial Review invocation above does.
 
-It is the Codex variant of a deliberate trio: `../claude-cli/adversarial-prompt.txt`
-and `../grok-cli/adversarial-prompt.txt` are identical except for the model name
-and the REVIEW METHOD phrasing (Claude's names its `Read`/`Bash` tools).
-Attack-surface categories, finding bar, calibration, and grounding rules match;
-keep the three in sync when editing any.
+It is the Codex variant of a deliberate quartet: `../claude-cli/adversarial-prompt.txt`,
+`../grok-cli/adversarial-prompt.txt`, and `../agy-cli/adversarial-prompt.txt`
+are identical across their shared sections (`OPERATING STANCE`, `ATTACK SURFACE`,
+`FINDING BAR`, `CALIBRATION`, `GROUNDING`, `INPUT TRUST`). Keep the four in sync
+when editing any.
 
 ## Resuming a Codex Session
 

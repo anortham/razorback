@@ -15,7 +15,7 @@ different underlying model.
 Use when the user names Claude as the second perspective. The reviewer may be
 the same model build as the author — the independence is the fresh session and
 prompt, not the model. When the user wants a different model without naming
-one, use razorback:codex-cli; when they name Grok, razorback:grok-cli.
+one, use razorback:codex-cli; when they name Grok, razorback:grok-cli; when they name Antigravity, razorback:agy-cli.
 
 ## Pre-flight Checklist
 
@@ -378,11 +378,11 @@ the confidence warranted? Then give your overall take on the verdict.
 The canonical adversarial system prompt lives in this skill at
 `./adversarial-prompt.txt` (version-controlled) and is passed directly via
 `--system-prompt-file` in the invocation above. It is the Claude variant of a
-deliberate trio: the only Claude-specific adaptation is the REVIEW METHOD line
+deliberate quartet: the only Claude-specific adaptation is the REVIEW METHOD line
 referencing `Read`, `Grep`, and `Glob` (the invocation's allowlisted tools). Attack-surface
 categories, finding bar, calibration, and grounding rules are identical to
-`../codex-cli/adversarial-prompt.txt` and `../grok-cli/adversarial-prompt.txt`;
-keep the three in sync when editing any.
+`../codex-cli/adversarial-prompt.txt`, `../grok-cli/adversarial-prompt.txt`,
+and `../agy-cli/adversarial-prompt.txt`; keep the four in sync when editing any.
 
 ## Resuming a Session
 

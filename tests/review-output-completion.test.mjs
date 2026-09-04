@@ -64,6 +64,24 @@ test('accepts a complete Grok envelope and normalizes structured output', () => 
   assert.deepEqual(JSON.parse(result.stdout), completeReview);
 });
 
+test('accepts a complete Antigravity envelope and normalizes structured output', () => {
+  const result = runValidator(
+    {
+      conversation_id: '12345678-1234-1234-1234-123456789abc',
+      status: 'SUCCESS',
+      response: 'Review completed.\n',
+      duration_seconds: 2.5,
+      num_turns: 1,
+      structured_output: completeReview,
+      usage: { input_tokens: 12, output_tokens: 34 },
+    },
+    'agy-complete.json',
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout), completeReview);
+});
+
 test('rejects contradictory structured output and text without partial output', () => {
   const result = runValidator(
     {

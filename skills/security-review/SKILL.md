@@ -39,7 +39,7 @@ Allowed providers: anthropic, openai
 Reviewer choices permitted: codex, claude
 ```
 
-- `Allowed providers:` is a comma list from `anthropic, openai, xai, cursor`, or `any`.
+- `Allowed providers:` is a comma list from `anthropic, openai, xai, cursor, google`, or `any`.
 - `Reviewer choices permitted:` is a subset of `codex, claude`, or `none`.
 
 The policy governs any external dispatch that carries repo content — delegation with write sandboxes as much as reviews.
@@ -52,6 +52,7 @@ The policy governs any external dispatch that carries repo content — delegatio
 | codex-cli | openai |
 | grok-cli | xai |
 | cursor-agent | cursor |
+| agy-cli | google |
 
 cross-model-convergence requires every participating model's provider to be allowed.
 
@@ -116,6 +117,6 @@ These three rules are the canonical redaction block. They are duplicated verbati
 
 ## Integration
 
-**Called from (policy gate):** razorback:codex-cli, razorback:claude-cli, razorback:grok-cli, razorback:cursor-agent, razorback:cross-model-convergence, razorback:pre-merge-review, and razorback:requesting-code-review Mode 2 — every point where a diff or repo content leaves the machine.
+**Called from (policy gate):** razorback:codex-cli, razorback:claude-cli, razorback:grok-cli, razorback:agy-cli, razorback:cursor-agent, razorback:cross-model-convergence, razorback:pre-merge-review, and razorback:requesting-code-review Mode 2 — every point where a diff or repo content leaves the machine.
 
 **Called from (scan scopes):** razorback:writing-plans requires the Security scope line in every plan and validates the chosen pre-merge reviewer against the policy block at plan approval; razorback:finishing-a-development-branch runs the scopes at the branch gate, renders `{{policy_status}}` in the morning report, and renders the `none declared` note when no scope was declared.

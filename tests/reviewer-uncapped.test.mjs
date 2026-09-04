@@ -10,6 +10,7 @@ const REVIEWER_DOCS = [
   'skills/claude-cli/SKILL.md',
   'skills/codex-cli/SKILL.md',
   'skills/grok-cli/SKILL.md',
+  'skills/agy-cli/SKILL.md',
   'skills/pre-merge-review/SKILL.md',
   'skills/pre-merge-review/reviewer-prompts/claude.md',
   'skills/pre-merge-review/reviewer-prompts/codex.md',
@@ -19,6 +20,7 @@ const FAILSAFE_TIMEOUT_DOCS = [
   'skills/claude-cli/SKILL.md',
   'skills/codex-cli/SKILL.md',
   'skills/grok-cli/SKILL.md',
+  'skills/agy-cli/SKILL.md',
   'skills/pre-merge-review/reviewer-prompts/claude.md',
   'skills/pre-merge-review/reviewer-prompts/codex.md',
 ];
@@ -27,6 +29,7 @@ const REVIEWER_CLI_SKILLS = [
   'skills/claude-cli/SKILL.md',
   'skills/codex-cli/SKILL.md',
   'skills/grok-cli/SKILL.md',
+  'skills/agy-cli/SKILL.md',
 ];
 
 function read(relativePath) {

@@ -104,6 +104,7 @@ test('small prompts carry redacted instructions and large wrappers stay static',
     'skills/grok-cli/SKILL.md',
     'skills/claude-cli/SKILL.md',
     'skills/codex-cli/SKILL.md',
+    'skills/agy-cli/SKILL.md',
   ];
   for (const relativePath of instructionDocs) {
     const text = readFileSync(join(repositoryRoot, relativePath), 'utf8');
@@ -145,6 +146,7 @@ test('large review recipes use the shared artifact contract and bounded prompt',
     'skills/grok-cli/SKILL.md',
     'skills/claude-cli/SKILL.md',
     'skills/codex-cli/SKILL.md',
+    'skills/agy-cli/SKILL.md',
     'skills/pre-merge-review/SKILL.md',
     'skills/pre-merge-review/reviewer-prompts/claude.md',
     'skills/pre-merge-review/reviewer-prompts/codex.md',
@@ -162,6 +164,7 @@ test('large review prompts point to the artifact instead of reloading its bytes'
     'skills/grok-cli/SKILL.md',
     'skills/claude-cli/SKILL.md',
     'skills/codex-cli/SKILL.md',
+    'skills/agy-cli/SKILL.md',
     'skills/pre-merge-review/SKILL.md',
     'skills/pre-merge-review/reviewer-prompts/claude.md',
     'skills/pre-merge-review/reviewer-prompts/codex.md',
