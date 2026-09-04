@@ -1,12 +1,12 @@
 # Razorback
 
-**Miller-powered development workflow for Claude Code, Codex CLI / ChatGPT desktop app, and OpenCode.**
+**Miller-powered development workflow for Claude Code, Codex CLI / ChatGPT desktop app, OpenCode, and Antigravity.**
 
 > Website: [anortham.github.io/razorback](https://anortham.github.io/razorback/) — the setup path from nothing to a working install, on one page.
 
 Razorback is a skill set for coding-agent harnesses, diverged from [Superpowers](https://github.com/obra/superpowers) to add Miller MCP for token-efficient codebase orientation. Plan execution runs through `subagent-driven-development` on harnesses that support delegation, and `executing-plans` where delegation is unavailable.
 
-**Supported harnesses.** Claude Code, Codex CLI / ChatGPT desktop app (rebranded from Codex), and OpenCode get the full plugin: skills, agents, bootstrap, and delegated execution. Cursor is **frozen** — its plugin support still works and is documented below, but it receives no new work. Copilot CLI is **instruction-tier**: it picks up razorback's Miller-first ruleset from `.github/copilot-instructions.md` and nothing else.
+**Supported harnesses.** Claude Code, Codex CLI / ChatGPT desktop app (rebranded from Codex), OpenCode, and Antigravity get the full plugin: skills, agents, bootstrap, and delegated execution. Cursor is **frozen** — its plugin support still works and is documented below, but it receives no new work. Copilot CLI is **instruction-tier**: it picks up razorback's Miller-first ruleset from `.github/copilot-instructions.md` and nothing else.
 
 ## Why?
 
@@ -19,7 +19,7 @@ AI-assisted development burns tokens on repetitive codebase exploration. Every a
 
 ## Requirements
 
-- A supported harness: [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex CLI / ChatGPT desktop app](https://openai.com/codex/), or [OpenCode](https://opencode.ai) — plus frozen support for [Cursor](https://cursor.sh)
+- A supported harness: [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex CLI / ChatGPT desktop app](https://openai.com/codex/), [OpenCode](https://opencode.ai), or [Antigravity](https://github.com/google-deepmind) — plus frozen support for [Cursor](https://cursor.sh)
 - Miller MCP — hard requirement for code orientation and symbol-aware review; must be configured and indexing your workspace
 - [Goldfish MCP Server](https://github.com/anortham/goldfish) — hard requirement for persistent memory (checkpoints, briefs, recall); used for compaction-durable execution during long autonomous runs
 - For Codex: enable `multi_agent = true` in `~/.codex/config.toml` so parallel execution skills can dispatch subagents
@@ -87,6 +87,42 @@ Fetch and follow instructions from https://raw.githubusercontent.com/anortham/ra
 
 **Detailed docs:** [.opencode/INSTALL.md](.opencode/INSTALL.md)
 
+### Antigravity (agy CLI / Antigravity IDE)
+
+Antigravity natively discovers skills, rules, and plugins at both global and project levels, or via `agy plugin import`.
+
+**Option 1: Import with `agy plugin import` (recommended for agy CLI)**
+
+Clone razorback and import the plugin directly into Antigravity:
+
+```bash
+git clone https://github.com/anortham/razorback.git
+agy plugin import /path/to/razorback
+```
+
+`agy plugin import` ingests razorback's skills, agents, and hooks, staging them into `~/.gemini/config`.
+
+**Option 2: Global skills symlink (CLI & IDE)**
+
+To make razorback skills available across all your Antigravity sessions and projects:
+
+```bash
+git clone https://github.com/anortham/razorback.git ~/source/razorback
+mkdir -p ~/.gemini/config/skills
+ln -s ~/source/razorback/skills/* ~/.gemini/config/skills/
+```
+
+Antigravity automatically discovers and progressively discloses skills in `~/.gemini/config/skills/`.
+
+**Option 3: Project-specific skills (`.agents/skills`)**
+
+To scope skills to an individual workspace without global configuration, link them into the repository's `.agents/skills/` directory:
+
+```bash
+mkdir -p .agents/skills
+ln -s /path/to/razorback/skills/* .agents/skills/
+```
+
 ### Copilot CLI (instruction-tier)
 
 Copilot CLI gets the Miller-first ruleset only — no skills, no agents, no delegated execution. Copy razorback's instruction-tier ruleset into the repo you work in; Copilot reads that path natively:
@@ -102,7 +138,7 @@ If the repo already has a `.github/copilot-instructions.md`, merge the ruleset i
 
 Once loaded, razorback works automatically. The bootstrap path varies by harness:
 
-1. **Session starts** — the `SessionStart` hook (Claude Code, Cursor), `messages.transform` (OpenCode), or native skill discovery from the installed Codex plugin or fallback skills symlink (Codex) surfaces the `using-razorback` skill.
+1. **Session starts** — the `SessionStart` hook (Claude Code, Cursor), `messages.transform` (OpenCode), native skill discovery from the installed Codex plugin or fallback skills symlink (Codex), or global/workspace skill discovery and plugin import (Antigravity) surfaces the `using-razorback` skill.
 2. **You request work** — the agent checks for applicable skills before every response.
 3. **Skills guide the workflow** — brainstorming, planning, TDD, execution, review, and verification all route through Miller and the appropriate execution strategy for your harness.
 
@@ -177,6 +213,23 @@ Remove-Item -Recurse -Force "$env:USERPROFILE\.config\opencode\node_modules\razo
 Then restart OpenCode.
 
 See [.opencode/INSTALL.md](.opencode/INSTALL.md) for more detail.
+
+### Antigravity
+
+**If installed via `agy plugin import`:** pull latest changes in your local clone and re-import:
+
+```bash
+cd /path/to/razorback && git pull
+agy plugin import .
+```
+
+**If installed via symlinks:** `git pull` in your local clone:
+
+```bash
+cd /path/to/razorback && git pull
+```
+
+Antigravity automatically discovers the updated skills on the next session start.
 
 ### Copilot CLI (instruction-tier)
 
