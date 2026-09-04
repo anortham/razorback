@@ -59,3 +59,15 @@ test('agy-cli defines the Google provider for policy check', () => {
   const skill = read('skills/agy-cli/SKILL.md');
   assert.match(skill, /Provider for this skill: `google`/);
 });
+
+test('agy-cli passes --print-timeout 30m on review invocation', () => {
+  const skill = read('skills/agy-cli/SKILL.md');
+  assert.match(skill, /--print-timeout 30m/);
+  assert.match(skill, /5m0s/);
+});
+
+test('agy-cli cleans up raw PAYLOAD_FILE before artifact preparation', () => {
+  const skill = read('skills/agy-cli/SKILL.md');
+  assert.match(skill, /echo "outbound redaction failed" >&2\s+exit 1\s+fi\s+rm -f -- "\$PAYLOAD_FILE"/);
+});
+

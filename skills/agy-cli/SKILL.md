@@ -71,10 +71,11 @@ for Grok, razorback:grok-cli.
   `razorback:managing-review-campaigns`. A user who wants a hard per-invocation
   ceiling sets it themselves.
 - **Timeout is a failsafe, not a budget**: set 1800000ms (30 min) on every
-  review invocation. It exists to catch a process that hung or died and will
-  never return — nothing else. It is not a bound on how long a review may
-  take, and it is not a cost dial. Scope the review in the prompt and let the
-  reviewer finish the job. Never tune it down to make a run cheaper.
+  review invocation. Pass `--print-timeout 30m` to `agy` because its default
+  print-mode wait is 5 minutes (`5m0s`). It exists to catch a process that hung
+  or died and will never return — nothing else. It is not a bound on how long a
+  review may take, and it is not a cost dial. Scope the review in the prompt and
+  let the reviewer finish the job. Never tune it down to make a run cheaper.
 - **Auth**: Authenticated session managed by Antigravity CLI in
   `~/.gemini/antigravity-cli/`. Run `agy models` to confirm readiness.
 
@@ -137,15 +138,13 @@ Verify that `agy` is installed and authenticated by listing available models.
 Keep stderr for startup diagnostics.
 
 ```bash
-AGY_BIN=$(command -v agy || true)
-: "${AGY_BIN:=$HOME/.local/bin/agy}"
-"$AGY_BIN" models
+agy models
 ```
 
 | stdout / result | Meaning | What to do |
 |---|---|---|
 | Model list printed (exits 0) | Ready | Proceed |
-| `command not found` / exit 127 | Binary missing or not on `PATH` | Ensure `agy` is installed and `~/.local/bin` is in `PATH`. |
+| `command not found` / exit 127 | Binary missing or not on `PATH` | Ensure `agy` is installed and in `PATH`. |
 | Network error or exit non-zero | Authentication or backend failure | Verify internet connection and run `agy` interactively to refresh credentials. |
 
 ## Review Targeting
@@ -247,10 +246,11 @@ if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" \
   echo "outbound redaction failed" >&2
   exit 1
 fi
+rm -f -- "$PAYLOAD_FILE"
 
 if ! REVIEW_ARTIFACT=$("$SKILL_DIR/../security-review/scripts/prepare-review-artifact" \
   "$REVIEW_ROOT" "$REDACTED_PAYLOAD_FILE"); then
-  rm -f -- "$REDACTED_PAYLOAD_FILE"
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
   rm -rf -- "$REVIEW_ROOT"
   echo "review artifact preparation failed" >&2
   exit 1
@@ -295,6 +295,7 @@ cd "$REVIEW_ROOT" && agy \
   --sandbox \
   --dangerously-skip-permissions \
   --disable-slash-commands \
+  --print-timeout 30m \
   ${AGY_MODEL:+--model "$AGY_MODEL"} \
   ${AGY_EFFORT:+--effort "$AGY_EFFORT"} \
   < "$REVIEW_PROMPT_FILE" > "$RESULT_FILE" 2> "$STDERR_FILE" || AGY_STATUS=$?

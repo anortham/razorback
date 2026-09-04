@@ -268,10 +268,11 @@ if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" \
   echo "outbound redaction failed" >&2
   exit 1
 fi
+rm -f -- "$PAYLOAD_FILE"
 
 if ! REVIEW_ARTIFACT=$("$SKILL_DIR/../security-review/scripts/prepare-review-artifact" \
   "$REVIEW_ROOT" "$REDACTED_PAYLOAD_FILE"); then
-  rm -f -- "$REDACTED_PAYLOAD_FILE"
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
   rm -rf -- "$REVIEW_ROOT"
   echo "review artifact preparation failed" >&2
   exit 1
