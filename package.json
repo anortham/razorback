@@ -1,6 +1,6 @@
 {
   "name": "razorback",
-  "version": "0.37.1",
+  "version": "0.38.0",
   "description": "Miller-powered development workflow for Claude Code, Codex, and OpenCode.",
   "type": "module",
   "scripts": {
