@@ -24,19 +24,19 @@ before dispatch.
 ```dot
 digraph when_to_use {
     "Have implementation plan?" [shape=diamond];
-    "Same session + can dispatch subagents?" [shape=diamond];
-    "Tasks mostly independent?" [shape=diamond];
+    "Delegation is available and permitted?" [shape=diamond];
+    "2+ independent tasks?" [shape=diamond];
     "subagent-driven-development (parallel batches)" [shape=box style=filled fillcolor=lightgreen];
     "subagent-driven-development (serialized lanes)" [shape=box style=filled fillcolor=lightgreen];
     "executing-plans" [shape=box];
     "Brainstorm / write the plan first" [shape=box];
 
-    "Have implementation plan?" -> "Same session + can dispatch subagents?" [label="yes"];
+    "Have implementation plan?" -> "Delegation is available and permitted?" [label="yes"];
     "Have implementation plan?" -> "Brainstorm / write the plan first" [label="no"];
-    "Same session + can dispatch subagents?" -> "Tasks mostly independent?" [label="yes"];
-    "Same session + can dispatch subagents?" -> "executing-plans" [label="no - separate session or no delegation"];
-    "Tasks mostly independent?" -> "subagent-driven-development (parallel batches)" [label="yes"];
-    "Tasks mostly independent?" -> "subagent-driven-development (serialized lanes)" [label="no - tightly coupled: dispatch one at a time"];
+    "Delegation is available and permitted?" -> "2+ independent tasks?" [label="yes - including one task"];
+    "Delegation is available and permitted?" -> "executing-plans" [label="no delegation or explicitly selected single-agent"];
+    "2+ independent tasks?" -> "subagent-driven-development (parallel batches)" [label="yes"];
+    "2+ independent tasks?" -> "subagent-driven-development (serialized lanes)" [label="no - one task or dependent work"];
 }
 ```
 
@@ -136,16 +136,19 @@ If the same HEAD already has a passing ledger entry for the required scope, reus
 Every dispatch chooses one commit mode and copies it into the worker prompt:
 
 - `serial-worker-commit`: the task is single-threaded from Git's perspective
-  (single task or deliberately serialized lane). The worker may commit only owned
-  files after assigned verification passes.
+  (single task or deliberately serialized lane). After assigned verification passes,
+  the worker writes a Goldfish checkpoint before the commit, stages that checkpoint
+  artifact with only its owned files, and commits them.
 - `parallel-lead-commit`: the task belongs to a safe batch with 2+ eligible
   tasks. The worker edits only owned files, writes the report, and does not run
   `git add` or `git commit`. The lead stages and commits after inline review to
   avoid Git index races between concurrent workers.
 
+Normal local commits in both modes are authorized by the approved implementation scope. If a user or host instruction explicitly prohibits commits, preserve the reviewed diff and report that existing approval/blocker boundary; do not invent a pending-commit execution state or fabricate a completion SHA.
+
 **Lead staging (`parallel-lead-commit`):** this is the one statement of the staging rule — every other mention in this skill points here.
 
-Tick the task's acceptance-criteria checkboxes before staging, then stage the reviewed task's owned files plus the plan file — `git add <owned paths> <plan file>` then commit. Never `git add -A`, `git add .`, or `git commit -a`: sibling workers in the same batch may have unreviewed, in-flight edits in the shared working tree, and a broad stage would sweep them into the wrong commit and bypass inline review.
+Tick the task's acceptance-criteria checkboxes, then the lead writes a Goldfish checkpoint before the commit. Explicitly stage the checkpoint artifact with the reviewed task's owned files plus the plan file — `git add <checkpoint path> <owned paths> <plan file>` — then commit. Never `git add -A`, `git add .`, or `git commit -a`: sibling workers in the same batch may have unreviewed, in-flight edits in the shared working tree, and a broad stage would sweep them into the wrong commit and bypass inline review.
 
 **Commit before you record:** create the commit first, then write the durable-progress line with the real commit SHA (see Durable Progress). Never mark a `parallel-lead-commit` task complete while its commit is still pending — that record has no verifiable commit and a crash in that window strands the approved work.
 
@@ -350,14 +353,16 @@ Anything else: pick the plan-consistent option, note the choice in your report, 
 
 ## Checkpoints
 
-The lead writes a `goldfish:checkpoint` at four points during the run. This persists phase-level progress and decisions across auto-compaction and session restarts.
+In addition to mandatory pre-commit checkpoints, the lead writes a `goldfish:checkpoint` at four phase/review milestones during the run. This persists phase-level progress and decisions across auto-compaction and session restarts.
 
 1. **Phase boundary** — after each phase of a multi-phase plan: "Phase N of M complete. Decisions: …. Next: Phase N+1." Record the phase's branch and worktree path in the checkpoint. A multi-phase plan runs in **one** worktree by default; a phase that opens its own worktree runs Step 0b of `razorback:using-git-worktrees` first, so the prior phase's unmerged state is stated rather than discovered at Step 5.
 2. **Pre-review** — before Step 4a begins (if a reviewer was chosen): captures reviewer choice, diff range, verification strategy, and the immutable REVIEW CAMPAIGN setup and current counters.
 3. **Post-review** — after Step 4a completes: captures findings, classifications, fix commits, and the complete terminal `REVIEW CAMPAIGN STATUS` block.
-4. **Post-PR** — after `finishing-a-development-branch` creates the PR: final state.
+4. **PR-URL commit checkpoint** — inside `finishing-a-development-branch` Step 7, after the PR exists and before its PR-URL metadata commit; include the checkpoint artifact alongside the URL report, and do not emit a duplicate checkpoint after finishing returns.
 
-Checkpoint at phase granularity, not per task or per subagent dispatch. Per-task checkpoints are noise; per-phase is enough to recover.
+Checkpoint before each commit and explicitly stage the checkpoint artifact with that commit. In `serial-worker-commit`, the worker checkpoints before committing. In `parallel-lead-commit`, parallel workers neither checkpoint nor commit their batch; the lead checkpoints before each reviewed lead commit. Make one pre-commit checkpoint per actual commit.
+
+Phase-level checkpoints remain useful in addition to mandatory pre-commit checkpoints. Do not create a checkpoint-only follow-up commit, which would require another checkpoint and recurse indefinitely.
 
 A checkpoint is a fast, non-blocking memory write — never a stop, a review gate, or a reason to ask the user anything. A phase boundary is a checkpoint trigger, not a stop: finishing a phase never means pausing for confirmation. Write the checkpoint and immediately continue.
 

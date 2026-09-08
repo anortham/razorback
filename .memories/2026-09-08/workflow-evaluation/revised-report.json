@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "success": true,
+  "evidence_kind": "agent-run",
+  "expectation_manifest_hash": "3351b6a84ac4227557fa7e3b257d8028162a3968fc6effd4333689d8e2c3e30e",
+  "packet_source": {
+    "kind": "working-tree",
+    "requested": "worktree",
+    "revision": "464d4d317c206335e0b67ffdbc4f45a8e962b5e8",
+    "source_set_hash": "1aafd82d49f99c7a6c6c776fa78d0b9ef5920de11b5a37bdb417e29356eef7b5"
+  },
+  "summary": {
+    "total": 10,
+    "passed": 10,
+    "failed": 0
+  },
+  "measurements": {
+    "latency_ms": "unavailable",
+    "input_tokens": "unavailable",
+    "output_tokens": "unavailable"
+  },
+  "errors": [],
+  "cases": [
+    {
+      "id": "approval",
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "id": "push_recovery",
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "id": "checkpoint",
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "id": "single_task",
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "id": "missing_miller",
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "id": "restricted_reviewer",
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "id": "live_tools",
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "id": "instruction_priority",
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "id": "interrupted_run",
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "id": "parallel_commit",
+      "passed": true,
+      "reasons": []
+    }
+  ]
+}

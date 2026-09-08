@@ -40,44 +40,38 @@ Search the indexed workspace with Miller first:
 `search(query='razorback:', regions=comment)`
 
 `regions=comment` restricts hits to comment regions, which is where the markers
-live — it does the "keep only real markers" filtering for you. Note that
-`mode=markers` does **not** apply here: it audits a fixed vocabulary (TODO, FIXME,
-HACK, XXX) and rejects any other query, including `razorback:`.
+live — it does the "keep only real markers" filtering for you. When the live
+Miller schema includes RAZORBACK in its marker vocabulary, also run
+`search(query='RAZORBACK', mode=markers)` as a fast comment-region sweep, then
+keep only exact debt markers (`# razorback:` / `// razorback:`). Marker
+vocabulary is provider-owned, so discover it from the live schema instead of
+hard-coding a fixed list.
 
-**Text fallback** — `search(query='razorback:', mode=text)` searches every region.
-Use it when a marker sits somewhere `regions=comment` cannot see it (the marker
-string in prose or docs, or a language whose comments the index does not region-tag).
-It returns razorback's own skill cross-references (`razorback:<skill-name>` in prose)
-too, so keep only hits that are comment markers (`# razorback:` / `// razorback:`).
+Use the current Miller search schema rather than assuming `mode=text` covers
+every region. For source languages whose comments are not region-tagged, retry a
+bounded `mode=source` search and keep only real comment markers. If the audit
+intentionally includes prose or documentation markers, run a separate bounded
+`mode=content` search and label those results as non-source debt.
 
 Miller's index already excludes vendored, generated, and tool-state content, and
 returns ranked hits with file:line — no exclusion flags needed.
 
-**Grep fallback** (Miller unavailable or index stale after `workspace refresh`):
+Search results are bounded. When Miller reports truncated or omitted results, a
+continuation, or a result cap, use the live schema to exhaust the continuation
+or narrow the query by supported path, language, or content scopes until every
+in-scope result is accounted for. If coverage still cannot be established,
+report the evidence gap as an incomplete audit. Never claim a comprehensive or
+clean ledger while any result or required scope remains omitted.
 
-`grep -rnIE '(#|//) ?razorback:' .`
+If the index is stale, refresh the workspace and repeat the bounded Miller
+searches. If Miller remains unavailable or cannot cover a relevant language or
+region after that recovery, stop discovery and report an **incomplete audit**.
+Name the exact evidence gap and the scopes that did complete. Do not fall back to
+shell search and do not present the partial ledger as comprehensive or clean.
 
-`-I` skips binary files — without it, any binary whose bytes happen to match
-(including Miller's own index) prints a useless `Binary file … matches` row.
-Full form with exclusions:
-
-```
-grep -rnIE '(#|//) ?razorback:' . \
-  --exclude-dir=node_modules --exclude-dir=.git \
-  --exclude-dir=dist --exclude-dir=build --exclude-dir=target --exclude-dir=out \
-  --exclude-dir=skills --exclude-dir=docs --exclude-dir=commands \
-  --exclude-dir=agents --exclude-dir=.memories \
-  --exclude-dir=.miller --exclude-dir=.razorback --exclude-dir=.claude
-```
-
-The `skills/`/`docs/`/`commands/`/`agents/`/`.memories/` exclusions matter only
-in the razorback repo itself, where prose skill cross-references
-(`razorback:<skill-name>`) would flood the ledger; the rest cut vendored, build,
-and tool-state noise (`.miller/`, `.razorback/`, `.claude/` quote markers in
-reports or index the marker bytes).
-
-Add comment prefixes your stack uses (`--`, `;`, `%`) if the codebase needs them.
-Each surviving hit is one ledger row.
+For a generic TODO/FIXME/HACK/XXX audit, use `search(mode=markers)` instead of
+this skill. Exact parameters and workspace binding come from the live Miller
+schema and provider instructions.
 
 ## Output
 
@@ -95,7 +89,9 @@ is a permanent decision that nobody agreed to make.
 
 End with `<N> markers, <M> with no trigger.`
 
-Nothing found: `No razorback: debt markers. Clean ledger.`
+Nothing found with complete Miller coverage: `No razorback: debt markers. Clean ledger.`
+
+Nothing found with an evidence gap: `Incomplete audit: no markers found in the completed scopes; <missing scope> could not be searched.`
 
 ## Boundaries
 

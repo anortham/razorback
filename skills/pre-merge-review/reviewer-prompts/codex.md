@@ -9,7 +9,8 @@ Bare relative paths below (like the blocker-taxonomy reference) are relative to 
 - `codex --version` returns successfully (the CLI is installed).
 - `codex login status` exits 0 (authenticated via ChatGPT OAuth). If it exits non-zero, this is **blocker taxonomy #1** (credentials broken) — stop the review, surface the blocker, and do not push the branch. See the `razorback:using-razorback` skill's `references/blocker-taxonomy.md`.
 - `$REVIEW_ROOT` is the temporary exported review tree prepared in pre-merge-review Step 1. It is outside `$PROJECT_DIR` and is shared by the general and security passes; do not run Codex from the live worktree.
-- Step 1 of the pre-merge-review flow has already built `$DIFF`, `$FILE_STAT`, `$COMMIT_LOG`, `$PROJECT_DIR`, and (optionally) `$USER_FOCUS`.
+- Step 1 of the pre-merge-review flow has already built `$DIFF`, `$FILE_STAT`, `$COMMIT_LOG`, `$MILLER_EVIDENCE`, `$PROJECT_DIR`, and (optionally) `$USER_FOCUS`.
+- The lead has supplied sanitized Miller-backed evidence in the review bundle. This external reviewer does not run Miller. Report missing evidence when the bundle and exported tree cannot support a conclusion; never claim Miller use.
 
 ## Build the adversarial prompt
 
@@ -17,8 +18,8 @@ Read the canonical adversarial prompt template at `$SKILL_DIR/../codex-cli/adver
 
 - `{{TARGET_LABEL}}` ← `$FILE_STAT` plus a short description, e.g. `"branch <name>: N files changed, base..HEAD"`.
 - `{{USER_FOCUS}}` ← `$USER_FOCUS` if set during execution handoff, otherwise `"none specified"`.
-- `{{REVIEW_INPUT}}` ← `$FILE_STAT`, `$COMMIT_LOG`, and `$DIFF`, concatenated under
-  the labelled `Target:`, `File stat:`, `Commit log:`, and `Diff:` headings.
+- `{{REVIEW_INPUT}}` ← `$FILE_STAT`, `$COMMIT_LOG`, `$MILLER_EVIDENCE`, and `$DIFF`, concatenated under
+  the labelled `Target:`, `File stat:`, `Commit log:`, `Lead Miller evidence:`, and `Diff:` headings.
 
 The template instructs codex to default to skepticism, prioritize high-impact attack surfaces (auth, data loss, race conditions, schema drift, observability gaps), emit only material findings, and return JSON matching the shared schema.
 
@@ -172,7 +173,8 @@ an error: it produces two general reviews and no security review. For a large
 payload, the second prompt still contains only the static artifact instruction;
 never reload the artifact bytes.
 Build the security template from the canonical
-`$SKILL_DIR/../security-review/security-adversarial-prompt.txt` file.
+`$SKILL_DIR/../security-review/security-adversarial-prompt.txt` file and include
+the same `$MILLER_EVIDENCE` section supplied to the general pass.
 
 Capture stdout to a second file in the same private temp directory, `$OUT_DIR/reviewer-output-security.json`, so the general pass's `$OUT_DIR/codex-output.json` is preserved.
 

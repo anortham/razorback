@@ -43,6 +43,7 @@ const INVARIANTS = [
   "Find a symbol's references before changing it",
   'Do not infer or invent API shapes',
   'choose the safest plan-consistent path', // evidence-gap rule
+  'Restricted external CLI reviewers',
   'Do not rerun a passing scope on an unchanged tree', // test-scope rule
 ];
 

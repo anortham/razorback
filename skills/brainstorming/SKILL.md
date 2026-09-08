@@ -29,7 +29,7 @@ Three paths, scaled to the situation:
 |------|------|-------|---------|
 | **Full process** | Requirements unclear, multiple approaches | Q&A → approaches → design → doc | writing-plans |
 | **Fast path** | Design agreed, but task is large or multi-session | Summarize → confirm → doc | writing-plans |
-| **Lightweight** | Design agreed AND task is moderate (< ~300 lines new code, same-session) | Summarize → confirm → doc with acceptance criteria | dispatch implementer directly |
+| **Lightweight** | Design agreed AND task is moderate (< ~300 lines new code, same-session) | Summarize → confirm → doc with acceptance criteria | select execution by delegation availability |
 
 **How to tell the difference:**
 - **Full process:** Requirements are vague, multiple valid approaches exist, you have real questions about scope/constraints/tradeoffs
@@ -45,7 +45,7 @@ Every path ends in the same tail — the "After the Design" sequence below (doc 
 **Lightweight** (design agreed, moderate task, same-session):
 1. **Explore project context** — use Miller to orient, check recent commits
 2. **Summarize agreed design with acceptance criteria** - present for user confirmation. Note the approved module/interface shape, or `No Architecture Impact` for mechanical work. The design doc doubles as the implementer's spec — include the acceptance criteria checklist.
-3. **Run "After the Design"** — exit: dispatch the implementer directly ("Lightweight Implementation" below)
+3. **Run "After the Design"** — exit: select the execution skill by delegation availability ("Lightweight Implementation" below)
 
 **Fast path** (design agreed, large or multi-session task):
 1. **Explore project context** — use Miller to orient, check recent commits
@@ -140,9 +140,9 @@ For moderate, well-understood tasks executed in the same session. Skips writing-
 - Acceptance criteria checklist
 - Key decisions and edge cases
 
-**If the task has 2+ independent parts:** Use `razorback:subagent-driven-development`. The design doc serves as the plan. Dispatch one implementer subagent per independent part in parallel, assigning file ownership to prevent conflicts.
+**If delegation is available and permitted:** Use `razorback:subagent-driven-development`, including for one task. The design doc serves as the plan. Dispatch independent parts in parallel with distinct file ownership; dispatch dependent tasks as serialized delegates.
 
-**If the task is a single coherent unit:** Dispatch one implementer using the prompt template from `razorback:subagent-driven-development`.
+**If there is no delegation, or the user/session explicitly selected single-agent execution:** Use `razorback:executing-plans` with the design doc as the plan.
 
 ```
 Dispatch one implementer subagent:
@@ -153,7 +153,7 @@ Dispatch one implementer subagent:
     Context = conversational agreement
 ```
 
-**Review:** Lead does inline review when the implementer reports back (spec compliance + code quality). If issues found, route the fix per `razorback:subagent-driven-development` (resume on Claude Code, fresh dispatch with fix context on opencode).
+**Review:** On the delegated path, the lead does inline review when the implementer reports back (spec compliance + code quality), routing fixes through `razorback:subagent-driven-development`. On the no-delegation path, `razorback:executing-plans` owns implementation and review.
 
 **Done:** After review passes, use razorback:finishing-a-development-branch.
 

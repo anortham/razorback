@@ -104,7 +104,7 @@ Light plans use task-level granularity instead: each task is a coherent unit of 
 ```markdown
 # [Feature Name] Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use razorback:subagent-driven-development when subagent delegation is available. Fall back to razorback:executing-plans for single-task, tightly-sequential, or no-delegation runs.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use razorback:subagent-driven-development whenever delegation is available and permitted, including for one task; serialize dependent tasks. Use razorback:executing-plans only when delegation is unavailable or the user/session explicitly selected single-agent execution.
 
 **Goal:** [One sentence describing what this builds]
 
@@ -262,16 +262,24 @@ When a digest was requested, add to the announcement: "with a visual digest at `
 
 **Step 2, wait for explicit approval.** Do NOT proceed on silence, hedged responses ("looks ok", "maybe", "I guess"), questions, or partial feedback. Only an explicit **"approved"**, **"yes, go"**, **"run it"**, or equivalent unblocks execution. The approval message can fold in the reviewer choice (e.g. "approved, codex review", "approved, no external review").
 
-If the user requests changes, revise the plan, re-run the self-review, re-save, and re-ask for approval. Brainstorming gates the spec; writing-plans gates the plan. This is the last human stop before autonomous execution.
+If the user requests changes, revise the plan, re-run the self-review, re-save, and re-ask for approval. Brainstorming gates the spec; writing-plans gates the plan. This is the last human stop before autonomous local execution. Publication may still require authority at the finish boundary.
+
+**Implementation approval does not imply publication authority.** Preserve authority already granted in the conversation or project instructions and record its source in the execution handoff:
+
+- `local_commit_authority: authorized — <implementation request/repo instruction>`
+- `push_authority: authorized | missing — <user/repo instruction>`
+- `pr_authority: authorized | missing — <user/repo instruction>`
+
+Normal local commits are authorized by the approved implementation scope unless a user or host instruction explicitly prohibits them; record that source instead of inventing a commit-approval gate. An explicit prohibition uses the existing approval/blocker boundary after the local diff and review materials are ready. Do not ask for missing push or PR authority here. Local implementation and review continue first; `razorback:finishing-a-development-branch` asks once, after the local work and review materials are ready. Do not infer push or PR authority from “implement it,” plan approval, or permission to commit.
 
 **Step 3, capture the reviewer choice without prompting.** The default reviewer choice is `none`. If the approval message already named a choice (e.g. "approved, run it, pre-merge codex review", "approved, no external review") or the saved spec explicitly requested a reviewer, set `reviewer_choice` to `codex` or `claude` as requested. Do not ask a separate reviewer-choice question after approval.
 
 If the target repo's project instructions declare an `## External model policy` block, the chosen reviewer must appear in its `Reviewer choices permitted:` list. If it does not, surface the conflict to the user at approval time — a human is present at this gate — instead of proceeding. `razorback:security-review` defines the policy block format.
 
-**Step 4, invoke the execution skill immediately.** After approval, announce which execution skill will run and invoke it, passing the plan path, the reviewer choice (`none` / `codex` / `claude`), and verification strategy:
+**Step 4, invoke the execution skill immediately.** After approval, announce which execution skill will run and invoke it, passing the plan path, the reviewer choice (`none` / `codex` / `claude`), the authority ledger, and verification strategy:
 
-- **When subagent delegation is available:** `razorback:subagent-driven-development`
-- **For single-task, tightly-sequential, or no-delegation plans:** `razorback:executing-plans`
+- **When delegation is available and permitted:** `razorback:subagent-driven-development`, including for one task; serialize dependent tasks.
+- **With no delegation, or explicitly selected single-agent execution:** `razorback:executing-plans`.
 
 ## It's working if
 

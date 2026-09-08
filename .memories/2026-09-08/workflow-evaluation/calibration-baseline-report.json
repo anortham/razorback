@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "success": false,
+  "evidence_kind": "agent-run",
+  "expectation_manifest_hash": "8d4eecad189fe3bd1e92b2076c0cccb89cb14a4570c9bc1d40f3cc382e248cdc",
+  "packet_source": {
+    "kind": "git-ref",
+    "requested": "464d4d317c206335e0b67ffdbc4f45a8e962b5e8",
+    "revision": "464d4d317c206335e0b67ffdbc4f45a8e962b5e8",
+    "source_set_hash": "12afb45ac72a5783494938292c1f477ccf98c7a263dd4291230a9c233d467cd1"
+  },
+  "summary": {
+    "total": 10,
+    "passed": 8,
+    "failed": 2
+  },
+  "measurements": {
+    "latency_ms": "unavailable",
+    "input_tokens": "unavailable",
+    "output_tokens": "unavailable"
+  },
+  "errors": [],
+  "cases": [
+    {
+      "id": "approval",
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "id": "push_recovery",
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "id": "checkpoint",
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "id": "single_task",
+      "passed": false,
+      "reasons": [
+        "action record_commit_sha is not allowed for scenario"
+      ]
+    },
+    {
+      "id": "missing_miller",
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "id": "restricted_reviewer",
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "id": "live_tools",
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "id": "instruction_priority",
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "id": "interrupted_run",
+      "passed": true,
+      "reasons": []
+    },
+    {
+      "id": "parallel_commit",
+      "passed": false,
+      "reasons": [
+        "terminal_state active is not allowed"
+      ]
+    }
+  ]
+}

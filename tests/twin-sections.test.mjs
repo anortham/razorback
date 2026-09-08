@@ -81,9 +81,9 @@ const TWINS = [
     heading: '## Checkpoints',
     divergences: [
       {
-        name: 'SDD enumerates four fixed checkpoint moments; executing-plans checkpoints per phase or every few tasks',
-        sdd: /^The lead writes a `goldfish:checkpoint` at four points during the run\. .*$/,
-        plans: /^Write a `goldfish:checkpoint` at phase boundaries \(or, for a flat task list, every few completed tasks\) .*$/,
+        name: 'SDD enumerates four extra phase/review milestones; executing-plans combines cadence with its pre-commit rule',
+        sdd: /^In addition to mandatory pre-commit checkpoints, the lead writes a `goldfish:checkpoint` at four phase\/review milestones during the run\. .*$/,
+        plans: /^Write a `goldfish:checkpoint` before each commit .*$/,
       },
       {
         name: 'SDD-only checkpoint moment 1: phase boundary',
@@ -98,15 +98,19 @@ const TWINS = [
         sdd: /^3\. \*\*Post-review\*\* — after Step 4a completes: .*$/,
       },
       {
-        name: 'SDD-only checkpoint moment 4: post-PR',
-        sdd: /^4\. \*\*Post-PR\*\* — after `finishing-a-development-branch` creates the PR: final state\.$/,
+        name: 'SDD-only checkpoint moment 4: PR-URL commit checkpoint',
+        sdd: /^4\. \*\*PR-URL commit checkpoint\*\* — inside `finishing-a-development-branch` Step 7, .*$/,
       },
       {
-        name: 'granularity rule: SDD states it standalone (adds "not per subagent dispatch"); executing-plans folds it into the non-blocking paragraph',
-        sdd: /^Checkpoint at phase granularity, not per task or per subagent dispatch\. .*$/,
+        name: 'SDD assigns pre-commit checkpoint ownership by commit mode',
+        sdd: /^Checkpoint before each commit and explicitly stage the checkpoint artifact with that commit\. .*$/,
       },
       {
-        name: 'non-blocking rule phrased per skill (SDD "never a stop"; executing-plans "It is **not** a stop" plus the folded-in granularity rule)',
+        name: 'SDD separates additional phase cadence from the pre-commit requirement',
+        sdd: /^Phase-level checkpoints remain useful in addition to mandatory pre-commit checkpoints\. .*$/,
+      },
+      {
+        name: 'non-blocking rule phrased per skill (SDD includes phase-boundary behavior; executing-plans includes commit cadence)',
         sdd: /^A checkpoint is a fast, non-blocking memory write — never a stop, .*$/,
         plans: /^A checkpoint is a fast, non-blocking memory write\. It is \*\*not\*\* a stop, .*$/,
       },
@@ -118,7 +122,8 @@ const TWINS = [
       { name: 'never a stop, a gate, or a reason to ask the user', match: /a stop, a review gate, or a reason to ask the user anything/ },
       { name: 'a phase boundary is a trigger, not a stop', match: /A phase boundary is a checkpoint trigger, not a stop: finishing a phase never means pausing for confirmation\./ },
       { name: 'write it and continue immediately', match: /immediately continue/ },
-      { name: 'per-task checkpoints are noise', match: /per-task checkpoints are noise/i },
+      { name: 'every commit has a pre-commit checkpoint', match: /checkpoint(?:`)? before (?:each|every) commit/i },
+      { name: 'checkpoint-only follow-up commits do not recurse', match: /checkpoint-only follow-up commit/i },
     ],
   },
 ];

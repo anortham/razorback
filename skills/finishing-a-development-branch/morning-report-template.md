@@ -12,10 +12,11 @@ Placeholders use {{double-brace}} syntax.
 
 # Autonomous Execution Report - {{plan_name}}
 
-**Status:** {{status}} <!-- Complete | Blocked | Partial -->
+**Status:** {{status}} <!-- Complete | Blocked | Partial | Awaiting publication approval -->
 **Plan:** {{plan_path}} <!-- e.g. docs/plans/2026-04-18-autonomous-execution.md -->
 **Branch:** {{branch_name}}
 **PR:** {{pr_url}} <!-- URL (written back after PR creation), "pending — filled in after PR creation", "not created — open <creation-url>" (forge-ladder rung 3: branch pushed, PR needs one click), or "not created (blocked)" -->
+**Publication authority:** local commit={{local_commit_authority}}; push={{push_authority}}; PR={{pr_authority}} <!-- each value includes its user/repo instruction source; push/PR also include authorized/missing -->
 **Duration:** {{duration}} <!-- e.g. 2h 14m -->
 **Phases:** {{phases_complete}}/{{phases_total}} complete
 **Tasks:** {{tasks_complete}}/{{tasks_total}} complete

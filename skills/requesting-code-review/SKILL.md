@@ -47,6 +47,13 @@ For planned pre-merge external review in an approved execution flow, use
 `razorback:pre-merge-review` instead. That skill owns the stricter
 branch-gate, chosen-reviewer, finding-classification, fix, and report flow.
 
+Harness-native reviewer agents in Mode 2 use Miller directly. A restricted external
+reviewer selected for a planned pre-merge review follows `razorback:pre-merge-review`:
+the lead supplies sanitized Miller-backed evidence and the isolated reviewer reports
+missing evidence without MCP access. A standalone external CLI second opinion stays
+in its provider skill (`razorback:codex-cli` or `razorback:claude-cli`) and follows the
+redaction and policy gate below; do not force it through a plan or clean-HEAD gate.
+
 Before Mode 2 sends the constructed reviewer prompt to any external CLI, write it to `PAYLOAD_FILE` and pass it through `skills/security-review/scripts/redact-outbound`. Dispatch only the resulting `REDACTED_PAYLOAD_FILE`; if redaction fails, remove both files, emit only a generic error, and stop before dispatch.
 
 After filling the two-file reviewer template, treat the completed dispatch message as the payload. The harness-native `spawn_agent` or `Task` call must receive the contents of `REDACTED_PAYLOAD_FILE`; never interpolate the unredacted template, diff, or target description into the message.

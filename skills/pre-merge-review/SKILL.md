@@ -61,6 +61,13 @@ Seven steps, in order: build the diff and review tree (1), dispatch the two pass
 
 The reviewer needs the full picture of what shipped, not the latest commit only. Build the diff from the merge base of the branch against the base branch (typically `main` or `master`).
 
+Before constructing either prompt, the lead uses Miller to inspect changed
+symbols, trace changed public APIs, and assess the diff's test impact. Add a
+compact sanitized summary of that Miller-backed evidence to the review bundle.
+The external reviewer does not run Miller: its CLI is deliberately isolated from
+MCP and uses only the enforced read-only tools below. It must report missing
+evidence when the supplied bundle and exported tree cannot support a conclusion.
+
 ```bash
 # Detect base branch (prefer main, fall back to master)
 BASE=$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null)
@@ -85,9 +92,10 @@ COMMIT_LOG=$(git log --oneline "$BASE"..HEAD)
 
 # Plan path (so the reviewer can cross-check scope)
 PLAN_PATH="docs/plans/<YYYY-MM-DD>-<feature>.md"   # filled from the in-session plan
+MILLER_EVIDENCE="<compact summary of changed symbols, public-API references, and likely tests>"
 ```
 
-Pass all four to the chosen reviewer: `$DIFF`, `$FILE_STAT`, `$COMMIT_LOG`, `$PLAN_PATH`. The reviewer prompts at `reviewer-prompts/*.md` document how to wire them into each CLI's invocation.
+Pass all five to the chosen reviewer: `$DIFF`, `$FILE_STAT`, `$COMMIT_LOG`, `$PLAN_PATH`, `$MILLER_EVIDENCE`. The reviewer prompts at `reviewer-prompts/*.md` document how to wire them into each CLI's invocation.
 
 `prepare-review-tree` consumes the repository path, reviewed Git ref, and explicit output directory. It exports tracked content only, rejects an output path inside the source repository, omits live `.git` metadata and untracked files, and removes tracked symlinks whose resolved targets escape the output root. The helper does not modify the source worktree.
 
@@ -116,6 +124,12 @@ Immediately after the general pass call, record `external_invocations: 1/2`. Imm
 
 Select the prompt file based on the reviewer choice and invoke the matching reviewer-cli skill. Each file contains a complete runnable invocation for each pass. Every invocation runs the reviewer in adversarial mode with read-only tool access — the reviewer never edits code.
 
+The external reviewer does not run Miller and must not claim that it did. The
+lead owns Miller-first discovery and finding verification; the reviewer works
+from the sanitized Miller-backed evidence bundle and exported review tree. If
+evidence needed for a finding is absent, the reviewer reports missing evidence
+in its output rather than broadening its tool access.
+
 - **codex** → follow [`reviewer-prompts/codex.md`](reviewer-prompts/codex.md). Runs from `$REVIEW_ROOT` with `codex exec --ephemeral --color never --output-schema …` and the non-git/config-ignore flags, using the shared JSON schema. Background on codex's adversarial-review mode lives in the bundled `razorback:codex-cli` skill.
 - **claude** → follow [`reviewer-prompts/claude.md`](reviewer-prompts/claude.md). Runs from `$REVIEW_ROOT` with `claude -p --no-session-persistence --dangerously-skip-permissions --safe-mode --output-format json --json-schema … --tools "Read,Grep,Glob" --strict-mcp-config --system-prompt-file …` (no `--max-turns`, no `--max-budget-usd` — razorback caps neither the turns nor the spend of a review). The reviewer-prompts file reads the canonical schema and claude-cli's canonical adversarial prompt from the plugin at dispatch time; `razorback:claude-cli` has the background treatment.
 
@@ -125,7 +139,7 @@ Both target the shared output schema defined canonically in the `razorback:codex
 
 Immediately before each reviewer-prompt invocation, construct the complete
 review prompt — full review instruction, optional user focus, and the labelled
-Target/File stat/Commit log/Diff bundle — then filter it through
+Target/File stat/Commit log/Lead Miller evidence/Diff bundle — then filter it through
 `skills/security-review/scripts/redact-outbound`: Claude's
 `$DIFF_AND_CONTEXT` or Codex's `$ADVERSARIAL_PROMPT_WITH_DIFF`. Apply the
 shared `review-payload.md` (in the `razorback:security-review` skill) contract with

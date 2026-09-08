@@ -99,7 +99,7 @@ When modifying skills, add tool awareness at exploration/investigation points by
 
 Miller's `search` is lexical-first with a `mode=auto|text|symbol|file|content` selector. Use `mode=content` for docs/prose content and `inspect(target, depth=full)` for symbol bodies, callers, and callees.
 
-Miller-first applies to the lead and to every dispatched implementer, reviewer, and fix worker, regardless of harness.
+Miller-first applies to the lead and every native implementer, reviewer, and fix worker. Restricted external CLI reviewers invoked by `pre-merge-review` are the deliberate exception: they run without MCP under an enforced read-only allowlist. The lead supplies a sanitized Miller-backed evidence bundle, the reviewer reports missing evidence instead of claiming Miller use, and the lead verifies every finding with Miller.
 
 Use directive, capability-first language in lead-facing skills: "inspect a symbol BEFORE modifying it" and name Miller where the command matters. In **subagent-facing prompt files** (implementer/fix/reviewer prompts), name Miller inline — e.g. "inspect the symbol with Miller `inspect(target='<symbol>', depth=full)`" — because dispatched subagents do not receive the using-razorback toolchain table.
 
@@ -115,10 +115,10 @@ Use directive, capability-first language in lead-facing skills: "inspect a symbo
 
 ## Execution Model
 
-**Primary execution path:** All plugin-tier harnesses (Claude Code, Codex CLI / ChatGPT desktop app, OpenCode, and frozen Cursor) support `subagent-driven-development`. The lead dispatches fresh implementer subagents per task, parallel when tasks are independent, inline review by lead.
+**Primary execution path:** When delegation is available and permitted, all plugin-tier harnesses (Claude Code, Codex CLI / ChatGPT desktop app, OpenCode, and frozen Cursor) use `subagent-driven-development`, including for a single task. The lead dispatches fresh implementer subagents per task, parallel when tasks are independent and serialized when dependent, with inline review by the lead.
 
 **Shared across all plugin-tier harnesses:**
-- **Sequential/single-task:** `executing-plans` (single agent, batch execution)
+- **Delegation unavailable or explicitly single-agent:** `executing-plans` (single agent, batch execution)
 - **Ad-hoc parallel:** `dispatching-parallel-agents` (independent agent dispatch outside plans)
 - **Small, local, reversible fixes:** `fixing-small-issues` (quick-fix tier: objective triage criteria, fix on current checkout, affected-scope verification; no worktree, no baseline suite run; escalates to the standard flow when the fix outgrows the criteria)
 - Lead does inline review (spec compliance + code quality) — no separate reviewer subagents

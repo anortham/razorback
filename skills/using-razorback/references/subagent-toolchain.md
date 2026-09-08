@@ -27,6 +27,13 @@ Use Miller by capability, not by raw file reading:
 6. When Miller cannot prove a shape, say what evidence is missing and choose the safest plan-consistent path. Do not fill gaps from memory or plausible guesses.
 7. Run only the verification scope your task assigns — single tests or the focused group that covers your change. Broader suites belong to the lead. Do not rerun a passing scope on an unchanged tree.
 
+Restricted external CLI reviewers invoked by the pre-merge review workflow are
+the deliberate exception. They run without MCP under
+an enforced read-only allowlist. The lead performs Miller-first exploration and
+supplies a sanitized Miller-backed evidence bundle. The external reviewer reads
+that bundle and the exported review tree, then reports missing evidence instead
+of claiming it ran Miller.
+
 **Worktree state:** report the path, branch, commit, and dirty state you actually worked in
 (`git status --short --branch`). The lead reconciles every subagent's worktree before verifying,
 committing, or releasing, and cannot do that from an unreported path.

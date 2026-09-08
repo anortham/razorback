@@ -21,11 +21,21 @@ Use when implementation is complete and the branch is ready to integrate. The ex
 
 ## Mode Selection
 
-If the agent was just finishing an autonomous execution run (i.e. this skill is being invoked as the final step of `razorback:executing-plans` or `razorback:subagent-driven-development`), use **Autonomous Mode**. If the user invoked the skill directly (e.g. "finish this branch"), use **Interactive Mode**. In ambiguous cases, default to Autonomous - run-to-completion is the bias.
+If the agent was just finishing an autonomous execution run (i.e. this skill is being invoked as the final step of `razorback:executing-plans` or `razorback:subagent-driven-development`), use **Autonomous Mode**. If the user invoked the skill directly (e.g. "finish this branch"), use **Interactive Mode**. In ambiguous cases, default to Autonomous - run-to-completion is the bias once the required publication authority exists.
 
 ## Autonomous Mode
 
-No menu, no prompts. Push the branch, open a PR with the morning-report summary, write the full report to `.memories/`, emit a one-line terminal pointer, exit. Merge is never auto-performed.
+No options menu. With recorded authority, commit, push the branch, open a PR with the morning-report summary, write the full report to `.memories/`, emit a one-line terminal pointer, and exit. Merge is never auto-performed. Missing publication authority uses the single boundary below.
+
+### Step 0: Resolve publication authority
+
+Read the execution handoff's authority ledger and preserve its cited sources across turns:
+
+- `local_commit_authority` (authorized by the implementation scope unless explicitly prohibited)
+- `push_authority`
+- `pr_authority`
+
+Implementation approval authorizes normal local commits but does not grant push or PR authority. Record missing push/PR entries without prompting here; Steps 1–4 first perform local verification, reconcile source-control state, prepare the report, and commit it. Step 4a owns the single request for missing publication authority after those materials are ready. If a user or host instruction explicitly prohibits commits, use the existing approval/blocker boundary after the local diff and review materials are ready instead of creating a second execution state.
 
 ### Step 1: Verify branch gate
 
@@ -99,7 +109,9 @@ Feed the outcome into the report's `Source control` section (Step 3). Stranded w
 
 ### Step 3: Render morning report
 
-Fill the placeholders in `./morning-report-template.md` using the fields the caller accumulated during execution (plan name + path, branch name, phases complete/total, tasks complete/total, duration, judgment calls log, external review outcome, tests summary, blockers, files changed from `git diff --stat $BASE_SHA..HEAD`, source-control state from Step 2a, next steps).
+Fill the placeholders in `./morning-report-template.md` using the fields the caller accumulated during execution (plan name + path, branch name, phases complete/total, tasks complete/total, duration, publication authority with sources, judgment calls log, external review outcome, tests summary, blockers, files changed from `git diff --stat $BASE_SHA..HEAD`, source-control state from Step 2a, next steps).
+
+Before Step 4, render `Status: Awaiting publication approval` when `push_authority` or `pr_authority` is missing. The prepared report must already carry this accurate status before its commit; Step 4a asks using the prepared report and does not dirty committed metadata merely to mark the wait.
 
 Produce three renderings:
 - **Full report** — every section filled in, for `.memories/` and for review.
@@ -110,8 +122,10 @@ Produce three renderings:
 
 Write the full rendered report to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md` — plus its digest sibling `.memories/autonomous-run-YYYY-MM-DD-<slug>.html` when one was requested — where `<slug>` is a short kebab-case identifier for the plan (e.g. `autonomous-execution`). Committing them before the push means the PR includes the report from its first revision — no dead link in the PR body. The PR does not exist yet, so render `{{pr_url}}` as `pending — filled in after PR creation`; Step 7 writes the real URL back.
 
+Checkpoint before every commit in this skill and explicitly stage the Goldfish checkpoint artifact with that commit's owned report files. One checkpoint covers one actual commit. Never make a checkpoint-only follow-up commit; that would recurse into another required checkpoint.
+
 ```bash
-git add .memories/autonomous-run-YYYY-MM-DD-<slug>.md   # add the .html sibling too when a digest was requested
+git add <checkpoint-path> .memories/autonomous-run-YYYY-MM-DD-<slug>.md   # add the .html sibling too when a digest was requested
 git commit -m "docs: autonomous run report for <plan name>"
 ```
 
@@ -119,13 +133,23 @@ This commit (and the Step 7 URL write-back) are metadata-only: they touch nothin
 
 When a digest exists, every report mutation after this step updates the digest sibling's matching field and stages both files in the same commit — a committed digest that contradicts its markdown is worse than none.
 
+### Step 4a: Request missing publication authority once
+
+After Steps 1–4 have produced local verification, source-control reconciliation, and the committed prepared report, ask using the prepared report once for all missing push and PR actions. This is an approval boundary, not a failed implementation or blocker. Emit an accurate local terminal pointer and stop until the user answers.
+
+On resumption, preserve every previously authorized entry and its source, update only the actions the answer grants, and do not repeat granted questions. Persist report status and authority metadata updates: checkpoint, explicitly stage the checkpoint artifact with the report and digest when present, commit, then run the source-control state check before push. This metadata-only commit preserves Step 1's verification evidence under Step 4's rule. If anything outside `.memories/` changed, rerun the affected branch gate before publication. If authority remains missing, keep `Status: Awaiting publication approval`; do not call the implementation blocked or failed.
+
 ### Step 5: Push branch
+
+Run the authorized push and capture its exact output and exit status.
 
 ```bash
 git push -u origin <branch>
 ```
 
-If the push is rejected (branch already tracks a different remote, non-fast-forward, network failure), log the exact error in the report's `Blockers hit` section, set `Status: Blocked`, commit the updated report, emit the terminal pointer, and exit. Do not retry with `--force`.
+On failure, inspect the exact failure and remote branch state before deciding whether to retry. Refresh the remote ref, compare it with local HEAD, and treat a push that already landed as success. For transient network failures only, make at most two retries after the initial attempt, with bounded backoff and a fresh remote-state check before each retry.
+
+Do not retry auth or permission failures unchanged. For non-fast-forward results, fetch and inspect both histories; reconcile only when a safe, plan-consistent fast-forward or ordinary merge/rebase into the feature branch is authorized. Any reconciliation that changes HEAD invalidates prior evidence: rerun Step 1's affected branch gate, Step 2a's source-control reconciliation, and the authority check before retrying. Destructive history rewriting returns to the established approval boundary. Never use force push. Declare a blocker only after these safe recovery paths are exhausted, then checkpoint before the report commit, record the exact diagnostics, set `Status: Blocked`, emit the terminal pointer, and exit.
 
 ### Step 6: Create PR
 
@@ -152,8 +176,10 @@ Capture the PR URL from `gh`'s output for Step 7.
 
 Applies to ladder rungs 1–2, which return the created PR's URL; rungs 3–4 already wrote their outcome in Step 6. Replace the `pending — filled in after PR creation` value in the committed report with the captured URL, update the digest's `PR` field to match when a digest exists (per Step 4), then commit and push the update. This is a metadata-only commit; the branch-gate evidence still holds (see Step 4).
 
+Write the run's final post-PR checkpoint here, after the PR exists and before the PR-URL metadata commit. Explicitly stage that checkpoint artifact alongside the URL report and digest when present in the same commit. This satisfies the SDD milestone; do not emit a duplicate checkpoint after `finishing-a-development-branch` returns.
+
 ```bash
-git add .memories/autonomous-run-YYYY-MM-DD-<slug>.md   # add the .html sibling too when a digest was requested
+git add <checkpoint-path> .memories/autonomous-run-YYYY-MM-DD-<slug>.md   # add the .html sibling too when a digest was requested
 git commit -m "docs: record PR URL in run report"
 git push
 ```
@@ -170,8 +196,8 @@ When a digest was requested, append: ` Digest: .memories/autonomous-run-YYYY-MM-
 
 ### Autonomous Mode rules
 
-- **Never merge.** Stopping at PR creation is the point; merge is a separate human (or agent) action after PR review.
-- **Never show a menu, never ask "which option".** Autonomous means no prompts.
+- **Never merge the PR or target branch.** Stopping at PR creation is the point; integrating reviewed remote changes into the feature branch under Step 5 does not merge the PR.
+- **Never show an options menu.** The only routine publication-approval prompt is Step 4a's single request after local work and review materials are ready. Genuine credential, safety, or history blockers still use the smallest necessary question allowed by the blocker taxonomy.
 - **Never fall back to Interactive Mode mid-run.** If a step fails (push rejected, every forge-ladder rung failed, remote mismatch), emit a partial report with `Status: Blocked` or `Status: Partial` as appropriate and let the user resolve from there.
 - **Always write the report to `.memories/`**, even on blocked/partial outcomes — the report is the user's morning read regardless of outcome.
 - **Never report `Complete` with unaccounted source-control state.** Step 2a either lands stranded work or names it in the `Source control` section. A run that leaves commits stranded in another worktree without saying so is not complete, whatever the tests say.

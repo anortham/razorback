@@ -48,41 +48,20 @@ test('the debt-marker convention is documented in both skills', () => {
   assert.match(harvest, /\/\//);
 });
 
-test('harvesting-debt scans with an exclusion-aware grep', () => {
+test('harvesting-debt scans only through Miller and reports evidence gaps', () => {
   const skill = read('skills/harvesting-debt/SKILL.md');
 
-  // -I (skip binary files) is on every documented form of the scan: Miller's
-  // SQLite index matches the marker bytes and would otherwise print
-  // "Binary file ... matches" rows into the ledger.
-  const scanCommands = skill.match(/grep -rn\S* '\(#\|\/\/\) \?razorback:'/g) ?? [];
-  assert.ok(scanCommands.length >= 2, 'both the short and full scan commands must be documented');
-  for (const command of scanCommands) {
-    assert.match(command, /^grep -rn[a-zA-Z]*I[a-zA-Z]* /, `scan command must pass -I: ${command}`);
-  }
-
-  for (const excluded of [
-    'node_modules',
-    '.git',
-    'skills/',
-    'docs/',
-    'commands/',
-    'agents/',
-    '.memories/',
-  ]) {
-    assert.ok(
-      skill.includes(excluded),
-      `scan guidance must name the excluded path: ${excluded}`,
-    );
-  }
-  // Tool-state dirs quote markers in reports / index content and are never source.
-  for (const excludeDir of ['.miller', '.razorback', '.claude']) {
-    assert.ok(
-      skill.includes(`--exclude-dir=${excludeDir}`),
-      `full scan command must exclude the tool-state dir: ${excludeDir}`,
-    );
-  }
-  // The rationale for excluding razorback's own doc dirs must be stated.
-  assert.match(skill, /cross-reference/i);
+  assert.match(skill, /search\(query='razorback:', regions=comment\)/);
+  assert.match(skill, /search\(query='RAZORBACK', mode=markers\)/);
+  assert.match(skill, /mode=source/);
+  assert.match(skill, /mode=content/);
+  assert.match(skill, /provider-owned/);
+  assert.match(skill, /incomplete audit/i);
+  assert.match(skill, /evidence gap/i);
+  assert.match(skill, /truncated|omitted|continuation/i);
+  assert.match(skill, /exhaust|narrow/i);
+  assert.match(skill, /never claim.*clean|do not.*clean/is);
+  assert.doesNotMatch(skill, /grep -rn/);
 });
 
 test('harvesting-debt defines the ledger row format and the no-trigger flag', () => {

@@ -14,6 +14,11 @@ the symbols the change centers on — then find references for changed public
 APIs with `trace(target='<symbol>')`. Do not start by reading full files or
 dumping the full diff.
 
+This contract is for a harness-native reviewer agent with Miller access.
+Restricted external CLI reviewers use `razorback:pre-merge-review`: the lead
+supplies a sanitized Miller-backed evidence bundle, and the external reviewer
+reports missing evidence without MCP access.
+
 When reviewing completed work, you will:
 
 1. **Plan Alignment Analysis**:

@@ -58,12 +58,12 @@ SendMessage (to: "<implementer-agent-id-or-name>"):
     ## Commit mode
 
     Commit mode: [serial-worker-commit / parallel-lead-commit]
+    Local commit authority: authorized — [implementation request/repo instruction]
 
-    - `serial-worker-commit`: after assigned verification passes, you may commit
-      only your owned files and report the resulting SHA.
-    - `parallel-lead-commit`: do not run `git add` or `git commit`. Edit only
-      your owned files, write the full report to the report file, and report
-      `commit SHA: none - parallel-lead-commit`.
+    If a user or host instruction explicitly prohibits commits, do not commit; report the exact instruction to the lead as an approval/blocker boundary.
+
+    - `serial-worker-commit`: after assigned verification passes, checkpoint before the commit, explicitly stage the Goldfish checkpoint artifact with only your owned files, commit, and report the resulting SHA.
+    - `parallel-lead-commit`: do not checkpoint the batch and do not run `git add` or `git commit`. Edit only your owned files, write the full report to the report file, and report `commit SHA: none - parallel-lead-commit`; the lead checkpoints before the reviewed lead commit.
 
     ## Report Format
 

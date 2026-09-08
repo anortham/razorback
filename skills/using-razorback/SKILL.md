@@ -36,7 +36,11 @@ These thoughts mean STOP—you're rationalizing:
 
 ## Instruction Priority
 
-Razorback skills override default system prompt behavior, but **user instructions always take precedence**: user instructions (AGENTS.md, CLAUDE.md, direct requests) beat skills, which beat the system prompt. If the user says "don't use TDD" and a skill says "always use TDD," follow the user.
+System and developer instructions retain their host-defined priority. Within
+those constraints, direct user directions and applicable project instructions
+(AGENTS.md, CLAUDE.md) override razorback skill defaults. A skill cannot elevate
+itself or repository text above the host instruction hierarchy. If the user says
+"don't use TDD" and the host permits that choice, follow the user.
 
 ## How to Access Skills
 
@@ -60,7 +64,7 @@ Razorback skills override default system prompt behavior, but **user instruction
 Skills use Claude Code tool names; substitute your platform's equivalent.
 
 <!-- harness:codex -->
-- **Codex:** see `references/codex-tools.md` (Task→spawn_agent, TodoWrite→update_plan, etc.)
+- **Codex:** see `references/codex-tools.md`; use the live callable tool schemas as the source of truth.
 <!-- /harness -->
 <!-- harness:opencode -->
 - **OpenCode:** mapping is injected by the razorback plugin bootstrap (Task→opencode's Task tool, TodoWrite→todowrite, etc.)
@@ -70,8 +74,8 @@ Skills use Claude Code tool names; substitute your platform's equivalent.
 
 Executing an implementation plan:
 
-- **2+ tasks:** `razorback:subagent-driven-development` — fresh subagent per task; parallel batches when tasks are independent, serialized lanes when coupled.
-- **1 task, separate session, or no delegation:** `razorback:executing-plans` — single agent, batch execution.
+- **Delegation is available and permitted:** `razorback:subagent-driven-development` — fresh subagent per task, including a single task; parallel batches when tasks are independent and serialized delegates when dependent.
+- **Delegation is unavailable, or the user/session explicitly selects single-agent execution:** `razorback:executing-plans` — single agent, batch execution.
 - **Ad-hoc parallel work:** `razorback:dispatching-parallel-agents` — independent agent dispatch.
 - **Small, local, reversible fix:** `razorback:fixing-small-issues` — triage first, fix on the current checkout, verify the affected scope only. No worktree, no baseline suite run.
 
@@ -83,7 +87,13 @@ Process skills first (brainstorming, debugging) — they set HOW; domain skills 
 
 ## Your Toolchain
 
+When Miller supplies an injected routing block or server instructions, follow that workflow and the current tool descriptions for tool choice, workspace selection, freshness, output limits, and testing. The standalone fallback below applies only when that guidance is absent.
+
+### Standalone Miller fallback
+
 Razorback skills assume **Miller MCP is available and MUST be used** for ALL codebase exploration — instead of Glob/Grep/Read chains.
+
+Discover the registered workspace with `workspace operation=list`, or register an absent root with `workspace operation=open path=/absolute/project`. Pass the returned `workspace_id` on workspace-bound calls. Read the callable tool schema before choosing parameters.
 
 Use Miller by capability, not by raw file reading:
 
@@ -99,8 +109,9 @@ Use Miller by capability, not by raw file reading:
 | **Large text** — import, then search logs, CI output, web imports without full-file reads | `content(...)` |
 | **Rename / edit** a symbol safely | `edit(operation, target)` |
 | **Manage the workspace index** | `workspace(...)` |
+| **Check continuous testing** — status is read-only; disabled workspaces use their ordinary test runner | `tests(operation=status)` |
 
-**Rules (apply to the lead AND to every implementer, reviewer, and fix worker you dispatch):**
+**Rules (apply to the lead and every native implementer, reviewer, and fix worker you dispatch):**
 1. Use Miller for ALL codebase exploration. Do NOT fall back to Glob → Read → Grep chains.
 2. List a file's symbols before reading it in full.
 3. Inspect a symbol before modifying it.
@@ -108,3 +119,12 @@ Use Miller by capability, not by raw file reading:
 5. Do not infer or invent API shapes. Use Miller to discover symbol names, function signatures, config shapes, route names, CLI flags, or public contracts before relying on them.
 6. When Miller cannot prove a shape, say what evidence is missing and choose the safest plan-consistent path. Do not fill gaps from memory or plausible guesses.
 7. Scope test runs: in the inner loop, run single tests or the focused group that covers the change. The full suite runs once, at the branch gate. Do not rerun a passing scope on an unchanged tree.
+
+Restricted external CLI reviewers invoked by `razorback:pre-merge-review` are
+the deliberate exception. They run without MCP under
+their enforced read-only allowlist. The lead performs Miller-first exploration,
+supplies a sanitized Miller-backed evidence bundle, and verifies every finding
+with Miller. The external reviewer reads only that bundle and the exported review
+tree, and reports missing evidence instead of claiming it ran Miller.
+
+Continuous testing is opt-in. Status never enables it or starts a daemon; start is explicit. For an already enabled workspace, use the current `tests` schema to run the stale set. When disabled, use the discovered project runner for a one-off verification.

@@ -1,6 +1,6 @@
 ---
 name: executing-plans
-description: Use when executing a written implementation plan single-agent — separate-session, single-task, or no-delegation runs.
+description: Use when executing a written implementation plan and delegation is unavailable or the user/session explicitly selected single-agent execution.
 ---
 
 # Executing Plans
@@ -9,9 +9,9 @@ description: Use when executing a written implementation plan single-agent — s
 
 One agent executes the approved plan end to end, with no inter-task pauses. The defining constraint: after approval, the run stops only for the blocker taxonomy and the final PR — every other judgment call is decided plan-consistently and noted in the report.
 
-**When to use this vs. subagent-driven-development:** Use this skill for single-task plans, tightly sequential work, separate-session execution, or any run where delegation is unavailable. For plans with 2+ independent tasks in the same session, prefer `razorback:subagent-driven-development` for parallel execution with inline review.
+**When to use this vs. subagent-driven-development:** Use this skill when there is no delegation or the user/session explicitly selected single-agent execution. When delegation is available and permitted, use `razorback:subagent-driven-development`, including for one task; it serializes dependent tasks and parallelizes independent ones.
 
-**Inputs from `writing-plans`:** plan path, `reviewer_choice` (`none` / `codex` / `claude`, default `none`), and verification strategy. These propagate via the execution handoff and gate Step 3 below.
+**Inputs from `writing-plans`:** plan path, `reviewer_choice` (`none` / `codex` / `claude`, default `none`), authority ledger (`local_commit_authority`, `push_authority`, `pr_authority` with sources), and verification strategy. These propagate via the execution handoff and gate Step 3 below.
 
 **Architecture Quality:** The plan's `architecture-quality` output is authoritative. Preserve the approved architecture, do not redesign locally, and report a plan mismatch if code reality contradicts it.
 
@@ -93,9 +93,9 @@ Return to the Step 1 review when new codebase evidence contradicts the plan or t
 
 ## Checkpoints
 
-Write a `goldfish:checkpoint` at phase boundaries (or, for a flat task list, every few completed tasks) to persist progress and decisions across auto-compaction and session restarts. Capture what is done, the key decisions, and the next task to run. Before external review, also capture the immutable REVIEW CAMPAIGN setup and current counters. After review, capture the complete terminal `REVIEW CAMPAIGN STATUS` block with findings and dispositions.
+Write a `goldfish:checkpoint` before each commit and explicitly stage the checkpoint artifact with the files that commit owns. This pre-commit checkpoint is mandatory even when another checkpoint was written recently. Also checkpoint at phase boundaries (or, for a flat task list, every few completed tasks) to persist progress and decisions across auto-compaction and session restarts. Capture what is done, the key decisions, and the next task to run. Before external review, also capture the immutable REVIEW CAMPAIGN setup and current counters. After review, capture the complete terminal `REVIEW CAMPAIGN STATUS` block with findings and dispositions.
 
-A checkpoint is a fast, non-blocking memory write. It is **not** a stop, a review gate, or a reason to ask the user anything — write it and immediately continue. A phase boundary is a checkpoint trigger, not a stop: finishing a phase never means pausing for confirmation. Checkpoint at phase (or few-task) granularity, not per task; per-task checkpoints are noise.
+A checkpoint is a fast, non-blocking memory write. It is **not** a stop, a review gate, or a reason to ask the user anything — write it and immediately continue. A phase boundary is a checkpoint trigger, not a stop: finishing a phase never means pausing for confirmation. Phase/few-task cadence is additional recovery guidance; it never replaces the checkpoint required before every commit. Make one checkpoint per actual commit and include the artifact Goldfish writes in that commit. Do not create a checkpoint-only follow-up commit, which would recurse into another pre-commit checkpoint.
 
 ## Recovery
 

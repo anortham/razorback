@@ -26,6 +26,12 @@ Use Miller by capability, not by raw file reading:
 5. Do not infer or invent API shapes. Use Miller to discover symbol names, function signatures, config shapes, route names, CLI flags, or public contracts before relying on them.
 6. When Miller cannot prove a shape, say what evidence is missing and choose the safest plan-consistent path. Do not fill gaps from memory or plausible guesses.
 
+Restricted external CLI reviewers invoked by the pre-merge review workflow are
+the deliberate exception. They run without MCP under
+an enforced read-only allowlist. The lead supplies a sanitized Miller-backed
+evidence bundle, the reviewer reports missing evidence instead of claiming
+Miller use, and the lead verifies every finding with Miller.
+
 **Process rules — in this order, every time:**
 
 1. **Understand before you plan.** Orient with Miller and read the code the task actually touches. Trace the real flow end to end before proposing a change.

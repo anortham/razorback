@@ -34,12 +34,14 @@ test('brainstorming resolves reversible details without manufacturing user stops
   assert.doesNotMatch(skill, /frontier is empty AND/);
 });
 
-test('writing-plans requires approval, then starts without post-approval prompts', () => {
+test('writing-plans separates implementation approval from the finish authority boundary', () => {
   const skill = read('skills/writing-plans/SKILL.md');
 
   assert.match(skill, /wait for explicit approval/i);
   assert.match(skill, /reply \*\*approved\*\*/i);
-  assert.match(skill, /last human stop before autonomous execution/i);
+  assert.match(skill, /last human stop before autonomous local execution/i);
+  assert.match(skill, /Implementation approval does not imply publication authority/i);
+  assert.match(skill, /Do not ask for missing push or PR authority here/i);
   assert.doesNotMatch(skill, /External review before PR\?/i);
   assert.match(skill, /default reviewer choice is `none`/i);
   assert.match(skill, /invoke the execution skill immediately/i);

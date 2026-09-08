@@ -295,6 +295,7 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 
 | File | Purpose |
 |------|---------|
+| [Workflow decision evaluation](docs/workflow-evaluation.md) | Prepare blind baseline/revised packets and grade fresh-agent decisions with the local deterministic evaluator |
 | subagent-driven-development/implementer-prompt.md | Implementer spawn: task assignment, file ownership, Miller directives, status protocol |
 | subagent-driven-development/fix-prompt.md | Fix-round prompt with reviewer findings and reframed-context guidance |
 | subagent-driven-development/spec-reviewer-prompt.md | Review guide: spec compliance criteria |

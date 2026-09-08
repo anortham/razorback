@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "agent-run",
+  "cases": [
+    {
+      "id": "approval",
+      "packet_id": "6570563fdca36e82ad4f24b7ac970c7d5dcbe4333ac8454f47e2f3485e7c0da8",
+      "actions": [
+        "complete_local_materials",
+        "request_publication_authority"
+      ],
+      "terminal_state": "awaiting_user",
+      "user_questions": 1
+    },
+    {
+      "id": "push_recovery",
+      "packet_id": "99b66ac3cad46bed1920a2f6962c90dde0c262d59e1dff8d15d0e77eadd71f4e",
+      "actions": [
+        "diagnose_network",
+        "check_remote_tip",
+        "retry_push",
+        "confirm_remote"
+      ],
+      "terminal_state": "complete",
+      "user_questions": 0
+    },
+    {
+      "id": "checkpoint",
+      "packet_id": "cc60661784ac1479596e6f08cb9393f4d89da41b43d5dcc33664a4f25cf2c5ad",
+      "actions": [
+        "checkpoint_precommit",
+        "stage_intended_files",
+        "commit_task",
+        "record_commit_sha",
+        "mark_task_complete"
+      ],
+      "terminal_state": "complete",
+      "user_questions": 0
+    },
+    {
+      "id": "single_task",
+      "packet_id": "7be1fb91026c238f7400870427ec8c6ab80149fa2cf6d7de8135ba873ff10031",
+      "actions": [
+        "dispatch_implementer",
+        "checkpoint_precommit",
+        "worker_commit",
+        "lead_spec_review",
+        "lead_quality_review",
+        "record_commit_sha",
+        "mark_task_complete"
+      ],
+      "terminal_state": "complete",
+      "user_questions": 0
+    },
+    {
+      "id": "missing_miller",
+      "packet_id": "9b585046a93f19685d353c3bf5beaf8238fabbfb3d22b0462e5f55f2241c20c0",
+      "actions": [
+        "preserve_evidence",
+        "report_blocked"
+      ],
+      "terminal_state": "blocked",
+      "user_questions": 0
+    },
+    {
+      "id": "restricted_reviewer",
+      "packet_id": "99a9fa4fdeefca293976fb41007350f51eee784e589276b405e412706918c47a",
+      "actions": [
+        "build_sanitized_evidence",
+        "follow_host_restrictions",
+        "launch_readonly_reviewer",
+        "report_evidence_gaps"
+      ],
+      "terminal_state": "complete",
+      "user_questions": 0
+    },
+    {
+      "id": "live_tools",
+      "packet_id": "69c0834c7ebbdfd8947ec91d93461b2ebfa74e00ebb162d2ae9caf0c32d51d64",
+      "actions": [
+        "inspect_live_schema",
+        "track_durable_plan",
+        "spawn_agent",
+        "check_agent_completion",
+        "mark_task_complete"
+      ],
+      "terminal_state": "complete",
+      "user_questions": 0
+    },
+    {
+      "id": "instruction_priority",
+      "packet_id": "82e7f4a6f10038ff2adfd6c4325acb55245691604d2f3a137d86c1712bb47c36",
+      "actions": [
+        "follow_host_restrictions"
+      ],
+      "terminal_state": "complete",
+      "user_questions": 0
+    },
+    {
+      "id": "interrupted_run",
+      "packet_id": "967847add9d8715f57701fa4b28da471b425a92ced9cc1af00b7814f12ea5fa8",
+      "actions": [
+        "recall_memory",
+        "inspect_plan",
+        "inspect_ledger",
+        "inspect_git",
+        "reconcile_uncommitted",
+        "checkpoint_precommit",
+        "stage_intended_files",
+        "commit_task",
+        "record_commit_sha",
+        "mark_task_complete"
+      ],
+      "terminal_state": "active",
+      "user_questions": 0
+    },
+    {
+      "id": "parallel_commit",
+      "packet_id": "f79d4883c6b8cda0b5a2e6bc2546d785a0359fd2107975274ae623e4b8581183",
+      "actions": [
+        "checkpoint_precommit",
+        "stage_task_a_files",
+        "commit_task_a",
+        "record_commit_sha",
+        "mark_task_complete"
+      ],
+      "terminal_state": "active",
+      "user_questions": 0
+    }
+  ]
+}

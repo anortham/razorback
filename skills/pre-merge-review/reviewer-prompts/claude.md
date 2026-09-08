@@ -10,7 +10,8 @@ Bare relative paths below (like the blocker-taxonomy reference) are relative to 
 - `claude auth status` exits 0 (logged in via Anthropic OAuth or API key). Exit 1 means not logged in; this is **blocker taxonomy #1** (credentials broken). Stop, surface, do not push. See the `razorback:using-razorback` skill's `references/blocker-taxonomy.md`.
 - Do not add `--bare`. Current Claude help says bare mode skips OAuth and keychain auth reads, so it breaks the common login path.
 - `$REVIEW_ROOT` is the temporary exported review tree prepared in pre-merge-review Step 1. It is outside `$PROJECT_DIR` and is shared by the general and security passes; do not run Claude from the live worktree.
-- Step 1 of the pre-merge-review flow has already built `$DIFF`, `$FILE_STAT`, `$COMMIT_LOG`, `$PROJECT_DIR`, and (optionally) `$USER_FOCUS`.
+- Step 1 of the pre-merge-review flow has already built `$DIFF`, `$FILE_STAT`, `$COMMIT_LOG`, `$MILLER_EVIDENCE`, `$PROJECT_DIR`, and (optionally) `$USER_FOCUS`.
+- The lead has supplied sanitized Miller-backed evidence in the review bundle. This external reviewer does not run Miller because `--strict-mcp-config` deliberately removes MCP. Report missing evidence when the bundle and exported tree cannot support a conclusion; never claim Miller use.
 
 ## Build the user prompt
 
@@ -28,6 +29,9 @@ User focus: ${USER_FOCUS:-none specified}
 
 Commit log:
 $COMMIT_LOG
+
+Lead Miller evidence:
+$MILLER_EVIDENCE
 
 Diff:
 $DIFF"

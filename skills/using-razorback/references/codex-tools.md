@@ -7,24 +7,22 @@ Skills in razorback use Claude Code tool names. When you see these in a skill bo
 | `Task` / `Agent` tool (dispatch subagent) | `spawn_agent(task_name=..., message=...)` (returns an agent ID; see [Subagent dispatch](#subagent-dispatch)) |
 | Multiple `Task` calls (parallel) | Multiple `spawn_agent` calls in the same turn |
 | Task follow-up / resume | `followup_task(target=<agent-id>, message=...)` (new task for the same worker) or `send_message(target=<agent-id>, message=...)` |
-| Task returns result | `wait_agent(timeout_ms=...)` (blocks until agent completion) |
+| Wait for worker activity | `wait_agent(timeout_ms=...)`; a wakeup may be a message, timeout, or completion, so inspect the returned status or completion payload before treating the worker as done |
 | Cancel a running agent | `interrupt_agent(target=<agent-id>)` |
 | List active agents | `list_agents(...)` |
-| `TodoWrite` / `TaskCreate` / `TaskUpdate` | `update_plan` |
+| `TodoWrite` / `TaskCreate` / `TaskUpdate` | Use an available durable plan, checklist, or execution ledger; do not invent a planning tool that is absent from the live session |
 | `Skill` tool (invoke a skill) | Skills load natively, follow the instructions |
 | `Read`, `Write`, `Edit` (files) | Your native file tools |
 | `Bash` (run commands) | Your native shell tools |
 
-The collaboration tool surface above was verified on codex 0.144.3 (tools:
-`spawn_agent`, `followup_task`, `send_message`, `wait_agent`,
-`interrupt_agent`, `list_agents`; there is no `close_agent`, no `send_input`,
-and no `agent_type` parameter). Codex changes this surface between versions —
-**trust the live tool list in your session over this table**, and map by
-capability (dispatch / follow-up / wait / cancel / list) when names differ.
+Codex changes its collaboration surface between versions and hosts. **Trust the
+live callable tool schemas in your session over this table.** Map by capability
+(dispatch / follow-up / wait / cancel / list), pass only parameters the live
+schema exposes, and do not infer missing tools or arguments from examples here.
 
 ## Subagent dispatch
 
-Razorback's parallel execution skills (`subagent-driven-development`, `dispatching-parallel-agents`) use Codex's multi-agent collaboration tools. They are enabled by default on current codex (verified 0.144.3); older versions needed `multi_agent = true` under `[features]` in `~/.codex/config.toml`. If no collaboration tools appear in your session, set that flag or update codex.
+Razorback's parallel execution skills (`subagent-driven-development`, `dispatching-parallel-agents`) use Codex's multi-agent collaboration tools when the live session exposes them. If no collaboration tools appear, use the documented no-delegation fallback; do not infer a configuration flag or CLI version remedy from this mapping.
 
 ### Dispatching implementers
 
@@ -41,9 +39,11 @@ When a skill says to dispatch a subagent with a prompt:
 
 1. Read the prompt file
 2. Fill any template placeholders (task spec, file ownership, Miller directives)
-3. Choose any model override only when the user, environment, or lead explicitly
-   wants one for this run. Otherwise use the harness default.
-4. Spawn a worker with the filled content as the `message`
+3. Choose any model or role override only when the user, environment, or lead
+   explicitly wants one and the live schema exposes it. Otherwise use the
+   harness default.
+4. Spawn a worker with the filled content as the `message`, using only the
+   arguments present in the live schema.
 
 ```
 spawn_agent(task_name="task-N-<slug>", message=<filled prompt>)
@@ -86,7 +86,9 @@ On Codex, delegated plan execution uses `subagent-driven-development`: dispatch 
 | Delegation available | `subagent-driven-development` |
 | Delegation unavailable | `executing-plans` |
 
-For single-task or tightly sequential work, use `executing-plans` even when delegation is available.
+This capability-based routing applies to one task as well as many. Dependent work
+uses serialized delegates. Use `executing-plans` only when delegation is
+unavailable or the user/session explicitly selects single-agent execution.
 
 ### External model CLI waiting
 
