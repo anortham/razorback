@@ -1,11 +1,6 @@
 # Fix Prompt Template (Resume Implementer)
 
-Use this template when resuming the implementer subagent to fix review issues.
-The subagent already has full context from its implementation pass.
-
-On Claude Code, resume = `SendMessage` to the stored implementer's agent ID or
-name with this prompt as the message (older builds exposed a `resume` parameter
-on the `Agent` tool instead). On Codex, resume = `followup_task(target=<agent-id>, …)`.
+Send to the stored implementer (Claude Code: `SendMessage` to its agent ID or name; Codex: `followup_task(target=<agent-id>, …)`; opencode: fresh dispatch with the brief path and prior-commit pointer). Iterations 1-3 resume so the worker keeps its context; the 4th is the reframed attempt below.
 
 ```
 SendMessage (to: "<implementer-agent-id-or-name>"):
@@ -15,7 +10,7 @@ SendMessage (to: "<implementer-agent-id-or-name>"):
 
     ## Review Findings
 
-    [Paste the reviewer's full output here — issues, severity, file:line references]
+    [Reviewer output — issues, severity, file:line]
 
     ## Contract inputs
 
@@ -29,31 +24,17 @@ SendMessage (to: "<implementer-agent-id-or-name>"):
 
     ## What to Do
 
-    1. Fix each issue listed above
-    2. Fix the structural cause, not only the symptom
-    3. Do not weaken tests or introduce speculative seams
-    4. Run the assigned verification scope from the plan
-    5. Apply the assigned commit mode
-    6. Report what you changed
-
-    Keep it focused - fix what the reviewer flagged, don't refactor beyond that.
+    1. Fix each finding. Fix the structural cause, not only the symptom.
+    2. Do not weaken tests or introduce speculative seams. Do not refactor beyond the findings.
+    3. Run the assigned verification scope, apply the commit mode, report.
 
     ## Re-Orientation (REQUIRED before editing)
 
-    Even on a resume, confirm the change with Miller before touching code:
-
-    1. List the file's symbols to re-anchor on the exact edit location
-       (Miller `inspect(target='<file>')`).
-    2. Inspect the symbol you are changing
-       (Miller `inspect(target='<symbol>', depth=full)`).
-    3. Find references if the fix changes behavior callers could observe
-       (Miller `trace(target='<symbol>')`).
-
-    Do not start by skimming raw files. Miller-first still applies during fix rounds.
-    Do not infer or invent API shapes. Use Miller to discover symbol names, function
-    signatures, config shapes, route names, CLI flags, or public contracts before
-    relying on them. If Miller cannot prove the shape, say what evidence is missing
-    instead of guessing.
+    Miller first, even on a resume: `inspect(target='<file>')` to re-anchor the edit location;
+    `inspect(target='<symbol>', depth=full)` on the symbol you change; `trace(target='<symbol>')`
+    if callers could observe the change. Do not infer or invent API shapes — prove symbol names,
+    function signatures, config shapes, route names, CLI flags, or public contracts with Miller,
+    or say what evidence is missing.
 
     ## Commit mode
 
@@ -67,60 +48,21 @@ SendMessage (to: "<implementer-agent-id-or-name>"):
 
     ## Report Format
 
-    When done, report:
     - What you changed
-    - **Covering tests per finding** - for each finding you fixed, name the
-      test(s) that cover the fix, the exact command you ran, and the output.
-      The lead gates re-review on this evidence; a report without it comes
-      back to you unreviewed.
-    - Verification invariant, scope label, command, commit SHA if any, result, and timestamp
-    - **Miller calls used** - list the orient / inspect / find-references calls you made during the fix round
-    - **API-shape evidence** - list the Miller evidence for any symbol names, function signatures, config shapes, route names, CLI flags, or public contracts you relied on
-    - Any judgment calls made
+    - **Covering tests per finding** — the test(s), the exact command, and the output. The
+      lead gates re-review on this; a report without it comes back unreviewed.
+    - Verification invariant, scope label, command, commit SHA if any, result, timestamp
+    - **Miller calls used** and **API-shape evidence** for every shape relied on
+    - Judgment calls made
 ```
-
-**Why resume instead of fresh dispatch:** You already have the full context — the files
-you read, the decisions you made, the tests you wrote. A fresh subagent would spend
-most of its token budget just getting back to where you already are. This applies to
-iterations 1-3 of the review loop. For the 4th-iteration reframed-context case, see
-the section below.
 
 ## Reframed-Context Attempt (4th iteration)
 
-When the review loop has exhausted 3 resume attempts (Claude Code), 3
-`followup_task` attempts (Codex), or 3 fresh-dispatch-with-fix-context attempts
-(opencode) and the task still fails review,
-the 4th attempt is a **fresh subagent with reframed context** — not another resume.
-The prior implementer's chat context is gone; the fresh subagent starts from a clean
-slate with a different framing.
+After 3 failed context-preserving attempts, dispatch a **fresh subagent with reframed context**, not another resume. Give it:
 
-Context available to the fresh subagent:
+- Prior commit SHAs (`git show`, `git log <base>..HEAD`) — to read, not to extend.
+- The task's brief path (SKILL.md Step 2).
+- All three rounds of review findings.
+- A reframing note stating what to try differently, e.g. "Simplify: core behavior in one file first; prior attempts over-abstracted", "Prior attempts misread X; the plan's intent is Y", or "Split into sub-steps A, B, C and commit each".
 
-- **Prior commits (with SHAs)** — for reading (`git show <sha>`, `git log <base>..HEAD`),
-  not as a baseline to extend. The fresh subagent can see what was tried without
-  re-exploring the codebase.
-- **The task's brief path** — the single source of task requirements (SKILL.md Step 2), the same shape as the first dispatch.
-- **All prior review-finding iterations** — rounds 1, 2, 3 of reviewer feedback, so
-  the fresh subagent can see what kept failing.
-- **Reframing note from the lead** — an explicit statement of what to try differently.
-  Without this, fresh-dispatch is just a more expensive resume.
-
-Reframing examples (the lead picks one that fits the failure mode):
-
-- "We're trying a different angle because the prior framing didn't converge — here's
-  what to try differently: [specific redirection]."
-- "Simplify: implement just the core behavior in a single file first; we can
-  refactor after. The prior attempts over-abstracted."
-- "The prior attempts misinterpreted X; the plan's actual intent is Y."
-- "Different decomposition: split the task into sub-steps A, B, C and commit each
-  separately."
-
-The fresh subagent still follows the standard review loop after its attempt:
-implementer reports -> lead does inline review -> if issues remain, the lead
-adjudicates at the cap (SKILL.md Step 3, "Cap adjudication"): each open finding
-is ruled contested, real-but-deferred, or real-and-load-bearing, and only a
-load-bearing ruling stops the run (blocker taxonomy #5).
-
-The 4th attempt's value is the reframing, not the freshness. If the lead cannot
-articulate a reframe ("try harder" is not a reframe), skip the 4th attempt and go
-straight to cap adjudication.
+The value is the reframing, not the freshness. If the lead cannot state a reframe ("try harder" is not one), skip this attempt. After it, the lead reviews inline; remaining findings go to cap adjudication (SKILL.md Step 3, "Cap adjudication"): contested, real-but-deferred, or real-and-load-bearing — only load-bearing stops the run (blocker taxonomy #5).

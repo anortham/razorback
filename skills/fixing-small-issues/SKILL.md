@@ -5,11 +5,7 @@ description: Use when a reported defect or requested tweak looks small and local
 
 # Fixing Small Issues
 
-## Overview
-
-The triage-first path for small, local, reversible changes. It right-sizes process: locate the issue, measure it against objective criteria, fix it in place, verify the affected scope. No worktree, no baseline suite run, no design doc, no implementer dispatch.
-
-**Core principle:** Investigate before infrastructure. Measure before choosing a tier.
+Triage-first path for small, local, reversible changes: locate, measure against objective criteria, fix in place, verify the affected scope. No worktree, no baseline suite run, no design doc, no implementer dispatch.
 
 **Announce at start:** "I'm using the fixing-small-issues skill to triage this."
 
@@ -19,24 +15,19 @@ The triage-first path for small, local, reversible changes. It right-sizes proce
 NO INFRASTRUCTURE BEFORE INVESTIGATION
 ```
 
-No worktree creation, no project setup, no baseline or full test-suite run until the change target is located and the tier is chosen. Running a 6-minute suite before opening the implicated file is the failure this skill exists to prevent — for every tier, not just this one.
+No worktree, no project setup, no baseline or full-suite run until the change target is located and the tier is chosen. Running a 6-minute suite before opening the implicated file is the failure this skill exists to prevent.
 
-## When to Use
-
-Symptoms: a user reports a small defect (double-submit, missing disabled state, wrong label, off-by-one, stale link) or requests a small tweak (CSS values, copy, a config constant).
-
-**Not for:** new features or components, anything touching public APIs, schemas, dependencies, or security behavior, or any issue whose investigation reveals it is bigger than the criteria below. When in doubt, run Step 1 — the criteria decide, not the vibe.
+**Not for:** new features or components; public APIs, schemas, dependencies, or security behavior; anything investigation shows is bigger than the criteria. When in doubt, run Step 1 — the criteria decide.
 
 ## Step 1: Investigate (no infrastructure)
 
 - Locate the target with Miller: `search` for the symptom, `inspect(target, depth=full)` on the implicated symbol, `trace` if it might be shared.
-- For defects: run systematic-debugging Phase 1 — reproduce, find root cause. **REQUIRED BACKGROUND:** razorback:systematic-debugging.
-- For tweaks: confirm the exact target (selector, constant, string) with Miller evidence.
+- Defects: razorback:systematic-debugging Phase 1 — reproduce, find root cause.
+- Tweaks: confirm the exact target (selector, constant, string) with Miller evidence.
 
 ## Step 2: Triage (measure, don't vibe)
 
-The quick-fix tier applies only when ALL criteria hold. Project instructions may
-tune the numeric thresholds; the criteria themselves are not optional.
+The quick-fix tier applies only when ALL criteria hold. Project instructions may tune the numbers; the criteria are not optional.
 
 | Criterion | Threshold |
 |-----------|-----------|
@@ -49,35 +40,32 @@ tune the numeric thresholds; the criteria themselves are not optional.
 
 **Any criterion fails or cannot be measured → exit this skill.** Name the failed criterion and route to the standard flow (razorback:brainstorming → plan). An unknown is a failure, not a pass.
 
-**All criteria pass →** announce the tier: "Quick-fix tier: <one-line summary> (N files, ~M lines)." No user consent is needed to proceed — the tier is pre-authorized policy. The worktree escape hatch's consent requirement does not apply because using-git-worktrees is never invoked on this tier.
+**All pass →** announce: "Quick-fix tier: <summary> (N files, ~M lines)." No user consent is needed to proceed — the tier is pre-authorized policy, and using-git-worktrees is never invoked on this tier.
 
 ## Step 3: Fix in place
 
-- Work on the current checkout. If the repo protects the current branch, create a plain feature branch — never a worktree.
-- TDD still applies where a test harness covers the behavior: write the failing regression test first, then the minimal fix. **REQUIRED SUB-SKILL:** razorback:test-driven-development.
-- No test surface (pure visual or copy change)? Verify by observing the rendered or actual result, and say that's what you did.
+- Work on the current checkout. Protected branch → plain feature branch, never a worktree.
+- TDD applies where a harness covers the behavior: failing regression test first, then the minimal fix (razorback:test-driven-development). No test surface → verify by observing the actual result, and say so.
 - One fix at a time. No while-I'm-here improvements.
-- If the quick fix cuts a real corner with a known ceiling, mark it: `# razorback: <ceiling>, <upgrade trigger>` (`//` in C-family languages) — e.g. `# razorback: global lock, per-account locks if throughput matters`. A marker names the limit and the trigger to revisit; razorback:harvesting-debt harvests them into a ledger later. An unmarked deliberate shortcut is the one that rots.
+- If the fix cuts a real corner with a known ceiling, mark it: `# razorback: <ceiling>, <upgrade trigger>` (`//` in C-family languages), e.g. `# razorback: global lock, per-account locks if throughput matters`. razorback:harvesting-debt collects markers into a ledger later; an unmarked shortcut rots.
 
 ## Step 4: Verify the affected scope only
 
-- Compute the affected scope first: Miller `impact(target='<changed symbol>')` returns the impacted symbols plus the likely tests — run those.
-- Run the targeted test(s) and reconfirm the original symptom is gone. razorback:verification-before-completion applies in full — evidence, not "should work."
-- The full suite is NOT part of this tier. The full suite runs at the branch gate
-  (CI or pre-merge), not in the inner loop.
-- Finish per project convention: commit with a clear message; open a PR where the project is branch-gated.
-- In the closing summary, list any `# razorback:` markers left behind (`<file>:<line>` + the ceiling), or say "no markers left."
+- Miller `impact(target='<changed symbol>')` gives the impacted symbols and likely tests — run those and reconfirm the symptom is gone. razorback:verification-before-completion applies in full.
+- The full suite is NOT part of this tier; the full suite runs at the branch gate (CI or pre-merge).
+- Commit with a clear message; open a PR where the project is branch-gated.
+- In the closing summary, list any `# razorback:` markers left (`<file>:<line>` + ceiling), or say "no markers left."
 
-## Escalation Triggers
+## Escalation triggers
 
-Objective, checked continuously while fixing:
+Checked continuously while fixing:
 
 - The change needs a **3rd source file** or **~2× the line budget**
-- The root cause lands in **shared or public code** (API, schema, shared state, security boundary) — check it: Miller `trace(target)` for references, `impact(target)` for blast radius
+- The root cause lands in **shared or public code** (API, schema, shared state, security boundary) — check with Miller `trace(target)` and `impact(target)`
 - A **second fix attempt fails**
-- The fix requires a **dependency change or a new module**
+- The fix needs a **dependency change or a new module**
 
-On any trigger: STOP. Commit WIP on the branch, then promote to the standard flow (razorback:brainstorming or razorback:writing-plans) carrying the investigation evidence forward. Escalation is a tier change, not a failure — the investigation is never wasted.
+On any trigger: STOP, commit WIP, promote to razorback:brainstorming or razorback:writing-plans with the evidence. Escalation is a tier change, not a failure.
 
 ## Rationalization Table — Both Directions
 
@@ -106,18 +94,11 @@ Downscaling abuse and ceremony reflex are both violations.
 
 ## It's working if
 
-- The tier was announced with its measurements ("N files, ~M lines") before any fix landed.
-- The affected scope ran and the original symptom is gone; the full suite never ran in the inner loop.
-- Any deliberate corner carries a `# razorback:` marker, and the closing summary lists the markers or says none were left.
-- Escalation triggers were honored the moment they fired — no "almost done" push past them.
+- The tier was announced with its measurements before any fix landed.
+- The affected scope ran and the symptom is gone; the full suite never ran in the inner loop.
+- Every deliberate corner carries a `# razorback:` marker, and the closing summary lists them or says none.
+- Escalation triggers were honored the moment they fired.
 
 ## Integration
 
-**Entered from:** the user's request directly, razorback:brainstorming triage, or razorback:systematic-debugging Phase 4.
-
-**Exits to:** the standard flow on any escalation trigger or failed criterion.
-
-**Never calls:** razorback:using-git-worktrees.
-
-Use the active project instructions for any threshold tuning or affected-scope
-verification commands.
+**Entered from:** the user directly, razorback:brainstorming triage, or razorback:systematic-debugging Phase 4. **Exits to:** the standard flow on any trigger or failed criterion. **Never calls:** razorback:using-git-worktrees. Project instructions supply threshold tuning and affected-scope verification commands.

@@ -5,33 +5,27 @@ description: Use when running a security review, a secrets scan, or a dependency
 
 # Security Review
 
-The canonical home of razorback's security lane: two mechanical scan scopes at the branch gate, the external-model policy gate every outbound dispatch checks, and the canonical security checklist that review touchpoints copy verbatim.
+Canonical home of razorback's security lane: two scan scopes at the branch gate, the external-model policy gate every outbound dispatch checks, the outbound redaction helper, and the checklist blocks other skills copy verbatim.
 
 **Core principle:** Nothing ships with a secret in it, and no diff leaves the machine against the repo's policy.
 
 ## Scan Scopes
 
-Razorback owns the scope boundaries; the target repo's plan declares the real commands — the same split as the existing branch gate. A plan must declare its Security scope explicitly or write `none declared`. Silence is not allowed. `none declared` is rendered in the morning report so the opt-out stays visible.
+The plan declares the real commands for each scope or writes `none declared`; silence is not allowed, and `none declared` is rendered in the morning report. Both scopes run at the branch gate before push or PR. The quick-fix tier (razorback:fixing-small-issues) already defers suite-level verification to the branch gate.
 
-Both scopes run at the branch gate, before push or PR. The quick-fix tier (razorback:fixing-small-issues) is unaffected — it already defers suite-level verification to the branch gate.
-
-For a missing declared scanner or a security finding, diagnose, repair, and rerun the failed scope while a safe, plan-consistent recovery path remains. Keep the branch local throughout recovery: no push and no PR. Missing tooling becomes blocker taxonomy #1, and a non-converging finding becomes the applicable blocker, only after safe, plan-consistent recovery paths are exhausted. Recovery never weakens the finding gates below or substitutes an unapproved scanner skip.
+For a missing declared scanner or a security finding, diagnose, repair, and rerun the failed scope while a safe, plan-consistent recovery path remains, with the branch kept local (no push, no PR). Missing tooling becomes blocker taxonomy #1, and a non-converging finding becomes the applicable blocker, only after safe, plan-consistent recovery paths are exhausted. Recovery never weakens the gates below or substitutes an unapproved scanner skip.
 
 ### `security-secrets` — whole-tree secrets scan
 
-Example default: `gitleaks detect`.
-
-**Any finding is a HARD GATE: no push, no PR.** False positives are suppressed only in the tool's own baseline/ignore mechanism — never by skipping the scan or waving the finding through. Each suppression is recorded in the morning report as a judgment call.
+Example default: `gitleaks detect`. **Any finding is a HARD GATE: no push, no PR.** Suppress false positives only in the tool's own baseline/ignore mechanism and record each suppression in the morning report as a judgment call.
 
 ### `security-deps` — dependency/CVE audit
 
-Example default: `osv-scanner` (language-neutral). Per-ecosystem alternates: `npm audit`, `pip-audit`, `cargo audit`, `dotnet list package --vulnerable`.
-
-**HARD GATE on critical/high severity; report-only below.** Report-only findings are rendered into the morning report.
+Example default: `osv-scanner`; per-ecosystem alternates: `npm audit`, `pip-audit`, `cargo audit`, `dotnet list package --vulnerable`. **HARD GATE on critical/high severity; report-only below**, rendered into the morning report.
 
 ## External-Model Policy Gate
 
-The policy block is read from the target repo's project instructions (CLAUDE.md / AGENTS.md). Canonical format:
+Read from the target repo's project instructions (CLAUDE.md / AGENTS.md):
 
 ```markdown
 ## External model policy
@@ -42,7 +36,7 @@ Reviewer choices permitted: codex, claude
 - `Allowed providers:` is a comma list from `anthropic, openai, xai, cursor, google`, or `any`.
 - `Reviewer choices permitted:` is a subset of `codex, claude`, or `none`.
 
-The policy governs any external dispatch that carries repo content — delegation with write sandboxes as much as reviews.
+The policy governs any external dispatch that carries repo content, delegation with write sandboxes as much as reviews.
 
 ### Provider mapping
 
@@ -58,20 +52,20 @@ cross-model-convergence requires every participating model's provider to be allo
 
 ### Check procedure
 
-Run this before any diff or repo content leaves the machine — at every enforcement point, every time:
+Run at every enforcement point, every time, before repo content leaves the machine:
 
 1. Read the policy block from the target repo's project instructions.
 2. Block present and the provider is allowed → proceed.
 3. Block present and the provider is denied → refuse the dispatch, name an allowed alternative, and record the refusal in the morning report. On an autonomous run where the user explicitly chose the denied provider, this is blocker taxonomy #4 — STOP; do not silently substitute another provider.
 4. When no policy block exists, proceed, and add the loud morning-report note: `no external-model policy declared — diff sent to <provider>`.
 
-**Reviewer dispatches (pre-merge review and standalone review):** re-read the policy at dispatch time — validation at plan approval does not carry forward. When a policy block exists, the provider must be allowed. When a policy block exists, the chosen reviewer must also appear in `Reviewer choices permitted:` for pre-merge review dispatches. Standalone reviewer CLI dispatches (e.g. `agy-cli`, `grok-cli`, `codex-cli`, `claude-cli`) are authorized by their mapped provider in `Allowed providers:`. A provider or reviewer denied by an existing block follows step 3, including blocker taxonomy #4 on an autonomous run where the user explicitly chose that reviewer. With no block, step 4 applies; do not manufacture an allowlist requirement.
+**Reviewer dispatches (pre-merge review and standalone review):** re-read the policy at dispatch time; validation at plan approval does not carry forward. When a policy block exists, the provider must be allowed. When a policy block exists, the chosen reviewer must also appear in `Reviewer choices permitted:` for pre-merge review dispatches. Standalone reviewer CLI dispatches (`agy-cli`, `grok-cli`, `codex-cli`, `claude-cli`) are authorized by their mapped provider in `Allowed providers:`. A denial follows step 3, including blocker taxonomy #4 on an autonomous run. With no block, step 4 applies; do not manufacture an allowlist requirement.
 
-**Security pass:** whenever a reviewer is chosen for a run, pre-merge review runs a dedicated security pass built from this skill's `security-adversarial-prompt.txt`. Trigger semantics and invocation mechanics live in razorback:pre-merge-review.
+**Security pass:** whenever a reviewer is chosen for a run, pre-merge review runs a dedicated security pass built from this skill's `security-adversarial-prompt.txt`; mechanics live in razorback:pre-merge-review.
 
 ## Outbound Payload Redaction
 
-The dependency-free helper at `skills/security-review/scripts/redact-outbound` consumes the fully constructed prompt, diff, or report on standard input and writes the same payload shape with sensitive matches replaced by `<REDACTED>`. It never prints matched material. Every enforcement point runs it immediately before dispatch and passes only the redacted artifact to the external model. A nonzero helper status is a failed dispatch: remove temporary artifacts, report the generic failure, and stop before invoking the provider.
+`skills/security-review/scripts/redact-outbound` reads the fully constructed prompt, diff, or report on stdin and writes the same shape with sensitive matches replaced by `<REDACTED>`; it never prints matched material. Every enforcement point runs it immediately before dispatch and sends only the redacted artifact. A nonzero status is a failed dispatch: remove temporary artifacts, report the generic failure, and stop before invoking the provider. Do not log the original payload or any matched value.
 
 ```bash
 PAYLOAD_FILE=$(mktemp)
@@ -83,11 +77,11 @@ if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" >
 fi
 ```
 
-Write the final payload to `PAYLOAD_FILE`, dispatch from `REDACTED_PAYLOAD_FILE`, and remove both temporary files after the provider returns. Do not log the original payload or any matched value while handling a failure.
+Write the final payload to `PAYLOAD_FILE`, dispatch from `REDACTED_PAYLOAD_FILE`, and remove both after the provider returns.
 
 ## Security Checklist
 
-These five questions are the canonical security checklist. They are duplicated verbatim (test-guarded) at `skills/requesting-code-review/code-reviewer.md` (the standalone reviewer prompt) and `skills/subagent-driven-development/code-quality-reviewer-prompt.md` (the lead's inline review). If you edit the questions here, update those two copies to match — the same convention `skills/architecture-quality/SKILL.md` uses for its checklist.
+Canonical five questions, duplicated verbatim (test-guarded) at `skills/requesting-code-review/code-reviewer.md` and `skills/subagent-driven-development/code-quality-reviewer-prompt.md`. Edit here and update both copies to match.
 
 **Security:**
 - No secrets, credentials, tokens, or connection strings in the diff?
@@ -98,7 +92,7 @@ These five questions are the canonical security checklist. They are duplicated v
 
 ## Redact
 
-These three rules are the canonical redaction block. They are duplicated verbatim (test-guarded) at `skills/systematic-debugging/SKILL.md` (the evidence-gathering instrumentation step). If you edit the rules here, update that copy to match — the same convention the security checklist above uses.
+Canonical three rules, duplicated verbatim (test-guarded) at `skills/systematic-debugging/SKILL.md`. Edit here and update that copy to match.
 
 **Redact:**
 - Redact every secret in anything you show, quote, or send — write `<REDACTED>` in its place.
@@ -117,6 +111,6 @@ These three rules are the canonical redaction block. They are duplicated verbati
 
 ## Integration
 
-**Called from (policy gate):** razorback:codex-cli, razorback:claude-cli, razorback:grok-cli, razorback:agy-cli, razorback:cursor-agent, razorback:cross-model-convergence, razorback:pre-merge-review, and razorback:requesting-code-review Mode 2 — every point where a diff or repo content leaves the machine.
+**Policy gate callers:** razorback:codex-cli, razorback:claude-cli, razorback:grok-cli, razorback:agy-cli, razorback:cursor-agent, razorback:cross-model-convergence, razorback:pre-merge-review, razorback:requesting-code-review Mode 2.
 
-**Called from (scan scopes):** razorback:writing-plans requires the Security scope line in every plan and validates the chosen pre-merge reviewer against the policy block at plan approval; razorback:finishing-a-development-branch runs the scopes at the branch gate, renders `{{policy_status}}` in the morning report, and renders the `none declared` note when no scope was declared.
+**Scan scope callers:** razorback:writing-plans requires the Security scope line in every plan and validates the chosen pre-merge reviewer at plan approval; razorback:finishing-a-development-branch runs the scopes at the branch gate and renders `{{policy_status}}` and the `none declared` note in the morning report.

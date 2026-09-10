@@ -5,180 +5,76 @@ description: Use when receiving code review feedback, before implementing sugges
 
 # Code Review Reception
 
-## Overview
-
-Code review requires technical evaluation, not emotional performance.
-
 **Core principle:** Verify before implementing. Ask before assuming. Technical correctness over social comfort.
 
-## When to Use
-
-Use when acting on any review feedback — external reviewer or user — before implementing a single suggestion. NOT for choosing or dispatching reviewers: that is razorback:requesting-code-review (standalone) or razorback:pre-merge-review (planned).
+Use before implementing any review item, from an external reviewer or the user. Not for choosing or dispatching reviewers: razorback:requesting-code-review (standalone) or razorback:pre-merge-review (planned).
 
 ## The Response Pattern
 
-```
-WHEN receiving code review feedback:
-
-1. READ: Complete feedback without reacting
-2. UNDERSTAND: Restate requirement in own words (or ask)
-3. VERIFY: Check against codebase reality
-4. EVALUATE: Technically sound for THIS codebase?
-5. RESPOND: Technical acknowledgment or reasoned pushback
-6. IMPLEMENT: One item at a time, test each
-```
+1. READ the complete feedback without reacting.
+2. UNDERSTAND: restate the requirement in your own words, or ask.
+3. VERIFY against codebase reality.
+4. EVALUATE: technically sound for THIS codebase?
+5. RESPOND: technical acknowledgment or reasoned pushback.
+6. IMPLEMENT one item at a time; test each.
 
 ## Forbidden Responses
 
-**NEVER:**
-- "You're absolutely right!" (performative agreement)
-- "Great point!" / "Excellent feedback!" (performative)
-- "Let me implement that now" (before verification)
-
-**INSTEAD:**
-- Restate the technical requirement
-- Ask clarifying questions
-- Push back with technical reasoning if wrong
-- Just start working (actions > words)
+Never "You're absolutely right!", "Great point!", "Thanks for catching that!", any gratitude, or "Let me implement that now" before verification. Instead: restate the requirement, ask a clarifying question, push back with technical reasoning, or just start working. If you catch yourself about to write "Thanks": delete it and state the fix.
 
 ## Handling Unclear Feedback
 
-**Unclear external-review items during an approved autonomous run (the common
-case):** verify the clear items, fix independently verifiable real issues,
-flag the unclear item for review and continue — noting it in the report —
-unless it matches the blocker taxonomy (the `razorback:using-razorback` skill's `references/blocker-taxonomy.md`). Do not let one vague external
-suggestion block unrelated safe fixes, and do not stop the run to ask about it.
+**Unclear external-review items during an approved autonomous run (the common case):** verify the clear items, fix independently verifiable real issues, flag the unclear item for review and continue, noting it in the report, unless it matches the blocker taxonomy (`razorback:using-razorback` `references/blocker-taxonomy.md`). One vague external suggestion never blocks unrelated safe fixes or stops the run.
 
-**Unclear human direction blocks implementation (interactive review from the
-user, outside an approved run):** ask first, because partial understanding can
-send the whole fix in the wrong direction.
-
-```
-IF any item from the user is unclear (interactive):
-  STOP - do not implement anything yet
-  ASK for clarification on unclear items
-
-WHY: Items may be related. Partial understanding = wrong implementation.
-```
-
-**Example (interactive):**
-```
-User: "Fix 1-6"
-You understand 1,2,3,6. Unclear on 4,5.
-
-❌ WRONG: Implement 1,2,3,6 now, ask about 4,5 later
-✅ RIGHT: "I understand items 1,2,3,6. Need clarification on 4 and 5 before proceeding."
-```
+**Unclear human direction blocks implementation (interactive review from the user, outside an approved run):** stop and ask about every unclear item before implementing any of them; items may be related, and partial understanding sends the whole fix the wrong way. "Fix 1-6" with 4 and 5 unclear → "I understand items 1,2,3,6. Need clarification on 4 and 5 before proceeding."
 
 ## Source-Specific Handling
 
-### From the user
-- **Trusted** - implement after understanding
-- **Still ask** if scope unclear
-- **No performative agreement**
-- **Skip to action** or technical acknowledgment
+**From the user:** trusted; implement after understanding. Still ask if scope is unclear. No performative agreement.
 
-### From External Reviewers
+**From external reviewers:** be skeptical, but check carefully.
+
 ```
 BEFORE implementing:
-  1. Check: Technically correct for THIS codebase?
-  2. Check: Breaks existing functionality?
-  3. Check: Reason for current implementation?
-  4. Check: Works on all platforms/versions?
-  5. Check: Does reviewer understand full context?
-  6. Check: Inspect the symbol being discussed with Miller `inspect(target, depth=overview)` — escalate to `depth=full` for the symbol the feedback centers on
-  7. Check: Find references to verify suggested changes won't break callers with Miller `trace`
+  1. Technically correct for THIS codebase?
+  2. Breaks existing functionality?
+  3. Reason for the current implementation?
+  4. Works on all platforms/versions?
+  5. Does the reviewer have the full context?
+  6. Inspect the symbol with Miller `inspect(target, depth=overview)`; `depth=full` for the symbol the feedback centers on
+  7. Find references with Miller `trace` so the change won't break callers
 
-IF suggestion seems wrong:
-  Push back with technical reasoning
-
+IF suggestion seems wrong: push back with technical reasoning
 IF can't easily verify:
   Investigate with Miller and the smallest relevant verification command.
-  If still not verifiable during an approved autonomous run, classify it as flagged-for-review in the report and continue unless it matches the blocker taxonomy.
-  If this is an interactive review outside an approved run, ask one specific clarifying question.
-
+  Autonomous run: classify as flagged-for-review in the report and continue unless it matches the blocker taxonomy.
+  Interactive: ask one specific clarifying question.
 IF conflicts with the user's prior decisions:
-  In an approved autonomous run, keep the prior decision, flag the conflict in the report, and continue unless it matches the blocker taxonomy.
-  Outside an approved run, ask one specific question before overriding the prior decision.
+  Autonomous run: keep the prior decision, flag the conflict in the report, continue unless it matches the blocker taxonomy.
+  Interactive: ask one specific question before overriding.
 ```
 
 External architecture feedback is evaluated through `razorback:architecture-quality` before implementation.
 
-**Rule:** external feedback - be skeptical, but check carefully.
-
-## YAGNI Check for "Professional" Features
-
-```
-IF reviewer suggests "implementing properly":
-  Find references with Miller `trace` to check actual usage across codebase
-
-  IF unused: "This endpoint isn't called. Remove it (YAGNI)?"
-  IF used: Then implement properly
-```
-
-**Rule:** the reviewer doesn't set scope, the user does. If the feature isn't needed, don't add it.
+**YAGNI check:** when a reviewer suggests "implementing properly", find references with Miller `trace`. Unused → "This endpoint isn't called. Remove it (YAGNI)?" Used → implement properly. The reviewer doesn't set scope; the user does.
 
 ## Implementation Order
 
-```
-FOR multi-item feedback:
-  1. Clarify anything unclear FIRST
-  2. Then implement in this order:
-     - Blocking issues (breaks, security)
-     - Simple fixes (typos, imports)
-     - Complex fixes (refactoring, logic)
-  3. Test each fix individually
-  4. Verify no regressions
-```
+1. Clarify anything unclear first.
+2. Blocking issues (breaks, security), then simple fixes (typos, imports), then complex fixes (refactoring, logic).
+3. Test each fix individually; verify no regressions.
 
 ## When To Push Back
 
-Push back when:
-- Suggestion breaks existing functionality
-- Reviewer lacks full context
-- Violates YAGNI (unused feature)
-- Technically incorrect for this stack
-- Legacy/compatibility reasons exist
-- Conflicts with the user's architectural decisions
+Push back when the suggestion breaks existing functionality, the reviewer lacks context, it violates YAGNI, it is incorrect for this stack, legacy/compatibility reasons exist, or it conflicts with the user's architectural decisions. Use technical reasoning, ask specific questions, reference working tests/code, involve the user if architectural.
 
-**How to push back:**
-- Use technical reasoning, not defensiveness
-- Ask specific questions
-- Reference working tests/code
-- Involve the user if architectural
+Example: reviewer says "Remove legacy code" → "Checking... build target is 10.15+, this API needs 13+. Need legacy for backward compat. Current impl has wrong bundle ID - fix it or drop pre-13 support?"
 
-## Acknowledging Correct Feedback
+## Acknowledging and Correcting
 
-When feedback IS correct:
-```
-✅ "Fixed. [Brief description of what changed]"
-✅ "Good catch - [specific issue]. Fixed in [location]."
-✅ [Just fix it and show in the code]
+Correct feedback: "Fixed. [what changed]" or "Good catch - [issue]. Fixed in [location]." Or just fix it; the code shows you heard.
 
-❌ "You're absolutely right!"
-❌ "Great point!"
-❌ "Thanks for catching that!"
-❌ "Thanks for [anything]"
-❌ ANY gratitude expression
-```
-
-**Why no thanks:** Actions speak. Just fix it. The code itself shows you heard the feedback.
-
-**If you catch yourself about to write "Thanks":** DELETE IT. State the fix instead.
-
-## Gracefully Correcting Your Pushback
-
-If you pushed back and were wrong:
-```
-✅ "You were right - I checked [X] and it does [Y]. Implementing now."
-✅ "Verified this and you're correct. My initial understanding was wrong because [reason]. Fixing."
-
-❌ Long apology
-❌ Defending why you pushed back
-❌ Over-explaining
-```
-
-State the correction factually and move on.
+Wrong pushback: "You were right - I checked [X] and it does [Y]. Implementing now." No long apology, no defending the pushback.
 
 ## Common Mistakes
 
@@ -192,23 +88,9 @@ State the correction factually and move on.
 | Partial implementation | Clarify all items first |
 | Can't verify, proceed anyway | Investigate, then classify under blocker taxonomy or flag for review |
 
-## Real Examples
-
-**Technical Verification (Good):**
-```
-Reviewer: "Remove legacy code"
-✅ "Checking... build target is 10.15+, this API needs 13+. Need legacy for backward compat. Current impl has wrong bundle ID - fix it or drop pre-13 support?"
-```
-
-**YAGNI (Good):**
-```
-Reviewer: "Implement proper metrics tracking with database, date filters, CSV export"
-✅ "Grepped codebase - nothing calls this endpoint. Remove it (YAGNI)? Or is there usage I'm missing?"
-```
-
 ## GitHub Thread Replies
 
-When replying to inline review comments on GitHub, reply in the comment thread (`gh api repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies`), not as a top-level PR comment.
+Reply to inline review comments in the comment thread (`gh api repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies`), not as a top-level PR comment.
 
 ## Rationalizations
 
@@ -222,13 +104,5 @@ When replying to inline review comments on GitHub, reply in the comment thread (
 ## It's working if
 
 - Every implemented item was verified against the code first; every dismissed one carries technical reasoning.
-- Replies contain zero gratitude or agreement filler — requirements restated, or fixes shown.
+- Replies contain zero gratitude or agreement filler.
 - Fixes landed one at a time, each tested, blocking issues first.
-
-## The Bottom Line
-
-**External feedback = suggestions to evaluate, not orders to follow.**
-
-Verify. Question. Then implement.
-
-No performative agreement. Technical rigor always.

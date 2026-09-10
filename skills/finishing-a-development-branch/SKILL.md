@@ -5,382 +5,158 @@ description: Use when implementation is complete, branch verification passes, an
 
 # Finishing a Development Branch
 
-## Overview
-
-Development work ends in one of two flows: an autonomous push-and-PR, or an interactive 4-option menu. Both start behind the same gate — the project-defined branch verification must pass before anything is pushed, merged, or offered. In Autonomous Mode the run always stops at PR creation; merge is never automatic.
-
-**Core principle:** Verify the branch gate -> choose mode (autonomous default) -> execute -> reconcile source-control state.
+Two flows behind one gate: the branch gate must pass before any push, merge, or menu. Autonomous Mode ends at PR creation; merge is never automatic.
 
 **Announce at start:** "I'm using the finishing-a-development-branch skill to complete this work."
 
-## When to Use
+**Not here:** `razorback:pre-merge-review` already ran. Quick-fix work (`razorback:fixing-small-issues`) never reaches this skill.
 
-Use when implementation is complete and the branch is ready to integrate. The execution skills (`razorback:executing-plans`, `razorback:subagent-driven-development`) invoke it as their final step; the user can also invoke it directly ("finish this branch").
+## Mode selection
 
-**Not here:** choosing or running a pre-merge external reviewer — `razorback:pre-merge-review` already ran before this skill starts. Quick-fix-tier work (`razorback:fixing-small-issues`) finishes on the current checkout and never reaches this skill.
-
-## Mode Selection
-
-If the agent was just finishing an autonomous execution run (i.e. this skill is being invoked as the final step of `razorback:executing-plans` or `razorback:subagent-driven-development`), use **Autonomous Mode**. If the user invoked the skill directly (e.g. "finish this branch"), use **Interactive Mode**. In ambiguous cases, default to Autonomous - run-to-completion is the bias once the required publication authority exists.
+- Invoked as the final step of `razorback:executing-plans` or `razorback:subagent-driven-development` → **Autonomous Mode**.
+- Invoked directly by the user ("finish this branch") → **Interactive Mode**. Read `references/interactive-mode.md` when the user invoked this skill directly.
+- Ambiguous → Autonomous.
 
 ## Autonomous Mode
 
-No options menu. With recorded authority, commit, push the branch, open a PR with the morning-report summary, write the full report to `.memories/`, emit a one-line terminal pointer, and exit. Merge is never auto-performed. Missing publication authority uses the single boundary below.
+No options menu. With recorded authority: commit, push, open a PR with the morning-report summary, write the full report to `.memories/`, emit a one-line terminal pointer, exit.
 
 ### Step 0: Resolve publication authority
 
-Read the execution handoff's authority ledger and preserve its cited sources across turns:
-
-- `local_commit_authority` (authorized by the implementation scope unless explicitly prohibited)
-- `push_authority`
-- `pr_authority`
-
-Implementation approval authorizes normal local commits but does not grant push or PR authority. Record missing push/PR entries without prompting here; Steps 1–4 first perform local verification, reconcile source-control state, prepare the report, and commit it. Step 4a owns the single request for missing publication authority after those materials are ready. If a user or host instruction explicitly prohibits commits, use the existing approval/blocker boundary after the local diff and review materials are ready instead of creating a second execution state.
+Read the handoff's authority ledger and preserve its cited sources: `local_commit_authority` (authorized by implementation scope unless explicitly prohibited), `push_authority`, `pr_authority`. Implementation approval grants local commits, not push or PR. Record missing push/PR entries without prompting here; Step 4a owns the single request after Steps 1–4 prepare the materials. If commits are explicitly prohibited, use the approval/blocker boundary once the local diff and review materials are ready.
 
 ### Step 1: Verify branch gate
 
-Use the plan's Verification Strategy and verification ledger.
+Run the plan's `branch-gate` scope, or reuse a passing verification-ledger entry for current HEAD. Add required `expensive-specialist` scopes. Running the branch gate includes running the plan's declared Security scope commands (`security-secrets`, `security-deps` — `razorback:security-review`); `none declared` skips them and the report says so.
 
-Run the project-defined `branch-gate` scope before push or PR. If the verification ledger already has a passing `branch-gate` entry for the current HEAD, reuse that evidence instead of rerunning the same command. Add any required `expensive-specialist` scopes when touched areas demand them. Running the branch gate includes running the plan's declared Security scope commands (`security-secrets`, `security-deps` — `razorback:security-review`); a plan with `none declared` skips them, and the morning report renders that.
+On failure: keep the branch local; diagnose, repair, and rerun the failed scope while a safe, plan-consistent recovery path remains. Follow razorback:security-review for scanner or security-finding failures. Record each attempt and refresh the ledger for the resulting HEAD. Do not classify the first failed run as blocker taxonomy #5.
 
-If required verification fails, keep the branch local and diagnose, repair, and rerun the failed scope while a safe, plan-consistent recovery path remains. Follow razorback:security-review for scanner or security-finding failures so its hard gates remain intact. Record each recovery attempt and refresh the verification ledger for the resulting HEAD. Do not classify the first failed run as blocker taxonomy #5.
-
-Only after recovery paths are exhausted, classify the failure with the canonical blocker taxonomy. Repeated test failures with no further viable strategy are blocker taxonomy #5; environmental failures may instead be taxonomy #1. Do **not** create a PR. Instead:
-- Render a partial morning report with `Status: Blocked`, the failure summary in the `Tests` section, and the blocker description in `Blockers hit`.
-- Write it to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md`.
-- Emit terminal one-liner: `Blocked. Report: .memories/autonomous-run-YYYY-MM-DD-<slug>.md` and exit.
-
-If required verification passes, continue.
+Only after recovery paths are exhausted, classify with the blocker taxonomy (#5 for unfixable test failures, #1 for environmental). No PR. Render a partial report with `Status: Blocked` (failure in `Tests`, blocker in `Blockers hit`), write it to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md`, emit `Blocked. Report: <path>`, exit.
 
 ### Step 2: Determine base branch and merge-base commit
 
-`git merge-base` returns a commit SHA, not a branch name. Autonomous Mode needs both: the branch name for `gh pr create --base`, and the SHA for diff-range computation. Resolve them as two separate values:
+Resolve two values: `$BASE_BRANCH` for `gh pr create --base`, `$BASE_SHA` for diff ranges.
 
 ```bash
-# Prefer an explicit base from the plan/user, then the remote's default branch,
-# then main/master. Merge-base-with-main alone is wrong for repos whose PRs
-# target another branch (develop, release/*) — main almost always shares history.
-if [ -n "$PLAN_BASE" ]; then
-  BASE_BRANCH="$PLAN_BASE"
-elif DEFAULT_REF=$(git symbolic-ref --quiet refs/remotes/origin/HEAD 2>/dev/null); then
-  BASE_BRANCH="${DEFAULT_REF#refs/remotes/origin/}"
-elif git show-ref --verify --quiet refs/heads/main; then
-  BASE_BRANCH=main
-elif git show-ref --verify --quiet refs/heads/master; then
-  BASE_BRANCH=master
+if [ -n "$PLAN_BASE" ]; then BASE_BRANCH="$PLAN_BASE"
+elif DEFAULT_REF=$(git symbolic-ref --quiet refs/remotes/origin/HEAD 2>/dev/null); then BASE_BRANCH="${DEFAULT_REF#refs/remotes/origin/}"
+elif git show-ref --verify --quiet refs/heads/main; then BASE_BRANCH=main
+elif git show-ref --verify --quiet refs/heads/master; then BASE_BRANCH=master
 fi
-
-if [ -z "$BASE_BRANCH" ] || ! BASE_SHA=$(git merge-base HEAD "$BASE_BRANCH" 2>/dev/null); then
-  echo "Cannot determine PR base branch/merge-base." >&2
-  # Blocker taxonomy #3 (plan-contradicting data): the branch doesn't descend
-  # from a known base. Emit a Blocked report per the failure protocol below and
-  # exit. Do NOT push.
-fi
+BASE_SHA=$(git merge-base HEAD "$BASE_BRANCH")
 ```
 
-Use `$BASE_SHA` for any `base..HEAD` range computation (e.g. `git diff --stat $BASE_SHA..HEAD` in Step 3). Use `$BASE_BRANCH` for `gh pr create --base "$BASE_BRANCH"` in Step 6.
-
-**If both lookups fail** (no `main`, no `master` ancestor), that's a blocker per taxonomy #3. Render a partial morning report with `Status: Blocked`, describe the missing base in `Blockers hit`, write it to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md`, emit the terminal one-liner, and exit. Do **not** push.
+Merge-base with `main` alone is wrong for repos whose PRs target `develop` or `release/*`. If either value cannot be resolved: blocker taxonomy #3. Render `Status: Blocked` per Step 1, do not push.
 
 ### Step 2a: Reconcile source-control state
 
-Run Check B of the `razorback:using-razorback` skill's `references/source-control-hygiene.md`. This is the run's last chance to notice work that is finished but not integrated — after this, the report says "Complete".
+Run Check B of the `razorback:using-razorback` skill's `references/source-control-hygiene.md`. Last chance to notice finished-but-unintegrated work.
 
 ```bash
 git status --short --branch
 git worktree list
-# per listed worktree:
-git -C <path> status --short --branch
+git -C <path> status --short --branch        # per listed worktree
 git log --oneline "$BASE_BRANCH".."<branch>"
 ```
 
-Classify every worktree and branch the inventory names:
+Classify every worktree and branch:
 
-- **Landed** — its commits are ancestors of this branch, or already merged into the base. Nothing to do.
-- **Riding along** — its commits are on the branch this run is about to push. They ship with the PR. Nothing to do.
-- **Stranded** — commits absent from both the base and this branch, or uncommitted changes in a worktree this run created. **These must be resolved or named.**
-- **The user's** — a worktree outside razorback-managed locations, or a branch this run did not create. Report the path; change nothing.
+| Class | Meaning | Action |
+|-------|---------|--------|
+| Landed | Commits are ancestors of this branch or merged into base | None |
+| Riding along | Commits are on the branch about to be pushed | None |
+| Stranded | Commits absent from base and this branch, or uncommitted changes in a worktree this run created | Land it (then rerun Step 1 — the diff changed) or name it |
+| The user's | Worktree outside razorback-managed locations, or a branch this run did not create | Report the path; change nothing |
 
-For stranded work, take the plan-consistent path: if it belongs in this PR and merges cleanly, land it on the branch and re-run the branch gate (the diff changed, so Step 1's evidence is stale). If it does not belong, leave it and name it.
-
-Autonomous Mode does **not** remove worktrees. The PR is open and the branch is still live; disposition is the user's call after review.
-
-Feed the outcome into the report's `Source control` section (Step 3). Stranded work that was deliberately left is a `Next steps` item, not a blocker — the run still reports `Complete`. Stranded work you could neither land nor explain is a judgment call to log, not a reason to withhold the report.
+Stranded work deliberately left is a `Next steps` item, not a blocker; the run still reports `Complete`. Stranded work you can neither land nor explain is a judgment call to log, not a reason to withhold the report. Autonomous Mode never removes worktrees.
 
 ### Step 3: Render morning report
 
-Fill the placeholders in `./morning-report-template.md` using the fields the caller accumulated during execution (plan name + path, branch name, phases complete/total, tasks complete/total, duration, publication authority with sources, judgment calls log, external review outcome, tests summary, blockers, files changed from `git diff --stat $BASE_SHA..HEAD`, source-control state from Step 2a, next steps).
+Fill `./morning-report-template.md` from the fields accumulated during execution (plan name and path, branch, phases and tasks complete/total, duration, publication authority with sources, judgment calls, external review outcome, tests, blockers, `git diff --stat $BASE_SHA..HEAD`, Step 2a source-control state, next steps).
 
-Before Step 4, render `Status: Awaiting publication approval` when `push_authority` or `pr_authority` is missing. The prepared report must already carry this accurate status before its commit; Step 4a asks using the prepared report and does not dirty committed metadata merely to mark the wait.
+Render `Status: Awaiting publication approval` when `push_authority` or `pr_authority` is missing. The report carries this status before its commit; Step 4a asks using the prepared report and does not dirty committed metadata to mark the wait.
 
-Produce three renderings:
-- **Full report** — every section filled in, for `.memories/` and for review.
-- **PR summary** — status, What shipped, External review, Blockers, Next steps only. The Judgment calls section is not inlined in the PR description; the PR body points at the `.memories/` file instead (committed in Step 4, so the link is live the moment the PR opens).
-- **Report digest (opt-in)** — the full report's `.html` sibling (same basename), composed per the `razorback:using-razorback` skill's `references/digest-kit.md`. Write it only when the user asked for a digest in this session or in project instructions. Never generate one unprompted. When no digest was requested, skip every digest step below.
+Three renderings:
+- **Full report** — every section, for `.memories/`.
+- **PR summary** — status, What shipped, External review, Blockers, Next steps. Judgment calls are not inlined; the PR body links the `.memories/` file (committed in Step 4, so the link is live when the PR opens).
+- **Report digest (opt-in)** — the full report's `.html` sibling (same basename) per the `razorback:using-razorback` skill's `references/digest-kit.md`. Write it only when the user asked for a digest in this session or in project instructions. When no digest was requested, skip every digest step below.
 
 ### Step 4: Write full report + commit
 
-Write the full rendered report to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md` — plus its digest sibling `.memories/autonomous-run-YYYY-MM-DD-<slug>.html` when one was requested — where `<slug>` is a short kebab-case identifier for the plan (e.g. `autonomous-execution`). Committing them before the push means the PR includes the report from its first revision — no dead link in the PR body. The PR does not exist yet, so render `{{pr_url}}` as `pending — filled in after PR creation`; Step 7 writes the real URL back.
+Write `.memories/autonomous-run-YYYY-MM-DD-<slug>.md` (plus the `.html` sibling when requested); `<slug>` is a short kebab-case plan identifier. Render `{{pr_url}}` as `pending — filled in after PR creation`; Step 7 writes the real URL.
 
-Checkpoint before every commit in this skill and explicitly stage the Goldfish checkpoint artifact with that commit's owned report files. One checkpoint covers one actual commit. Never make a checkpoint-only follow-up commit; that would recurse into another required checkpoint.
+Checkpoint before every commit in this skill and explicitly stage the Goldfish checkpoint artifact with that commit's report files. One checkpoint per commit. Never make a checkpoint-only follow-up commit.
 
 ```bash
-git add <checkpoint-path> .memories/autonomous-run-YYYY-MM-DD-<slug>.md   # add the .html sibling too when a digest was requested
+git add <checkpoint-path> .memories/autonomous-run-YYYY-MM-DD-<slug>.md   # plus the .html sibling when requested
 git commit -m "docs: autonomous run report for <plan name>"
 ```
 
-This commit (and the Step 7 URL write-back) are metadata-only: they touch nothing outside `.memories/`, so the Step 1 branch-gate evidence carries over to the new HEAD. If anything outside `.memories/` changes after Step 1, the evidence is invalidated — re-run the branch gate before pushing.
-
-When a digest exists, every report mutation after this step updates the digest sibling's matching field and stages both files in the same commit — a committed digest that contradicts its markdown is worse than none.
+This commit and the Step 7 write-back are metadata-only (`.memories/` only), so Step 1 evidence carries over. Any change outside `.memories/` after Step 1 invalidates the evidence: rerun the branch gate before pushing. When a digest exists, every later report mutation updates the digest's matching field and stages both files in the same commit.
 
 ### Step 4a: Request missing publication authority once
 
-After Steps 1–4 have produced local verification, source-control reconciliation, and the committed prepared report, ask using the prepared report once for all missing push and PR actions. This is an approval boundary, not a failed implementation or blocker. Emit an accurate local terminal pointer and stop until the user answers.
+After Steps 1–4 have produced local verification, source-control reconciliation, and the committed prepared report, ask using the prepared report once for all missing push and PR actions. This is an approval boundary, not a blocker. Emit a local terminal pointer and stop until the user answers.
 
-On resumption, preserve every previously authorized entry and its source, update only the actions the answer grants, and do not repeat granted questions. Persist report status and authority metadata updates: checkpoint, explicitly stage the checkpoint artifact with the report and digest when present, commit, then run the source-control state check before push. This metadata-only commit preserves Step 1's verification evidence under Step 4's rule. If anything outside `.memories/` changed, rerun the affected branch gate before publication. If authority remains missing, keep `Status: Awaiting publication approval`; do not call the implementation blocked or failed.
+On resumption: preserve every previously authorized entry and its source; update only what the answer grants; never repeat granted questions. Persist report status and authority metadata updates: checkpoint, explicitly stage the checkpoint artifact with the report (and digest), commit, then run the source-control state check before push. If anything outside `.memories/` changed, rerun the affected branch gate. If authority remains missing, keep `Status: Awaiting publication approval`; do not call the work blocked or failed.
 
 ### Step 5: Push branch
-
-Run the authorized push and capture its exact output and exit status.
 
 ```bash
 git push -u origin <branch>
 ```
 
-On failure, inspect the exact failure and remote branch state before deciding whether to retry. Refresh the remote ref, compare it with local HEAD, and treat a push that already landed as success. For transient network failures only, make at most two retries after the initial attempt, with bounded backoff and a fresh remote-state check before each retry.
+Capture exact output and exit status. On failure, inspect the exact failure and remote branch state before deciding whether to retry:
 
-Do not retry auth or permission failures unchanged. For non-fast-forward results, fetch and inspect both histories; reconcile only when a safe, plan-consistent fast-forward or ordinary merge/rebase into the feature branch is authorized. Any reconciliation that changes HEAD invalidates prior evidence: rerun Step 1's affected branch gate, Step 2a's source-control reconciliation, and the authority check before retrying. Destructive history rewriting returns to the established approval boundary. Never use force push. Declare a blocker only after these safe recovery paths are exhausted, then checkpoint before the report commit, record the exact diagnostics, set `Status: Blocked`, emit the terminal pointer, and exit.
+- Refresh the remote ref and compare with local HEAD; a push that already landed is success.
+- Transient network failures only: at most two retries with bounded backoff and a fresh remote-state check before each.
+- Auth or permission failures: do not retry unchanged.
+- Non-fast-forward: fetch and inspect both histories; reconcile only via an authorized, plan-consistent fast-forward or ordinary merge/rebase into the feature branch. Any reconciliation that changes HEAD invalidates prior evidence: rerun Step 1's affected gate, Step 2a, and the authority check before retrying.
+- History rewriting returns to the approval boundary. Never force push.
+
+Declare a blocker only after these paths are exhausted: checkpoint before the report commit, record the diagnostics, set `Status: Blocked`, emit the terminal pointer, exit.
 
 ### Step 6: Create PR
 
-Work down the forge ladder. Stop at the first rung that succeeds; a rung that is unavailable or fails (not installed, auth, network, repo not on origin) drops to the next.
+Walk the forge ladder; stop at the first rung that succeeds.
 
-1. **`gh` (preferred — machine-readable URL for the Step 7 write-back):**
-
-```bash
-gh pr create \
-  --base "$BASE_BRANCH" \
-  --title "<plan name or feature name>" \
-  --body "$(rendered_pr_summary)"
-```
-
-Capture the PR URL from `gh`'s output for Step 7.
-
-2. **Another forge CLI, if present** — `glab mr create` (GitLab) or `tea pr create` (Gitea/Forgejo), with the equivalent base/title/body arguments. Capture the PR URL it prints for Step 7.
-
-3. **The creation URL the forge printed on push** — many forges answer the Step 5 `git push` with a ready-made PR-creation URL. Record it in the report's `PR` field as `not created — open <creation-url>`, set `Status: Partial` (branch pushed; PR needs one click), commit and push the update (both siblings, per Step 4), and emit the URL in the terminal pointer.
-
-4. **No rung worked** — update the report with the failure in `Blockers hit` and `Status: Partial` (the branch was pushed but the PR was not created), commit and push the update (both siblings, per Step 4), emit the terminal pointer, and exit.
+1. `gh pr create --base "$BASE_BRANCH" --title "<plan or feature name>" --body "$(rendered_pr_summary)"` — capture the URL for Step 7.
+2. Another forge CLI (`glab mr create`, `tea pr create`) with equivalent arguments — capture the URL.
+3. The creation URL the forge printed on push — record `PR: not created — open <creation-url>`, `Status: Partial`, commit and push the update (both siblings), emit the URL in the pointer.
+4. No rung worked — record the failure in `Blockers hit`, `Status: Partial`, commit and push the update, emit the pointer, exit.
 
 ### Step 7: Write the PR URL back into the report
 
-Applies to ladder rungs 1–2, which return the created PR's URL; rungs 3–4 already wrote their outcome in Step 6. Replace the `pending — filled in after PR creation` value in the committed report with the captured URL, update the digest's `PR` field to match when a digest exists (per Step 4), then commit and push the update. This is a metadata-only commit; the branch-gate evidence still holds (see Step 4).
+Rungs 1–2 only. Replace `pending — filled in after PR creation` with the URL, update the digest's `PR` field when present, commit, push. Metadata-only; gate evidence holds.
 
-Write the run's final post-PR checkpoint here, after the PR exists and before the PR-URL metadata commit. Explicitly stage that checkpoint artifact alongside the URL report and digest when present in the same commit. This satisfies the SDD milestone; do not emit a duplicate checkpoint after `finishing-a-development-branch` returns.
+Write the run's final post-PR checkpoint here, after the PR exists and before the PR-URL metadata commit. Explicitly stage that checkpoint artifact with the URL report and digest in the same commit. This satisfies the SDD milestone; do not emit a duplicate checkpoint after this skill returns.
 
 ```bash
-git add <checkpoint-path> .memories/autonomous-run-YYYY-MM-DD-<slug>.md   # add the .html sibling too when a digest was requested
+git add <checkpoint-path> .memories/autonomous-run-YYYY-MM-DD-<slug>.md   # plus the .html sibling when requested
 git commit -m "docs: record PR URL in run report"
 git push
 ```
 
 ### Step 8: Emit terminal pointer
 
-One line, then exit:
-
 ```
 Done. PR: <url>. Report: .memories/autonomous-run-YYYY-MM-DD-<slug>.md.
 ```
 
-When a digest was requested, append: ` Digest: .memories/autonomous-run-YYYY-MM-DD-<slug>.html`
+Append ` Digest: .memories/autonomous-run-YYYY-MM-DD-<slug>.html` when a digest was requested.
 
 ### Autonomous Mode rules
 
-- **Never merge the PR or target branch.** Stopping at PR creation is the point; integrating reviewed remote changes into the feature branch under Step 5 does not merge the PR.
-- **Never show an options menu.** The only routine publication-approval prompt is Step 4a's single request after local work and review materials are ready. Genuine credential, safety, or history blockers still use the smallest necessary question allowed by the blocker taxonomy.
-- **Never fall back to Interactive Mode mid-run.** If a step fails (push rejected, every forge-ladder rung failed, remote mismatch), emit a partial report with `Status: Blocked` or `Status: Partial` as appropriate and let the user resolve from there.
-- **Always write the report to `.memories/`**, even on blocked/partial outcomes — the report is the user's morning read regardless of outcome.
-- **Never report `Complete` with unaccounted source-control state.** Step 2a either lands stranded work or names it in the `Source control` section. A run that leaves commits stranded in another worktree without saying so is not complete, whatever the tests say.
+- **Never merge the PR or target branch.** Integrating reviewed remote changes into the feature branch under Step 5 is not a merge of the PR.
+- **Never show an options menu.** The only routine prompt is Step 4a's single request after local work and review materials are ready. Genuine credential, safety, or history blockers use the smallest question the blocker taxonomy allows.
+- **Never fall back to Interactive Mode mid-run.** On a failed step, emit `Status: Blocked` or `Status: Partial` and exit.
+- **Always write the report to `.memories/`**, on every outcome.
+- **Never report `Complete` with unaccounted source-control state.** Step 2a lands stranded work or names it in `Source control`.
 - **Never remove a worktree in Autonomous Mode.** The PR is open; disposition is the user's call.
 
-## Interactive Mode
+## Provenance rule (worktree removal, Interactive Mode)
 
-Used when the user invokes this skill directly ("finish this branch"). Presents the classic 4-option menu.
-
-### Step 1: Verify Branch Gate
-
-**Before presenting options, verify the project-defined branch gate passes or reuse a passing ledger entry for current HEAD:**
-
-```bash
-# Run the command specified by the plan's branch-gate scope
-<branch-gate command>
-```
-
-Running the branch gate includes running the plan's declared Security scope commands (`security-secrets`, `security-deps` — `razorback:security-review`); a plan with `none declared` skips them.
-
-**If verification fails:**
-```
-Branch verification failing (<N> failures). Must fix before completing:
-
-[Show failures]
-
-Cannot proceed with merge/PR until branch verification passes.
-```
-
-Stop. Don't proceed to Step 2.
-
-**If verification passes:** Continue to Step 2.
-
-### Step 2: Determine Base Branch
-
-Resolve `$BASE_BRANCH` and `$BASE_SHA` with the same lookup chain as Autonomous Step 2 (explicit plan/user base -> remote default branch -> `main` -> `master`), with two Interactive-only differences.
-
-First, capture the values Step 5 needs before Step 4 changes branch and directory:
-
-```bash
-FEATURE_BRANCH=$(git branch --show-current)
-WORKTREE_PATH=$(git rev-parse --show-toplevel)
-```
-
-Second, resolution failure is not a blocker here — ask: "This branch split from main - is that correct?" Do not proceed to Step 3 until the base branch is confirmed.
-
-### Step 3: Present Options
-
-Present exactly these 4 options:
-
-```
-Implementation complete. What would you like to do?
-
-1. Merge back to <base-branch> locally
-2. Push and create a Pull Request
-3. Keep the branch as-is (I'll handle it later)
-4. Discard this work
-
-Which option?
-```
-
-**Don't add explanation** - keep options concise.
-
-### Step 4: Execute Choice
-
-#### Option 1: Merge Locally
-
-```bash
-# Switch to base branch
-git checkout <base-branch>
-
-# Pull latest
-git pull
-
-# Merge feature branch
-git merge <feature-branch>
-
-# Verify branch gate on merged result
-<branch-gate command>
-
-# If verification passes
-git branch -d <feature-branch>
-```
-
-Then: Cleanup worktree (Step 5)
-
-#### Option 2: Push and Create PR
-
-```bash
-# Push branch
-git push -u origin <feature-branch>
-
-# Create PR
-gh pr create --title "<title>" --body "$(cat <<'EOF'
-## Summary
-<2-3 bullets of what changed>
-
-## Test Plan
-- [ ] <verification steps>
-EOF
-)"
-```
-
-If `gh` is unavailable or fails, walk the same forge ladder as Autonomous Step 6 (forge CLI → push-printed creation URL).
-
-Then: Cleanup worktree (Step 5)
-
-#### Option 3: Keep As-Is
-
-Report: "Keeping branch <name>. Worktree preserved at <path>."
-
-**Don't cleanup worktree.**
-
-#### Option 4: Discard
-
-**Confirm first:**
-```
-This will permanently delete:
-- Branch <name>
-- All commits: <commit-list>
-- Worktree at <path>
-
-Type 'discard' to confirm.
-```
-
-Wait for exact confirmation.
-
-If confirmed:
-```bash
-git checkout <base-branch>
-git branch -D <feature-branch>
-```
-
-Then: Cleanup worktree (Step 5)
-
-### Step 5: Cleanup Worktree
-
-**For Options 1, 2, 4:**
-
-Use `$WORKTREE_PATH` and `$FEATURE_BRANCH` captured in Step 2 — Step 4 already checked out the base branch, so re-deriving them here names the wrong branch and the cleanup silently no-ops.
-
-Check whether the captured path is a listed worktree:
-```bash
-git worktree list | grep "$WORKTREE_PATH"
-```
-
-**Provenance rule** (canonical definition: the `razorback:using-razorback` skill's `references/source-control-hygiene.md`): a worktree is yours to remove when this run created it, or when its path lies under a razorback-managed location — `.worktrees/`, `worktrees/`, or `~/.config/razorback/worktrees/<project>/`. These are the locations `razorback:using-git-worktrees` Step 1b actually creates. A worktree anywhere else belongs to the host or the user: leave it in place and report its path instead.
-
-If the path is listed **and** provenance says it is yours:
-```bash
-git worktree remove "$WORKTREE_PATH"
-```
-
-Then report: "Removed worktree $WORKTREE_PATH for branch $FEATURE_BRANCH."
-
-**For Option 3:** Keep worktree.
-
-### Step 6: Reconcile Remaining Source-Control State
-
-Run Check B of the `razorback:using-razorback` skill's `references/source-control-hygiene.md` before reporting the branch finished. Report one line per outstanding item — a worktree still holding uncommitted changes, or a branch with commits absent from the base and from any PR opened here. Land it or name it; do not report "done" with the state unaccounted for.
-
-## Quick Reference
-
-| Option | Merge | Push | Keep Worktree | Cleanup Branch |
-|--------|-------|------|---------------|----------------|
-| 1. Merge locally | Yes | - | - | Yes |
-| 2. Create PR | - | Yes | Yes | - |
-| 3. Keep as-is | - | - | Yes | - |
-| 4. Discard | - | - | - | Yes (force) |
-
-## Common Mistakes
-
-**Open-ended questions**
-- **Problem:** "What should I do next?" -> ambiguous
-- **Fix:** Present exactly 4 structured options
-
-**Automatic worktree cleanup**
-- **Problem:** Remove worktree when might need it (Option 2, 3)
-- **Fix:** Only cleanup for Options 1 and 4
-
-**No confirmation for discard**
-- **Problem:** Accidentally delete work
-- **Fix:** Require typed "discard" confirmation
+Canonical definition: the `razorback:using-razorback` skill's `references/source-control-hygiene.md`. A worktree is yours to remove when this run created it, or when its path lies under a razorback-managed location — `.worktrees/`, `worktrees/`, or `~/.config/razorback/worktrees/<project>/` — the locations `razorback:using-git-worktrees` Step 1 creates. Any other worktree belongs to the host or the user: leave it and report its path.
 
 ## Rationalizations
 
@@ -407,20 +183,7 @@ Run Check B of the `razorback:using-razorback` skill's `references/source-contro
 - In Interactive Mode, present exactly 4 options and clean up the worktree for Options 1 & 4 only
 - In Autonomous Mode, emit the morning report to all three destinations (PR summary, `.memories/` file, terminal one-liner) regardless of outcome
 
-## It's working if
-
-- The branch gate passed (or a current-HEAD ledger entry was cited) before any push, merge, or menu.
-- Autonomous runs ended at an open PR plus a committed `.memories/` report — no merge, no menu, no prompt.
-- Every worktree and branch the inventory named is landed, riding along, or named in the report.
-- Interactive runs removed only worktrees the provenance rule says are razorback's.
-
 ## Integration
 
-**Called by:**
-- `razorback:executing-plans` (Step 4) — Autonomous mode when the execution skill finishes cleanly
-- `razorback:subagent-driven-development` (Step 5 or 4a+finish) — Autonomous mode
-- Direct user invocation ("finish this branch") — Interactive mode
-
-**Pairs with:**
-- **razorback:using-git-worktrees** - Cleans up worktree created by that skill (Interactive Mode, Options 1 & 4)
-- **morning-report-template.md** (this directory) — template rendered by Autonomous Mode Step 3
+- **Called by:** `razorback:executing-plans`, `razorback:subagent-driven-development` (Autonomous); direct user invocation (Interactive).
+- **Pairs with:** `razorback:using-git-worktrees` (worktree cleanup, Interactive Options 1 & 4); `morning-report-template.md` (rendered by Step 3).

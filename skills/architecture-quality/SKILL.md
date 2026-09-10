@@ -5,29 +5,17 @@ description: Use when planning or reviewing non-trivial code changes, refactorin
 
 # Architecture Quality
 
-## Overview
+Three modes: **Gate Mode** before non-trivial planning and during review; **Candidate Mode** when structural friction is real and a concrete refactor deserves review; **Audit Mode** when cleanup is itself the request ("reduce complexity," "find duplication") and no change is in flight.
 
-Architecture review runs in three modes: a gate before non-trivial planning and during review, candidates for concrete refactors, and audits when cleanup is itself the request. Mechanical work fast-exits; anything that changes module boundaries, caller-facing interfaces, seams, adapters, or test surface must run the gate.
+**Core principle:** The interface is the test surface. Tests prove behavior through the caller-facing interface, not private plumbing.
 
-**Core principle:** The interface is the test surface. Tests should prove behavior through the caller-facing interface, not through private plumbing.
-
-## When to Use
-
-- **Gate Mode** — before planning or reviewing any non-trivial code change.
-- **Candidate Mode** — when structural friction is real and a concrete refactor deserves review.
-- **Audit Mode** — when the cleanup is itself the request ("reduce complexity," "find duplication," "clean up this area") and no specific change is in flight.
-
-**Not here:** work on the Fast Exit list below — take the fast exit and move on.
-
-Supporting files: `architecture-language.md` for the shared vocabulary; `analysis-heuristics.md` when Gate Mode finds structural signals or Audit Mode is sweeping; `interface-design.md` when the interface shape has more than one plausible lane or the blast radius is medium/high; `deepening.md` when a refactor candidate is accepted, to classify its dependencies and choose the test strategy across the seam.
+Supporting files: `architecture-language.md` (vocabulary); `analysis-heuristics.md` (Gate Mode finds structural signals, or Audit Mode sweeps); `interface-design.md` (more than one plausible interface lane, or blast radius medium/high); `deepening.md` (a candidate is accepted: classify dependencies, choose the test strategy across the seam).
 
 ## Fast Exit
 
-Fast exit is allowed only for docs wording, formatting, manifest version bumps, fixture updates with no behavior change, typo fixes, or rote migrations with no behavior or interface change. If none of those apply, use Gate Mode.
+Only for docs wording, formatting, manifest version bumps, fixture updates with no behavior change, typo fixes, or rote migrations with no behavior or interface change. Anything else runs Gate Mode.
 
 ## Gate Mode
-
-Gate Mode runs by default for non-trivial planning and during review.
 
 ```markdown
 ## Architecture Quality
@@ -49,7 +37,7 @@ or
 **Architecture risk:** low / medium / high
 ```
 
-Use `No Architecture Impact` when the work is mechanical or behavior-local. Otherwise Gate Mode must explain the module/interface shape, why the change stays local or does not, what tests prove it through the caller-facing interface, and which shortcuts were rejected.
+The full shape explains the module/interface, why the change stays local or does not, which tests prove it through the caller-facing interface, and which shortcuts were rejected.
 
 ## Review Checklist
 
@@ -63,8 +51,6 @@ These six questions are the canonical compact checklist. They are duplicated ver
 - Did it fix the structural cause, not only the symptom?
 
 ## Candidate Mode
-
-Use Candidate Mode when structural friction is real and a concrete refactor candidate deserves review.
 
 ```markdown
 ### Candidate: [Name]
@@ -84,23 +70,19 @@ Candidates are approval-gated. Folding non-required candidates into the current 
 
 ## Audit Mode
 
-Audit Mode finds friction and emits candidates; it never implements during the sweep.
+Finds friction and emits candidates; never implements during the sweep.
 
-1. **Read `docs/adr/` first.** Recorded decisions are not re-litigated. Surface a candidate that contradicts an ADR only when the friction is strong enough to justify reopening the decision, and flag the conflict on the candidate. If `docs/adr/` is absent or empty, note that and continue.
-2. **Scope the sweep.** Orient with Miller `context(query)` on the area the user named. If no area was named, rank targets by two signals together: recent churn (`git log --oneline` over a meaningful window — deepening pays off where change keeps landing) and caller count (Miller `trace`/`impact` on the obvious entry points — blast radius). High-churn, high-caller modules first. State what you scoped to — do not boil the whole repo.
-3. **Hunt by smell, not by file.** Walk the heuristics in `analysis-heuristics.md`; each has a `Find it` line naming the Miller calls that gather its evidence. Apply the deletion test to every shallow-looking module.
-4. **Do not design interfaces during the sweep.** Finding friction and designing the fix are separate steps. Interface shape comes after a candidate is accepted, via `interface-design.md` when more than one lane is plausible.
-5. **Emit ranked candidates.** Use the Candidate Mode template. Order by strength and end with a top recommendation: the single candidate to tackle first and why.
+1. **Read `docs/adr/` first.** Recorded decisions are not re-litigated; a candidate that contradicts an ADR must flag the conflict and justify reopening it. Absent or empty → note it and continue.
+2. **Scope the sweep.** Miller `context(query)` on the named area. No area named → rank by recent churn (`git log --oneline` over a meaningful window) and caller count (Miller `trace`/`impact` on entry points) together; high-churn, high-caller first. State the scope — do not boil the whole repo.
+3. **Hunt by smell, not by file.** Walk `analysis-heuristics.md`; each heuristic's `Find it` line names the Miller calls. Apply the deletion test to every shallow-looking module.
+4. **Do not design interfaces during the sweep.** Interface shape comes after acceptance, via `interface-design.md`.
+5. **Emit ranked candidates** in the Candidate Mode template, ordered by strength, ending with the single top recommendation and why.
 
-Strength calibration: **strong** means the evidence is in hand and the deletion test clearly favors the change; **worth exploring** means the smell is real but the payoff is uncertain; **speculative** means the pattern matches but the evidence is thin. Stop the sweep when another heuristic pass adds no new candidates; emit the few worth reviewing and say what was skipped, rather than an exhaustive list.
-
-An audit that finds no real friction says so — do not manufacture candidates to look productive.
+Strength: **strong** = evidence in hand and the deletion test clearly favors the change; **worth exploring** = real smell, uncertain payoff; **speculative** = pattern matches, thin evidence. Stop when another pass adds no candidates; emit the few worth reviewing and say what was skipped. No real friction found is a valid result — do not manufacture candidates.
 
 ## Durable Decisions
 
-Selective architecture decisions become short ADR-style notes in `docs/adr/`. Use the next available `ADR-NNNN` number, or follow the repo-local convention if one already exists. Write a note when an accepted refactor candidate changes module/interface shape, a rejected candidate has a load-bearing reason, a new seam or adapter is established, or repeated review findings show a rule future agents should not rediscover.
-
-ADR shape:
+Write a short ADR in `docs/adr/` (next `ADR-NNNN`, or the repo-local convention) when an accepted candidate changes module/interface shape, a rejected candidate has a load-bearing reason, a new seam or adapter is established, or repeated findings show a rule future agents should not rediscover. Not for minor cleanup or a fast-exit gate.
 
 ```markdown
 # ADR-NNNN: [Decision]
@@ -120,8 +102,6 @@ Files/modules/patterns affected.
 ## Future Agents
 What agents should do or avoid when touching this area.
 ```
-
-Do not write an ADR for minor cleanup or when Gate Mode fast-exits with no architecture impact.
 
 ## Rationalizations
 

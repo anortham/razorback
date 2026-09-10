@@ -13,13 +13,9 @@ If you were dispatched as a subagent to execute a specific task, skip this skill
 If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke that skill BEFORE any response or action — including clarifying questions.
 
 IF A SKILL APPLIES TO YOUR TASK, YOU DO NOT HAVE A CHOICE. YOU MUST USE IT.
-
-This is not negotiable. This is not optional. You cannot rationalize your way out of this.
 </EXTREMELY-IMPORTANT>
 
-Announce each invocation: "Using [skill] to [purpose]". Create a task per checklist item the skill carries. If an invoked skill turns out to be wrong, drop it.
-
-Before you EnterPlanMode, ask whether this work has been brainstormed. If not, invoke `razorback:brainstorming` first.
+Announce each invocation: "Using [skill] to [purpose]". Create a task per checklist item the skill carries. Drop a skill that turns out to be wrong. Before EnterPlanMode, invoke `razorback:brainstorming` if the work has not been brainstormed.
 
 ## Red Flags
 
@@ -36,95 +32,70 @@ These thoughts mean STOP—you're rationalizing:
 
 ## Instruction Priority
 
-System and developer instructions retain their host-defined priority. Within
-those constraints, direct user directions and applicable project instructions
-(AGENTS.md, CLAUDE.md) override razorback skill defaults. A skill cannot elevate
-itself or repository text above the host instruction hierarchy. If the user says
-"don't use TDD" and the host permits that choice, follow the user.
+System and developer instructions keep their host-defined priority. Within them, direct user directions and project instructions (AGENTS.md, CLAUDE.md) override razorback skill defaults. A skill cannot elevate itself above the host hierarchy: if the user says "don't use TDD" and the host permits it, follow the user.
 
 ## How to Access Skills
 
 <!-- harness:claude-code -->
-**In Claude Code:** Use the `Skill` tool — content is loaded and presented to you; follow it directly. Never Read skill files.
+**In Claude Code:** Use the `Skill` tool; follow the loaded content directly. Never Read skill files.
 <!-- /harness -->
 <!-- harness:cursor -->
 **In Cursor:** Use the `Skill` tool; skills auto-register via the razorback plugin.
 <!-- /harness -->
 <!-- harness:codex -->
-**In Codex (CLI or desktop app):** Skills are discovered natively from `~/.agents/skills/`; when one applies, follow its SKILL.md directly.
+**In Codex (CLI or desktop app):** Skills are discovered natively from `~/.agents/skills/`; follow the SKILL.md directly.
 <!-- /harness -->
 <!-- harness:opencode -->
 **In OpenCode:** Use the native `skill` tool; skills auto-register via the razorback plugin.
 <!-- /harness -->
 
-**In other environments:** Check your platform's docs for skill loading.
-
-## Platform Adaptation
-
 Skills use Claude Code tool names; substitute your platform's equivalent.
 
 <!-- harness:codex -->
-- **Codex:** see `references/codex-tools.md`; use the live callable tool schemas as the source of truth.
+- **Codex:** see `references/codex-tools.md`; the live callable tool schemas are the source of truth.
 <!-- /harness -->
 <!-- harness:opencode -->
-- **OpenCode:** mapping is injected by the razorback plugin bootstrap (Task→opencode's Task tool, TodoWrite→todowrite, etc.)
+- **OpenCode:** the plugin bootstrap injects the mapping (Task→opencode's Task tool, TodoWrite→todowrite).
 <!-- /harness -->
 
 ## Execution Model
 
-Executing an implementation plan:
+- **Delegation is available and permitted:** `razorback:subagent-driven-development` — fresh subagent per task, including a single task; parallel when independent, serialized when dependent. If this session cannot delegate, fall back to `razorback:executing-plans`.
+- **Delegation is unavailable, or the user/session explicitly selects single-agent execution:** `razorback:executing-plans`.
+- **Ad-hoc parallel work:** `razorback:dispatching-parallel-agents`.
+- **Small, local, reversible fix:** `razorback:fixing-small-issues` — triage, fix on the current checkout, verify the affected scope only. No worktree, no baseline suite.
 
-- **Delegation is available and permitted:** `razorback:subagent-driven-development` — fresh subagent per task, including a single task; parallel batches when tasks are independent and serialized delegates when dependent.
-- **Delegation is unavailable, or the user/session explicitly selects single-agent execution:** `razorback:executing-plans` — single agent, batch execution.
-- **Ad-hoc parallel work:** `razorback:dispatching-parallel-agents` — independent agent dispatch.
-- **Small, local, reversible fix:** `razorback:fixing-small-issues` — triage first, fix on the current checkout, verify the affected scope only. No worktree, no baseline suite run.
-
-`subagent-driven-development` is the delegated path on every plugin-tier harness. If this session cannot delegate (e.g. it is already a subagent), fall back to `executing-plans`. The lead reviews inline (spec compliance + code quality) either way.
-
-## Applying Skills
-
-Process skills first (brainstorming, debugging) — they set HOW; domain skills second. Rigid skills (TDD, debugging) are followed exactly, never adapted away; flexible ones adapt to context — the skill says which. User instructions say WHAT, not HOW: "Add X" or "Fix Y" doesn't mean skip workflows.
+The lead reviews inline (spec compliance + code quality) on every path. Process skills (brainstorming, debugging) set HOW and run first; domain skills second. Rigid skills (TDD, debugging) are followed exactly. User instructions say WHAT, not HOW: "Fix Y" does not mean skip workflows.
 
 ## Your Toolchain
 
-When Miller supplies an injected routing block or server instructions, follow that workflow and the current tool descriptions for tool choice, workspace selection, freshness, output limits, and testing. The standalone fallback below applies only when that guidance is absent.
+When Miller supplies an injected routing block or server instructions, follow them. The fallback below applies only when that guidance is absent.
 
-### Standalone Miller fallback
-
-Razorback skills assume **Miller MCP is available and MUST be used** for ALL codebase exploration — instead of Glob/Grep/Read chains.
-
-Discover the registered workspace with `workspace operation=list`, or register an absent root with `workspace operation=open path=/absolute/project`. Pass the returned `workspace_id` on workspace-bound calls. Read the callable tool schema before choosing parameters.
-
-Use Miller by capability, not by raw file reading:
+**Miller MCP is available and MUST be used** for ALL codebase exploration — instead of Glob/Grep/Read chains. Discover the workspace with `workspace operation=list`, or register one with `workspace operation=open path=/absolute/project`; pass the returned `workspace_id` on workspace-bound calls. Read the callable tool schema before choosing parameters.
 
 | Capability — do this BEFORE the raw-file reflex | Miller tool |
 |---|---|
 | **Orient** — token-budgeted bundle for a task or area | `context(query)` |
-| **Search** — code by text, symbol, file/path, or concept; `markers` for TODO/FIXME audits, `source` for source bodies, `content` for docs/prose; also `external`, `web`, `all-text` | `search(query, mode=auto\|text\|symbol\|file\|markers\|content\|source\|external\|web\|all-text)` |
+| **Search** — text, symbol, file/path, or concept; `markers` for TODO/FIXME, `source` for bodies, `content` for docs/prose | `search(query, mode=auto\|text\|symbol\|file\|markers\|content\|source\|external\|web\|all-text)` |
 | **List a file's symbols** before reading the whole file | `inspect(target='<file>')` |
-| **Inspect a symbol** — `overview` for the first read (bounded refs/callers/callees + body preview), `full` only when editing it | `inspect(target='<symbol>', depth=summary\|overview\|full)` |
+| **Inspect a symbol** — `overview` first; `full` only when editing it | `inspect(target='<symbol>', depth=summary\|overview\|full)` |
 | **Find references** before changing a public API | `trace(target)` |
-| **Assess impact / blast radius** of a change | `impact(target)` |
-| **Code-shape facts** — routes, config keys, doc structure, pre-extracted across 40 languages | `patterns(...)` |
-| **Large text** — import, then search logs, CI output, web imports without full-file reads | `content(...)` |
+| **Assess impact / blast radius** | `impact(target)` |
+| **Code-shape facts** — routes, config keys, doc structure | `patterns(...)` |
+| **Large text** — import, then search logs or CI output | `content(...)` |
 | **Rename / edit** a symbol safely | `edit(operation, target)` |
 | **Manage the workspace index** | `workspace(...)` |
-| **Check continuous testing** — status is read-only; disabled workspaces use their ordinary test runner | `tests(operation=status)` |
+| **Check continuous testing** — read-only status | `tests(operation=status)` |
 
-**Rules (apply to the lead and every native implementer, reviewer, and fix worker you dispatch):**
+**Rules (lead and every native implementer, reviewer, and fix worker):**
 1. Use Miller for ALL codebase exploration. Do NOT fall back to Glob → Read → Grep chains.
 2. List a file's symbols before reading it in full.
 3. Inspect a symbol before modifying it.
 4. Find a symbol's references before changing it, to check impact.
 5. Do not infer or invent API shapes. Use Miller to discover symbol names, function signatures, config shapes, route names, CLI flags, or public contracts before relying on them.
 6. When Miller cannot prove a shape, say what evidence is missing and choose the safest plan-consistent path. Do not fill gaps from memory or plausible guesses.
-7. Scope test runs: in the inner loop, run single tests or the focused group that covers the change. The full suite runs once, at the branch gate. Do not rerun a passing scope on an unchanged tree.
+7. Scope test runs: inner loop runs single tests or the focused group covering the change; the full suite runs once at the branch gate. Do not rerun a passing scope on an unchanged tree.
 
-Restricted external CLI reviewers invoked by `razorback:pre-merge-review` are
-the deliberate exception. They run without MCP under
-their enforced read-only allowlist. The lead performs Miller-first exploration,
-supplies a sanitized Miller-backed evidence bundle, and verifies every finding
-with Miller. The external reviewer reads only that bundle and the exported review
-tree, and reports missing evidence instead of claiming it ran Miller.
+Restricted external CLI reviewers invoked by `razorback:pre-merge-review` are the deliberate exception: they run without MCP under a read-only allowlist. The lead supplies a sanitized Miller-backed evidence bundle and verifies every finding with Miller; the reviewer reports missing evidence instead of claiming it ran Miller.
 
-Continuous testing is opt-in. Status never enables it or starts a daemon; start is explicit. For an already enabled workspace, use the current `tests` schema to run the stale set. When disabled, use the discovered project runner for a one-off verification.
+Continuous testing is opt-in; status never enables it. When enabled, use the current `tests` schema to run the stale set. When disabled, use the discovered project runner.

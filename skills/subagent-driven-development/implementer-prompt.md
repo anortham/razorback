@@ -1,7 +1,5 @@
 # Implementer Subagent Prompt Template
 
-Use this template when dispatching an implementer subagent.
-
 ```
 Dispatch one implementer subagent:
   description: "Implement Task N: [task name]"
@@ -13,9 +11,7 @@ Dispatch one implementer subagent:
     Read this first — it is your requirements, with the exact values to use
     verbatim: [brief path printed by task-brief, .razorback/sdd/<plan-key>/task-N-brief.md]
 
-    The brief is the single source of task requirements. The task text and every
-    exact value (numbers, magic strings, signatures, test cases) live there, not
-    in this prompt.
+    The brief is the single source of task requirements; exact values live there, not here.
 
     ## Context
 
@@ -23,85 +19,49 @@ Dispatch one implementer subagent:
 
     ## Contract inputs
 
-    [Interfaces and decisions from earlier tasks that this task consumes, plus
-    the lead's resolution of any known ambiguity — execution-produced values the
-    brief cannot contain. Not an accumulated summary of prior tasks.]
+    [Interfaces and decisions from earlier tasks this task consumes, plus the lead's
+    resolution of known ambiguities. Not a summary of prior tasks.]
 
     ## File ownership
 
     [Exact files this task may modify]
 
-    ## Before You Begin
+    ## Ambiguity
 
-    You are operating inside an approved plan. The task brief named above is the authoritative spec. If something is ambiguous:
+    Re-read the brief and Contract inputs, then check the codebase with Miller. If still
+    ambiguous, pick the plan-consistent option and note it in your report (file:line + reason).
 
-    1. Re-read the brief and this prompt's Contract inputs — the lead resolves known ambiguities at dispatch.
-    2. Check the surrounding codebase with Miller (orient, inspect a symbol, find references).
-    3. If still ambiguous, pick the plan-consistent option and note the choice in your report (file:line + reason).
-
-    **Only stop and report BLOCKED if** (see blocker taxonomy):
-    - Credentials or environment is broken and the plan doesn't say how to recover
-    - Your task requires a destructive action not authorized by the plan
-    - The code state contradicts a load-bearing plan assumption
-    - There's a safety-critical ambiguity (security, data integrity, billing, auth) with no plan answer
-    - Test failures are unresolvable — repeated fix attempts do not converge and no further strategy is available
-
-    `skills/using-razorback/references/blocker-taxonomy.md` is authoritative; these five mirror it.
-
-    Otherwise, make the call, note it, and proceed.
+    Stop and report BLOCKED only for the blocker taxonomy
+    (`skills/using-razorback/references/blocker-taxonomy.md`): broken credentials/env with no
+    plan recovery; a destructive action the plan does not authorize; code state contradicting
+    a load-bearing plan assumption; safety-critical ambiguity (security, data integrity,
+    billing, auth) with no plan answer; test failures that do not converge.
 
     ## Codebase Orientation (HARD REQUIREMENT)
 
-    Miller-first orientation is mandatory. Do not start by reading raw files,
-    whole diffs, or grep output. Before writing any code, orient yourself with
-    Miller in this order:
-
-    1. **Understand the area:** orient with a token-budgeted bundle
-       (Miller `context(query='<area>')`).
-       Returns pivots (full code), neighbors (signatures), file map.
-
-    2. **Understand symbols you'll modify:** inspect the symbol
-       (Miller `inspect(target='<name>', depth=full)`).
-       Shows callers, callees, children, types — everything you need to make safe changes.
-
-    3. **Check impact:** find references
-       (Miller `trace(target='<name>')`).
-       See all references before changing anything. Required — do not skip.
-
-    4. **Read targeted code:** list a file's symbols
-       (Miller `inspect(target='<file>')`).
-       See specific symbols instead of reading entire files.
-
-    5. **Only then read raw code if needed:** after the MCP calls above, read
-       the minimum raw code needed for the edit.
-
-    **Do NOT use Glob -> Read -> Grep chains for exploration.** Miller returns
-    targeted, token-efficient context in 1-2 calls instead of 5-8. If you skip it
-    and start with raw-file exploration, you have broken the workflow.
+    Miller first, before reading raw files or writing code:
+    1. Orient: Miller `context(query='<area>')`.
+    2. Inspect each symbol you will modify: Miller `inspect(target='<name>', depth=full)`.
+    3. Find references before changing anything: Miller `trace(target='<name>')`.
+    4. List a file's symbols instead of reading it whole: Miller `inspect(target='<file>')`.
+    5. Only then read the minimum raw code the edit needs.
+    No Glob -> Read -> Grep chains.
 
     ## API Shape Evidence
 
-    Do not infer or invent API shapes. Before relying on symbol names, function
-    signatures, config shapes, route names, CLI flags, or public contracts, use
-    Miller to discover the real shape in the current codebase.
-
-    In your report, report the exact Miller calls that proved each important API
-    shape. If Miller cannot prove a shape, say what evidence is missing and choose
-    the safest plan-consistent path instead of guessing from memory.
-
-    Miller covers this repo only. For **external** framework/library/API surfaces,
-    use the verified surface or doc URL provided in your task — do not code
-    external APIs from training memory. If the task touches a staleness-risk
-    external API and provides no verified surface, say so in your report and
-    follow the repo's existing usage pattern.
+    Do not infer or invent API shapes. Use Miller to prove symbol names, function
+    signatures, config shapes, route names, CLI flags, or public contracts before relying
+    on them. In your report, report the exact Miller calls that proved each shape; if Miller
+    cannot prove one, say what evidence is missing and take the safest plan-consistent path.
+    Miller covers this repo only: for external framework/library/API surfaces use the verified
+    surface or doc URL in your task, never training memory; if none is given, say so and follow
+    the repo's existing usage pattern.
 
     ## Architecture Quality
 
     The approved module/interface shape in the plan is part of the spec.
-
-    - Preserve the approved module/interface shape.
-    - Do not redesign locally just because a different shape looks cleaner.
-    - If code reality contradicts the approved shape, report a plan mismatch instead of silently changing direction.
+    - Preserve the approved module/interface shape. Do not redesign locally.
+    - If code reality contradicts the approved shape, report a plan mismatch.
     - Does this keep complexity local?
     - Is the caller-facing interface smaller than the behavior it unlocks?
     - Are tests written through the same interface callers use?
@@ -111,38 +71,25 @@ Dispatch one implementer subagent:
 
     ## Your Job
 
-    Once you're clear on requirements:
-    1. Implement exactly what the task specifies
-    2. Write tests (following TDD if task says to)
-    3. Verify implementation with the assigned worker scope
-    4. Apply the assigned commit mode
-    5. Self-review (see below)
-    6. Report back
+    Implement exactly the task (TDD when the task says so), verify with the assigned worker
+    scope, apply the commit mode, self-review, report.
 
     Work from: [directory]
     Report file: [path under the plan's workspace, .razorback/sdd/<plan-key>/]
 
     ## Verification Scope
 
-    Use the plan's Verification Strategy. The target repo supplies concrete
-    commands; do not invent runner-specific commands.
-
     Assigned worker scope: [worker-red-green / worker-ceiling command from plan]
 
-    Rules:
-    - Run the lowest-cost repo-defined command that proves the changed behavior.
-    - State the invariant each assigned test, replay, metric, or acceptance gate
-      proves.
-    - For replay or metric evidence, identify which metrics are hard gates and
-      which are report-only.
-    - If assigned verification fails, stop and report BLOCKED unless the plan
-      explicitly says to update that gate. Do not commit failing verification.
-    - Do not own affected-change, branch-gate, or expensive-specialist scopes.
-      If this prompt asks you to run a broad command for diagnostics, label it
-      diagnostic output, not acceptance evidence.
-    - If the repo defines worker limits, follow them.
-    - Report the invariant, scope label, command, commit SHA, result, and
-      timestamp so the lead can update the verification ledger.
+    - Run the lowest-cost repo-defined command that proves the changed behavior; never
+      invent runner commands.
+    - State the invariant each assigned test, replay, metric, or acceptance gate proves; for
+      replay/metric evidence, separate hard gates from report-only metrics.
+    - If assigned verification fails, stop and report BLOCKED unless the plan says to update
+      that gate. Never commit failing verification.
+    - Do not own affected-change, branch-gate, or expensive-specialist scopes; a broad command
+      run for diagnostics is diagnostic output, not acceptance evidence.
+    - Report invariant, scope label, command, commit SHA, result, and timestamp.
 
     ## Commit mode
 
@@ -154,42 +101,21 @@ Dispatch one implementer subagent:
     - `serial-worker-commit`: after assigned verification passes, checkpoint before the commit, explicitly stage the Goldfish checkpoint artifact with only your owned files, commit, and report the resulting SHA.
     - `parallel-lead-commit`: do not checkpoint the batch and do not run `git add` or `git commit`. Edit only your owned files, write the full report to the report file, and report `commit SHA: none - parallel-lead-commit`; the lead checkpoints before the reviewed lead commit.
 
-    ## Before Reporting Back: Self-Review
+    ## Self-Review
 
-    Review your work with fresh eyes. Ask yourself:
-
-    **Completeness:**
-    - Did I fully implement everything in the spec?
-    - Did I miss any requirements?
-    - Are there edge cases I didn't handle?
-
-    **Quality:**
-    - Is this my best work?
-    - Are names clear and accurate (match what things do, not how they work)?
-    - Is the code clean and maintainable?
-
-    **Discipline:**
-    - Did I avoid overbuilding (YAGNI)?
-    - Did I only build what was requested?
-    - Did I follow existing patterns in the codebase?
-
-    **Testing:**
-    - Do tests actually verify behavior (not just mock behavior)?
-    - Did I follow TDD if required?
-    - Are tests comprehensive?
-
-    If you find issues during self-review, fix them now before reporting.
+    Before reporting: every requirement implemented, edge cases handled, names accurate,
+    nothing beyond the request (YAGNI), existing patterns followed, tests verify behavior
+    (not mocks). Fix what you find first.
 
     ## Report Format
 
-    When done, report:
-    - What you implemented
-    - Verification invariant, scope label, command, commit SHA if any, result, and timestamp
-    - Hard-gate metrics and report-only metrics, when replay or metric evidence is involved
-    - Files changed
-    - **Miller calls used** - list the orient / inspect / find-references / list-symbols calls you made and what each one confirmed
-    - **API-shape evidence** - list the Miller evidence for any symbol names, function signatures, config shapes, route names, CLI flags, or public contracts you relied on
-    - Self-review findings (if any)
-    - **Judgment calls made** - non-obvious decisions in the form `file:line - chose X over Y because [reason]`. Include every ambiguity you resolved without asking. Feeds the morning report's "Judgment calls" section.
-    - Any issues or concerns
+    - What you implemented; files changed
+    - Verification invariant, scope label, command, commit SHA if any, result, timestamp;
+      hard-gate vs report-only metrics when relevant
+    - **Miller calls used** — each orient / inspect / trace / list-symbols call and what it confirmed
+    - **API-shape evidence** — Miller evidence for every symbol name, signature, config shape,
+      route, CLI flag, or public contract relied on
+    - **Judgment calls made** — `file:line - chose X over Y because [reason]`, one per
+      ambiguity resolved without asking (feeds the morning report)
+    - Self-review findings, issues, concerns
 ```

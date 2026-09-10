@@ -5,13 +5,7 @@ description: Use when about to claim work is complete, fixed, or passing, before
 
 # Verification Before Completion
 
-## Overview
-
-Claiming work is complete without verification is dishonesty, not efficiency — a false "passing" is worse than a true "failing".
-
-**Core principle:** Evidence before claims, always.
-
-**Violating the letter of this rule is violating the spirit of this rule.**
+A false "passing" is worse than a true "failing". Evidence before claims, always. Violating the letter of this rule is violating the spirit of this rule.
 
 ## The Iron Law
 
@@ -21,44 +15,33 @@ NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
 
 If you have neither run the verification command in this message nor cited a ledger entry for current HEAD and required scope, you cannot claim it passes.
 
-## The Gate Function
+## The gate
 
-```
-BEFORE claiming any status or expressing satisfaction:
+Before any status claim or expression of satisfaction:
 
-1. IDENTIFY: What verification scope proves this claim?
-2. RUN: Execute the project-defined command for that scope, or cite a verification-ledger entry that covers current HEAD and required scope
-3. READ: Full output, check exit code, count failures
-4. VERIFY: Does output confirm the claim?
-   - If NO: State actual status with evidence
-   - If YES: State claim WITH evidence
-5. ONLY THEN: Make the claim
+1. IDENTIFY the verification scope that proves the claim.
+2. RUN the project-defined command for that scope, or cite a verification-ledger entry covering current HEAD and required scope.
+3. READ the full output: exit code, failure count.
+4. VERIFY the output confirms the claim. If not, state the actual status with evidence.
+5. Only then make the claim, with the evidence.
 
-Skip any step = lying, not verifying
-```
-
-## Common Failures
+## Evidence table
 
 | Claim | Requires | Not Sufficient | How to verify |
 |-------|----------|----------------|---------------|
-| Tests pass | Test command output or ledger entry for current HEAD and required scope: 0 failures | Stale run, wrong scope, "should pass" | Long output: capture to a file, then Miller `content(operation='import', path='<file>')` + `content(operation='search', query='<failure>')` — never paste the whole run |
-| Linter clean | Linter output: 0 errors | Partial check, extrapolation | Read the output |
-| Build succeeds | Build command: exit 0 | Linter passing, logs look good | Long build logs: Miller `content(...)` import, then search for the failure |
+| Tests pass | Test output or ledger entry for current HEAD and required scope: 0 failures | Stale run, wrong scope, "should pass" | Long output: capture to a file, then Miller `content(operation='import', path='<file>')` + `content(operation='search', query='<failure>')` |
+| Linter clean | Linter output: 0 errors | Partial check | Read the output |
+| Build succeeds | Build exit 0 | Linter passing, logs look good | Long logs: Miller `content(...)` import, then search |
 | Bug fixed | Original symptom passes at worker scope | Code changed, assumed fixed | Re-run the original repro |
-| Regression test works | Red-green cycle verified | Test passes once | Revert the fix, watch it fail |
+| Regression test works | Red-green cycle verified | Test passes once | Revert the fix, watch it fail, restore |
 | Agent completed | VCS diff shows changes | Agent reports "success" | Read the diff |
-| Requirements met | Line-by-line checklist against the plan or spec | Tests passing alone | Miller `inspect(target)` each symbol the requirement names — the code, not the claim |
-| Architecture decision followed | Approved architecture visible in the diff, ADR note, or verified implementation | "Looks aligned", verbal recall | Miller `trace(target)` the boundary it must respect; `impact(target)` for what the change actually reaches |
-| Review finding fixed | Fresh verification at the affected scope shows the specific reviewer finding no longer reproduces | Code changed, assumed fixed | Miller `inspect(target, depth=full)` the fixed symbol and read the body |
+| Requirements met | Line-by-line checklist against the plan or spec | Tests passing alone | Miller `inspect(target)` each symbol the requirement names |
+| Architecture decision followed | Approved architecture visible in the diff, ADR note, or verified implementation | "Looks aligned" | Miller `trace(target)` the boundary; `impact(target)` for what the change reaches |
+| Review finding fixed | Fresh verification at the affected scope shows the finding no longer reproduces | Code changed, assumed fixed | Miller `inspect(target, depth=full)` the fixed symbol |
 | Work is integrated | `git log --oneline <base>..<branch>` per worktree: every commit landed, pushed, or named in the report | Tests pass, task marked done | Check B of the `razorback:using-razorback` skill's `references/source-control-hygiene.md` |
-| Nothing is stranded | `git worktree list` plus `git -C <path> status --short --branch` for each: no unreported dirty tree, no unreported unmerged branch | `git worktree list` alone — that is an inventory, not a cleanliness check | Status every listed path, not just the current one |
+| Nothing is stranded | `git worktree list` plus `git -C <path> status --short --branch` for each: no unreported dirty tree or unmerged branch | `git worktree list` alone — that is an inventory, not a cleanliness check | Status every listed path |
 
-## Tool-Assisted Verification
-
-**Use Miller to verify code changes:**
-- **Find references** to all modified/new symbols — verify nothing is broken with `trace`
-- **Inspect** changed public APIs — confirm callers still work with `inspect(target, depth=full)` (the symbol you changed earns `full`)
-- **Prove API shapes** — confirm symbol names, function signatures, config shapes, route names, CLI flags, and public contracts with Miller before claiming they are correct
+Also prove API shapes with Miller (`trace`, `inspect(target, depth=full)`) before claiming symbol names, signatures, config shapes, routes, CLI flags, or public contracts are correct.
 
 ## Red Flags - STOP
 
@@ -87,39 +70,9 @@ Skip any step = lying, not verifying
 | "Tests pass, so the phase is done" | Passing tests is not integration. Landed is integration. |
 | "Different words so rule doesn't apply" | Spirit over letter |
 
-## Key Patterns
+## When to apply
 
-The table above names the evidence; two claims also have a required sequence:
-
-**Regression tests (TDD Red-Green):**
-```
-✅ Write → Run (pass) → Revert fix → Run (MUST FAIL) → Restore → Run (pass)
-❌ "I've written a regression test" (without red-green verification)
-```
-
-**Agent delegation:**
-```
-✅ Agent reports success → Check VCS diff → Verify changes → Report actual state
-❌ Trust agent report
-```
-
-## When To Apply
-
-**ALWAYS before:**
-- ANY variation of success/completion claims
-- ANY expression of satisfaction
-- ANY positive statement about work state
-- Committing, PR creation, task completion
-- Moving to next task
-- Delegating to agents
-
-**Rule applies to:**
-- Exact phrases
-- Paraphrases and synonyms
-- Implications of success
-- ANY communication suggesting completion/correctness
-
-**The rule gates claims, not progress notes:** describing what you did without asserting it works needs no evidence. Anything that implies success does.
+Before any success or completion claim, any expression of satisfaction, committing, PR creation, task completion, moving to the next task, or delegating. Applies to exact phrases, paraphrases, and implications alike. The rule gates claims, not progress notes: describing what you did without asserting it works needs no evidence.
 
 ## It's working if
 

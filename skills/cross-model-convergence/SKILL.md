@@ -6,33 +6,21 @@ description: >-
 
 # Cross-Model Convergence
 
-## Overview
-
-The lead and every selected external reviewer gather independent evidence in a bounded review campaign. At least one reviewer must be a different model from the lead, and every call reported as cross-model evidence must come from a different model. Calling your own model's CLI is self-review and cannot satisfy an explicit cross-model requirement.
-
-**Core principle:** The setup block is immutable — participants, budget, and rounds are fixed before the first dispatch, and every terminal state closes the campaign for good.
-
-**Violating the letter of the campaign contract is violating its spirit.**
+The lead and every selected external reviewer gather independent evidence in one bounded review campaign. At least one reviewer must be a different model from the lead, and every call reported as cross-model evidence must come from a different model; calling your own model's CLI is self-review. The setup block is immutable and every terminal state closes the campaign for good.
 
 **Announce at start:** "I'm using the cross-model-convergence skill with [selected reviewers] on [problem class]."
 
-## When to Use
+**Not here:** planned pre-merge external review (`razorback:pre-merge-review`); a single ad-hoc review with no convergence goal (`razorback:requesting-code-review`).
 
-Use when the user asks two or more models to check each other's work to a stated end state, when an audit runs to convergence under `/loop` or another goal-driven runner, or when a design decision needs one adversarial refutation pass before building (the Doubt Pass below).
-
-**Not here:** planned pre-merge external review — `razorback:pre-merge-review` owns that fixed two-pass budget. A single ad-hoc review with no convergence goal is `razorback:requesting-code-review`.
-
-**REQUIRED SUB-SKILLS:** razorback:managing-review-campaigns, razorback:architecture-quality (Audit Mode), one or more reviewer channels (razorback:codex-cli, razorback:claude-cli, razorback:grok-cli, razorback:agy-cli, or razorback:cursor-agent in read-only mode) pointing at models that differ from the lead, razorback:receiving-code-review, razorback:test-driven-development, razorback:verification-before-completion.
+**REQUIRED SUB-SKILLS:** razorback:managing-review-campaigns, razorback:architecture-quality (Audit Mode), one or more reviewer channels (razorback:codex-cli, razorback:claude-cli, razorback:grok-cli, razorback:agy-cli, or razorback:cursor-agent read-only) pointing at models that differ from the lead, razorback:receiving-code-review, razorback:test-driven-development, razorback:verification-before-completion.
 
 ## Policy Gate
 
-Every participating model's provider must be allowed by the external-model policy check in razorback:security-review. Check every selected provider before campaign setup. No policy block in the target repo's instructions means proceed and add the loud note to the morning report. A denied reviewer named by the user or approved plan blocks under blocker taxonomy #4.
+Every participating model's provider must pass the external-model policy check in razorback:security-review before setup. No policy block in the target repo means proceed and add the loud note to the morning report. A denied reviewer named by the user or approved plan blocks under blocker taxonomy #4.
 
 ## Outbound Payload Redaction
 
-Immediately before each participating reviewer dispatch, write the fully constructed campaign prompt to `PAYLOAD_FILE` and pass it through `skills/security-review/scripts/redact-outbound`. Use only `REDACTED_PAYLOAD_FILE` for the reviewer invocation. If redaction fails, remove both files, emit only a generic error, and stop before any provider receives campaign content.
-
-Each harness-native reviewer call must receive the contents of `REDACTED_PAYLOAD_FILE`; do not pass the original findings, diff, or campaign prompt directly to a reviewer channel.
+Immediately before each reviewer dispatch, write the fully constructed campaign prompt to `PAYLOAD_FILE`, filter it, and send only `REDACTED_PAYLOAD_FILE` to the reviewer channel; never pass raw findings, diff, or prompt directly.
 
 ```bash
 REDACTED_PAYLOAD_FILE=$(mktemp)
@@ -45,13 +33,11 @@ fi
 
 ## Campaign Setup
 
-Select the different-model reviewers explicitly requested or deliberately chosen for this campaign before the first sweep. Availability and policy are gates, not reasons to enroll every installed model. Users may run with one selected external reviewer or several. Omit unavailable optional reviewers before setup and record the omission. A reviewer named by the user or approved plan is required; if unavailable, emit a `blocked` campaign status instead of substituting another model or degrading to same-model review.
+Select the different-model reviewers explicitly requested or deliberately chosen for this campaign before the first sweep; availability and policy are gates, not reasons to enroll every installed model. Omit unavailable optional reviewers before setup and record the omission. A reviewer named by the user or approved plan is required; if unavailable, emit a `blocked` status instead of substituting or degrading to same-model review.
 
-When no different-model reviewer is available before setup, emit one auditable zero-call record instead of inventing a participant: the canonical setup block below with `participants: lead`, `required_reviewers: at least one different-model reviewer (unavailable)`, `external_invocation_budget: 0`, and `external_invocations: 0/0`, immediately followed by the terminal status block with `state: blocked`, `evidence: lead-only`, zero open counts, and `campaign_closed: yes`.
+When no different-model reviewer is available before setup, emit one auditable zero-call record: the setup block with `participants: lead`, `required_reviewers: at least one different-model reviewer (unavailable)`, `external_invocation_budget: 0`, `external_invocations: 0/0`, immediately followed by the terminal block with `state: blocked`, `evidence: lead-only`, zero open counts, and `campaign_closed: yes`. A new campaign requires a new explicit user request; never restart automatically when availability changes.
 
-Do not start another campaign automatically if availability changes; a new campaign requires a new explicit user request.
-
-Emit this immutable setup once:
+Emit once:
 
 ```text
 REVIEW CAMPAIGN
@@ -68,36 +54,34 @@ round: 0/3
 external_invocations: 0/<budget>
 ```
 
-Replace the budget placeholders with integers before dispatch: one selected external reviewer yields budget 2; two selected external reviewers yield budget 3. The participant list, evidence target, severity floor, discovery scope, external invocation budget, and maximum rounds cannot change after setup. Each external CLI call consumes one invocation whether it succeeds, fails, or returns content-free output. Exactly one invocation beyond the Round 1 reviewer count is reserved for at most one predeclared targeted confirmer. Reviewers added after setup never add budget or rounds.
+Replace placeholders with integers before dispatch: one selected external reviewer yields budget 2; two selected external reviewers yield budget 3. Nothing in the block changes after setup. Each external CLI call consumes one invocation whether it succeeds, fails, or returns content-free output. Exactly one invocation beyond the Round 1 reviewer count is reserved for at most one predeclared targeted confirmer.
 
 ## Round 1 — Discovery
 
-1. Run the problem-class audit (Audit Mode for architecture). Verify the lead's findings with Miller `inspect`/`trace` evidence before dispatch.
+1. Run the problem-class audit (Audit Mode for architecture). Verify the lead's findings with Miller `inspect`/`trace` before dispatch.
 2. Dispatch each selected reviewer exactly once, read-only: "Here are N verified findings: [list with file:line and evidence]. (a) Verify or refute each, naming what you checked. (b) Independently hunt for problems in the same class that this list misses. Verify and report only; do not modify any file."
-3. Increment `external_invocations` after every call. After Round 1 discovery, the counter is `<selected external reviewers>/<budget>`. Diff-check the worktree for unauthorized edits after each dispatch.
-4. Triage with `razorback:receiving-code-review`; the lead verifies, deduplicates, and assigns canonical severity. Freeze the accepted finding set after triage.
+3. Increment `external_invocations` after every call (Round 1 ends at `<selected external reviewers>/<budget>`). Diff-check the worktree for unauthorized edits after each dispatch.
+4. Triage with `razorback:receiving-code-review`: verify, deduplicate, assign canonical severity, freeze the accepted set.
 5. Present the merged list once for approval. In an unattended goal-driven run, the pre-approved setup plus a Goldfish checkpoint satisfies this gate.
-6. Fix approved findings with TDD and verify them with `razorback:verification-before-completion`.
+6. Fix approved findings with TDD; verify with `razorback:verification-before-completion`.
 
-Reviewer proposals outside the approved scope are recorded for the final report and cannot extend the campaign. A required discovery obligation is satisfied once that reviewer supplies usable evidence for every declared required discovery scope. Unavailability, errors, or unusable output before then closes the campaign as `blocked`. An optional participant lost after setup follows Failure Handling below.
+Out-of-scope reviewer proposals are recorded for the report and cannot extend the campaign. A required discovery obligation is satisfied once that reviewer supplies usable evidence for every declared required discovery scope; unavailability, errors, or unusable output before then closes the campaign `blocked`.
 
 ## Round 2 — Scoped Confirmation
 
-Mark every accepted finding `addressed`, `not addressed`, `contested`, or `deferred`. The lead confirms fixes by default and inspects only the fix diff for new breakage. Observations outside the fix diff are recorded and cannot reopen broad discovery.
+Mark every accepted finding `addressed`, `not addressed`, `contested`, or `deferred`. The lead confirms by default and inspects only the fix diff; observations outside it are recorded and cannot reopen broad discovery.
 
-If setup predeclared targeted external confirmation, one selected reviewer may make one targeted call against the accepted finding set and fix diff. Increment `external_invocations` to `<budget>/<budget>` immediately after dispatch. The prompt must forbid a new sweep. Content-free approval is not clean evidence and cannot authorize another call. If this optional confirmer is unavailable or fails after supplying required discovery evidence, the later optional confirmation failure does not retroactively block; record the consumed call when dispatched and the lead completes confirmation.
+If setup predeclared targeted external confirmation, one selected reviewer may make one targeted call against the accepted set and fix diff; increment to `<budget>/<budget>` immediately. The prompt must forbid a new sweep. Content-free approval is not clean evidence and buys no further call. If this optional confirmer fails after supplying required discovery evidence, the later optional confirmation failure does not retroactively block: record the consumed call and the lead completes confirmation.
 
-A new medium/low observation may be fixed or deferred but cannot add a round or external invocation. Close `clean` when nothing above the floor remains open. Close `capped` when no permitted action remains with an above-floor finding still open, unless an unresolved critical/high finding meets the blocker taxonomy and requires `blocked`. Exhausting the external budget forbids another external call but does not prevent eligible lead-only Round 3 confirmation.
+A new medium/low observation may be fixed or deferred but adds no round or invocation. Close `clean` when nothing above the floor remains open; `capped` when no permitted action remains with an above-floor finding open; `blocked` when an unresolved critical/high meets the blocker taxonomy. An exhausted budget forbids external calls but not eligible lead-only Round 3 confirmation.
 
 ## Round 3 — Exceptional Targeted Confirmation
 
-Enter only when the lead verifies a new critical/high regression introduced inside the Round 2 fix diff. Target only that regression and its fix; broad discovery is forbidden. The lead performs Round 3 confirmation when the one reserved external confirmation call was already used. If it was not used in Round 2, one predeclared confirmer may use it here and increments the counter to `<budget>/<budget>`.
-
-Reviewer disagreement is not a Round 3 trigger. Push back once using code evidence, record the dispute, and stop after Round 3 regardless of outcome.
+Enter only when the lead verifies a new critical/high regression inside the Round 2 fix diff. Target only that regression and its fix; broad discovery is forbidden. The lead confirms when the reserved call was used in Round 2; otherwise one predeclared confirmer may use it here. Reviewer disagreement is not a trigger: push back once with code evidence, record the dispute, and stop after Round 3 regardless of outcome.
 
 ## Campaign Status and Goal Drivers
 
-At the end of every round, print and checkpoint the full immutable setup, current counters, accepted findings with evidence and disposition, and the canonical terminal block when closed:
+At the end of every round, print and checkpoint the setup, counters, accepted findings with evidence and disposition, and when closed:
 
 ```text
 REVIEW CAMPAIGN STATUS
@@ -111,20 +95,17 @@ open_above_floor: <count>
 campaign_closed: yes
 ```
 
-The goal predicate for `/loop`, Codex goals, or another until-condition runner is `campaign_closed: yes`. `clean`, `capped`, and `blocked` are all terminal. A goal runner must restore the immutable setup and counters after compaction and must never dispatch after terminal status.
+The goal predicate for `/loop`, Codex goals, or any until-condition runner is `campaign_closed: yes`; all three states are terminal. A goal runner restores setup and counters after compaction and never dispatches after terminal status.
 
 ## Failure Handling
 
-- **Required reviewer unavailable or erroring before required discovery completes:** close `blocked`; an explicit reviewer requirement cannot be replaced or degraded.
-- **Optional reviewer unavailable after setup:** record the consumed call when dispatched, do not retry or replace it, and degrade evidence. Close `blocked` if no usable different-model evidence remains.
-- **Content-free response:** record the consumed invocation and close `blocked` when it supplies no usable required-reviewer evidence. Do not loop for compliments.
-- **Disputed finding:** push back once with evidence. If still disputed, record it and let the lead assign its final disposition.
-- **Fix-induced regression:** enter Round 3 only for a lead-verified new critical/high regression inside the fix diff.
-- **User approves nothing:** close as an audit with the merged findings and terminal campaign status.
+- **Optional reviewer lost after setup:** record the consumed call, do not retry or replace, degrade evidence; `blocked` if no usable different-model evidence remains.
+- **Content-free response:** consumed; `blocked` when it supplies no usable required-reviewer evidence. Do not loop for compliments.
+- **User approves nothing:** close as an audit with the merged findings and terminal status.
 
 ## Doubt Pass (pre-implementation)
 
-A design doubt pass is a separate, stricter convergence campaign. Emit the canonical setup with the decision as scope, one different-model reviewer, `external_invocation_budget: 1`, `max_rounds: 1`, `round: 0/1`, and `external_invocations: 0/1`. Send one read-only refutation prompt, reconcile the result against repo evidence, revise the decision when a refutation survives, and close the campaign. It never implements code and never repeats broad discovery.
+A design doubt pass is a stricter one-round campaign: setup with the decision as scope, one different-model reviewer, `external_invocation_budget: 1`, `max_rounds: 1`, `round: 0/1`, `external_invocations: 0/1`. Send one read-only refutation prompt, reconcile against repo evidence, revise the decision when a refutation survives, close. Never implements code, never repeats discovery.
 
 ## Red Flags — STOP
 

@@ -5,36 +5,22 @@ description: Use after all tasks are complete and branch verification passes, be
 
 # Pre-Merge External Review
 
-## Overview
-
-The chosen external reviewer (codex / claude) gets exactly one shot at the full branch diff: a **general adversarial pass**, then a **dedicated security pass** driven by a security-only prompt, inside a hard budget of two invocations. Each pass runs once — fixes receive local confirmation without a post-fix external re-review. The lead, not the reviewer, decides what is real: every finding is verified against the code with Miller, classified (real-bug / real-improvement / false-positive / out-of-scope), then fixed, dismissed with a written reason, or flagged for human judgment. The output is a summary block that slots into the morning report's External review section, so the user sees exactly what the reviewer said, what the lead did with it, and why.
-
-Both passes run from one temporary export of the reviewed Git ref, created outside the live worktree and removed explicitly after the pass outputs are parsed.
+The chosen reviewer (codex / claude) gets one general adversarial pass and one security pass over the full branch diff: two invocations, ever. Each pass runs once; fixes get local confirmation without a post-fix external re-review. The lead verifies every finding with Miller, classifies it, then fixes, dismisses with a written reason, or flags it for human judgment, and emits the morning-report block.
 
 **REQUIRED SUB-SKILL:** razorback:managing-review-campaigns.
 
-## When to invoke
+## Pre-conditions
 
-Invoked by:
+Called by `razorback:executing-plans` Step 3 and `razorback:subagent-driven-development` Step 4a. Skip entirely when the reviewer choice is `none`. Abort and surface the gap when any of these fails:
 
-- `razorback:executing-plans` Step 3 (between task execution and `razorback:finishing-a-development-branch`)
-- `razorback:subagent-driven-development` Step 4a (same position in that flow)
-
-Skip this skill entirely if the reviewer choice is `none`. The choice is fixed by `razorback:writing-plans` during execution handoff and does not change mid-run.
-
-**Pre-conditions:**
-
-- All plan tasks are complete
-- The verification ledger has a passing `branch-gate` entry for current HEAD, or the caller can run that scope before review
-- The branch is NOT yet pushed (no PR yet)
-- A reviewer was chosen: one of `codex`, `claude`
-- The external-model policy check in razorback:security-review passes. When a policy block exists, the chosen reviewer's provider (`codex` → `openai`, `claude` → `anthropic`) is allowed and the reviewer appears in `Reviewer choices permitted:`. When no external-model policy block exists, proceed and add the required loud morning-report note.
-
-If any pre-condition is not met, abort and surface the gap to the caller. Do not review a partial branch or pre-push a branch on your own.
+- All plan tasks complete; the verification ledger has a passing `branch-gate` entry for HEAD (or the caller runs it now).
+- Branch not pushed, no PR.
+- Reviewer is `codex` or `claude`.
+- External-model policy check in razorback:security-review passes: provider (`codex` → `openai`, `claude` → `anthropic`) allowed and reviewer listed in `Reviewer choices permitted:`. When no external-model policy block exists, proceed and add the loud morning-report note.
 
 ## Campaign Setup
 
-After the pre-conditions and policy gate pass, emit this immutable setup before either external call:
+Emit before either external call:
 
 ```text
 REVIEW CAMPAIGN
@@ -51,119 +37,53 @@ round: 0/2
 external_invocations: 0/2
 ```
 
-The general and security calls consume the entire immutable external budget. The participant and reviewer cannot be replaced mid-campaign. A dispatch consumes its invocation even if output is unusable; the required reviewer being unavailable or failing either pass closes the campaign `blocked`.
+A dispatch consumes its invocation even when output is unusable. A required reviewer that fails either pass closes the campaign `blocked`.
 
-## The Process
+## Step 1: Build diff + review tree
 
-Seven steps, in order: build the diff and review tree (1), dispatch the two passes (2), parse both outputs into one merged list (3), verify and classify every finding (4), apply verified fixes (5), run the required verification scope (6), emit the summary block and return to the caller (7). A verification failure after fixes stops per the blocker taxonomy; a clean parse with no findings jumps straight to Step 7.
-
-## Step 1: Build diff + context
-
-The reviewer needs the full picture of what shipped, not the latest commit only. Build the diff from the merge base of the branch against the base branch (typically `main` or `master`).
-
-Before constructing either prompt, the lead uses Miller to inspect changed
-symbols, trace changed public APIs, and assess the diff's test impact. Add a
-compact sanitized summary of that Miller-backed evidence to the review bundle.
-The external reviewer does not run Miller: its CLI is deliberately isolated from
-MCP and uses only the enforced read-only tools below. It must report missing
-evidence when the supplied bundle and exported tree cannot support a conclusion.
+Use Miller to inspect changed symbols, `trace` changed public APIs, and assess test impact; summarize that as `$MILLER_EVIDENCE`. The external reviewer does not run Miller; it reads the bundle and the exported tree and reports missing evidence when they cannot support a conclusion.
 
 ```bash
-# Detect base branch (prefer main, fall back to master)
 BASE=$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null)
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 PROJECT_DIR=$(git rev-parse --show-toplevel)
 REVIEW_REF=HEAD
-
 REVIEW_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/razorback-review-tree.XXXXXX")
 if ! "$SKILL_DIR/scripts/prepare-review-tree" "$PROJECT_DIR" "$REVIEW_REF" "$REVIEW_ROOT" >/dev/null; then
   rm -rf -- "$REVIEW_ROOT"
   exit 1
 fi
-
-# Full diff (what the reviewer reads)
 DIFF=$(git diff "$BASE"..HEAD --no-ext-diff)
-
-# File summary (stat + per-file line counts)
 FILE_STAT=$(git diff --stat "$BASE"..HEAD)
-
-# Commit messages on this branch (intent of each change)
 COMMIT_LOG=$(git log --oneline "$BASE"..HEAD)
-
-# Plan path (so the reviewer can cross-check scope)
-PLAN_PATH="docs/plans/<YYYY-MM-DD>-<feature>.md"   # filled from the in-session plan
+PLAN_PATH="docs/plans/<YYYY-MM-DD>-<feature>.md"
 MILLER_EVIDENCE="<compact summary of changed symbols, public-API references, and likely tests>"
 ```
 
-Pass all five to the chosen reviewer: `$DIFF`, `$FILE_STAT`, `$COMMIT_LOG`, `$PLAN_PATH`, `$MILLER_EVIDENCE`. The reviewer prompts at `reviewer-prompts/*.md` document how to wire them into each CLI's invocation.
+`prepare-review-tree` exports tracked content of the ref only (no `.git`, no untracked files, no symlinks that escape the root) and rejects an output path inside the repo. Include a user focus only when the plan carried one. Use the CLI's default model unless one was explicitly selected.
 
-`prepare-review-tree` consumes the repository path, reviewed Git ref, and explicit output directory. It exports tracked content only, rejects an output path inside the source repository, omits live `.git` metadata and untracked files, and removes tracked symlinks whose resolved targets escape the output root. The helper does not modify the source worktree.
+## Step 2: Dispatch two passes
 
-Optional: if the plan carried a focus area ("focus on the auth boundary", "pay attention to schema migrations"), include it in the prompt. Do not invent a focus the user did not ask for.
+Apply the razorback:security-review policy check and re-read the policy immediately before each pass; a denial fails closed (blocker taxonomy #4 on an autonomous run where the user chose this reviewer). Both passes run from `$REVIEW_ROOT` with the same CLI and the shared schema (`razorback:codex-cli` `schemas/review-output.schema.json`; claude strips `$schema`). Dispatch the general pass, then the security pass:
 
-Use the chosen reviewer CLI's default model unless the user, environment, or
-lead explicitly selects another model for this run.
+1. **General** — adversarial prompt per the reviewer-prompts file. Record `external_invocations: 1/2` immediately after the call.
+2. **Security** — `razorback:security-review` `security-adversarial-prompt.txt`, per the `## Security pass` section of the same file. Record `external_invocations: 2/2` immediately after.
 
-Gate-interpretation review is a separate lane from pre-merge review. When the
-question is "is this failing test, replay, or metric wrong, or is the
-implementation wrong?", treat that as lead-owned review evidence before claiming
-verification evidence.
+Follow [`reviewer-prompts/codex.md`](reviewer-prompts/codex.md) (`codex-exec … -s read-only`) or [`reviewer-prompts/claude.md`](reviewer-prompts/claude.md) (`claude -p --safe-mode --tools "Read,Grep,Glob" --strict-mcp-config`, no `--max-turns`, no `--max-budget-usd`). The reviewer never edits code.
 
-## Step 2: Dispatch the chosen reviewer
-
-Before the diff is sent, re-read the policy and apply the external-model policy check in razorback:security-review at dispatch time. When a policy block exists, the dispatched CLI's provider (`codex` → `openai`, `claude` → `anthropic`) must be allowed and the reviewer must appear in `Reviewer choices permitted:`. A denial on either field means refuse this reviewer and name an allowed alternative. When no external-model policy block exists, proceed and add the required loud morning-report note. The policy gate applies per dispatch: re-read the policy immediately before each pass. Both passes use the same CLI, so both checks evaluate the same provider and reviewer — and a policy change between passes fails closed before the second dispatch. A denial follows the canonical procedure in razorback:security-review, including blocker taxonomy #4 on an autonomous run where the user chose this reviewer.
-
-When a reviewer is chosen, dispatch the chosen CLI **twice** against the same diff and the same shared schema:
-
-1. **General pass** — the existing adversarial prompt wiring in the chosen reviewer-prompts file below.
-2. **Security pass** — the canonical security-only prompt — the `razorback:security-review` skill's `security-adversarial-prompt.txt` — dispatched per the `## Security pass` section of the chosen reviewer-prompts file. Follow that section for the runnable invocation — do not construct the security-pass command here.
-
-Both passes use the same `$REVIEW_ROOT` prepared in Step 1 and run from that directory. If either dispatch fails, remove `"$REVIEW_ROOT"` explicitly before returning the blocker; do not create a second review root.
-
-Immediately after the general pass call, record `external_invocations: 1/2`. Immediately after the security pass call, record `external_invocations: 2/2`. Count the calls even when parsing later fails. Do not dispatch either scope again.
-
-Select the prompt file based on the reviewer choice and invoke the matching reviewer-cli skill. Each file contains a complete runnable invocation for each pass. Every invocation runs the reviewer in adversarial mode with read-only tool access — the reviewer never edits code.
-
-The external reviewer does not run Miller and must not claim that it did. The
-lead owns Miller-first discovery and finding verification; the reviewer works
-from the sanitized Miller-backed evidence bundle and exported review tree. If
-evidence needed for a finding is absent, the reviewer reports missing evidence
-in its output rather than broadening its tool access.
-
-- **codex** → follow [`reviewer-prompts/codex.md`](reviewer-prompts/codex.md). Runs from `$REVIEW_ROOT` with `codex exec --ephemeral --color never --output-schema …` and the non-git/config-ignore flags, using the shared JSON schema. Background on codex's adversarial-review mode lives in the bundled `razorback:codex-cli` skill.
-- **claude** → follow [`reviewer-prompts/claude.md`](reviewer-prompts/claude.md). Runs from `$REVIEW_ROOT` with `claude -p --no-session-persistence --dangerously-skip-permissions --safe-mode --output-format json --json-schema … --tools "Read,Grep,Glob" --strict-mcp-config --system-prompt-file …` (no `--max-turns`, no `--max-budget-usd` — razorback caps neither the turns nor the spend of a review). The reviewer-prompts file reads the canonical schema and claude-cli's canonical adversarial prompt from the plugin at dispatch time; `razorback:claude-cli` has the background treatment.
-
-Both target the shared output schema defined canonically in the `razorback:codex-cli` skill's `schemas/review-output.schema.json` (verdict, summary, findings[severity, title, body, file, line_start, line_end, confidence, recommendation], next_steps, `review_completed: true`, non-empty unique `files_inspected`, `commands_run`, and non-empty file/line/observation `evidence`). Both reviewer-prompts files read the schema from that canonical file at dispatch time (claude strips the `$schema` key its validator rejects).
+Count calls even when parsing later fails. Never dispatch a scope twice. If a dispatch fails, `rm -rf -- "$REVIEW_ROOT"` before returning the blocker.
 
 ### Redact each pass payload
 
-Immediately before each reviewer-prompt invocation, construct the complete
-review prompt — full review instruction, optional user focus, and the labelled
-Target/File stat/Commit log/Lead Miller evidence/Diff bundle — then filter it through
-`skills/security-review/scripts/redact-outbound`: Claude's
-`$DIFF_AND_CONTEXT` or Codex's `$ADVERSARIAL_PROMPT_WITH_DIFF`. Apply the
-shared `review-payload.md` (in the `razorback:security-review` skill) contract with
-`prepare-review-artifact`. The complete redacted review prompt remains the
-source of truth, and a large prompt is exposed through its review artifact
-path. Keep the existing single `$REVIEW_ROOT` for both passes; the helper writes
-a large bundle only inside that isolated tree. The selected prompt file consumes
-`$REVIEW_PROMPT_FILE` on standard input; never load a large artifact back into a
-shell variable or pass it as a positional argument. On helper or redaction
-failure, remove the payload files and explicitly clean `$REVIEW_ROOT` before
-returning the blocker.
+Build the complete prompt (instruction, optional focus, labelled Target / File stat / Commit log / Lead Miller evidence / Diff bundle), then filter it and apply the `review-payload.md` contract from razorback:security-review. Payloads over 128 KiB become a review artifact inside `$REVIEW_ROOT`; the prompt file then carries only the bounded static wrapper. Never load the artifact into a shell variable or positional argument.
 
 ```bash
 PAYLOAD_FILE=$(mktemp)
 REDACTED_PAYLOAD_FILE=$(mktemp)
-if [ "$REVIEWER" = "claude" ]; then
-  printf '%s' "$DIFF_AND_CONTEXT" > "$PAYLOAD_FILE"
-else
-  printf '%s' "$ADVERSARIAL_PROMPT_WITH_DIFF" > "$PAYLOAD_FILE"
-fi
+printf '%s' "$RENDERED_PROMPT" > "$PAYLOAD_FILE"   # claude: $DIFF_AND_CONTEXT; codex: $ADVERSARIAL_PROMPT_WITH_DIFF
 if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
   rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
   rm -rf -- "$REVIEW_ROOT"
-  unset REVIEW_ROOT
   echo "outbound redaction failed" >&2
   exit 1
 fi
@@ -187,103 +107,45 @@ if [ "$REVIEW_ARTIFACT" != inline ]; then
 fi
 ```
 
-Use `$REVIEW_PROMPT_FILE` for exactly one pass, then remove
-`"$PAYLOAD_FILE"`, `"$REDACTED_PAYLOAD_FILE"`, and a distinct
-`"$REVIEW_PROMPT_FILE"`. If `REVIEW_ARTIFACT` is a path, remove that artifact
-after the pass has been parsed before constructing and filtering the next pass;
-the next pass reuses the same `$REVIEW_ROOT` and creates its own path. The
-final explicit `rm -rf -- "$REVIEW_ROOT"` lifecycle remains required after both
-outputs are parsed. The shared threshold is 128 KiB; `--prompt-file` and stdin
-carry only the small prompt wrapper when the artifact branch is selected.
+Use `$REVIEW_PROMPT_FILE` for one pass, then remove the payload files and the artifact path before building the next pass in the same `$REVIEW_ROOT`.
 
-## Step 3: Parse findings
+## Step 3: Parse
 
-Two parse paths, because each CLI's output shape differs — and two outputs per review, because each pass writes its own output file. Both files live in `$OUT_DIR`, the private temp directory the reviewer-prompts invocation creates outside the worktree. Apply the chosen CLI's rules below to both pass outputs.
-
-Only the input shape differs — **codex (strict schema, no envelope):** `--output-schema` makes the CLI enforce the JSON schema directly on stdout. **claude (result envelope):** `--output-format json` wraps the response in a result envelope: `{type, subtype, result, structured_output, usage, total_cost_usd, …}`; with `--json-schema`, the parsed object lands in `.structured_output` and `.result` holds the same JSON as a string. `validate-review-output` normalizes both shapes; run it on each pass output before accepting anything:
+Run `validate-review-output` on each pass output; it normalizes both shapes (codex: direct schema on stdout; claude: result envelope with the object in `.structured_output`):
 
 ```bash
 "$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$OUT_DIR/<reviewer>-output.json" > "$OUT_DIR/<reviewer>-normalized.json"
-jq '.findings[]?' < "$OUT_DIR/<reviewer>-normalized.json"   # iterate; empty = clean review
+jq '.findings[]?' < "$OUT_DIR/<reviewer>-normalized.json"
 ```
 
-A clean review has `findings: []` — `jq -e '.findings[]'` exits 4 on a valid empty array, which would misread success as a parse failure.
+Do not gate on `jq -e '.findings[]'`; it exits 4 on a valid empty array. Malformed, incomplete, or schema-invalid output is a failed required-reviewer pass: close `blocked` with the consumed count, no retry. Merge both outputs into one list, tagging each finding `general` / `security`. Cost: claude sums `.total_cost_usd` and `.usage` across both passes; codex reports no per-request counts, so note the absence.
 
-After Step 3, both reviewer paths produce **one merged list** of normalized findings covering both passes. Tag each finding with the pass that produced it (`general` / `security`) — the tag carries into classification and the morning report. For cost tracking in the morning report's per-reviewer section: claude surfaces `.total_cost_usd` and `.usage.{input_tokens,output_tokens}` in each pass's envelope — sum the two invocations; codex does not surface per-request token counts in its JSON output, so note the absence for codex rather than faking a number.
+After both outputs are parsed (or on any failure path), run `rm -rf -- "$REVIEW_ROOT"` explicitly; do not rely on an `EXIT` trap surviving between harness calls. This is practical reviewer isolation, not host-wide read confinement: a reviewer process can still read absolute host paths its CLI permits.
 
-Malformed, incomplete, or schema-invalid output is a failed required-reviewer pass. Close `blocked` with the consumed invocation count; do not retry and displace the other declared discovery scope. A partial result is not completion evidence.
+## Step 4: Verify and classify
 
-After both pass outputs are captured and parsed, explicitly remove the shared review root before classifying findings. Run the cleanup on failed parse or dispatch paths too, before returning `blocked`; this lifecycle must not depend on an `EXIT` trap surviving between harness calls.
+Full protocol with examples: [`verification-protocol.md`](verification-protocol.md). Verify every finding with Miller (`inspect(target, depth=overview)`, `depth=full` for the central symbol, `trace` for public APIs) and classify:
 
-```bash
-rm -rf -- "$REVIEW_ROOT"
-unset REVIEW_ROOT
-```
+| Class | Action |
+|---|---|
+| real-bug | Fix, mandatory |
+| real-improvement | Fix unless it expands scope beyond the plan |
+| false-positive | Dismiss with a written, evidence-citing reason |
+| out-of-scope | Dismiss: "out of scope, filed as follow-up" |
 
-This is practical reviewer isolation, not host-wide read confinement: it reduces exposure to live worktree inputs and branch-controlled startup behavior, but it cannot prevent a reviewer process from reading arbitrary absolute host paths when its host or CLI permits that access.
+Dedupe: both passes flagging the same file, lines, and root issue collapse into one `dual-flagged` finding; classify, fix, and count it once. No silent dismissals. A real finding whose fix needs human input (architecture, priority trade-off, security boundary) is flagged with a "why uncertain" note, not fixed.
 
-## Step 4: Verify findings
+## Step 5: Apply fixes
 
-For every finding, the lead checks the actual code before deciding what to do. Reviewers emit noise; rubber-stamping is banned. The full classification protocol lives in [`verification-protocol.md`](verification-protocol.md) — read it for the concrete examples.
+Miller-first either way. With delegation: one fresh implementer per finding, or one per file when findings cluster, using [`fix-dispatch-prompt.md`](fix-dispatch-prompt.md); parallel only across disjoint files. Without delegation: fix inline, one finding (or one file batch) at a time, using the same template as a checklist. Fresh workers carry no implementation-phase bias.
 
-Summary of the four classifications:
+## Step 6: Local confirmation
 
-- **real-bug** — the code actually has the defect described. Fix is mandatory.
-- **real-improvement** — not a bug, but a legitimate quality improvement (naming, coupling, missed edge case that matters). Fix is recommended unless it expands scope beyond the plan.
-- **false-positive** — reviewer misread the code, invented a path, or flagged an intentional pattern. Dismiss with a written reason.
-- **out-of-scope** — real finding, outside the plan's scope. Dismiss with "out of scope, filed as follow-up" (or equivalent specific reason).
+After fixes are committed, run the smallest project-defined scope that covers them and inspect only the fix diff. Re-run the branch-gate scope if the fixes invalidate the prior ledger entry; reuse a passing entry for the same HEAD. No external reviewer is dispatched. On failure: one focused fix round, then blocker taxonomy #5 (`razorback:using-razorback` `references/blocker-taxonomy.md`). Do not push a red branch.
 
-Dedupe rule: when both passes flag the same defect (same file, same lines, same root issue), collapse them into one finding and note it as `dual-flagged`. Dual-flagging is a confidence signal for classification — two independent prompts saw the same problem — never double-counted work: classify once, fix once, count once.
+## Step 7: Emit the summary
 
-Verification always uses Miller:
-
-- **Inspect** the referenced symbol — check its callers, callees, types with `inspect(target, depth=overview)`; escalate to `depth=full` only for the symbol the finding centers on.
-- **Find references** — check the full impact if the finding touches a public API with `trace`.
-- **List the file's symbols** — see the file structure without reading the whole file with `inspect`.
-
-Dismissal rule: no finding is dismissed without a written reason that ends up in the morning report. The user will read those reasons on PR review and can override any of them.
-
-Flagging rule: if a finding is real AND the lead cannot determine the right fix without human input (architectural question, priority trade-off, security-boundary call), do **not** fix. Flag it in the morning report's "Flagged for your review" block with a short "why uncertain" note.
-
-## Step 5: Apply verified fixes
-
-Every fix path stays Miller-first. Whoever applies the fix, the lead or a delegated worker, orients with Miller before touching code.
-
-**When delegation is available:** dispatch a fresh implementer worker per finding, or **group by file if multiple findings cluster on the same file**. Use the template at [`fix-dispatch-prompt.md`](fix-dispatch-prompt.md). File ownership must be stated so parallel fixers do not collide. If findings span disjoint files, you can dispatch in parallel. If they cluster on the same file, either serialize the fixes or batch them into one worker dispatch.
-
-**When delegation is unavailable (e.g., a no-delegation `executing-plans` run, or the lead is itself running as a subagent on a harness that blocks recursion):** the lead applies the verified fixes inline in the current session. Work one finding at a time, or batch same-file findings only. Use the scope boundary and Miller-first checklist in [`fix-dispatch-prompt.md`](fix-dispatch-prompt.md) as the inline checklist. Do not invent a subagent path that the harness cannot run.
-
-Why fresh workers when delegation exists? The review runs after the main execution phase has ended and worker context may be closed or stale. Fresh workers work at any point in the timeline, and they come with no implementation-phase bias that might rationalize around a finding.
-
-## Step 6: Run required verification
-
-After all delegated fix workers report DONE and commit their changes, or after the inline fixes are committed on a no-delegation run, begin Round 2 local confirmation. Run the smallest project-defined verification scope that covers the fixes and inspect only the fix diff for new breakage. If the fixes change branch-level behavior or invalidate the prior branch-gate ledger entry, run the branch-gate scope again. If the same HEAD already has a passing ledger entry for the required scope, reuse that evidence. No external reviewer is dispatched during local confirmation.
-
-If verification fails after fixes:
-
-1. If the failure is a straightforward issue introduced by the fix and the implementer missed it, apply one more focused fix round with the failure context. Dispatch a fresh fix worker when delegation exists, or fix inline on a no-delegation run. One retry, not a loop.
-2. If the retry fails or the failure looks structural, this is **blocker taxonomy #5** (unresolvable test failures) — see the `razorback:using-razorback` skill's `references/blocker-taxonomy.md`. Stop and write the blocker into the morning report. Do not push a red branch.
-
-If verification passes, proceed to Step 7.
-
-## Step 7: Emit summary for morning report
-
-Produce a structured block that slots into the External review section of `../finishing-a-development-branch/morning-report-template.md`. The template's External review section already defines these placeholders — fill them:
-
-- `{{reviewer}}` — one of `codex`, `claude`.
-- `{{general_findings_count}}` / `{{security_findings_count}}` — per-pass counts of findings as each pass returned them, rendered on the template's **Passes** line (`general N / security M`).
-- `{{findings_total}}` — combined count across both passes after the Step 4 dedupe (a `dual-flagged` finding counts once), before classification.
-- `{{findings_fixed_count}}` — count of verified findings that were fixed.
-- `{{fix_commit_shas}}` — comma-separated short SHAs of the fix commits.
-  - Per-fixed-finding sub-block: short title + short summary of the fix.
-- `{{findings_dismissed_count}}` — count of dismissed findings (false-positive or out-of-scope).
-  - Per-dismissed-finding sub-block: short title + **dismissal reason** (required, no silent dismissals).
-- `{{findings_flagged_count}}` — count of real findings left for human judgment.
-  - Per-flagged-finding sub-block: short title + **why uncertain** (required).
-
-Append a one-line cost note per reviewer, summed across both pass invocations: claude from `.total_cost_usd` and `.usage` ("claude used N in / M out tokens, $X.XX"). Codex does not surface per-request token counts — note the absence rather than faking a number.
-
-Also emit the terminal campaign block consumed by the morning report. Use `clean` when nothing above the floor remains open, `capped` when the fixed budget or round limit is exhausted with non-blocking findings still open, and `blocked` when the required reviewer failed or an unresolved critical/high finding meets the blocker taxonomy:
+Fill every External review placeholder in `../finishing-a-development-branch/morning-report-template.md`: per-pass counts as returned, total after dedupe, fixed findings with commit SHAs and a one-line summary each, dismissed findings with a reason each, flagged findings with a why-uncertain each, and the one-line cost note. Then the terminal block (`clean`: nothing above the floor open; `capped`: budget exhausted with non-blocking findings open; `blocked`: reviewer failed or an unresolved critical/high meets the taxonomy):
 
 ```text
 REVIEW CAMPAIGN STATUS
@@ -297,9 +159,7 @@ open_above_floor: <count>
 campaign_closed: yes
 ```
 
-Every state with `campaign_closed: yes` is terminal. The caller must not dispatch another reviewer after this block.
-
-The caller (`executing-plans` Step 3 or `subagent-driven-development` Step 4a) takes this block and hands it forward to `finishing-a-development-branch`, which renders it into the PR description (summary form) and the full worktree report.
+`campaign_closed: yes` is terminal; the caller hands the block to `finishing-a-development-branch` and dispatches no further reviewer.
 
 ## Rationalizations
 
@@ -313,40 +173,19 @@ The caller (`executing-plans` Step 3 or `subagent-driven-development` Step 4a) t
 
 ## Red flags
 
-Violating the letter of these rules is violating their spirit.
-
 **Never:**
 
-- **Loop external review.** Each pass runs once. No "review, fix, re-review" cycle for the general pass or the security pass. Leftover real findings that the lead cannot fix get flagged for human judgment and the PR proceeds.
-- **Re-run a reviewer that already burned a full attempt.** A run that consumed half an hour and a full context and returned nothing is not fixed by another attempt with a bigger timeout or a split diff. Every call consumes one of the two immutable invocations; malformed output blocks instead of authorizing a retry. A reviewer that runs long is working, not stuck.
-- **Cap the reviewer to control cost.** The review's scope is set by the prompt, not by `--max-turns`, `--max-budget-usd`, or a shortened timeout. A cap truncates the review mid-flight, and a truncated review gets re-run in full. The 30-minute timeout is a failsafe for a hung process and nothing more.
-- **Let the reviewer edit code.** Reviewers are read-only, each via its CLI's real mechanism: codex runs under `-s read-only` (sandbox blocks writes), claude pins `--tools "Read,Grep,Glob" --strict-mcp-config` (no write-capable tool in the set). Delegated fixes route through fresh implementer workers, and no-delegation runs fix inline under the same Miller-first checklist.
-- **Silently dismiss findings.** Every dismissal requires a written reason in the morning report so the user can override on PR review. Silent dismissals defeat the whole point of running an external reviewer.
-- **Skip verification after fixes.** Every fix invalidates prior affected scopes. Run the required project-defined verification scope, or reuse a ledger entry only when it covers the current HEAD and required scope. Never push a branch whose most recent verification does not include the fix commits.
-    - **Ship a PR without the reviewer the user requested.** Reviewer unavailability in **either pass** (auth, rate limit, timeout without a complete output, empty stdout, schema violation) is a **blocker**, not a silent downgrade — the same triggers and the same protocol apply to the general pass and the security pass. Skipping the security pass when a reviewer is chosen is this same red flag: half a review is a silent downgrade. Stop the run, do NOT push, do NOT create a PR, emit a partial morning report with `Status: Blocked` and the specific failure in `Blockers hit`, and exit. The user chose this reviewer for the run; quietly skipping the review — or one of its passes — turns an explicit request into an implicit "never mind".
-
-## Integration
-
-**Called by:**
-
-- `razorback:executing-plans` — at Step 3, between task execution and `razorback:finishing-a-development-branch`
-- `razorback:subagent-driven-development` — at Step 4a, same position
-
-**Calls:**
-
-- `razorback:managing-review-campaigns` — owns immutable setup, counters, and terminal status
-- `razorback:codex-cli` (when reviewer = codex) — see `reviewer-prompts/codex.md`
-- `razorback:claude-cli` (when reviewer = claude) — see `reviewer-prompts/claude.md`
-
-**References:**
-
-- The `razorback:using-razorback` skill's `references/blocker-taxonomy.md` — stop-versus-proceed rules
-- The `razorback:finishing-a-development-branch` skill's `morning-report-template.md` — shape of the summary block emitted in Step 7
-- The `razorback:codex-cli` skill's `schemas/review-output.schema.json` — the shared finding shape both reviewers target
+- **Loop external review.** Each pass runs once. Leftover real findings the lead cannot fix get flagged and the PR proceeds.
+- **Re-run a burned attempt.** Every call consumes one of the two invocations; malformed output blocks. A long run is working, not stuck.
+- **Cap the reviewer.** No `--max-turns`, `--max-budget-usd`, or shortened timeout. The 30-minute timeout is a hung-process failsafe.
+- **Let the reviewer edit code.** codex: `-s read-only`; claude: `--tools "Read,Grep,Glob" --strict-mcp-config`.
+- **Silently dismiss findings.** Every dismissal carries a written reason the user can override on PR review.
+- **Skip verification after fixes.** Never push a branch whose latest verification excludes the fix commits.
+- **Ship a PR without the chosen reviewer.** Unavailability in either pass (auth, rate limit, timeout, empty stdout, schema violation) is a blocker: no push, no PR, partial morning report with `Status: Blocked` and the failure in `Blockers hit`.
 
 ## It's working if
 
 - Exactly two external invocations were recorded, none after `campaign_closed: yes`.
 - Every finding ended fixed, dismissed with a written reason, or flagged with a why-uncertain note.
-- The fix diff passed the required verification scope before Step 7 emitted the summary.
+- The fix diff passed the required verification scope before Step 7.
 - `$REVIEW_ROOT` and every payload temp file are gone.

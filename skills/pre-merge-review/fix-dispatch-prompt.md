@@ -1,8 +1,6 @@
 # Fix Dispatch Prompt Template
 
-Use this template when routing a single verified finding from the external reviewer into the harness-native fix flow. On harnesses with delegation, dispatch a fresh implementer worker. On no-delegation runs, use the same sections as an inline checklist. One worker dispatch per finding is the default; see the batching edge case at the bottom for when findings cluster on one file.
-
-The template mirrors the shape of `skills/subagent-driven-development/implementer-prompt.md` but is scoped to one finding — no multi-task list, no file ownership negotiation across tasks, just a targeted fix.
+Routes one verified external-review finding into the harness-native fix flow: a fresh implementer worker when delegation exists, the same sections as an inline checklist otherwise. One dispatch per finding by default; see the same-file edge case below.
 
 ## Template
 
@@ -23,108 +21,76 @@ Fresh implementer dispatch (delegation available):
 
     ## Symbol target
 
-    [Name the symbol or code region this finding touches. Include one short note if the public API impact matters. Do not paste raw inspect/find-references output here. The person applying the fix will re-orient with Miller before editing.]
+    [The symbol or code region this finding touches, plus one short note if public API impact matters. No raw inspect/trace output; you re-orient with Miller before editing.]
 
     ## Plan context
 
-    [Two-sentence summary of what the plan was doing in this area. Example:
-    "This branch added pre-merge external review orchestration. The change in
-    src/review/parse.ts wires claude's result-envelope parser into the findings
-    normalization step."]
+    [Two sentences on what the plan was doing in this area.]
 
     ## Scope boundary (critical)
 
-    Fix ONLY this finding. Do not refactor. Do not expand scope. Do not "improve
-    nearby code." If the fix reveals an unrelated issue, note it in your report
-    and stop; do not attempt to address it.
+    Fix ONLY this finding. Do not refactor, expand scope, or improve nearby code.
+    If the fix reveals an unrelated issue, note it in your report and stop.
 
-    If the fix requires a structural change the finding doesn't spell out (e.g.
-    extracting a helper, changing a function signature that has other callers),
-    report BLOCKED with a short description and do not apply the fix. The lead
-    will reclassify the finding (likely to flagged-for-your-review) and you will
-    be re-dispatched with clearer direction if needed.
+    If the fix requires a structural change the finding does not spell out (a
+    new helper, a signature change with other callers), report BLOCKED with a
+    short description and do not apply the fix. The lead will reclassify.
 
     ## Orientation (REQUIRED before coding)
 
-    Miller-first orientation is mandatory here too. Even though the lead has
-    provided symbol context above, confirm it yourself with Miller before editing:
+    1. List the file's symbols with Miller `inspect(target='<file>')`.
+    2. Inspect the symbol, its callers and callees, with Miller
+       `inspect(target='<symbol>', depth=full)`.
+    3. Find references with Miller `trace(target='<symbol>')` if your fix
+       changes caller-visible behavior.
 
-    1. **List the file's symbols** to see the exact structure of what you're
-       about to change with Miller `inspect(target='<file>')`.
-    2. **Inspect the symbol** to re-check its callers, callees, and surrounding
-       semantics before changing it with Miller `inspect(target='<symbol>', depth=full)`.
-    3. **Find references** to re-check impact if your fix changes behavior
-       visible to callers with Miller `trace(target='<symbol>')`.
-
-    Do NOT use Glob -> Read -> Grep chains for exploration, and do not start by
-    opening raw files or raw diffs. Miller returns targeted, token-efficient context.
-    Do not infer or invent API shapes. Use Miller to discover symbol names,
-    function signatures, config shapes, route names, CLI flags, or public contracts
-    before relying on them. If Miller cannot prove the shape, say what evidence is
-    missing instead of guessing.
+    Do NOT use Glob -> Read -> Grep chains or start from raw files or diffs.
+    Do not infer or invent API shapes: discover symbol names, function
+    signatures, config shapes, route names, CLI flags, and public contracts with
+    Miller before relying on them. If Miller cannot prove the shape, say what
+    evidence is missing instead of guessing.
 
     ## Your job
 
     1. Apply the minimum change that resolves the finding.
-    2. Add or update tests that would have caught the defect (if the finding
-       describes a real-bug). For real-improvement findings where a test is not
-       meaningful, skip this — quality changes don't always have test coverage.
+    2. Add or update the test that would have caught it (real-bug findings;
+       skip when a test is not meaningful for a real-improvement).
     3. Run the assigned verification scope from the plan:
 
        ```
        [scope label and concrete command from the plan's Verification Strategy]
        ```
 
-       The assigned scope must pass before you commit. Do not run broader scopes
-       unless the lead assigned them.
+       It must pass before you commit. Do not run broader scopes unassigned.
 
-    4. Commit with message prefix `fix(review): ` followed by the finding's short
-       title. Example: `fix(review): preserve error cause in parseReviewOutput`.
-       One commit per finding. Do not bundle unrelated changes.
+    4. Commit as `fix(review): <finding short title>`. One commit per finding.
 
     ## Report format (required)
 
-    When done, report in plain text (not JSON):
+    Plain text, not JSON:
 
     **Status:** DONE | BLOCKED
 
     - What you changed (file:line references)
     - Commit SHA (first 7 chars)
     - Verification scope, command, commit SHA, result, and timestamp
-    - **Miller calls used** - list the orient / inspect / find-references calls you made before editing
-    - **API-shape evidence** - list the Miller evidence for any symbol names, function signatures, config shapes, route names, CLI flags, or public contracts you relied on
-    - Any observations that belong in the morning report's judgment-calls log
-      (e.g. "chose to preserve original stack via cause rather than rethrowing
-      raw err because cause is supported by the project's Node version")
+    - **Miller calls used** - the orient / inspect / find-references calls you made before editing
+    - **API-shape evidence** - the Miller evidence for any symbol names, function signatures, config shapes, route names, CLI flags, or public contracts you relied on
+    - Observations for the morning report's judgment-calls log
 
-    If BLOCKED, describe what blocked you and what the lead needs to do:
-    re-dispatch with more context, reclassify the finding, or surface it to the
-    user.
+    If BLOCKED: what blocked you and what the lead needs to do (re-dispatch
+    with more context, reclassify, or surface to the user).
 ```
 
 ## Edge case: multiple findings on the same file
 
-If the reviewer flagged 2+ verified findings on the same file, do **not** dispatch parallel workers for them - they would collide on file ownership. Two options:
+Never dispatch parallel workers on one file. Either:
 
-**Option A — serialize (preferred when the findings are independent):**
+- **Serialize** (independent findings): one worker per finding, run sequentially, one commit each.
+- **Batch** (coupled findings): one worker, all findings numbered under `## Findings`, each file:line under `## Location`, scope boundary reworded to "Fix ONLY these N findings as a coherent set", single commit `fix(review): address N findings in <file>` listing each title.
 
-Dispatch one worker per finding, but run them sequentially. Wait for each to report DONE before starting the next. Each commits its own fix.
+Do NOT batch across files; one worker per file at most.
 
-**Option B — batch (preferred when findings share code paths or the fixes are coupled):**
+## Why fresh workers
 
-One worker dispatch, all findings listed in the prompt, single commit with all fixes. Use this template with these modifications:
-
-- "## Finding" -> "## Findings" (plural, numbered list).
-- "## Location" -> list each finding's file:line.
-- "## Scope boundary" - update: "Fix ONLY these N findings. Apply them as a coherent set - if the findings overlap, one coordinated fix may be cleaner than N isolated ones, but still do not expand scope beyond the listed findings."
-- "## Commit" - single commit with message `fix(review): address N findings in <file>` and a body listing each finding's short title.
-
-File ownership prevents conflicts because the single worker owns the file for the duration of its run.
-
-**Do NOT batch across files.** One worker per file at most - if the batch spans multiple files you lose the "fix only this one thing" discipline that makes review-fix dispatches low-risk.
-
-## Why fresh workers (not existing implementation-phase workers)
-
-The external review runs after the implementation phase has ended. Fresh workers work at any point in the timeline regardless of worker state. They also come with no implementation-phase bias that might rationalize around a finding - the implementer who wrote the code is the one most likely to explain away a real defect in it.
-
-A fresh worker reads the finding, reads the code, applies the fix, and leaves. That's the right shape for review-originated work.
+The review runs after implementation ends, so implementer context may be gone, and the implementer who wrote the code is the one most likely to rationalize around a defect in it. A fresh worker reads the finding, reads the code, applies the fix, and leaves.

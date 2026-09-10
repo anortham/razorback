@@ -3,150 +3,40 @@ name: grok-cli
 description: Use when the user says "ask grok", "get grok's take", "grok review", "have grok look at this", "delegate to grok", or any variation naming Grok/xAI as the perspective they want.
 ---
 
-# Grok Assistant
+# Grok CLI
 
-Use the Grok CLI (`grok -p`) to get a second opinion, review code changes,
-run adversarial security/correctness reviews, or delegate tasks to xAI's Grok
-models.
+Second opinions, code review, adversarial review, and delegation to xAI
+models through `grok -p`. Read
+`skills/codex-cli/references/shared-cli-review.md` before the first call:
+policy gate, redaction, payload transport, completion contract, and evaluation
+rules live there. Provider for this skill: `xai` (policy check in
+razorback:security-review). Other models: razorback:codex-cli (default when
+none is named), razorback:claude-cli, razorback:agy-cli.
 
-## Overview
-
-Two constraints shape every recipe here. First, never pass `--json-schema` on
-a review pass: a schema-constrained call ends after one turn with no tool use
-and no findings. Review free-form, then structure the result in a second pass
-that resumes the same session (Code Review Steps 3-4). Second, every outbound
-payload passes the Outbound Payload Redaction guard exactly once; recipes use
-only the redacted output.
-
-Use this skill only when the user names Grok/xAI. For a generic second opinion
-with no model named, razorback:codex-cli is the default; when they name Claude,
-razorback:claude-cli; for Antigravity, razorback:agy-cli.
-
-## Defaults
-
-- **Model**: inherit the current Grok default (`grok-4.5` at time of writing)
-  unless the user or environment explicitly selects one with `-m, --model`.
-  `grok models` prints the default and the list you can pick from.
-- **Reasoning**: inherit the current Grok default unless the user or environment
-  explicitly selects `--reasoning-effort <EFFORT>` (alias `--effort`).
-- **Sandbox mode**: `--sandbox <PROFILE>` selects a filesystem/network profile.
-  On Grok 1.0.13, `off` is the default; built-in profiles are `off`, `workspace`,
-  `devbox`, `read-only`, and `strict`. Use `read-only` for review (the reviewer
-  can read and run non-mutating commands but cannot edit). Use `workspace` for
-  delegate flows (write access inside the workspace). There is no built-in `none`
-  or `danger-full-access` profile.
-- **Headless single-turn**: `-p, --single <PROMPT>` prints the response to
-  stdout and exits. For large review bundles, use the shared review-artifact
-  contract; `--prompt-file <PATH>` transports only the concise prompt wrapper.
-  `-p` and `--prompt-file` are **mutually exclusive** — each is a complete way
-  to supply the headless prompt. `-p` requires its own value, so
-  `grok -p --prompt-file FILE` fails with
-  `error: a value is required for '--single <PROMPT>' but none was supplied`
-  (exit 2). Use `grok --prompt-file FILE` with no `-p`.
-- **Non-interactive approvals (load-bearing)**: headless `-p` / `--prompt-file`
-  cannot show a permission prompt. Pass **`--always-approve`** (alias `--yolo`,
-  or `--permission-mode bypassPermissions`) on **every** headless tool-using
-  run — second opinion, review, adversarial, and delegate — not only on
-  delegate. Sandbox and approvals are orthogonal: `--sandbox read-only` still
-  kernel-blocks writes/network even with always-approve. Without always-approve,
-  any shell command outside Grok's small read-only allowlist (e.g.
-  `git worktree`, bare `echo`, compound non-allowlisted segments) is resolved as
-  `permission_cancelled`; that **cancels the entire turn** (successful parallel
-  reads are discarded), the process often exits **0**, and stdout is empty or
-  only the pre-tool sentence — looks like "died on multi-tool".
-- **Working directory**: `--cwd <CWD>` sets the root (Grok's equivalent of
-  codex's `-C`). Defaults to the shell's cwd.
-- **Structured output**: `--json-schema '<SCHEMA JSON STRING>'` constrains the
-  model to JSON and implies `--output-format json`. `--output-format` also
-  accepts `plain` (default) and `streaming-json`.
-- **Stderr**: Grok 1.0.13 puts banners and startup failures on stderr, so
-  stdout/JSON remains clean while stderr must remain available. Do not discard
-  stderr on any headless recipe, including review, adversarial, delegate, resume,
-  and cross-project runs. The `grok models` pre-flight command already keeps it.
-- **stdin**: In testing, `grok -p` does **not** block on stdin the way
-  `codex exec` and `claude -p` do — it returns without a redirect. Keep
-  `< /dev/null` (bash) / `< NUL` (Windows cmd/PowerShell) on non-piped
-  invocations anyway as cheap insurance against a harness that holds the pipe
-  open.
-- **No per-invocation turn/spend caps**: razorback does not pass `--max-turns`,
-  and it passes no other mechanical ceiling to a reviewer. Any such cap
-  truncates a review mid-flight and trades finding quality for a few cents.
-  Review depth is the point; do not add the flag back. These uncapped settings
-  apply inside one CLI invocation only. Every CLI call counts once against the
-  caller's campaign `external_invocation_budget`; one internally uncapped
-  invocation does not waive the campaign budget. Before a second review call
-  or any multi-reviewer dispatch, load and follow
-  `razorback:managing-review-campaigns`. A user who wants a hard per-invocation
-  ceiling sets it themselves.
-- **Timeout is a failsafe, not a budget**: set 1800000ms (30 min) on every
-  review invocation. It exists to catch a process that hung or died and will
-  never return — nothing else. It is not a bound on how long a review may
-  take, and it is not a cost dial. Scope the review in the prompt and let the
-  reviewer finish the job. Never tune it down to make a run cheaper.
-- **Auth**: session from `grok login` (`--oauth` default, `--device-auth` for
-  headless/remote). There is no `grok auth status`. Classify `grok models` per
-  Pre-flight Check — a failed probe is not logout. Tell the user to run
-  `grok login` only when stdout is `You are not authenticated.` and
-  `~/.grok/auth.json` is missing.
-
-## Policy Gate
-
-Before sending any diff or repo content to xAI, apply the external-model
-policy check in razorback:security-review. Provider for this skill: `xai`.
-No policy block in the target repo's project instructions → proceed and add the
-loud note to the morning report. Policy denies `xai` → refuse the dispatch
-and name an allowed alternative; on an autonomous run where the user chose this
-provider, stop per blocker taxonomy #4.
+Two Grok-specific rules: never pass `--json-schema` on the review pass (a
+schema-constrained call ends after one turn with no tool use and no findings;
+structure the result in a second pass on the same session), and never discard
+stderr.
 
 ## Running These Recipes
 
-Every recipe below is one shell script, split into numbered steps for reading.
-Run all steps of a recipe in ONE shell invocation. Shell variables do not
-survive between harness tool calls, so a step run on its own sees an empty
-`$SKILL_DIR`, `$REVIEW_ROOT`, `$DIFF`, and `$TARGET`. That sends an empty or
-truncated payload, or fails on a helper path that starts with `/../`.
-Concatenate the step blocks into a single command and run it once.
-
-Make these two lines the start of that command, ahead of every step:
+Run every step of a recipe in ONE shell invocation. Shell variables do not
+survive between harness tool calls, so a step run alone sees an empty
+`$SKILL_DIR`, `$REVIEW_ROOT`, `$DIFF`, and `$TARGET`. Start the command with:
 
 ```bash
 SKILL_DIR=<absolute path to this skill's own directory>
 set -u
 ```
 
-`$SKILL_DIR` is the directory that holds this SKILL.md — the skill's base
-directory, announced when the skill loads. Substitute the literal path before
-you run anything; the recipes reach shared helpers through `$SKILL_DIR/..`.
-`set -u` stops the run on an unset recipe variable instead of dispatching a
-payload with a hole in it.
-
-## Outbound Payload Redaction
-
-Immediately before every Grok dispatch, write the fully constructed payload to
-`PAYLOAD_FILE` and pass it through `$SKILL_DIR/../security-review/scripts/redact-outbound`.
-Use only `REDACTED_PAYLOAD_FILE` for the invocation; never log matched material.
-If redaction fails, remove both files, emit only a generic error, and stop before
-Grok receives any input. Review and adversarial bundles use the shared
-`prepare-review-artifact` helper: small bundles stay in the redacted prompt file,
-while large bundles are kept in the reviewer-root-local artifact and the CLI
-receives only a concise prompt file.
-
-```bash
-PAYLOAD_FILE=$(mktemp)
-REDACTED_PAYLOAD_FILE=$(mktemp)
-printf '%s' "$PROMPT" > "$PAYLOAD_FILE"
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
-  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
-  echo "outbound redaction failed" >&2
-  exit 1
-fi
-```
+`$SKILL_DIR` is the directory that holds this SKILL.md; substitute the literal
+path. Recipes reach shared helpers through `$SKILL_DIR/..`.
 
 ## Pre-flight Check
 
-`grok models` is a full CLI start, not `auth status`. When the binary runs, it
-always prints a model list and exits 0. The login line on stdout is the only
-auth signal. Keep stderr.
+`grok models` is a full CLI start, not an auth status command. When the binary
+runs it always prints a model list and exits 0; the login line on stdout is
+the only auth signal. Keep stderr.
 
 ```bash
 GROK_BIN=$(command -v grok || true)
@@ -158,74 +48,72 @@ GROK_BIN=$(command -v grok || true)
 | stdout / result | Meaning | What to do |
 |---|---|---|
 | `You are logged in with grok.com.` | Ready | Proceed |
-| `You are not authenticated.` and `~/.grok/auth.json` exists | This process cannot see credentials (sandbox, wrong `HOME`) | Do **not** run `grok login`. Re-run with a shell that can read `~/.grok/auth.json`. |
+| `You are not authenticated.` and `~/.grok/auth.json` exists | This process cannot see credentials (sandbox, wrong `HOME`) | Do **not** run `grok login`. Re-run from a shell that can read `~/.grok/auth.json`. |
 | `You are not authenticated.` and `~/.grok/auth.json` is missing | No session on disk | Run `grok login` (`--device-auth` on a headless host). |
 | `command not found` / exit 127 | Binary missing or not on `PATH` | Try `~/.local/bin/grok` and `~/.grok/bin/grok`. Do **not** run `grok login`. |
 | empty stdout, timeout, or a network/settings error | Probe failed | Keep stderr. Retry once. Do **not** run `grok login`. |
 
-## Review Targeting
+## Defaults
 
-Scope selection (`--scope auto|working-tree|branch`, `--base <ref>`) and the
-foreground/background sizing heuristic are shared across razorback's reviewer
-skills: load `review-targeting.md` from razorback's using-razorback references
-when selecting scope. It resolves `$DIFF`, `$TARGET`, and `$RANGE`; read
-"the reviewer" there as `grok -p`.
+- **Model / reasoning**: inherit (`grok-4.5` at time of writing); `-m, --model`
+  and `--reasoning-effort` (alias `--effort`) only on explicit choice. Set
+  `GROK_MODEL` / `GROK_EFFORT` and let `${VAR:+--flag "$VAR"}` add the flag.
+- **Sandbox**: `--sandbox <PROFILE>`. On Grok 1.0.13 built-in profiles are
+  `off`, `workspace`, `devbox`, `read-only`, and `strict`. There is no
+  built-in `none` or `danger-full-access` profile. `read-only` for second
+  opinion; `workspace` for delegation; `workspace` plus the read-only tool
+  allowlist `--tools "Read,Grep,Glob"` for review (see Step 3).
+- **Headless prompt**: `-p, --single <PROMPT>` or `--prompt-file <PATH>`,
+  never both (`grok -p --prompt-file FILE` exits 2 with
+  `a value is required for '--single <PROMPT>'`).
+- **`--always-approve`** (alias `--yolo`, `--permission-mode bypassPermissions`)
+  on every headless run, including read-only ones. Without it any shell form
+  outside Grok's small allowlist resolves as `permission_cancelled`: the whole
+  turn is cancelled, the process often exits 0, and stdout is empty. Sandbox
+  and approvals are orthogonal; `--sandbox read-only` still blocks writes.
+- **Working directory**: `--cwd <CWD>`.
+- **Structured output**: `--json-schema '<JSON>'` implies `--output-format
+  json`; use it only on the structuring pass.
+- **Stderr**: Grok 1.0.13 puts banners and startup failures on stderr, so
+  stdout/JSON remains clean while stderr must remain available. Never send
+  stderr to the null device on any recipe.
+- **stdin**: `grok -p` does not block on stdin, but keep `< /dev/null`
+  (`< NUL` on Windows) on non-piped calls.
+- **No per-invocation turn/spend caps**: pass no `--max-turns` or other
+  ceiling. Every CLI call counts once against the caller's campaign
+  `external_invocation_budget`; one internally uncapped invocation does not
+  waive the campaign budget. Before a second review call or any multi-reviewer
+  dispatch, load `razorback:managing-review-campaigns`.
+- **Timeout is a failsafe, not a budget**: 1800000ms (30 min) on every review
+  call. Never lower it.
+- **Auth**: `grok login` (`--oauth` default, `--device-auth` headless). There
+  is no `grok auth status`; classify `grok models` per Pre-flight Check.
 
-## Task Routing
-
-Determine the task type from context and select the right mode:
+## Recipes
 
 ### Second Opinion (read-only)
 
-The user wants Grok's take on an approach, design decision, or piece of code.
-No file changes needed.
-
 ```bash
 PROMPT="Your prompt here"
-# Run the Outbound Payload Redaction block, then:
-IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
-
-grok -p "$REDACTED_PROMPT" \
-  --sandbox read-only \
-  --always-approve \
-  --cwd /path/to/project \
-  < /dev/null
+# Redact per shared-cli-review.md (sets REDACTED_PROMPT), then:
+grok -p "$REDACTED_PROMPT" --sandbox read-only --always-approve --cwd /path/to/project < /dev/null
 rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ```
 
-`--always-approve` is required even though the sandbox is read-only (see
-Defaults). Grok runs in the project directory and reads files on its own. If
-you need to point it at specific files, mention them by path in the prompt.
-
-**After**: Show Grok's response, then add your own analysis. Where you agree,
-say so. Where you disagree, explain why with evidence. The user gets two
-perspectives.
-
 ### Code Review (read-only)
 
-The user wants a review of current changes. Inherit the current Grok default
-unless the user or environment explicitly selects a model.
-
-**Step 1: Apply Review Targeting**
-
-Resolve `$DIFF`, `$TARGET`, and the foreground/background decision per the
-Review Targeting section above.
+**Step 1**: resolve `$DIFF`, `$TARGET`, `$RANGE`, and foreground/background per
+Review Targeting.
 
 **Step 2: Build the prompt**
-
-Use the shared `review-payload.md` (in the `razorback:security-review` skill)
-contract. For a standalone review, export the reviewed `HEAD` tree first so a
-large bundle has a readable, `.git`-free workspace:
 
 ```bash
 PROJECT_DIR=$(git rev-parse --show-toplevel)
 REVIEW_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/razorback-review-tree.XXXXXX")
 if ! "$SKILL_DIR/../pre-merge-review/scripts/prepare-review-tree" \
   "$PROJECT_DIR" HEAD "$REVIEW_ROOT" >/dev/null; then
-  rm -rf -- "$REVIEW_ROOT"
-  exit 1
+  rm -rf -- "$REVIEW_ROOT"; exit 1
 fi
-
 if [ -n "${RANGE:-}" ]; then
   FILE_STAT=$(git -C "$PROJECT_DIR" diff --stat "$RANGE")
   COMMIT_LOG=$(git -C "$PROJECT_DIR" log --oneline "$RANGE")
@@ -233,34 +121,22 @@ else
   FILE_STAT=$(git -C "$PROJECT_DIR" diff --stat --cached; git -C "$PROJECT_DIR" diff --stat)
   COMMIT_LOG=$(git -C "$PROJECT_DIR" log -1 --oneline HEAD)
 fi
-
 REVIEW_INSTRUCTION="Review the complete code-change bundle for bugs, security issues, correctness problems, and material improvements. Return only the required completion schema with review_completed=true, files_inspected, commands_run, and concrete file/line evidence."
 
-PAYLOAD_FILE=$(mktemp)
-REDACTED_PAYLOAD_FILE=$(mktemp)
+PAYLOAD_FILE=$(mktemp); REDACTED_PAYLOAD_FILE=$(mktemp)
 {
   printf '%s\n\n' "$REVIEW_INSTRUCTION"
-  if [ -n "${FOCUS:-}" ]; then
-    printf 'Focus area: %s\n\n' "$FOCUS"
-  fi
-  printf 'Target: %s\n' "$TARGET"
-  printf 'File stat:\n%s\n' "$FILE_STAT"
-  printf 'Commit log:\n%s\n' "$COMMIT_LOG"
-  printf 'Diff:\n%s' "$DIFF"
+  if [ -n "${FOCUS:-}" ]; then printf 'Focus area: %s\n\n' "$FOCUS"; fi
+  printf 'Target: %s\nFile stat:\n%s\nCommit log:\n%s\nDiff:\n%s' "$TARGET" "$FILE_STAT" "$COMMIT_LOG" "$DIFF"
 } > "$PAYLOAD_FILE"
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" \
-  < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
-  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
-  rm -rf -- "$REVIEW_ROOT"
+if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
+  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"; rm -rf -- "$REVIEW_ROOT"
   echo "outbound redaction failed" >&2
   exit 1
 fi
 rm -f -- "$PAYLOAD_FILE"
-
-if ! REVIEW_ARTIFACT=$("$SKILL_DIR/../security-review/scripts/prepare-review-artifact" \
-  "$REVIEW_ROOT" "$REDACTED_PAYLOAD_FILE"); then
-  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
-  rm -rf -- "$REVIEW_ROOT"
+if ! REVIEW_ARTIFACT=$("$SKILL_DIR/../security-review/scripts/prepare-review-artifact" "$REVIEW_ROOT" "$REDACTED_PAYLOAD_FILE"); then
+  rm -f -- "$REDACTED_PAYLOAD_FILE"; rm -rf -- "$REVIEW_ROOT"
   echo "review artifact preparation failed" >&2
   exit 1
 fi
@@ -268,8 +144,7 @@ REVIEW_PROMPT_FILE="$REDACTED_PAYLOAD_FILE"
 if [ "$REVIEW_ARTIFACT" != inline ]; then
   REVIEW_PROMPT_FILE=$(mktemp)
   printf '%s\n\n%s\n%s\n%s\n\n%s\n' \
-    'Read and follow the complete redacted review bundle at:' \
-    "$REVIEW_ARTIFACT" \
+    'Read and follow the complete redacted review bundle at:' "$REVIEW_ARTIFACT" \
     'The bundle contains the complete review instructions; follow them.' \
     'Use the available read-only tools to inspect that file.' \
     'Return only the required completion schema with review_completed=true, files_inspected, commands_run, and concrete file/line evidence.' \
@@ -277,435 +152,154 @@ if [ "$REVIEW_ARTIFACT" != inline ]; then
 fi
 ```
 
-The complete redacted bundle contains the target, file stat, commit log, and
-resolved diff. A payload over 128 KiB is written by
-`prepare-review-artifact` to `.razorback-review/review-input.md` inside
-`$REVIEW_ROOT`; the CLI prompt contains only the concise instruction and
-artifact path. Do not reload the artifact into an argument, stdin, or
-`--prompt-file`: `--prompt-file` is prompt transport, not a review-artifact
-mechanism. Payloads at or below the threshold remain the normal prompt file.
-The reviewer must report completion evidence from the complete bundle. Tool use
-is not completion proof; future-tense planning and a successful CLI exit do not
-prove that the review completed.
+The complete redacted bundle holds target, file stat, commit log, and diff. A
+payload over 128 KiB is written by `prepare-review-artifact` to
+`.razorback-review/review-input.md` inside `$REVIEW_ROOT`; the prompt is then
+the concise wrapper naming the artifact path. Do not reload the artifact into
+an argument, stdin, or `--prompt-file`: `--prompt-file` is prompt transport,
+not a review-artifact mechanism. Tool use is not completion proof; the
+validator in Step 4 decides.
 
-**Step 3: Run the review — no `--json-schema` on this call**
+**Step 3: Review pass (no `--json-schema`)**
 
-`--json-schema` constrains Grok to emit conforming JSON on its **first** turn.
-A schema-constrained review call therefore ends at `num_turns: 1` with zero tool
-calls, and Grok fills the required fields with its intent: `review_completed:
-true`, a future-tense summary, `findings: []`, and the bundle file itself cited
-as the only evidence. Measured on Grok 1.0.13 / grok-4.x, both inline and
-artifact transport, at 933-byte and 384-byte prompts. Payload size is not the
-cause; the schema is. Run the review free-form so Grok keeps its agent loop, and
-structure the result in Step 4.
-
-Use `--sandbox workspace` with an explicit `--tools "Read,Grep,Glob"` allowlist.
-`--sandbox read-only` and `--sandbox strict` carry a container-runtime deny list
-and refuse to start on any host where a denied socket path cannot be resolved
-(`sandbox profile resolve failed: runtime-socket deny resolution failed`). The
-reviewer runs in a throwaway `.git`-free export and holds no write tool, so
-`workspace` gives the same practical read-only reviewer on every host.
+With a schema, Grok answers in one turn (`num_turns: 1`, zero tool calls, a
+future-tense summary, `findings: []`, the bundle as its only evidence),
+regardless of payload size. Use `--sandbox workspace` with
+`--tools "Read,Grep,Glob"`: `read-only` and `strict` carry a container-runtime
+deny list and refuse to start on hosts where a denied socket path cannot be
+resolved, and the reviewer holds no write tool inside a throwaway export
+anyway.
 
 ```bash
 REVIEW_SESSION_ID=$(uuidgen)
-RESULT_FILE=$(mktemp)
-NORMALIZED_RESULT_FILE=$(mktemp)
-STDERR_FILE=$(mktemp)
-trap 'rm -f "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE" "$REVIEW_PROMPT_FILE" "$RESULT_FILE" "$NORMALIZED_RESULT_FILE" "$STDERR_FILE"; rm -rf "$REVIEW_ROOT"' EXIT
+RESULT_FILE=$(mktemp); NORMALIZED_RESULT_FILE=$(mktemp); STDERR_FILE=$(mktemp)
+trap 'rm -f "$REDACTED_PAYLOAD_FILE" "$REVIEW_PROMPT_FILE" "$RESULT_FILE" "$NORMALIZED_RESULT_FILE" "$STDERR_FILE"; rm -rf "$REVIEW_ROOT"' EXIT
 
 GROK_STATUS=0
 grok --prompt-file "$REVIEW_PROMPT_FILE" \
   --session-id "$REVIEW_SESSION_ID" \
-  --sandbox workspace \
-  --tools "Read,Grep,Glob" \
-  --always-approve \
-  --cwd "$REVIEW_ROOT" \
-  --output-format json \
-  ${GROK_MODEL:+--model "$GROK_MODEL"} \
-  ${GROK_EFFORT:+--effort "$GROK_EFFORT"} \
+  --sandbox workspace --tools "Read,Grep,Glob" --always-approve \
+  --cwd "$REVIEW_ROOT" --output-format json \
+  ${GROK_MODEL:+--model "$GROK_MODEL"} ${GROK_EFFORT:+--effort "$GROK_EFFORT"} \
   < /dev/null > "$RESULT_FILE" 2> "$STDERR_FILE" || GROK_STATUS=$?
 cat "$STDERR_FILE" >&2
-
 if grep -Eiq 'sandbox profile resolve failed|runtime-socket|denied paths unprotected|missing or unusable .?bwrap.?' "$STDERR_FILE"; then
-  echo "Grok sandbox startup failed before a session was created" >&2
-  exit 1
+  echo "Grok sandbox startup failed before a session was created" >&2; exit 1
 fi
-if [ "${GROK_STATUS:-0}" -ne 0 ]; then
-  echo "Grok review invocation failed before completion validation" >&2
-  exit 1
-fi
+[ "${GROK_STATUS:-0}" -eq 0 ] || { echo "Grok review invocation failed before completion validation" >&2; exit 1; }
 if [ "$(jq -r '.num_turns // 0' < "$RESULT_FILE")" -lt 2 ]; then
-  echo "Grok answered in one turn without inspecting anything — not a review" >&2
-  exit 1
+  echo "Grok answered in one turn without inspecting anything — not a review" >&2; exit 1
 fi
 ```
 
-**Step 4: Structure the completed review**
-
-Resume the same session and ask only for the schema. The review is already in
-that session's context, so a single turn is the correct shape here — nothing is
-left to discover. `--json-schema` takes a JSON string; read it from the
-canonical schema file (`$SKILL_DIR/../codex-cli/schemas/review-output.schema.json`
-— all razorback reviewers share it), stripping the `$schema` key defensively
-(some validators reject it; the verified working schema had no `$schema` key).
-Omit `--sandbox` on the resume: Grok reuses the session's saved profile and
+**Step 4: Structuring pass** (resume the same session; one turn is correct
+here). Omit `--sandbox` on resume: Grok reuses the session's profile and
 refuses a different one.
 
 ```bash
 SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")
-STRUCTURE_FILE=$(mktemp)
-REDACTED_STRUCTURE_FILE=$(mktemp)
+STRUCTURE_FILE=$(mktemp); REDACTED_STRUCTURE_FILE=$(mktemp)
 printf '%s' "Return your completed review as JSON matching the required schema. Use only the findings you already established. Set review_completed=true, list the repository files you inspected in files_inspected, and give concrete file/line evidence. Do not start a new review." > "$STRUCTURE_FILE"
-if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$STRUCTURE_FILE" > "$REDACTED_STRUCTURE_FILE"; then
-  rm -f -- "$STRUCTURE_FILE" "$REDACTED_STRUCTURE_FILE"
-  echo "outbound redaction failed" >&2
-  exit 1
-fi
+"$SKILL_DIR/../security-review/scripts/redact-outbound" < "$STRUCTURE_FILE" > "$REDACTED_STRUCTURE_FILE" \
+  || { rm -f -- "$STRUCTURE_FILE" "$REDACTED_STRUCTURE_FILE"; echo "outbound redaction failed" >&2; exit 1; }
 
 STRUCTURE_STATUS=0
 grok -r "$REVIEW_SESSION_ID" --prompt-file "$REDACTED_STRUCTURE_FILE" \
-  --always-approve \
-  --cwd "$REVIEW_ROOT" \
-  --json-schema "$SCHEMA_JSON" \
+  --always-approve --cwd "$REVIEW_ROOT" --json-schema "$SCHEMA_JSON" \
   < /dev/null > "$RESULT_FILE" 2> "$STDERR_FILE" || STRUCTURE_STATUS=$?
 cat "$STDERR_FILE" >&2
 rm -f -- "$STRUCTURE_FILE" "$REDACTED_STRUCTURE_FILE"
-if [ "${STRUCTURE_STATUS:-0}" -ne 0 ]; then
-  echo "Grok structuring pass failed: no resumable session, or the resume errored" >&2
-  exit 1
-fi
-
-if ! "$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$RESULT_FILE" > "$NORMALIZED_RESULT_FILE"; then
-  echo "Grok did not return a completed review" >&2
-  exit 1
-fi
+[ "${STRUCTURE_STATUS:-0}" -eq 0 ] || { echo "Grok structuring pass failed: no resumable session, or the resume errored" >&2; exit 1; }
+"$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$RESULT_FILE" > "$NORMALIZED_RESULT_FILE" \
+  || { echo "Grok did not return a completed review" >&2; exit 1; }
 cat "$NORMALIZED_RESULT_FILE"
 ```
 
-No `-p` on either call — `--prompt-file` supplies the headless prompt on its
-own. Always include `--always-approve`; a headless run cannot show a permission
-prompt, and a cancelled approval discards the whole turn (see Defaults).
-
-**After**: `--output-format json` returns a **result envelope**, not the model
-response directly. The validator normalizes `.structuredOutput`, the JSON object
-encoded in `.text`, and direct schema objects. When `.text` holds several
-concatenated objects — one per turn — it takes the last one. It rejects
-malformed, contradictory, or incomplete output, and it rejects a review whose
-`files_inspected` and `evidence` cite only the `.razorback-review/` bundle
-instead of the reviewed files. The schema requires `review_completed: true`, a
-non-empty unique `files_inspected` list, a `commands_run` array (which may be
-empty), and non-empty file/line/observation `evidence`; `needs-attention`
-requires a finding.
-
-```bash
-# The validator's normalized output is the only accepted review result.
-"$SKILL_DIR/../codex-cli/scripts/validate-review-output" RESULT_FILE > normalized.json
-jq '.findings[]?' < normalized.json
-```
-
-Present findings, add your own assessment. Highlight agreements and
-disagreements. Call out anything Grok missed.
-
+Envelope: `.structuredOutput`, `.text`, `.usage`, `.total_cost_usd`. Accept
+only the output of `validate-review-output RESULT_FILE`.
 
 ### Standalone Review Completion
 
-A standalone external review predeclares two external invocations and two
-rounds in `razorback:managing-review-campaigns`:
+A standalone review predeclares in `razorback:managing-review-campaigns`:
+`evidence_target: external-reviewed`, `external_invocation_budget: 2`,
+`max_rounds: 2`. The free-form pass is 1/2 and the structuring pass is 2/2;
+the structuring pass is not a retry and buys no discovery. The first call
+names the session with `--session-id`; the second call resumes that exact session
+with `-r`. A successful exit does not prove a session exists; let the resume
+fail loudly. A rejected result closes the campaign `blocked` or
+`capped` at 2/2. No third call, and a fresh sweep is never the answer.
 
-```text
-evidence_target: external-reviewed
-external_invocation_budget: 2
-max_rounds: 2
-round: 0/2
-external_invocations: 0/2
-```
+A sandbox startup failure creates no session, so the campaign is terminal there
+and the same-session continuation cannot be used. Recover with `--sandbox
+workspace` plus the `--tools "Read,Grep,Glob"` allowlist; drop to
+`--sandbox off` only in a new explicit user-approved campaign, when
+`workspace` also refuses to start. `grok inspect` reports configuration; it is
+not a sandbox capability probe.
 
-Both invocations are predeclared, and both are required: the free-form review
-is 1/2 and the structuring pass is 2/2. The structuring pass is not a retry and
-buys no extra discovery. The recipe names the session with
-`--session-id "$REVIEW_SESSION_ID"` on the first call, so the second call
-resumes that exact session with `-r "$REVIEW_SESSION_ID"` instead of trusting
-`-c` to pick the right one. Do not set a flag to record that a session exists —
-a successful exit does not prove it. If no session was created, the resume exits
-non-zero and the campaign closes there.
+### Adversarial Review
 
-Run `validate-review-output RESULT_FILE` on the structuring pass. A rejected
-result closes the campaign `blocked` or `capped` at 2/2. No third call is
-allowed, and a fresh sweep is never the answer to a rejected result.
-
-A sandbox startup failure creates no session, so the campaign is terminal there.
-Recover with `--sandbox workspace` plus the `--tools "Read,Grep,Glob"`
-allowlist, which is what the recipe already uses; drop to `--sandbox off` only
-with explicit user approval, and only when `workspace` also refuses to start.
-`grok inspect` reports configuration, but it is not a sandbox capability probe.
-
-### Adversarial Review (read-only + schema)
-
-Triggered by "deep review", "adversarial review", or `--adversarial`. Uses a
-structured prompt that tells Grok to actively try to break confidence in the
-change.
-
-**Step 1: Apply Review Targeting** (same as Code Review)
-
-**Step 2: Build the adversarial prompt.** Run Code Review Step 2 unchanged up
-to its `REVIEW_INSTRUCTION=` line. In its place, render the instruction from
-the canonical template (after `$TARGET` resolves), then finish Step 2's
-payload build with `$ADVERSARIAL_INSTRUCTION` substituted for
-`$REVIEW_INSTRUCTION`:
-
-```bash
-TEMPLATE=$(cat "$SKILL_DIR/adversarial-prompt.txt")
-HEAD=${TEMPLATE%%'{{TARGET_LABEL}}'*};  REST=${TEMPLATE#*'{{TARGET_LABEL}}'}
-MID=${REST%%'{{USER_FOCUS}}'*};         REST=${REST#*'{{USER_FOCUS}}'}
-TAIL=${REST%%'{{REVIEW_INPUT}}'*}
-ADVERSARIAL_INSTRUCTION="${HEAD}${TARGET}${MID}${FOCUS:-none specified}${TAIL}"
-```
-
-**Steps 3-4: Identical to Code Review Steps 3 and 4.** Free-form review pass
-first — no `--json-schema`, or Grok answers in one turn without reviewing —
-then the same-session structuring pass, validated with
-`validate-review-output`. The only delta is the structuring prompt: "Return
-your completed adversarial review as JSON matching the required schema. Use
-only the findings you already established. Set review_completed=true, list the
-repository files you inspected in files_inspected, and give concrete file/line
-evidence. Do not start a new review."
-
-**After**: Parse the normalized output from `validate-review-output` (see Code
-Review). Present findings grouped by severity (critical first). For
-each finding, show the file, lines, and recommendation. Add your own assessment
-of each finding: do you agree? Is the confidence warranted? Then give your
-overall take on Grok's verdict.
+Run Code Review with `$ADVERSARIAL_INSTRUCTION` (rendered from
+`$SKILL_DIR/adversarial-prompt.txt` per shared-cli-review.md) in place of
+`$REVIEW_INSTRUCTION` in Step 2. Steps 3-4 unchanged, except the structuring
+prompt says "Return your completed adversarial review as JSON ...".
 
 ### Delegate a Task
 
-The user wants Grok to actually do something: write code, refactor, fix a bug.
-Grok needs write access.
-
 ```bash
-PROMPT="Your task instructions here. Apply changes directly."
-# Run the Outbound Payload Redaction block, then:
-IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
-
-grok -p "$REDACTED_PROMPT" \
-  --sandbox workspace \
-  --always-approve \
-  --cwd /path/to/project \
-  < /dev/null
+PROMPT="Task instructions. Apply changes directly."
+# Redact per shared-cli-review.md, then:
+grok -p "$REDACTED_PROMPT" --sandbox workspace --always-approve --cwd /path/to/project < /dev/null
 rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ```
 
-`--sandbox workspace` gives Grok write access inside the workspace;
-`--always-approve` auto-approves tool executions so the headless run never
-stalls waiting for confirmation. Grok can read files, write files, and run
-commands within the project directory.
+Add `-w, --worktree [<NAME>]` (`--worktree-ref <REF>`) for an isolated worktree.
 
-**After**: Summarize what Grok changed. Run `git diff --stat` in the project to
-show the scope, then review the changes yourself. Flag anything wrong or
-improvable. If Grok made a mess, say so and offer to fix it.
+## Sessions and Other Projects
 
-**For tasks needing an isolated branch**, add `-w, --worktree [<NAME>]` to run
-in a fresh git worktree (optionally `--worktree-ref <REF>` to base it on a
-specific commit).
-
-## Adversarial Prompt Template
-
-The canonical adversarial prompt lives in this skill at
-`./adversarial-prompt.txt` (version-controlled). Read it and replace the
-`{{TARGET_LABEL}}`, `{{USER_FOCUS}}`, and `{{REVIEW_INPUT}}` placeholders at
-runtime, as the Adversarial Review invocation above does.
-
-It is the Grok variant of a deliberate quartet: `../codex-cli/adversarial-prompt.txt`,
-`../claude-cli/adversarial-prompt.txt`, and `../agy-cli/adversarial-prompt.txt`
-are identical across their shared sections (`OPERATING STANCE`, `ATTACK SURFACE`,
-`FINDING BAR`, `CALIBRATION`, `GROUNDING`, `INPUT TRUST`). Keep the four in sync
-when editing any.
-
-## Resuming a Session
-
-The generic resume examples below are for user-requested, non-campaign
-conversation follow-ups. They do not authorize another review call after a
-standalone campaign has reached its invocation or terminal-state limit.
-
-Grok persists sessions by default — there is no `--ephemeral` /
-`--no-session-persistence` flag.
-
-`-c, --continue` is a **boolean flag** and `-r, --resume` takes only an optional
-session ID — neither accepts the prompt. A bare `grok -c "follow-up prompt"`
-treats the prompt as the positional argument that opens the **interactive TUI**,
-which hangs or errors (`Device not configured (os error 6)`) in a headless
-agent. Always pair resume with `-p` or `--prompt-file`:
-
-Every follow-up prompt passes the Outbound Payload Redaction guard first
-(`PROMPT="follow-up prompt"`, run the guard block, then
-`IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true`).
-The variants differ only in the resume flags:
+Sessions persist by default (no ephemeral flag). Conversation follow-ups
+(never extra campaign calls) resume with `-c` (boolean) or `-r [<ID>]`; neither
+takes the prompt, so always pair with `-p` or `--prompt-file`, else Grok opens
+the interactive TUI (`Device not configured (os error 6)` or a hang):
 
 ```bash
-# Continue the most recent session for the current directory
-grok -c -p "$REDACTED_PROMPT" --always-approve < /dev/null
-
-# Resume a specific session by ID (or the most recent if omitted)
 grok -r <SESSION_ID> -p "$REDACTED_PROMPT" --always-approve < /dev/null
-
-# Fork instead of reusing the original session id
-grok -r <SESSION_ID> --fork-session -p "$REDACTED_PROMPT" --always-approve < /dev/null
-
-# Large follow-up prompt: swap -p for --prompt-file (never both)
 grok -c --prompt-file "$REDACTED_PAYLOAD_FILE" --always-approve < /dev/null
-
-rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ```
 
-A resumed session keeps the sandbox profile it was created with. Passing a
-different `--sandbox` fails with `cannot resume this session under sandbox
-profile 'X' — it was created with 'Y'`. Omit `--sandbox` when resuming, or start
-a new session to change profile. Still pass `--always-approve` on headless
-resume so tool calls do not hit `permission_cancelled`.
-
-Use `grok sessions list` (or `grok sessions search <query>`) to find sessions —
-bare `grok sessions` prints subcommand help, not a list. `grok export` dumps a
-transcript as Markdown. Use resume when you need a multi-turn conversation (e.g.
-iterating on a review or asking clarifying questions about findings).
-
-## Cross-Project Usage
-
-Grok reads project instructions (`AGENTS.md` / `CLAUDE.md`) and discovers
-skills, MCP servers, and permissions for the target directory automatically.
-`grok inspect` reports configuration, but it is not a sandbox capability probe.
-To review a project other than cwd, point `--cwd` at it:
-
-```bash
-PROMPT="prompt"
-# Run the Outbound Payload Redaction block, then:
-IFS= read -r -d '' REDACTED_PROMPT < "$REDACTED_PAYLOAD_FILE" || true
-grok -p "$REDACTED_PROMPT" --sandbox read-only --always-approve --cwd ~/source/other-project < /dev/null
-rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
-```
-
-There is no `--ignore-user-config` equivalent to codex's; Grok inherits the
-project's context. Factor that into how much independence you assign the review
-— it is not a context-free reviewer.
-
-## Critical Evaluation
-
-Grok is a peer, not an authority. It runs on xAI's models with their own
-knowledge cutoffs and blind spots.
-
-- **Trust your own knowledge** when confident. If Grok says something you know
-  is wrong, say so directly with evidence.
-- **Research disagreements.** A different model isn't inherently more or less
-  right. Check the code.
-- **Don't defer.** Evaluate Grok's suggestions critically. The point of a
-  second opinion is two perspectives, not rubber-stamping.
-- **Adversarial review findings need validation.** Grok in adversarial mode is
-  intentionally trying to find problems. Some findings may be speculative or
-  low-confidence. Filter accordingly.
-
-When you disagree with Grok, tell the user clearly: what Grok said, why you
-think it's wrong, and your evidence.
+`--fork-session` forks instead of reusing the id. Omit `--sandbox` on resume
+(`cannot resume this session under sandbox profile 'X'`). `grok sessions list`
+/ `grok sessions search <q>` find sessions; `grok export` dumps a transcript.
+Other project: `--cwd ~/source/other-project`; Grok inherits that project's
+`AGENTS.md`/`CLAUDE.md`, skills, and MCP servers (no isolation flag).
 
 ## Error Handling
 
 - **Not logged in**: only `You are not authenticated.` plus a missing
-  `~/.grok/auth.json`. Classify every other `grok models` result per Pre-flight
-  Check — do not run `grok login`.
-- **Rate limits**: xAI plans have usage limits. A rate limit means the service
-  is unavailable, not that the review was too big. Tell the user and suggest
-  waiting for the window to reset or swapping to another reviewer. Do NOT
-  shrink the prompt or drop to a cheaper model to squeeze the review through —
-  that ships a weaker review under the name of the one the user asked for.
-- **Sandbox profile not found**: `Custom sandbox profile '<name>' not found` means
-  you passed a name that isn't a built-in (`off`, `workspace`, `devbox`,
-  `read-only`, `strict`) and isn't defined in `~/.grok/sandbox.toml`. Use a
-  built-in or define the profile. Grok refuses to start rather than run
-  unsandboxed.
-- **Sandbox startup failure before a session**: errors such as `sandbox profile resolve
-  failed`, `runtime-socket`, an unreadable `/run/podman/podman.sock` or other runtime
-  sockets, `denied paths unprotected`, or missing or unusable `bwrap` are pre-session
-  host/sandbox failures, not a model crash and not `permission_cancelled`. Do not
-  auto-retry in the same review campaign: the failed CLI call consumes the campaign
-  invocation, so close the campaign as blocked. Only a new explicit user-approved
-  campaign may use `--sandbox off`; warn that kernel filesystem and child-network
-  enforcement are disabled. In that optional fallback, constrain Grok to the
-  read-only tool allowlist with `--tools "Read,Grep,Glob"`; application-level tools
-  do not replace kernel isolation.
-- **`a value is required for '--single <PROMPT>'`** (exit 2, immediate): you
-  combined `-p` with `--prompt-file`. Drop `-p` — `--prompt-file` is a complete
-  prompt source on its own.
-- **`Device not configured (os error 6)`** or a hang: the invocation had no
-  headless prompt flag, so Grok tried to open the interactive TUI. Add `-p` or
-  `--prompt-file`. Most common with `grok -c "prompt"` / `grok -r <ID> "prompt"`.
-- **Resume sandbox mismatch**: `cannot resume this session under sandbox profile
-  'X' — it was created with 'Y'`. Omit `--sandbox` when resuming, or start a new
-  session.
-- **Max turns reached**: `Error: max turns reached` means a `--max-turns` value
-  was too low for the reviewer to finish (bootstrap + review can burn several
-  turns). These recipes set no turn cap — remove the flag rather than raising it.
-- **Timeout tripped**: a review that runs 10-20+ minutes is working, not
-  stuck — that is why the failsafe sits at 30 min. If the failsafe trips, the
-  process hung or died; the diff was not "too big". Do NOT re-run with a
-  longer timeout, and do NOT split the diff and re-run. A second full attempt
-  burns another half hour and another full context on the same broken run.
-  Check stderr, then treat it as reviewer unavailability.
-- **Empty / placeholder / incomplete output**: a successful CLI exit, tool use,
-  or future-tense plan is not completion evidence. Run
-  `validate-review-output RESULT_FILE`; for a standalone campaign, allow only
-  the one same-session continuation when a session was created. A sandbox
-  startup failure has no session and cannot use that continuation.
-- **Permission cancellation**: almost always a headless
-  **permission cancel**, not a model crash. Session
-  `events.jsonl` shows `permission_resolved` → `decision: cancelled` on
-  `run_terminal_command` and `turn_ended` with
-  `cancellation_category: permission_cancelled`. Cause: missing
-  `--always-approve` while the model ran a non-allowlisted shell form (common
-  when it batches reads + bash in one turn). Fix the invocation before starting
-  an approved campaign; do not spend a campaign continuation on a pre-session
-  permission failure.
-- **Empty output (other)**: if stdout is empty and the permission pattern above does
-  not match, check stderr for error messages.
-- **Grok not installed**: `command -v grok` fails and `~/.local/bin/grok` /
-  `~/.grok/bin/grok` are missing. Install per xAI's Grok CLI instructions.
-  A missing binary is not logout.
-
-## Quick Reference
-
-Inherit the current Grok default. Only override with `-m`/`--effort` when the
-user or environment gives a concrete value. Optionally set `GROK_MODEL` /
-`GROK_EFFORT` before invoking and let the `${VAR:+--flag "$VAR"}` guards add the
-flag only when non-empty.
-
-Grok, Claude, and Codex CLIs do not share a command set — probe with `--help`
-before assuming a command that exists in one exists in the other.
-
-All non-piped patterns include `< /dev/null` (bash) / `< NUL` (Windows) as cheap
-insurance against a harness holding stdin open.
-
-If a sandbox startup failure occurs, follow Error Handling: do not retry within
-the same review campaign. A new explicit user-approved campaign may use
-`--sandbox off` with the read-only tool allowlist `--tools "Read,Grep,Glob"`,
-while kernel filesystem and child-network enforcement are disabled.
-
-The command patterns below assume the final payload has already passed the
-Outbound Payload Redaction guard and the shared review-artifact size decision.
-Use `$REDACTED_PROMPT` only for small `-p` payloads and `$REVIEW_PROMPT_FILE`
-for review/adversarial prompt transport (a concise wrapper for large bundles).
-Every
-structured result must pass `validate-review-output RESULT_FILE` before it is
-accepted.
-
-| Use case | Mode | Command pattern |
-|---|---|---|
-| Second opinion | read-only + approve | `grok -p "$REDACTED_PROMPT" --sandbox read-only --always-approve --cwd dir < /dev/null` |
-| Code review | workspace + read-only tools + approve | Two passes. 1) `grok --prompt-file "$REVIEW_PROMPT_FILE" --session-id "$REVIEW_SESSION_ID" --sandbox workspace --tools "Read,Grep,Glob" --always-approve --cwd "$REVIEW_ROOT" --output-format json` — **no** `--json-schema`, or Grok answers in one turn without reviewing. 2) `grok -r "$REVIEW_SESSION_ID" --prompt-file <structuring prompt> --json-schema "$SCHEMA_JSON"`. Scope/sizing per Review Targeting. |
-| Adversarial review | read-only + approve + schema | Build the prompt from `$SKILL_DIR/adversarial-prompt.txt` (see Adversarial Review), then the code-review command. |
-| Delegate (complex) | workspace + approve | `grok -p "$REDACTED_PROMPT" --sandbox workspace --always-approve --cwd dir < /dev/null` (add `-w` for an isolated worktree) |
-| Pre-flight / auth check | any | `"$GROK_BIN" models` with stderr kept. Ready only if stdout contains `You are logged in with grok.com.` Empty/timeout/exit 127 is not logout. `You are not authenticated.` + missing `~/.grok/auth.json` is the only `grok login` case. |
-| Apply explicit model/effort | any | Add `--model "$GROK_MODEL"` / `--effort "$GROK_EFFORT"` when set |
-| Resume session | persistent | `grok -r "$REVIEW_SESSION_ID" --prompt-file "$REDACTED_STRUCTURE_FILE" --always-approve --json-schema "$SCHEMA_JSON"` for the structuring pass (the session the first call named with `--session-id`), or `grok -r <ID> -p "$REDACTED_PROMPT" --always-approve` for a user-requested conversation follow-up. `-c`/`-r` never take the prompt — omit `-p` / `--prompt-file` and you get the interactive TUI. Omit `--sandbox` on resume; still pass `--always-approve`. |
-| Structured output shape | any | Envelope: `.structuredOutput` (parsed object), `.text` (JSON string), `.usage`, `.total_cost_usd`; normalize and validate with `validate-review-output RESULT_FILE`. |
-
-## It's working if
-
-- The dispatch used only the redacted payload file, and the temp files are gone afterward.
-- The review pass ran with `num_turns >= 2` and no `--json-schema`; the structuring pass passed `validate-review-output`.
-- The user got Grok's view AND your own agree/disagree assessment, not a relay.
+  `~/.grok/auth.json`. Classify every other `grok models` result per
+  Pre-flight Check; a missing binary (`~/.local/bin/grok`, `~/.grok/bin/grok`)
+  is not logout.
+- **`Custom sandbox profile '<name>' not found`**: not a built-in and not in
+  `~/.grok/sandbox.toml`; Grok refuses to start rather than run unsandboxed.
+- **Sandbox startup failure before a session**: `sandbox profile resolve
+  failed`, `runtime-socket`, an unreadable `/run/podman/podman.sock` or other
+  runtime sockets, `denied paths unprotected`, or missing or unusable `bwrap`
+  are pre-session host/sandbox failures, not a model crash and not
+  `permission_cancelled`. Do not auto-retry in the same review campaign: the
+  failed CLI call consumes the campaign invocation, so close the campaign as
+  blocked. Only a new explicit user-approved campaign may use `--sandbox off`;
+  warn that kernel filesystem and child-network enforcement are disabled, and
+  keep the read-only tool allowlist `--tools "Read,Grep,Glob"`.
+- **`a value is required for '--single <PROMPT>'`**: drop `-p`;
+  `--prompt-file` is complete on its own.
+- **`Error: max turns reached`**: a `--max-turns` value was set; remove it.
+- **Permission cancellation** (session `events.jsonl` shows
+  `permission_resolved` → `decision: cancelled`, `turn_ended` with
+  `cancellation_category: permission_cancelled`): missing `--always-approve`.
+  Fix the invocation before starting a campaign; do not spend a continuation
+  on it.
+- **Empty / placeholder output**: exit status, tool use, and future-tense
+  plans are not completion evidence; only `validate-review-output RESULT_FILE`
+  is. A standalone campaign gets the one same-session continuation only when
+  a session was created.
+- **Rate limit**, **timeout tripped**: see shared-cli-review.md. Do not re-run
+  a burned attempt.

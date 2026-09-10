@@ -5,221 +5,74 @@ description: Use when executing an approved implementation plan in the current s
 
 # Subagent-Driven Development
 
-Execute a plan by dispatching fresh subagents per task, with the lead doing inline review (spec compliance + code quality) after each task. Independent tasks can be dispatched in parallel; tightly coupled tasks run sequentially. Commit mode decides whether the worker commits directly or hands the approved diff back to the lead.
+Fresh subagent per task. Lead reviews inline (spec + quality). Independent tasks fan out in parallel; dependent tasks run serialized. Commit mode decides who commits.
 
-**Core principle:** Fresh subagent per task + inline review by lead + parallel fan-out when tasks are independent = high quality without wasted ceremony.
-
-**Dispatch mechanism:**
-- **Claude Code:** `Agent` tool (one call per subagent; multiple calls in one turn run in parallel).
-- **opencode:** `Task` tool (one call per subagent; multiple calls in one turn run in parallel). The built-in `general` subagent is suitable for most implementer work; `@mention` also works for manual invocation.
-- **Codex:** `spawn_agent(task_name="task-N-<slug>", message=<filled prompt>)` (one call per subagent; multiple calls in one turn run in parallel). Keep the returned agent ID, `followup_task(target=<agent-id>, message=...)` feeds follow-ups (the closest thing to Claude Code's resume), and `wait_agent(timeout_ms=...)` blocks until agent completion. Surface verified on codex 0.144.3 — trust the live tool list over these names (see the `razorback:using-razorback` skill's `references/codex-tools.md`).
-- **Explicit Cursor/Composer delegation from another harness:** use `razorback:cursor-agent`, which owns the Cursor CLI invocation. The current lead still owns planning, review, fix routing, and final verification; Cursor Agent is only the implementation worker.
-
-Use the harness default model unless the user, environment, or lead explicitly
-selects another model for this run. Razorback does not require a model table
-before dispatch.
+Dispatch, follow-up, and wait tool names per harness: read `references/harness-dispatch.md` before the first dispatch. Explicit Cursor/Composer delegation from another harness goes through `razorback:cursor-agent`; this lead still owns review and verification. Use the harness default model unless the user, environment, or lead selects another.
 
 ## When to Use
 
-```dot
-digraph when_to_use {
-    "Have implementation plan?" [shape=diamond];
-    "Delegation is available and permitted?" [shape=diamond];
-    "2+ independent tasks?" [shape=diamond];
-    "subagent-driven-development (parallel batches)" [shape=box style=filled fillcolor=lightgreen];
-    "subagent-driven-development (serialized lanes)" [shape=box style=filled fillcolor=lightgreen];
-    "executing-plans" [shape=box];
-    "Brainstorm / write the plan first" [shape=box];
-
-    "Have implementation plan?" -> "Delegation is available and permitted?" [label="yes"];
-    "Have implementation plan?" -> "Brainstorm / write the plan first" [label="no"];
-    "Delegation is available and permitted?" -> "2+ independent tasks?" [label="yes - including one task"];
-    "Delegation is available and permitted?" -> "executing-plans" [label="no delegation or explicitly selected single-agent"];
-    "2+ independent tasks?" -> "subagent-driven-development (parallel batches)" [label="yes"];
-    "2+ independent tasks?" -> "subagent-driven-development (serialized lanes)" [label="no - one task or dependent work"];
-}
-```
-
-Fix-round follow-up mechanics are per-harness — see Step 4.
+- No plan → brainstorm / write the plan first.
+- Plan, but no delegation or explicitly selected single-agent → `razorback:executing-plans`.
+- Plan and delegation is available and permitted → this skill, including one task. 2+ independent tasks → parallel batches; otherwise serialized lanes.
 
 ## Step 1: Extract Tasks from the Plan
 
-Read the plan file once. Extract every task and its surrounding context. Create tracking tasks via `TaskCreate` so progress is visible.
-
-Check for durable progress before dispatching. Resolve this plan's workspace, then read its ledger:
-
-```bash
-ws=$("$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE)
-cat "$ws/progress.md" 2>/dev/null || true
-```
-
-Trust the ledger only when its first line names this plan file (resume check: Durable Progress). A ledger that names a different plan — or a stray ledger at the old flat path — is another plan's: leave it in place and start fresh.
-
-Tasks listed there as complete **with a named commit** are DONE. Do not re-dispatch them; verify the named commit with `git log` if needed, then resume at the first incomplete task.
-
-Treat any completion line whose commit SHA is missing, `pending`, or absent from `git log` as **INCOMPLETE** — this is the `parallel-lead-commit` crash window. Run `git status`, inspect the working tree for that task's owned files, and either re-review and commit the approved edits (staging per the Commit Mode Contract) or re-dispatch the task. Never skip a task whose completion record has no verifiable commit.
-
-Before dispatching, orient yourself on the codebase with Miller:
-- **Orient** around the areas the plan touches with `context`
-- **List a file's symbols** on files the plan will modify with `inspect`, so you can spot later drift during review
-- Do NOT chain Glob/Grep/Read for orientation — Miller is the required entry point
-
-Read `## Parallel Execution Contract` before dispatching and validate every task row:
-- A safe batch with 2+ eligible tasks dispatches together when subagents are available.
-- Safe means: non-overlapping file ownership, no ordering dependency, and `Serialization required: No`.
-- Serialized lanes must record `Serialization required: Yes` plus a `Dependency reason` naming the real dependency or tool limitation.
-- Serializing a safe batch requires a recorded dependency or tool limitation. Habit, caution, or "one at a time is easier" are not enough.
+1. Read the plan once. `TaskCreate` per task.
+2. Read the ledger: `ws=$("$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE); cat "$ws/progress.md"`. Trust it only when its first line names this plan file; any other ledger (or a stray one at the old flat path) is another plan's — leave it, start fresh.
+3. Tasks marked complete **with a named commit** are DONE (verify with `git log`). A completion line whose SHA is missing, `pending`, or absent from `git log` is **INCOMPLETE** — the `parallel-lead-commit` crash window: `git status`, inspect the task's owned files, then re-review and commit the approved edits (Commit Mode Contract) or re-dispatch.
+4. Orient with Miller: `context` on the plan's areas; `inspect` the files the plan modifies so review can spot drift. No Glob/Grep/Read chains.
+5. Validate the plan's `## Parallel Execution Contract`: a safe batch with 2+ eligible tasks dispatches together. Safe = non-overlapping file ownership, no ordering dependency, `Serialization required: No`. Serialized lanes need `Serialization required: Yes` plus a `Dependency reason`. Serializing a safe batch requires a recorded dependency or tool limitation — caution is not one.
 
 ## Step 2: Dispatch Implementer Subagent
 
-Use the template at `./implementer-prompt.md`.
+Template: `./implementer-prompt.md`. Record `BASE=$(git rev-parse HEAD)` first; review packages and fix diffs build from this BASE, never `HEAD~1`. Save the agent ID every dispatch returns.
 
-**The brief file is the single source of task requirements** — this is the one statement of that rule; every other mention points here. The task text and every exact value (numbers, magic strings, signatures, test cases) are brief-resident: they appear only in `task-N-brief.md` (written by `task-brief`, File Handoffs), never in the spawn prompt. The spawn prompt introduces the brief path as "read this first — it is your requirements, with the exact values to use verbatim". Everything else the worker needs is prompt-resident, listed below.
+**The brief file is the single source of task requirements.** Task text and every exact value live only in `task-N-brief.md`, never in the spawn prompt, which introduces the brief path as "read this first — it is your requirements, with the exact values to use verbatim".
 
-**Record the base before dispatching:** `BASE=$(git rev-parse HEAD)`. Review packages and fix-round diffs are built from this recorded per-task BASE — never from `HEAD~1`, which silently drops all but the last commit of a multi-commit task.
+Prompt-resident (the template's sections): scene-setting; earlier-task interfaces and lead ambiguity resolutions (never prior-task summaries); file ownership; Miller directives and evidence requirement; API-shape evidence requirement; gate invariant requirement; TDD (`razorback:test-driven-development`); verification scope; commit mode; architecture-quality context (approved architecture, any `No Architecture Impact` note, the plan mismatch rule); report path under `.razorback/sdd/<plan-key>/` (the worker returns only status, commits, test summary, concerns).
 
-The spawn prompt MUST include (all prompt-resident):
-
-1. **Task brief path** with the read-this-first introduction above (don't paste the task text, don't make the subagent read the plan file)
-2. **Scene-setting line** (how this task fits the larger plan)
-3. **Earlier-task interfaces and decisions** this task consumes (execution-produced values the brief cannot contain — never accumulated prior-task summaries)
-4. **The lead's ambiguity resolutions** for this task's requirements
-5. **File ownership** (which files this task may modify)
-6. **Miller directives** (orient, inspect before modifying any symbol, find references before changing public APIs, list a file's symbols before reading full files)
-7. **TDD expectations** (from `razorback:test-driven-development`)
-8. **Verification scope** specific to this task, using commands from the plan's verification strategy
-9. **Commit mode** (`serial-worker-commit` or `parallel-lead-commit`)
-10. **Miller evidence requirement** (the implementer must report which Miller calls they used and what those calls confirmed)
-11. **API-shape evidence requirement** (the implementer must name the Miller evidence used for every symbol name, function signature, config shape, route name, CLI flag, or public contract they rely on)
-12. **Gate invariant requirement** (the implementer must state what each assigned test, replay, metric, or acceptance gate proves)
-13. **architecture-quality context** (the approved architecture, any `No Architecture Impact` note, and the plan mismatch rule)
-14. **Report file path** under the plan's workspace (`.razorback/sdd/<plan-key>/`), so the worker writes the full report to a file and returns only status, commits, test summary, and concerns
-
-### Verification Scope Contract
-
-Razorback is language-agnostic. The target repo supplies concrete commands through its docs and the plan's Verification Strategy.
-
-Use these scope labels in worker prompts and reports:
-
-| Scope | Owner | When |
-|-------|-------|------|
-| `worker-red-green` | Implementer | Prove the new or changed behavior during TDD with the lowest-cost repo-defined command |
-| `worker-ceiling` | Implementer | Maximum scope a worker may run without lead assignment |
-| `affected-change` | Lead | Check touched files, changed subsystem, or repo-defined affected area after a coherent batch |
-| `branch-gate` | Lead | Broad confidence before handoff, push, or PR |
-| `expensive-specialist` | Lead | Slow domain gates only when touched areas or failures require them |
-
-Workers do not own `affected-change`, `branch-gate`, or `expensive-specialist`
-scopes. The lead owns those gates and the ledger entries for them. If the lead
-asks a worker to run a broad command for diagnostic output, the worker must
-label it diagnostic, not acceptance evidence.
-
-Workers stop and report when assigned verification fails unless the plan
-explicitly says to update that gate. A failing assigned gate is not acceptance
-evidence.
-
-For each assigned gate, the worker report must state the invariant the gate
-proves. For replay or metric evidence, it must also identify hard-gate metrics
-and report-only metrics.
-
-Maintain a verification ledger during execution:
-
-```markdown
-| Scope | Invariant | Command | Commit | Result | Time |
-|-------|-----------|---------|--------|--------|------|
-```
-
-If the same HEAD already has a passing ledger entry for the required scope, reuse that evidence instead of rerunning the same expensive command. If HEAD changed, the affected scopes are stale.
+**Verification scopes** (`references/verification-scopes.md`, read before the first dispatch): workers run `worker-red-green` / `worker-ceiling`; the lead owns `affected-change`, `branch-gate`, `expensive-specialist` and the verification ledger. A passing ledger entry for the same HEAD and scope is reusable.
 
 ### Commit Mode Contract
 
-Every dispatch chooses one commit mode and copies it into the worker prompt:
+Every dispatch copies one mode into the worker prompt; fix rounds keep it.
 
-- `serial-worker-commit`: the task is single-threaded from Git's perspective
-  (single task or deliberately serialized lane). After assigned verification passes,
-  the worker writes a Goldfish checkpoint before the commit, stages that checkpoint
-  artifact with only its owned files, and commits them.
-- `parallel-lead-commit`: the task belongs to a safe batch with 2+ eligible
-  tasks. The worker edits only owned files, writes the report, and does not run
-  `git add` or `git commit`. The lead stages and commits after inline review to
-  avoid Git index races between concurrent workers.
+- `serial-worker-commit`: single-threaded lane. After assigned verification passes, the worker writes a Goldfish checkpoint before the commit, stages that artifact with only its owned files, commits.
+- `parallel-lead-commit`: safe batch of 2+. The worker edits owned files, writes the report, runs no `git add`/`git commit`. The lead stages and commits after inline review.
 
-Normal local commits in both modes are authorized by the approved implementation scope. If a user or host instruction explicitly prohibits commits, preserve the reviewed diff and report that existing approval/blocker boundary; do not invent a pending-commit execution state or fabricate a completion SHA.
+Local commits in both modes are authorized by the approved scope. If a user or host instruction prohibits commits, preserve the reviewed diff and report that approval boundary; never fabricate a completion SHA.
 
-**Lead staging (`parallel-lead-commit`):** this is the one statement of the staging rule — every other mention in this skill points here.
+**Lead staging (`parallel-lead-commit`):** tick the task's acceptance-criteria checkboxes, then the lead writes a Goldfish checkpoint before the commit. Explicitly stage the checkpoint artifact with the reviewed task's owned files plus the plan file — `git add <checkpoint> <owned paths> <plan file>` — then commit. Never `git add -A`, `git add .`, or `git commit -a`: sibling workers hold unreviewed in-flight edits.
 
-Tick the task's acceptance-criteria checkboxes, then the lead writes a Goldfish checkpoint before the commit. Explicitly stage the checkpoint artifact with the reviewed task's owned files plus the plan file — `git add <checkpoint path> <owned paths> <plan file>` — then commit. Never `git add -A`, `git add .`, or `git commit -a`: sibling workers in the same batch may have unreviewed, in-flight edits in the shared working tree, and a broad stage would sweep them into the wrong commit and bypass inline review.
-
-**Commit before you record:** create the commit first, then write the durable-progress line with the real commit SHA (see Durable Progress). Never mark a `parallel-lead-commit` task complete while its commit is still pending — that record has no verifiable commit and a crash in that window strands the approved work.
-
-Fix rounds keep the same commit mode unless the lead explicitly changes it.
+**Commit before you record:** commit first, then write the durable-progress line with the real commit SHA. A completion record without a verifiable commit strands work in the crash window.
 
 ## File Handoffs
 
-Task text, reports, and diffs move as files instead of pasted prompt content. This keeps the lead context small and makes recovery after compaction concrete.
-
-The helper scripts live in this skill's own `scripts/` directory — NOT in the target repository. Resolve them from the skill's base directory (announced when the skill loads), e.g. `"$SKILL_DIR/scripts/task-brief"`.
-
-- **Task brief:** before dispatching an implementer, run `"$SKILL_DIR/scripts/task-brief" PLAN_FILE N`. It writes `task-N-brief.md` under the plan's workspace (in the target repo) and prints the path. The brief is the single source of task requirements (the one statement is in Step 2); the dispatch prompt introduces its path, never pastes its content.
-- **Report file:** name the implementer's report file after the brief (`task-N-report.md`) and put it under the plan's workspace. The implementer writes the full report there, then returns only status, commits, one-line test summary, and concerns.
-- **Review package:** when a focused diff helps the lead inline review, run `"$SKILL_DIR/scripts/review-package" PLAN_FILE BASE HEAD`, where `BASE` is the base commit recorded at dispatch (Step 2). The lead reads the generated package; do not dispatch a reviewer subagent. No reviewer subagents means the lead still owns spec compliance and code quality.
-- **Fix rounds:** append fix reports and test evidence to the same report file. Re-review before approving the task; the re-review scope is stated in Step 4 ("Scoped Re-Review").
+Scripts live in this skill's `scripts/` (`"$SKILL_DIR/scripts/…"`), not the target repo. `task-brief PLAN_FILE N` writes `task-N-brief.md` under the plan's workspace and prints the path. The worker writes `task-N-report.md` beside it; fix rounds append. `review-package PLAN_FILE BASE HEAD` builds a focused diff for the lead; no reviewer subagents.
 
 ## Durable Progress
 
-Conversation memory does not survive every long run. Track task completion in the plan's workspace ledger in addition to TaskList state and plan checkboxes.
+Workspace: `"$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE` prints `<repo-root>/.razorback/sdd/<plan-key>/` (git-ignored; other plans' directories are never yours; a stray `.razorback/sdd/progress.md` is another plan's). Ledger `<workspace>/progress.md`, first line `# Razorback SDD ledger — plan: <plan file path>`, lines:
 
-- Each plan owns a workspace: `"$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE` prints its git-ignored directory (`<repo-root>/.razorback/sdd/<plan-key>/`) — home to every artifact for THIS plan: ledger, briefs, reports, review packages. Another plan's directory is never yours to read or write.
-- The ledger is `<workspace>/progress.md`. At skill start, read it if it exists. Trust it with `git log` over stale recollection after compaction or resume — but only when its first line names this plan file. This is the resume check: a ledger whose first line names a different plan file — or a stray ledger at the old flat path `.razorback/sdd/progress.md` — is another plan's progress. Leave it in place and start fresh.
-- Create the ledger with its identity as the first line: `# Razorback SDD ledger — plan: <plan file path>`.
-- Record a task complete only after its durable commit exists — the completion line always carries a real commit SHA:
-  - `serial-worker-commit`: after the worker commit, `Task N: complete (commits <base7>..<head7>, Lead inline review clean)`.
-  - `parallel-lead-commit`: after the **lead** stages the owned files and commits, `Task N: complete (parallel-lead-commit, Lead inline review clean, lead commit <sha7>)`. Do not write this line while the commit is still pending; the lead commits first, then records the SHA.
-- Fix rounds: after each scoped re-review (Step 4), append `Task N: fix round <R> (<X> addressed, <Y> open — <one-liners>; commits <a7>..<b7>)`. The range covers the round's commits. In `parallel-lead-commit` mode no per-round commit exists — write `commits none - parallel-lead-commit` and let the completion line carry the lead commit SHA.
-- Deferrals: `Task N: minor (deferred): <one-liner>` — written when Step 3 rules a finding Minor, or when a Minor Step 4 re-review observation falls outside the fix diff. An out-of-diff observation that is not Minor keeps its observed severity: `Task N: deferred (<Important|Critical>): <one-liner>`. Step 4a hands this list to the pre-merge reviewer.
-- Cap rulings: `Task N: cap ruling (<contested|real-but-deferred|load-bearing-stop>): <finding one-liner> — <reason>`, one line per open finding adjudicated at the cap (Step 3).
-- The ledger is git-ignored working-tree scratch. `git clean -fdx` deletes it; if that happens, recover from `git log` and checked plan boxes.
+- `Task N: complete (commits <base7>..<head7>, Lead inline review clean)` — serial, after the worker commit.
+- `Task N: complete (parallel-lead-commit, Lead inline review clean, lead commit <sha7>)` — the lead commits first, then records the SHA.
+- `Task N: fix round <R> (<X> addressed, <Y> open — <one-liners>; commits <a7>..<b7>)` (`commits none - parallel-lead-commit` in that mode).
+- `Task N: minor (deferred): <one-liner>`; non-Minor out-of-diff observations: `Task N: deferred (<Important|Critical>): <one-liner>`.
+- `Task N: cap ruling (<contested|real-but-deferred|load-bearing-stop>): <finding> — <reason>`.
 
-**Save the agent ID (or name) returned by every dispatch.** Step 4 needs it to
-route fixes back to the worker that holds the orientation context. On opencode
-there is nothing to save — the `Task` tool exposes no persistent resume.
+`git clean -fdx` deletes the ledger; recover from `git log` and plan checkboxes.
 
 ### Parallel Dispatch (Independent Tasks)
 
-Dispatch a safe batch (Step 1's Parallel Execution Contract) as one dispatch call per task in a single turn, using that harness's **Dispatch mechanism** (top of this skill).
-
-Parallel-specific semantics:
-
-- **opencode:** child sessions run in parallel; navigate with `session_child_*` keybinds.
-- **Codex:** `wait_agent(timeout_ms=...)` blocks until completion; `list_agents` shows per-agent state when you need a given implementer's output before proceeding with its review.
-
-Assign file ownership per subagent to prevent collisions. Tightly coupled tasks
-(same files, shared state, ordering dependency) dispatch sequentially instead —
-one subagent at a time, lead reviews, then next — with the dependency or tool
-limitation recorded in the plan's `Dependency reason`.
-
-Reviews still happen inline per-task. Do not batch reviews — a failing task shouldn't block review of the ones that passed.
-
-After a completed batch of file writes, run Miller `workspace refresh` before the next dispatch. Do not refresh after individual file writes.
+One call per task in a single turn; file ownership per subagent. Coupled tasks (same files, shared state, ordering) run one at a time with the `Dependency reason` recorded. Review each task inline as it returns; never batch reviews. After a completed batch of file writes, run Miller `workspace refresh` before the next dispatch.
 
 ## Step 3: Lead Inline Review
 
-When the implementer reports completion, the lead does a single inline review covering both spec compliance and code quality. No reviewer subagents — the lead does this directly.
+One pass by the lead. No reviewer subagents. Checklists: `./spec-reviewer-prompt.md`, `./code-quality-reviewer-prompt.md`.
 
-**Spec compliance:**
-- Did the implementer build everything requested?
-- Did they add anything not requested? Flag extras for removal.
-- Did they misinterpret any requirement?
-- **List a file's symbols** to scan changed files without reading them fully with Miller `inspect`.
-- Confirm the report includes the Miller calls used. If the implementer cannot
-  show Miller-first orientation, send it back.
-- Confirm the report includes API-shape evidence for symbol names, function signatures,
-  config shapes, route names, CLI flags, and public contracts it relies on. If the
-  implementer guessed a shape instead of proving it with Miller, send it back.
+**Spec:** everything requested, nothing extra, no misread requirement. Scan changed files with Miller `inspect`. The report must show Miller-first orientation and API-shape evidence for every symbol, signature, config shape, route, CLI flag, or public contract — a guessed shape goes back.
 
-**architecture-quality review:**
-- Did the worker preserve the approved architecture shape, or did it report a plan mismatch when code reality disagreed?
-- reject worker-local redesigns that do not come from the approved plan.
+**architecture-quality:** the worker preserved the approved architecture or reported a plan mismatch; reject worker-local redesigns not in the plan.
 - Does this keep complexity local?
 - Is the caller-facing interface smaller than the behavior it unlocks?
 - Are tests written through the same interface callers use?
@@ -227,112 +80,43 @@ When the implementer reports completion, the lead does a single inline review co
 - Did this avoid speculative extensibility?
 - Did it fix the structural cause, not only the symptom?
 
-**Code quality:**
-- Is the code clean, tested, and maintainable?
-- Do tests assert on meaningful values (not just "code ran without crashing")?
-- Code smells: duplication, tight coupling, unclear names, missing error paths?
-- **Inspect** key new/modified symbols to check callers, callees, and types with Miller `inspect(target, depth=overview)` — escalate to `depth=full` for the symbols the task centers on.
-- **Find references** to verify API changes don't break dependents with Miller `trace`.
+**Quality:** tests assert meaningful values; no duplication, tight coupling, unclear names, missing error paths. Miller `inspect(target, depth=overview)` on key symbols (`full` for the task's core), `trace` on changed APIs. Concrete plans get a quality-focused pass; ambiguous or safety-sensitive tasks get the full pass.
 
-**Severity routes the loop.** Only Critical and Important findings enter the fix loop (Step 4). Minor findings never enter the loop: record each as a `minor (deferred)` ledger line (format: Durable Progress) and move on. Step 4a hands that list to the pre-merge reviewer.
+**Severity:** only Critical and Important enter the fix loop (Step 4). Minor → `minor (deferred)` ledger line for Step 4a.
 
-**Review cap: 3 iterations.** This is the one statement of the cap — every other
-mention in this skill points here. Three fix attempts per task (routing
-mechanism per harness: Step 4). If the 3rd iteration still fails:
+**Review cap: 3 iterations.** If the 3rd still fails: (1) dispatch a fresh implementer with reframed context (`./fix-prompt.md`, "Reframed-Context Attempt") — the 4th attempt's value is the reframing; skip it if no honest reframe exists; (2) if that fails, adjudicate.
 
-1. Dispatch a **fresh implementer with reframed context** using `./fix-prompt.md`'s "Reframed-Context Attempt" section — different framing (different ownership, explicit plan disambiguation, simpler decomposition, or a prior-commit pointer so the fresh agent can read what was tried without rediscovering it). The 4th attempt's value is the reframing, not the freshness.
-2. If the fresh attempt also fails — or no honest reframe can be articulated and the 4th attempt is skipped — adjudicate at the cap.
+**Cap adjudication** (only at the cap). Rule each open finding: **Contested** (wrong or not required by the plan) or **Real but deferred** (no later task builds on it) → record, continue; **Real and load-bearing** (later tasks depend on it) → stop per blocker taxonomy #5. Every ruling is a ledger line and appears in the morning report's "Blockers hit"; an unruled open finding is a broken run.
 
-**Cap adjudication.** This is the one statement of cap adjudication — adjudicate only at the cap, never mid-loop. The lead rules each open finding into exactly one of:
-
-- **Contested** — on re-inspection the lead judges the finding wrong, or not required by the plan. Record the ruling; continue with remaining tasks.
-- **Real but deferred** — real, but no later task builds on it. Record the ruling; continue with remaining tasks.
-- **Real and load-bearing** — later tasks build on it. Stop per the blocker taxonomy (#5, unresolvable test failures blocking the plan).
-
-Every ruling is a ledger entry (format: Durable Progress); silent discards are forbidden — an open finding with no recorded ruling is a broken run. Rulings that continue (contested, real-but-deferred) also appear in the morning report's "Blockers hit" section.
-
-### When Lighter Review Is Appropriate
-
-Spec compliance checking earns its keep when the plan leaves room for misinterpretation. When the plan is concrete, the review can focus on quality:
-
-**Lighter (quality-focused) review when:**
-- The plan has specific acceptance criteria or detailed requirements
-- The task is a single coherent feature (not a multi-part system)
-- The implementer's report clearly addresses every requirement
-
-**Full (spec + quality) review when:**
-- The plan is high-level or ambiguous
-- The task has multiple interacting requirements that could be partially implemented
-- The feature has subtle correctness constraints (security, data integrity)
-
-Either way, the review is a single pass by the lead. Never collapse the loop to skip re-reviewing after a fix.
-
-**When the review passes (approved):** for `parallel-lead-commit`, the lead stages and commits per the Commit Mode Contract's lead-staging rule (the approved worker report shows `commit SHA: none - parallel-lead-commit`). For either mode, mark the task complete (`TaskUpdate`) so the plan document records progress alongside the TaskList. This is fast bookkeeping — never a stop or a review gate; move straight to the next task or parallel dispatch.
+**Approved:** `parallel-lead-commit` → lead stages and commits per the Commit Mode Contract. Either mode → `TaskUpdate` complete and move on; bookkeeping, not a stop.
 
 ## Step 4: Fixes
 
-When review finds issues, route the fix back to an implementer with the reviewer
-findings. This is the one statement of fix-round routing — every other mention in
-this skill points here.
-
-**Claude Code (prefer resume):** Send the filled `./fix-prompt.md` to the stored implementer via `SendMessage` (agent ID or name); on older builds this was `Agent(resume: "<agent-id>")` — use whichever continuation mechanism the harness exposes. The resumed subagent keeps its orientation context — files read, decisions made, tests written — and goes straight to the fix instead of re-reading the codebase.
-
-**opencode (dispatch fresh with context):** The `Task` tool doesn't expose persistent resume. Dispatch a fresh implementer via the `Task` tool (or @mention `general`) using `./fix-prompt.md` plus:
-- The task's brief path (the single source of task requirements, Step 2)
-- A pointer to the commit(s) the prior implementer produced (so the fresh subagent can `git show` or read the files instead of rediscovering them)
-- The reviewer findings
-
-**Codex (prefer followup_task):** Call `followup_task(target=<stored agent-id>, message=<filled fix-prompt.md>)` on the existing worker. The worker keeps its orientation context and behaves like a Claude Code resume; for iteration 4, `spawn_agent(task_name="task-N-retry", message=<filled fix-prompt.md with the Reframed-Context Attempt section + prior-commit SHAs>)`.
-
-Prefer the context-preserving path (resume / `followup_task`) for iterations 1-3; the 4th attempt is a fresh dispatch with reframed context. Dispatch fresh earlier only when the subagent is unreachable (session error, context limit, stored ID lost to a session restart), the prior implementer's context is genuinely stale (another task modified the same files), or the fix needs a fundamentally different approach — always with the prior-commit pointer.
+Send `./fix-prompt.md` with the findings to the saved implementer via the harness follow-up path (`references/harness-dispatch.md`); it keeps its orientation context. Iterations 1-3 preserve context; the 4th attempt is a fresh reframed dispatch with the prior-commit pointer.
 
 ### Scoped Re-Review
 
-Re-review after every fix. This is the one statement of the re-review scope — every other mention in this skill points here.
-
-1. **Gate the fix report first.** It must name the covering tests, the exact command run, and the output. If any is missing, send the report back before re-reviewing — an evidence bounce is a report correction, not a new fix iteration.
-2. **Build the package from the fix base:** `"$SKILL_DIR/scripts/review-package" PLAN_FILE FIX_BASE HEAD`, where `FIX_BASE` is the head the previous review saw. The package then contains exactly the fix diff.
-3. **Verdict every prior finding:** ADDRESSED or NOT ADDRESSED, each with file:line evidence. "Attempted" is not ADDRESSED.
-4. **Inspect the fix diff only for new breakage.** A fix round does not reopen the whole task.
-5. **Observations outside the fix diff never extend the loop.** Record each as a deferral ledger line carrying its observed severity (format: Durable Progress). A Minor observation joins the deferred list; a Critical or Important observation keeps its severity and is adjudicated like an open finding at the cap (Step 3, "Cap adjudication"); an observation meeting the blocker taxonomy stops the run. Step 4a hands the deferred list to the pre-merge reviewer.
-6. **Record the round** with a fix-round ledger line (format: Durable Progress).
-
-The iteration cap and its adjudication are stated in Step 3 ("Review cap"); the commit mode is unchanged by a fix round (Commit Mode Contract).
+1. Gate the fix report: covering tests, exact command, output. Missing evidence bounces the report; that is not a fix iteration.
+2. `"$SKILL_DIR/scripts/review-package" PLAN_FILE FIX_BASE HEAD` (FIX_BASE = the head the previous review saw).
+3. Verdict every prior finding ADDRESSED or NOT ADDRESSED with file:line. "Attempted" is not ADDRESSED.
+4. Inspect only the fix diff for new breakage.
+5. Observations outside the fix diff never extend the loop: ledger them at observed severity; Critical/Important go to cap adjudication; a blocker-taxonomy match stops the run.
+6. Write the fix-round ledger line.
 
 ### Review Campaign Boundary
 
-The routine scoped fix review in Step 4 does not start a review campaign. Its existing four-attempt policy remains local to one task: three context-preserving attempts plus the optional fresh reframed 4th attempt, each followed by lead-only scoped re-review.
-
-If a review reopens broad discovery or dispatches an external reviewer, invoke `razorback:managing-review-campaigns` before that action. Emit one immutable campaign setup, count every external CLI call, and close on its terminal status. Never convert routine scoped re-review into a campaign merely because it needed another allowed fix attempt.
+The routine scoped fix review here does not start a review campaign: three context-preserving attempts plus the optional reframed 4th attempt, each with lead-only scoped re-review. If a review reopens broad discovery or dispatches an external reviewer, invoke `razorback:managing-review-campaigns` first: one immutable campaign setup, count every external CLI call, close on terminal status.
 
 ## Step 4a: Pre-merge external review (if chosen)
 
-If the reviewer choice propagated from `writing-plans` (via the execution handoff) is `codex` or `claude`:
-
-**First**, ensure the verification ledger has a passing `branch-gate` entry for the current HEAD. If it does not, run the branch-gate scope now and record the result. `pre-merge-review` requires this as a precondition; do not skip it.
-
-**Then** invoke `razorback:pre-merge-review`, passing:
-
-- plan path
-- reviewer choice
-- verification strategy
-- verification ledger
-- the ledger's `minor (deferred)` lines (Durable Progress) — the deferred findings the reviewer weighs alongside its own findings
-
-If the choice is `none` (or absent), skip Step 4a.
-
-Pre-merge-review owns the rest — the bounded campaign, one general pass plus one security pass, classification, fix dispatch, required verification, and the terminal `REVIEW CAMPAIGN STATUS` plus summary block. Each external pass runs once; fixes are verified locally without a post-fix external re-review.
-
-After `pre-merge-review` returns, proceed to Step 5 (Complete → `razorback:finishing-a-development-branch`).
+Reviewer choice `codex` or `claude`: ensure the ledger has a passing `branch-gate` for the current HEAD (run it now if not), then invoke `razorback:pre-merge-review` with the plan path, reviewer choice, verification strategy, verification ledger, and the ledger's deferred lines. `none` skips this step. Pre-merge-review owns the bounded campaign — one general pass plus one security pass, classification, fix dispatch, verification, the terminal `REVIEW CAMPAIGN STATUS` block; fixes verify locally with no post-fix external re-review. Then Step 5.
 
 ## Step 5: Complete
 
-When all tasks are approved and marked complete:
-
-1. **Final verification:** Run the plan's `branch-gate` scope, or reuse a passing verification-ledger entry for the same HEAD and scope. Add any `expensive-specialist` scopes required by touched areas. The branch-gate run includes the plan's declared Security scope commands (`security-secrets`, `security-deps` — `razorback:security-review`); `none declared` skips them and is rendered in the morning report.
-2. **Reconcile source-control state:** run Check B of the `razorback:using-razorback` skill's `references/source-control-hygiene.md`. Status every worktree this run created — including any a subagent reported working in — and every branch the plan produced. Land stranded commits on this branch (re-run the branch gate afterward; the diff changed) or carry them forward as named items for the morning report. Subagents report the path, branch, commit, and dirty state they used; the lead cannot reconcile a path nobody reported.
-3. **Clean up the workspace:** when the final review is clean (final verification passed, and Step 4a — if chosen — returned), re-resolve the workspace path with `"$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE` immediately before deleting — the script verifies the path stays inside the repository — then delete only the path it prints: `rm -rf <printed path>`. Never `rm -rf` a remembered workspace path. Git history is the record now. Sibling directories under `.razorback/sdd/` belong to other plans; leave them alone.
-4. **Finish:** Use `razorback:finishing-a-development-branch`.
+1. **Final verification:** `branch-gate` (or a passing ledger entry for this HEAD) plus required `expensive-specialist` scopes. Branch-gate includes the plan's declared Security scope commands (`security-secrets`, `security-deps` — `razorback:security-review`); `none declared` skips them and is rendered in the morning report.
+2. **Reconcile source-control state:** Check B of `razorback:using-razorback` `references/source-control-hygiene.md`. Status every worktree this run or a subagent created and every branch produced. Land stranded commits here (re-run branch-gate) or carry them as named morning-report items.
+3. **Clean up:** re-resolve the workspace with `"$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE` immediately before `rm -rf <printed path>`. Never delete a remembered path or sibling plan directories.
+4. `razorback:finishing-a-development-branch`.
 
 ## Blockers
 
@@ -353,57 +137,33 @@ Anything else: pick the plan-consistent option, note the choice in your report, 
 
 ## Checkpoints
 
-In addition to mandatory pre-commit checkpoints, the lead writes a `goldfish:checkpoint` at four phase/review milestones during the run. This persists phase-level progress and decisions across auto-compaction and session restarts.
+In addition to mandatory pre-commit checkpoints, the lead writes a `goldfish:checkpoint` at four phase/review milestones during the run. This persists progress and decisions across auto-compaction and session restarts.
 
-1. **Phase boundary** — after each phase of a multi-phase plan: "Phase N of M complete. Decisions: …. Next: Phase N+1." Record the phase's branch and worktree path in the checkpoint. A multi-phase plan runs in **one** worktree by default; a phase that opens its own worktree runs Step 0b of `razorback:using-git-worktrees` first, so the prior phase's unmerged state is stated rather than discovered at Step 5.
-2. **Pre-review** — before Step 4a begins (if a reviewer was chosen): captures reviewer choice, diff range, verification strategy, and the immutable REVIEW CAMPAIGN setup and current counters.
-3. **Post-review** — after Step 4a completes: captures findings, classifications, fix commits, and the complete terminal `REVIEW CAMPAIGN STATUS` block.
-4. **PR-URL commit checkpoint** — inside `finishing-a-development-branch` Step 7, after the PR exists and before its PR-URL metadata commit; include the checkpoint artifact alongside the URL report, and do not emit a duplicate checkpoint after finishing returns.
+1. **Phase boundary** — after each phase of a multi-phase plan: "Phase N of M complete. Decisions: …. Next: Phase N+1." Record the phase's branch and worktree path. A multi-phase plan runs in one worktree by default; a phase that opens its own worktree runs Step 0b of `razorback:using-git-worktrees` first.
+2. **Pre-review** — before Step 4a begins (if a reviewer was chosen): reviewer choice, diff range, verification strategy, and the immutable REVIEW CAMPAIGN setup and current counters.
+3. **Post-review** — after Step 4a completes: findings, classifications, fix commits, and the terminal `REVIEW CAMPAIGN STATUS` block.
+4. **PR-URL commit checkpoint** — inside `finishing-a-development-branch` Step 7, after the PR exists and before its PR-URL metadata commit; do not emit a duplicate checkpoint after finishing returns.
 
-Checkpoint before each commit and explicitly stage the checkpoint artifact with that commit. In `serial-worker-commit`, the worker checkpoints before committing. In `parallel-lead-commit`, parallel workers neither checkpoint nor commit their batch; the lead checkpoints before each reviewed lead commit. Make one pre-commit checkpoint per actual commit.
+Checkpoint before each commit and explicitly stage the checkpoint artifact with that commit. In `serial-worker-commit` the worker checkpoints before committing. In `parallel-lead-commit` workers neither checkpoint nor commit; the lead checkpoints before each reviewed lead commit. One pre-commit checkpoint per actual commit.
 
-Phase-level checkpoints remain useful in addition to mandatory pre-commit checkpoints. Do not create a checkpoint-only follow-up commit, which would require another checkpoint and recurse indefinitely.
+Phase-level checkpoints remain useful in addition to mandatory pre-commit checkpoints. Never create a checkpoint-only follow-up commit; it would need another checkpoint and recurse.
 
-A checkpoint is a fast, non-blocking memory write — never a stop, a review gate, or a reason to ask the user anything. A phase boundary is a checkpoint trigger, not a stop: finishing a phase never means pausing for confirmation. Write the checkpoint and immediately continue.
+A checkpoint is a fast, non-blocking memory write — never a stop, a review gate, or a reason to ask the user anything. A phase boundary is a checkpoint trigger, not a stop: finishing a phase never means pausing for confirmation. Write it and immediately continue.
 
 ## Recovery
 
 On detecting a resumed run (post-compaction note, mismatch between expected and actual conversation state, or the user says "resume"), the lead follows this fixed orientation sequence before continuing:
 
 1. `goldfish:recall` — retrieve the active brief and recent checkpoints.
-2. Restore any immutable REVIEW CAMPAIGN setup and current counters from the checkpoint before considering review work. Counters only increase; participants and budgets never change after resume.
-3. If recalled `REVIEW CAMPAIGN STATUS` contains `campaign_closed: yes`, treat it as terminal and do not dispatch another reviewer, including when the state is `capped` or `blocked`.
+2. Restore any immutable REVIEW CAMPAIGN setup and current counters from the checkpoint. Counters only increase; participants and budgets never change after resume.
+3. If recalled `REVIEW CAMPAIGN STATUS` contains `campaign_closed: yes`, treat it as terminal and do not dispatch another reviewer, even when the state is `capped` or `blocked`.
 4. Read the plan file, noting which acceptance-criteria checkboxes are already `[x]`.
 5. Check the TaskList for completed / in-progress / pending tasks.
 6. `git log --oneline <base>..HEAD` — verify what is actually committed.
-7. Reconcile `parallel-lead-commit` gaps: re-read this plan's ledger (identity and resume check per Durable Progress) and run Step 1's completion-line check — a missing, `pending`, or unverifiable SHA means inspect the owned files, then commit approved edits per the Commit Mode Contract or re-dispatch. Do not trust a completion record that has no verifiable commit.
+7. Reconcile `parallel-lead-commit` gaps: re-read this plan's ledger and run Step 1's completion-line check — a missing, `pending`, or unverifiable SHA means inspect the owned files, then commit approved edits per the Commit Mode Contract or re-dispatch. Do not trust a completion record that has no verifiable commit.
 8. Identify the next incomplete task and resume execution.
 
-For any unattended goal or continuation predicate, `campaign_closed: yes` is terminal. Remaining findings in a `capped` campaign do not authorize another review campaign or reviewer dispatch.
-
-This sequence runs only on resumed runs. A fresh run dispatches directly into Step 1 (Extract Tasks from the Plan). Subagent IDs from the prior session cannot be resumed post-compaction — treat any needed fix as a fresh dispatch with prior-commit context.
-
-## Prompt Templates
-
-- `./implementer-prompt.md` — Dispatch implementer subagent
-- `./fix-prompt.md` — Resume implementer to fix review issues
-- `./spec-reviewer-prompt.md` and `./code-quality-reviewer-prompt.md` — Review checklists the lead consults during inline review. Not dispatched as separate subagents; they encode the criteria the lead applies directly.
-
-## Example Workflow
-
-```
-[Read plan once; orient with Miller context; TaskCreate per task]
-[Task 2 of 5 — commit mode: serial-worker-commit]
-[BASE recorded; task-brief writes task-2-brief.md. Dispatch implementer with brief path + context + Miller directives. Save agent ID: impl-c3d4]
-Implementer reports: verify/repair modes added, worker-red-green passing, committed def456. DONE.
-[Lead inline review: inspect changed symbols]
-  Spec: MISSING progress reporting; EXTRA --json flag. Quality: magic number 100 hard-coded
-[Fix round 1 of 3 — resume impl-c3d4 with ./fix-prompt.md + the three findings]
-Implementer (resumed): all three addressed, tests passing, committed ghi789.
-[Lead scoped re-review of def456..ghi789: 3/3 ADDRESSED → approved. Ledger: fix round 1 (3 addressed, 0 open)]
-[TaskUpdate task 2 completed. Remaining tasks follow the same pattern]
-[All tasks done: lead runs branch-gate scope, updates the ledger, deletes the plan workspace, then razorback:finishing-a-development-branch]
-```
+This sequence runs only on resumed runs. A fresh run enters at Step 1. Subagent IDs from the prior session cannot be resumed post-compaction — treat any needed fix as a fresh dispatch with prior-commit context.
 
 ## Rationalizations
 
@@ -416,8 +176,6 @@ Implementer (resumed): all three addressed, tests passing, committed ghi789.
 | "The worker's diff looks fine, skip the re-review" | Every fix gets a scoped re-review. "Attempted" is not ADDRESSED. |
 
 ## Red Flags
-
-Violating the letter of these rules is violating their spirit.
 
 **Never:**
 - Start implementation on main/master branch without explicit user consent
@@ -439,32 +197,6 @@ Violating the letter of these rules is violating their spirit.
 - Reach Step 5 without statusing every worktree the run created (Check B)
 - Pause for user input between tasks - the plan is approved, run it to completion. Stops are governed by the blocker taxonomy. If you can reason through a plan-consistent path, keep moving and log the choice.
 
-**If the subagent asks questions:** answer clearly and completely before letting it proceed; provide extra context if needed, and don't rush it into implementation.
-
-**If review finds issues:** route the fix and re-review per Step 4; the iteration cap and its adjudication are in Step 3 ("Review cap").
-
 ## Integration
 
-**Required workflow skills:**
-- **razorback:using-git-worktrees** — Set up isolated workspace before starting; its Step 0b inventories outstanding worktrees and branches first. Skip only with explicit user consent (small, single-session work where a feature branch is sufficient).
-- The `razorback:using-razorback` skill's `references/source-control-hygiene.md` — Check A before creating a worktree, Check B before Step 5 declares the run done.
-- **razorback:writing-plans** — Creates the plan this skill executes
-- **razorback:requesting-code-review** — Review criteria the lead applies during inline review
-- **razorback:managing-review-campaigns** — Bounds any broad or external review campaign without replacing routine scoped fix review
-- **razorback:finishing-a-development-branch** — Complete development after all tasks
-
-**Subagents should follow:**
-- **razorback:test-driven-development** — TDD for each task (embedded in the implementer prompt)
-
-**Alternative workflows:**
-- **razorback:executing-plans** — Use for parallel-session, single-agent, or no-delegation execution
-
-**Codex-specific:**
-- Beyond the dispatch surface at the top of this skill: `interrupt_agent(target=<agent-id>)` cancels a worker that is stuck or no longer needed (e.g. after cap adjudication rules its open findings) — there is no separate close/free step. Older codex versions needed `multi_agent = true` in `~/.codex/config.toml`; current codex enables the collaboration tools by default.
-
-## It's working if
-
-- Every completion line in the ledger carries a verifiable commit SHA.
-- Parallel batches matched the plan's contract; nothing was serialized without a recorded reason.
-- Every fix round ended in a scoped re-review verdict, and the cap produced recorded rulings, never silence.
-- The run paused only for blocker-taxonomy stops, and Step 5 statused every worktree the run created.
+`razorback:using-git-worktrees` first (Step 0b inventories outstanding worktrees; `source-control-hygiene.md` Check A before creating one, Check B before Step 5). `razorback:writing-plans` produces the plan; `razorback:requesting-code-review` supplies inline review criteria; `razorback:finishing-a-development-branch` finishes. `razorback:executing-plans` covers single-agent or no-delegation runs.

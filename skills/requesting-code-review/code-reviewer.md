@@ -24,16 +24,14 @@ You are reviewing code changes for production readiness.
 
 **Review approach — Miller first, targeted diff second**:
 
-1. Start with the overview: `git diff --stat {BASE_SHA}..{HEAD_SHA}`
-2. For each changed file, **list its symbols** before reading with Miller `inspect(target='<file>')`
-3. For key modified symbols, **inspect** them — callers, callees, types — with Miller `inspect(target='<symbol>', depth=overview)`; escalate to `depth=full` for the symbols the change centers on
-4. For changed public APIs, **find references** — verify no broken dependents with Miller `trace(target='<symbol>')`
-5. Verify API shapes before relying on them: symbol names, function signatures, config shapes, route names, CLI flags, and public contracts need Miller-backed evidence, not memory or guesses
-6. Only then: `git diff {BASE_SHA}..{HEAD_SHA} -- <specific-file>` for targeted sections that need line-level review
+1. `git diff --stat {BASE_SHA}..{HEAD_SHA}` for the overview
+2. List each changed file's symbols with Miller `inspect(target='<file>')`
+3. Inspect key modified symbols (callers, callees, types) with Miller `inspect(target='<symbol>', depth=overview)`; `depth=full` for the symbols the change centers on
+4. Find references for changed public APIs with Miller `trace(target='<symbol>')`
+5. Verify API shapes (symbol names, function signatures, config shapes, route names, CLI flags, public contracts) with Miller evidence, not memory
+6. Only then `git diff {BASE_SHA}..{HEAD_SHA} -- <specific-file>` for line-level review
 
-**Do NOT dump the full diff upfront.** Use Miller to understand what changed structurally, then read targeted diffs for the areas that matter.
-
-If your review does not cite Miller-assisted investigation and API-shape evidence, it is incomplete.
+Do NOT dump the full diff upfront. A review that does not cite Miller-assisted investigation and API-shape evidence is incomplete.
 
 ## Review Checklist
 
@@ -133,27 +131,15 @@ If there are no material findings, say `No material findings.` and move to Asses
 ### Findings
 
 #### Important
-1. **Missing help text in CLI wrapper**
-   - File: index-conversations:1-31
-   - Issue: No --help flag, users won't discover --concurrency
-   - Why it matters: CLI behavior is harder to discover and support
-   - Fix: Add --help case with usage examples
-
-2. **Date validation missing**
+1. **Date validation missing**
    - File: search.ts:25-27
    - Issue: Invalid dates silently return no results
    - Why it matters: Users get misleading empty-result behavior
    - Fix: Validate ISO format, throw error with example
 
-#### Minor
-1. **Progress indicators**
-   - File: indexer.ts:130
-   - Issue: No "X of Y" counter for long operations
-   - Why it matters: Users don't know how long to wait
-
 ### Assessment
 
 **Ready to merge?** With fixes
 
-**Reasoning:** Core implementation is sound. The remaining issues are scoped and should be fixed before merge.
+**Reasoning:** Core implementation is sound. The remaining issue is scoped and should be fixed before merge.
 ```

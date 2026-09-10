@@ -1,49 +1,26 @@
 # Reviewer Prompt: codex
 
-Invocation instructions for running `codex` as the pre-merge adversarial reviewer. Background on codex's adversarial-review mode lives in the bundled `razorback:codex-cli` skill.
-
-Bare relative paths below (like the blocker-taxonomy reference) are relative to this file's directory, `skills/pre-merge-review/reviewer-prompts/` inside the razorback plugin. `$SKILL_DIR` is the pre-merge-review skill's own base directory, announced when the skill loads — substitute it before running any command.
+Invocation for `codex` as the pre-merge adversarial reviewer. Background: `razorback:codex-cli`. `$SKILL_DIR` is the pre-merge-review skill's own base directory, announced when the skill loads.
 
 ## Preconditions
 
-- `codex --version` returns successfully (the CLI is installed).
-- `codex login status` exits 0 (authenticated via ChatGPT OAuth). If it exits non-zero, this is **blocker taxonomy #1** (credentials broken) — stop the review, surface the blocker, and do not push the branch. See the `razorback:using-razorback` skill's `references/blocker-taxonomy.md`.
-- `$REVIEW_ROOT` is the temporary exported review tree prepared in pre-merge-review Step 1. It is outside `$PROJECT_DIR` and is shared by the general and security passes; do not run Codex from the live worktree.
-- Step 1 of the pre-merge-review flow has already built `$DIFF`, `$FILE_STAT`, `$COMMIT_LOG`, `$MILLER_EVIDENCE`, `$PROJECT_DIR`, and (optionally) `$USER_FOCUS`.
-- The lead has supplied sanitized Miller-backed evidence in the review bundle. This external reviewer does not run Miller. Report missing evidence when the bundle and exported tree cannot support a conclusion; never claim Miller use.
+- `codex --version` succeeds; `codex login status` exits 0 (else blocker taxonomy #1, `razorback:using-razorback` `references/blocker-taxonomy.md`).
+- `$REVIEW_ROOT` (exported tree from Step 1, outside `$PROJECT_DIR`, shared by both passes) and `$DIFF`, `$FILE_STAT`, `$COMMIT_LOG`, `$MILLER_EVIDENCE`, optional `$USER_FOCUS` exist. Never run Codex from the live worktree.
+- This reviewer does not run Miller and never claims to. It works from the lead's Miller-backed bundle and the exported tree, and reports missing evidence when they cannot support a conclusion.
 
 ## Build the adversarial prompt
 
-Read the canonical adversarial prompt template at `$SKILL_DIR/../codex-cli/adversarial-prompt.txt` in the razorback plugin. Substitute:
+Read `$SKILL_DIR/../codex-cli/adversarial-prompt.txt` and substitute:
 
-- `{{TARGET_LABEL}}` ← `$FILE_STAT` plus a short description, e.g. `"branch <name>: N files changed, base..HEAD"`.
-- `{{USER_FOCUS}}` ← `$USER_FOCUS` if set during execution handoff, otherwise `"none specified"`.
-- `{{REVIEW_INPUT}}` ← `$FILE_STAT`, `$COMMIT_LOG`, `$MILLER_EVIDENCE`, and `$DIFF`, concatenated under
-  the labelled `Target:`, `File stat:`, `Commit log:`, `Lead Miller evidence:`, and `Diff:` headings.
+- `{{TARGET_LABEL}}` ← `"branch <name>: N files changed, base..HEAD"`.
+- `{{USER_FOCUS}}` ← `$USER_FOCUS` or `"none specified"`.
+- `{{REVIEW_INPUT}}` ← `$FILE_STAT`, `$COMMIT_LOG`, `$MILLER_EVIDENCE`, `$DIFF` under the labelled `Target:`, `File stat:`, `Commit log:`, `Lead Miller evidence:`, `Diff:` headings.
 
-The template instructs codex to default to skepticism, prioritize high-impact attack surfaces (auth, data loss, race conditions, schema drift, observability gaps), emit only material findings, and return JSON matching the shared schema.
-
-The caller writes the complete rendered prompt to `$PAYLOAD_FILE`, including
-the template's review instruction and optional focus, filters it through
-`skills/security-review/scripts/redact-outbound`, and applies the shared
-[`review-payload.md`](../../security-review/review-payload.md) contract. It
-exposes `$REVIEW_PROMPT_FILE` and records the large artifact path in `$REVIEW_ARTIFACT`:
-the complete redacted review prompt for payloads at or below 128 KiB, or the
-bounded static instruction `Read and follow the complete redacted review bundle at:`
-plus its path for larger bundles. The large artifact is
-`.razorback-review/review-input.md` inside
-`$REVIEW_ROOT`; Codex reads it with its existing read-only tools. Keep the large
-payload in the reviewer-root-local artifact; do not pass it to `echo`, stdin,
-or any positional argument.
+Write the rendered prompt to `$PAYLOAD_FILE`, filter it through `skills/security-review/scripts/redact-outbound`, and apply [`review-payload.md`](../../security-review/review-payload.md) with `prepare-review-artifact`. That yields `$REVIEW_PROMPT_FILE` and `$REVIEW_ARTIFACT`: the complete redacted review prompt at or below 128 KiB, or the bounded static wrapper `Read and follow the complete redacted review bundle at:` plus the artifact path (`.razorback-review/review-input.md` inside `$REVIEW_ROOT`) above it. Codex reads the artifact with its read-only tools; never pass the large payload through `echo`, stdin, or a positional argument.
 
 ## Invocation
 
-Codex's `--output-schema` flag takes a file path, but OpenAI structured outputs
-reject the canonical schema's `uniqueItems`, `minItems`, `minLength`, and
-`minimum` keywords. Passing that file directly fails the request with HTTP 400
-`invalid_json_schema` before the model runs, so codex never sees the prompt.
-Sanitize it first; `validate-review-output` still enforces every one of those
-constraints on the returned object.
+OpenAI structured outputs reject the canonical schema's `uniqueItems`, `minItems`, `minLength`, and `minimum` keywords (HTTP 400 `invalid_json_schema` before the model runs). Sanitize with `openai-schema`; `validate-review-output` still enforces every constraint on the result.
 
 ```bash
 SCHEMA_FILE=$(mktemp)
@@ -53,7 +30,7 @@ if ! "$SKILL_DIR/../codex-cli/scripts/openai-schema" > "$SCHEMA_FILE"; then
   exit 1
 fi
 
-CODEX_MODEL="${RAZORBACK_CODEX_REVIEW_MODEL:-}"  # empty = inherit global default
+CODEX_MODEL="${RAZORBACK_CODEX_REVIEW_MODEL:-}"
 
 OUT_DIR=$(mktemp -d)
 trap 'rm -rf "$OUT_DIR"; rm -f "$SCHEMA_FILE"' EXIT
@@ -70,120 +47,48 @@ cd "$REVIEW_ROOT" && cat "$REVIEW_PROMPT_FILE" | "$SKILL_DIR/../codex-cli/script
   > "$OUT_DIR/codex-output.json" 2> "$OUT_DIR/codex-stderr.log"
 ```
 
-`REVIEW_ROOT` and `OUT_DIR` must both live outside the live worktree. The review root is created once by pre-merge-review and is shared across both passes; the caller removes it explicitly after both outputs are captured and parsed. `OUT_DIR` is private per invocation, so its local `trap` only removes reviewer output files and is not the review-root lifecycle.
+`OUT_DIR` is private per invocation and outside the worktree; its `trap` removes only reviewer output, not `$REVIEW_ROOT` (the caller removes that after both passes are parsed).
 
-Flag rationale:
+Flags:
 
-- `"$SKILL_DIR/../codex-cli/scripts/codex-exec"` — forwards every argument to `codex exec`. On Windows it first runs a sandbox preflight: codex spawns the first `pwsh` on PATH, and the Microsoft Store build under `WindowsApps` rejects the restricted sandbox token (`CreateProcessAsUserW failed: 5`), which makes codex read zero files while the invocation is still consumed. The wrapper prefers the MSI `pwsh` and proves the spawn with `codex sandbox` before any model turn.
-- `--ephemeral` — no persistent session left behind.
-- `--color never` — clean non-interactive output suitable for piping into `jq`.
-- `-s read-only` — sandbox policy that blocks file writes at the CLI layer. This is what actually enforces "the reviewer never edits code"; the prompt's read-only instruction is backup, not the mechanism.
-- `--skip-git-repo-check` — permits review from the exported tree, which intentionally has no `.git` directory.
-- `--ignore-user-config --ignore-rules` — prevents user/project configuration and branch-controlled rules from becoming reviewer control input.
-- `${CODEX_MODEL:+-m "$CODEX_MODEL"}` — explicit model override from `RAZORBACK_CODEX_REVIEW_MODEL`. When unset, the expansion is empty and codex uses its configured default.
-- `--output-schema` — forces codex to return JSON conforming to the shared review-output schema, sanitized by `openai-schema` for OpenAI's restricted subset. A completed result includes `review_completed: true`, non-empty unique `files_inspected`, a `commands_run` array (which may be empty), and non-empty file/line/observation `evidence`; `needs-attention` requires a finding. Sanitizing drops only the constraint keywords OpenAI refuses; `validate-review-output` enforces all of them on the result. `reviewer-prompts/claude.md` reads the same canonical file (minus the `$schema` key, which claude's validator rejects), so both reviewers target an identical shape.
-- `-` — read the prompt from stdin (which is the piped `$REVIEW_PROMPT_FILE`; for large bundles this is only the concise artifact instruction).
-- `2> "$OUT_DIR/codex-stderr.log"` — keep stdout JSON-only while retaining diagnostics from the same invocation for a blocker report. Do not re-run merely to recover discarded stderr.
+- `codex-exec` — forwards to `codex exec`. On Windows it runs a sandbox preflight first: the Microsoft Store `pwsh` under `WindowsApps` rejects the restricted sandbox token (`CreateProcessAsUserW failed: 5`), so codex reads zero files while still consuming the invocation. The wrapper prefers the MSI `pwsh` and proves the spawn with `codex sandbox` before any model turn.
+- `-s read-only` — the CLI-layer write block; the prompt's read-only instruction is backup, not the mechanism.
+- `--skip-git-repo-check` — the exported tree has no `.git`.
+- `--ignore-user-config --ignore-rules` — user/project config and branch-controlled rules are not reviewer input.
+- `--output-schema` — sanitized shared schema. A completed result has `review_completed: true`, non-empty unique `files_inspected`, a `commands_run` array (may be empty), non-empty file/line/observation `evidence`; `needs-attention` requires a finding.
+- `-` — prompt from stdin (`$REVIEW_PROMPT_FILE`; only the small wrapper for large bundles).
+- `2> codex-stderr.log` — diagnostics for a blocker report; do not re-run to recover stderr.
 
-**Model:** `RAZORBACK_CODEX_REVIEW_MODEL` is an optional explicit override. When unset, codex inherits its global default.
-
-**Timeout:** set the Bash tool's `timeout` to `1800000` (30 min). This is a failsafe against a hung process, not a budget for the review. Do not lower it to bound cost, and do not raise it and re-run when it trips.
-
-## Expected output format
-
-JSON conforming to the canonical schema:
-
-```json
-{
-  "verdict": "approve" | "needs-attention",
-  "summary": "...",
-  "findings": [
-    {
-      "severity": "critical" | "high" | "medium" | "low",
-      "title": "...",
-      "body": "...",
-      "file": "path/to/file.ext",
-      "line_start": 42,
-      "line_end": 58,
-      "confidence": 0.85,
-      "recommendation": "..."
-    }
-  ],
-  "next_steps": ["..."],
-  "review_completed": true,
-  "files_inspected": ["path/to/file.ext"],
-  "commands_run": [],
-  "evidence": [
-    {
-      "file": "path/to/file.ext",
-      "line_start": 42,
-      "line_end": 58,
-      "observation": "Concrete observation from the reviewed diff."
-    }
-  ]
-}
-```
+**Timeout:** Bash `timeout` `1800000` (30 min), a failsafe for a hung process, not a budget. Do not lower it, and do not raise it and re-run.
 
 ## Parsing
 
-Direct — no envelope. Parse with `jq`:
+No envelope. The validator exits non-zero on missing completion evidence or malformed output:
 
 ```bash
 "$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$OUT_DIR/codex-output.json" > "$OUT_DIR/codex-normalized.json"
 jq '.findings[]?' < "$OUT_DIR/codex-normalized.json"
 ```
 
-The validator exits non-zero if the result is missing completion evidence or is malformed. Do NOT gate on `jq -e '.findings[]'` — it exits 4 on a valid empty array, turning a clean review into a false parse failure. Malformed, incomplete, or schema-invalid output consumes this pass's invocation and blocks the campaign; do not retry. Record diagnostics from `$OUT_DIR/codex-stderr.log` in the blocker report.
+Do not gate on `jq -e '.findings[]'` (exit 4 on a valid empty array). Malformed, incomplete, or schema-invalid output consumes this pass's invocation and blocks the campaign; do not retry. A partial output is not completion evidence. Record `$OUT_DIR/codex-stderr.log` in the blocker report.
 
-A partial output is not completion evidence and must not be accepted.
-
-## Cost / token notes
-
-Codex's JSON output does not include per-request token counts. The morning report's external-review cost line for codex is omitted (or rendered as "not reported by codex-cli"). If you need cost tracking, the `codex` CLI itself logs usage to its own history — out of scope for this skill.
+**Cost:** codex reports no per-request token counts; render the morning-report cost line as "not reported by codex-cli".
 
 ## Error handling
 
-**Reviewer unavailability is a blocker when the user chose this reviewer for the run.** Stop the run, do NOT push, do NOT create a PR, emit a partial morning report with `Status: Blocked` and the specific failure in `Blockers hit`, and exit.
+Reviewer unavailability is a blocker: stop, do NOT push, do NOT create a PR, emit a partial morning report with `Status: Blocked` and the failure in `Blockers hit`.
 
-Unavailability triggers:
+| Trigger | Blocker | Note |
+|---|---|---|
+| `codex login status` non-zero | #1 | Tell the user to run `codex login`. |
+| Rate limit exhausted | #1 | Suggest retry after cooldown. |
+| `codex-exec` preflight exits 2 before any model turn (stderr names the `pwsh` it could not spawn) | none | Not a consumed invocation. Fix the host (MSI PowerShell 7 or `RAZORBACK_PWSH_DIR`) and dispatch again. |
+| Empty stdout | #1 | Cite `codex-stderr.log`. Consumed; do not re-run. |
+| Schema violation / malformed output | #5 | Consumed; do not re-run. |
+| 30-minute failsafe trips without complete output | #1 | Consumed. Do NOT raise the timeout and re-run, and do NOT split the diff and re-run. |
 
-- **Auth failure** (`codex login status` exits non-zero) → **blocker taxonomy #1** (credentials broken). Tell the user to run `codex login`.
-- **Rate limit exhausted** (ChatGPT plan's rolling 5-hour limits tripped) → **blocker taxonomy #1** — credentials work but the backing service is unavailable. Suggest retry-after-cooldown in the blocker note.
-- **Wrapper preflight failure** (`codex-exec` exits 2 before any model turn, stderr names the `pwsh` it could not spawn) → **not a consumed invocation** and not a reviewer verdict. Fix the host (install the MSI PowerShell 7 or set `RAZORBACK_PWSH_DIR`) and dispatch again; the invocation budget has not moved.
-- **Empty stdout** → **blocker taxonomy #1**. Use the captured `$OUT_DIR/codex-stderr.log` in the blocker note. Common causes: bad schema path, missing network. The invocation is consumed; do not re-run it.
-- **Schema violation or malformed output** → **blocker taxonomy #5** (unresolvable — the reviewer produced unusable output). The invocation is consumed; do not re-run it.
-- **The 30-minute failsafe trips without a complete output** → **blocker taxonomy #1**. The process hung or died; the diff was not too big. Do NOT raise the timeout and re-run, and do NOT split the diff and re-run — splitting also breaks the reviewer's ability to reason about cross-file interactions. One burned attempt is enough — block and let the human decide.
-
-A truncated result is incomplete and must be rejected by `validate-review-output`; block the campaign and record the captured diagnostics.
-
-**Not a blocker:**
-
-- **A long run.** A review that takes 10-20+ minutes is working, not stuck. Wait for it.
+A run of 10-20+ minutes is working, not stuck. Wait for it.
 
 ## Security pass
 
-When the run includes the dedicated security pass, run codex a second time. The invocation is the SAME as the general pass — `codex exec --ephemeral --color never -s read-only --output-schema "$SCHEMA_FILE" -`, with the same model handling, timeout, and stdin pipe as the Invocation section above.
-
-The stdin prompt is NOT the same. Rebuild the security template into a fresh
-`PAYLOAD_FILE`, including its instruction and optional focus, redact it into a
-fresh `$REDACTED_PAYLOAD_FILE`, apply `prepare-review-artifact` to select a fresh
-`$REVIEW_PROMPT_FILE`, and pipe that file — not the general pass's payload —
-into the second `codex exec`. Reusing the general pass's rendered prompt here is
-an error: it produces two general reviews and no security review. For a large
-payload, the second prompt still contains only the static artifact instruction;
-never reload the artifact bytes.
-Build the security template from the canonical
-`$SKILL_DIR/../security-review/security-adversarial-prompt.txt` file and include
-the same `$MILLER_EVIDENCE` section supplied to the general pass.
-
-Capture stdout to a second file in the same private temp directory, `$OUT_DIR/reviewer-output-security.json`, so the general pass's `$OUT_DIR/codex-output.json` is preserved.
-
-Run the second command from the same exported tree: `cd "$REVIEW_ROOT" && … | codex exec …`. Keep `--skip-git-repo-check`, `--ignore-user-config`, and `--ignore-rules` unchanged. Do not switch back to `$PROJECT_DIR` or create a second review root. If this pass fails, remove `"$REVIEW_ROOT"` explicitly before returning the blocker.
-
-Parse rules, cost notes, and error handling are identical to the general pass: apply the Parsing section's shape check, empty-findings rule, and no-retry blocking rule to `$OUT_DIR/reviewer-output-security.json`, and the Cost / token notes unchanged.
-
-**A security-pass failure is reviewer unavailability.** The same triggers and the same blocker protocol from Error handling apply: stop the run, do NOT push, do NOT create a PR, emit a partial morning report with `Status: Blocked` and the specific failure in `Blockers hit`. Never silently skip the security pass.
-
-## Adversarial prompt template
-
-The canonical template is `$SKILL_DIR/../codex-cli/adversarial-prompt.txt` in the razorback plugin — read it at dispatch time and substitute the placeholders as described under "Build the adversarial prompt" above. It is the Codex variant of a deliberate pair; `skills/claude-cli/adversarial-prompt.txt` differs only in the model name and a REVIEW METHOD line naming Claude's `Read`/`Grep`/`Glob` tools.
+Same invocation, same flags, model handling, timeout, and stdin pipe, run a second time from the same `$REVIEW_ROOT`. Only the prompt differs: render `$SKILL_DIR/../security-review/security-adversarial-prompt.txt` with the same `$MILLER_EVIDENCE` section into a fresh `PAYLOAD_FILE`, redact it, apply `prepare-review-artifact`, and pipe the fresh `$REVIEW_PROMPT_FILE`. Reusing the general prompt yields two general reviews and no security review. Capture stdout to `$OUT_DIR/reviewer-output-security.json` so `codex-output.json` is preserved. Apply the same parsing, cost, and error rules; a security-pass failure is reviewer unavailability, never a silent skip. If it fails, remove `"$REVIEW_ROOT"` before returning the blocker.

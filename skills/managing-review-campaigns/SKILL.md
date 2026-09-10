@@ -5,27 +5,15 @@ description: Use when a review may repeat after fixes, multiple reviewers or mod
 
 # Managing Review Campaigns
 
-## Overview
-
 A reviewer invocation may run deeply, but the campaign around it must end. Rounds and total external reviewer invocations are hard-capped; the lead closes the campaign from recorded code and test evidence.
 
-**REQUIRED SUB-SKILL:** Use razorback:receiving-code-review to verify findings before accepting them. Apply the blocker semantics from razorback:using-razorback.
+**REQUIRED SUB-SKILL:** razorback:receiving-code-review to verify findings before accepting them. Apply the blocker semantics from razorback:using-razorback.
 
-## When to Use
-
-Use for any review that may repeat after fixes, involves more than one
-reviewer or model CLI, or must terminate cleanly with no user watching.
-
-Do NOT use for:
-- The lead's inline review of a single task during plan execution — that is
-  razorback:requesting-code-review criteria, not a campaign.
-- A subagent fix loop inside razorback:subagent-driven-development — attempt
-  limits there are task mechanics, not campaign rounds.
-- A single ad-hoc review with no repeat and no external reviewer.
+Not for: the lead's inline review of one task during plan execution (razorback:requesting-code-review), a subagent fix loop inside razorback:subagent-driven-development (attempt limits are task mechanics), or a single ad-hoc review with no repeat and no external reviewer.
 
 ## Start Once
 
-Before the first review invocation, emit this immutable setup:
+Emit this immutable setup before the first review invocation:
 
 ```text
 REVIEW CAMPAIGN
@@ -55,26 +43,15 @@ The lead always participates. Select others only when available, policy-allowed,
 | Lead plus external reviewer | `external-reviewed` | Adds independent evidence within the fixed campaign. |
 | Lead plus a real different-model reviewer | `cross-model-reviewed` | Satisfies an explicit cross-model requirement. |
 
-A reviewer is explicit when named by the user, required by repo instructions, or recorded in the approved plan. An explicit reviewer that is unavailable before completing its required discovery scope blocks. A required reviewer obligation is satisfied once usable evidence covers every declared required discovery scope. Failure of an optional confirmation after that point does not retroactively block; count the call when dispatched, do not retry or replace it, and let the lead confirm. An unavailable optional participant is omitted and recorded before setup. An optional participant lost mid-campaign is not retried or replaced; use the strongest evidence label already earned and continue within the original budget.
+A reviewer is explicit when named by the user, required by repo instructions, or recorded in the approved plan. An explicit reviewer that is unavailable before completing its required discovery scope blocks. A required reviewer obligation is satisfied once usable evidence covers every declared required discovery scope; failure of an optional confirmation after that point does not retroactively block. Count the call when dispatched, do not retry or replace it, and let the lead confirm. An unavailable optional participant is omitted and recorded before setup. An optional participant lost mid-campaign is not retried or replaced; use the strongest evidence label already earned and continue within the original budget.
 
 ## Bounded Rounds
 
-### Round 1 — discovery
+**Round 1 — discovery.** Review the declared scope broadly; each selected reviewer runs at most once per discovery scope. Verify and deduplicate findings; the lead assigns `critical`, `high`, `medium`, or `low`. Freeze the accepted finding set after triage.
 
-- Review the declared scope broadly; each selected reviewer runs at most once per discovery scope.
-- Verify and deduplicate findings, then the lead assigns `critical`, `high`, `medium`, or `low`.
-- Freeze the accepted finding set after triage.
+**Round 2 — scoped confirmation.** Mark every accepted finding `addressed`, `not addressed`, `contested`, or `deferred`. Inspect only the fix diff for new breakage. Observations outside the fix diff are recorded and cannot extend the campaign; a new medium/low observation may be fixed or deferred but cannot authorize another external sweep. A deferred finding at or above the severity floor remains open; a finding stops counting as open only when addressed, dismissed from evidence, or recorded outside the approved campaign scope. The lead confirms by default; at most one predeclared external confirmer may make one targeted invocation.
 
-### Round 2 — scoped confirmation
-
-- Mark every accepted finding `addressed`, `not addressed`, `contested`, or `deferred`.
-- Inspect only the fix diff for new breakage. Observations outside the fix diff are recorded and cannot extend the campaign. A new medium/low observation may be fixed or deferred but cannot authorize another external sweep.
-- A deferred finding at or above the severity floor remains open. A finding stops counting as open only when addressed, dismissed from evidence, or recorded outside the approved campaign scope.
-- The lead confirms by default. At most one predeclared external confirmer may make one targeted invocation.
-
-### Round 3 — exceptional targeted confirmation
-
-Enter only when the lead verifies a new critical/high regression introduced inside the fix diff. Target only that regression and its fix; broad discovery is forbidden. Use at most one confirmer, or let the lead confirm when none is available. Reviewer disagreement is not a trigger. Push back once on the evidence, record any dispute, and stop after Round 3 regardless of outcome.
+**Round 3 — exceptional targeted confirmation.** Enter only when the lead verifies a new critical/high regression introduced inside the fix diff. Target only that regression and its fix; broad discovery is forbidden. Use at most one confirmer, or the lead when none is available. Reviewer disagreement is not a trigger: push back once on the evidence, record any dispute, and stop after Round 3 regardless of outcome.
 
 Extra reviewers never add rounds. They add Round 1 evidence and consume the predeclared invocation budget.
 
@@ -93,31 +70,17 @@ Callers may choose a stricter profile, never a looser one.
 
 ### Completion-aware Grok standalone calls
 
-The Grok standalone profile spends both invocations on one review because Grok
-cannot review and emit the schema in the same call (CLI mechanics in
-`razorback:grok-cli`). Invocation 1/2 is the free-form review and invocation 2/2 is the structuring
-pass, which
-resumes the session the first call named with `--session-id` and asks only
-for the schema. Both are required; neither is a retry, and the pair
-buys no extra discovery. A resume that finds no session exits non-zero and
-closes the campaign there. No third call is allowed. A rejected structured
-result closes the campaign `blocked` or `capped` with the counters recorded
-at `2/2`.
+Grok cannot review and emit the schema in one call (`razorback:grok-cli`), so the profile spends both invocations on one review: invocation 1/2 is the free-form review and invocation 2/2 is the structuring pass, which resumes the session the first call named with `--session-id` and asks only for the schema. Both are required; neither is a retry, and the pair buys no extra discovery. A resume that finds no session exits non-zero and closes the campaign there. No third call is allowed. A rejected structured result closes the campaign `blocked` or `capped` with the counters at `2/2`.
 
-A review pass that returns after one turn inspected nothing. Treat it as a
-failed invocation, not as evidence.
+A review pass that returns after one turn inspected nothing. Treat it as a failed invocation, not as evidence.
 
-A sandbox startup failure creates no session and therefore cannot use the
-structuring pass; the caller must close that campaign. Recovery profiles and
-approval rules are in `razorback:grok-cli`. A wrapper preflight that refuses
-to dispatch (codex `codex-exec` exit 2) happens before any model turn and
-consumes no invocation: the counters do not move, fix the host, and dispatch.
+A sandbox startup failure creates no session and therefore cannot use the structuring pass; close that campaign (recovery rules in `razorback:grok-cli`). A wrapper preflight that refuses to dispatch (codex `codex-exec` exit 2) happens before any model turn and consumes no invocation: the counters do not move, fix the host, and dispatch.
 
 ## Close on Evidence
 
 Canonical severity comes from `skills/codex-cli/schemas/review-output.schema.json`: `critical`, `high`, `medium`, or `low`. For every accepted finding, record its classification and canonical severity; file:line or symbol evidence; `red-to-green test`, `existing covering test`, or `inspection-only`; and the fix, dismissal, dispute, or deferral reason. Green tests on an uncovered path are inspection-only. Majority vote may raise confidence but cannot override code evidence, scope, or the campaign budget.
 
-Terminal states are `clean` when nothing above the floor remains open in scope, `capped` when the maximum round ends or no permitted action remains while an above-floor finding is open, and `blocked` when a required discovery obligation cannot be satisfied or an unresolved critical/high finding meets the blocker taxonomy. An exhausted external budget stops external dispatch but does not prevent an already-permitted lead-only confirmation. Emit this block for every terminal state:
+Terminal states: `clean` when nothing above the floor remains open in scope; `capped` when the maximum round ends or no permitted action remains while an above-floor finding is open; `blocked` when a required discovery obligation cannot be satisfied or an unresolved critical/high finding meets the blocker taxonomy. An exhausted external budget stops external dispatch but does not prevent an already-permitted lead-only confirmation. Emit this block for every terminal state:
 
 ```text
 REVIEW CAMPAIGN STATUS
@@ -155,8 +118,6 @@ Any red flag means stop dispatching and emit the terminal status.
 
 ## It's working if
 
-- The immutable setup block was emitted before the first reviewer invocation.
-- Counters only ever increased, and survived compaction.
+- The setup block was emitted before the first invocation; counters only increased and survived compaction.
 - Every external CLI call maps to one counted invocation.
-- The campaign ended in one of the three terminal states with the status block emitted.
-- Nothing was dispatched after `campaign_closed: yes`.
+- The campaign ended in a terminal state with the status block emitted, and nothing was dispatched after `campaign_closed: yes`.

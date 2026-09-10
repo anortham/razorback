@@ -1,8 +1,66 @@
-# Task Templates
+# Plan Templates
 
-Copy the template for the plan type. Both share the same header block (Files,
-Interfaces, Contract inputs, File ownership, Serialization required,
-Dependency reason); they diverge after it.
+Copy these blocks into the plan in this order: header, Verification Strategy, Parallel Execution Contract, then one task block per task. Both task templates share the same header block (Files, Interfaces, Contract inputs, File ownership, Serialization required, Dependency reason); they diverge after it.
+
+## Plan Header
+
+```markdown
+# [Feature Name] Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use razorback:subagent-driven-development whenever delegation is available and permitted, including for one task; serialize dependent tasks. Use razorback:executing-plans only when delegation is unavailable or the user/session explicitly selected single-agent execution.
+
+**Goal:** [One sentence]
+
+**Architecture:** [2-3 sentences]
+
+**Tech Stack:** [Key technologies/libraries]
+
+**Architecture Quality:** [Approved module/interface shape, architecture risk, or `No Architecture Impact` for mechanical plans]
+
+## Global Constraints
+
+[One line per project-wide requirement, exact values verbatim from the spec]
+
+---
+```
+
+## Verification Strategy
+
+```markdown
+## Verification Strategy
+
+**Project source of truth:** [AGENTS.md / CLAUDE.md / docs / CI config / manifest that defines verification tiers]
+
+**Worker red/green scope:** [Lowest-cost repo command that proves the changed behavior]
+
+**Worker ceiling:** [Maximum scope workers run alone; the lead owns broader gates and their acceptance]
+
+**Worker gate invariant:** [Per assigned worker gate, the behavior or evidence it proves]
+
+**Lead affected-change scope:** [Changed-files or affected-area gate, run after a coherent batch]
+
+**Branch gate:** [Broad confidence gate before handoff, push, or PR]
+
+**Security scope:** [Project-defined secrets-scan and dependency-audit commands run at the branch gate, or `none declared`.]
+
+**Replay/metric evidence:** [Which assertions or metrics are hard gates and which are report-only]
+
+**Escalation triggers:** [Changed areas or failure modes that require broader tiers]
+
+**Assigned verification failure:** Workers stop and report when assigned verification fails, unless this plan explicitly says to update that gate.
+
+**Verification ledger:** Record invariant, command, scope label, commit SHA, result, and timestamp (plus hard-gate and report-only metrics). Reuse a passing entry for the same HEAD and scope instead of rerunning.
+```
+
+## Parallel Execution Contract
+
+```markdown
+## Parallel Execution Contract
+
+| Task | Parallel batch | File ownership | Serialization required | Dependency reason |
+|---|---|---|---|---|
+| Task 1: [name] | [Batch A / None - serial] | [Exact create/modify/test ownership] | [No / Yes / Not applicable - single task.] | [Blocking dependency or tool limitation; `None - safe parallel batch.`; or `Not applicable - single task.`] |
+```
 
 ## Full Plan Task Template
 

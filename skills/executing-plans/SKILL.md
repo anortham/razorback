@@ -5,69 +5,43 @@ description: Use when executing a written implementation plan and delegation is 
 
 # Executing Plans
 
-## Overview
+One agent runs the approved plan end to end with no inter-task pauses. After approval the run stops only for the blocker taxonomy and the final PR; every other judgment call is decided plan-consistently and noted in the report.
 
-One agent executes the approved plan end to end, with no inter-task pauses. The defining constraint: after approval, the run stops only for the blocker taxonomy and the final PR — every other judgment call is decided plan-consistently and noted in the report.
+Use this skill when there is no delegation or the user/session explicitly selected single-agent execution. When delegation is available and permitted, use `razorback:subagent-driven-development`, including for one task.
 
-**When to use this vs. subagent-driven-development:** Use this skill when there is no delegation or the user/session explicitly selected single-agent execution. When delegation is available and permitted, use `razorback:subagent-driven-development`, including for one task; it serializes dependent tasks and parallelizes independent ones.
+**Inputs from `writing-plans`:** plan path, `reviewer_choice` (`none` / `codex` / `claude`), authority ledger (`local_commit_authority`, `push_authority`, `pr_authority`), verification strategy.
 
-**Inputs from `writing-plans`:** plan path, `reviewer_choice` (`none` / `codex` / `claude`, default `none`), authority ledger (`local_commit_authority`, `push_authority`, `pr_authority` with sources), and verification strategy. These propagate via the execution handoff and gate Step 3 below.
+**Architecture Quality:** the plan's `architecture-quality` output is authoritative. Preserve the approved architecture; do not redesign locally; report a plan mismatch if code reality contradicts it.
 
-**Architecture Quality:** The plan's `architecture-quality` output is authoritative. Preserve the approved architecture, do not redesign locally, and report a plan mismatch if code reality contradicts it.
+Announce: "I'm using the executing-plans skill to implement this plan."
 
-**Announce at start:** "I'm using the executing-plans skill to implement this plan."
+## Step 1: Load and Review Plan
 
-## The Process
+1. Read the plan. Use Miller to confirm its file paths and symbol references still match current code.
+2. A real blocker per `razorback:using-razorback` `references/blocker-taxonomy.md` (especially #3 or #4) → stop and report. Any other design question → decide plan-consistently, note it (file:line + reason).
+3. `TaskCreate` per task.
 
-### Step 1: Load and Review Plan
-1. Read plan file
-2. Review critically: use Miller to check that the plan's file paths and symbol references are still valid against current code
-3. If you find a real blocker per the `razorback:using-razorback` skill's `references/blocker-taxonomy.md` (especially #3, plan-contradicting data, or #4, safety-critical ambiguity with no plan answer), stop and report
-4. For any other design-quality questions, decide the plan-consistent answer and note it in your eventual report (file:line + reason)
-5. Create tasks (TaskCreate) and proceed
+## Step 2: Execute Tasks
 
-### Step 2: Execute Tasks
+Per task:
+1. Mark in_progress.
+2. Orient with Miller before coding: `context` on the area; `inspect(target, depth=full)` on symbols you edit; `trace` before changing any symbol; `inspect` a file's symbols before reading it; prove API shapes (symbol names, signatures, config shapes, routes, CLI flags, public contracts) with Miller evidence. No Glob → Read → Grep chains.
+3. Follow the plan's steps exactly; run the specified verifications.
+4. `TaskUpdate` completed, then tick the task's acceptance-criteria checkboxes in the plan file (`[ ]` → `[x]`). Bookkeeping only — do not pause or ask; continue to the next task.
+5. Candidate Mode: record non-required refactor candidates in the report or ADR offer, not in the diff. Fold in only refactors required for correctness, testability, or avoiding a brittle patch.
 
-For each task:
-1. Mark as in_progress
-2. **Orient before coding:** Use Miller to understand the area before making changes
-   - **Orient** — token-budgeted codebase orientation with `context`
-   - **Inspect** the symbol to modify — callers, callees, types — before touching it with `inspect(target, depth=full)` (symbols you are editing earn `full`)
-   - **Find references** — check all references before changing any symbol with `trace`
-   - **List a file's symbols** before reading full content with `inspect`
-   - **Prove API shapes** — use Miller evidence for symbol names, function signatures, config shapes, route names, CLI flags, and public contracts before relying on them
-   - **Do NOT fall back to Glob → Read → Grep chains.** Miller returns targeted context in 1-2 calls.
-3. Follow each step exactly (plan has bite-sized steps)
-4. Run verifications as specified
-5. Mark as completed (TaskUpdate), then tick that task's acceptance-criteria checkboxes in the plan file (`[ ]` → `[x]`) so the plan document itself records progress alongside the TaskList. This is a fast bookkeeping write — do not pause, request review, or wait for confirmation; continue straight to the next task.
-6. Candidate Mode during autonomous execution: record non-required refactor candidates in the report or ADR offer, not in the current work. Only fold in refactors required for correctness, testability, or avoiding a brittle patch without a new user prompt.
+Return to Step 1 review only when new codebase evidence contradicts the plan: re-check with Miller (`context` + `inspect`); if the plan fails, that is blocker #3.
 
-### Step 3: Pre-merge external review (if chosen)
+## Step 3: Pre-merge external review (if chosen)
 
-If the `reviewer_choice` propagated from `writing-plans` is one of `codex` or `claude`:
+If `reviewer_choice` is `codex` or `claude`: ensure the verification ledger has a passing `branch-gate` entry for the current HEAD (run it now if not). Branch-gate includes the plan's declared Security scope commands (`security-secrets`, `security-deps` — `razorback:security-review`); `none declared` skips them and is rendered in the morning report. Then invoke `razorback:pre-merge-review` with the plan path, reviewer choice, verification strategy, and verification ledger.
 
-**First**, ensure the verification ledger has a passing `branch-gate` entry for the current HEAD. If it does not, run the branch-gate scope now and record the result. The branch-gate run includes the plan's declared Security scope commands (`security-secrets`, `security-deps` — `razorback:security-review`); `none declared` skips them and is rendered in the morning report. `pre-merge-review` requires this as a precondition.
+Pre-merge-review owns the immutable `REVIEW CAMPAIGN` setup, its external invocation counters, and the terminal `REVIEW CAMPAIGN STATUS`. Preserve those blocks verbatim in checkpoints and the execution report. `none` skips this step.
 
-**Then** invoke `razorback:pre-merge-review`, passing:
+## Step 4: Complete Development
 
-- plan path
-- reviewer choice
-- verification strategy
-- verification ledger
-
-The pre-merge skill owns the canonical immutable `REVIEW CAMPAIGN` setup, its two external invocation counters, and terminal `REVIEW CAMPAIGN STATUS`. Preserve those blocks verbatim in checkpoints and the execution report.
-
-If the reviewer choice is `none` (or absent), skip Step 3 entirely.
-
-After `razorback:pre-merge-review` returns its morning-report summary block, proceed to Step 4.
-
-### Step 4: Complete Development
-
-After all tasks complete and verified (and pre-merge review, if any, has run):
-- **Reconcile source-control state first:** run Check B of the `razorback:using-razorback` skill's `references/source-control-hygiene.md`. Status every worktree this run created and every branch the plan produced. Land stranded commits on this branch (re-run the branch gate afterward; the diff changed) or carry them forward as named items for the morning report. Do not proceed to the finish skill with the state unaccounted for.
-- Announce: "I'm using the finishing-a-development-branch skill to complete this work."
-- **REQUIRED SUB-SKILL:** Use razorback:finishing-a-development-branch
-- Follow that skill in Autonomous Mode to verify the branch gate, push, create the PR, write the report, and stop before merge
+1. **Reconcile source-control state:** run Check B of `razorback:using-razorback` `references/source-control-hygiene.md`. Status every worktree this run created and every branch the plan produced. Land stranded commits here (re-run the branch gate) or carry them as named morning-report items. Never finish with state unaccounted for.
+2. Announce "I'm using the finishing-a-development-branch skill to complete this work." and run `razorback:finishing-a-development-branch` in Autonomous Mode: branch gate, push, PR, report, stop before merge.
 
 ## Blockers
 
@@ -87,53 +61,34 @@ The authoritative taxonomy is the `razorback:using-razorback` skill's `reference
 
 Anything else: pick the plan-consistent option, note the choice in your report, continue. If a reasonable path exists, take it. Full definitions in the taxonomy.
 
-## When to Revisit Earlier Steps
-
-Return to the Step 1 review when new codebase evidence contradicts the plan or the fundamental approach needs rethinking: re-check with Miller (`context` + `inspect`); if the plan holds, continue; if not, that is blocker taxonomy #3. Don't force through real blockers — stop and report per the taxonomy.
-
 ## Checkpoints
 
-Write a `goldfish:checkpoint` before each commit and explicitly stage the checkpoint artifact with the files that commit owns. This pre-commit checkpoint is mandatory even when another checkpoint was written recently. Also checkpoint at phase boundaries (or, for a flat task list, every few completed tasks) to persist progress and decisions across auto-compaction and session restarts. Capture what is done, the key decisions, and the next task to run. Before external review, also capture the immutable REVIEW CAMPAIGN setup and current counters. After review, capture the complete terminal `REVIEW CAMPAIGN STATUS` block with findings and dispositions.
+Write a `goldfish:checkpoint` before each commit and explicitly stage the checkpoint artifact with the files that commit owns. Also checkpoint at phase boundaries (or every few tasks on a flat list) to persist progress and decisions across auto-compaction and session restarts. Before external review, capture the immutable REVIEW CAMPAIGN setup and current counters; after review, capture the terminal `REVIEW CAMPAIGN STATUS` block.
 
-A checkpoint is a fast, non-blocking memory write. It is **not** a stop, a review gate, or a reason to ask the user anything — write it and immediately continue. A phase boundary is a checkpoint trigger, not a stop: finishing a phase never means pausing for confirmation. Phase/few-task cadence is additional recovery guidance; it never replaces the checkpoint required before every commit. Make one checkpoint per actual commit and include the artifact Goldfish writes in that commit. Do not create a checkpoint-only follow-up commit, which would recurse into another pre-commit checkpoint.
+A checkpoint is a fast, non-blocking memory write. It is **not** a stop, a review gate, or a reason to ask the user anything — write it and immediately continue. A phase boundary is a checkpoint trigger, not a stop: finishing a phase never means pausing for confirmation. One checkpoint per actual commit; never a checkpoint-only follow-up commit, which would recurse.
 
 ## Recovery
 
-This sequence runs **only on a resumed run** — a post-compaction note, a mismatch between expected and actual conversation state, or the user says "resume." It never runs during normal forward execution; on a fresh or in-flight run, skip it and keep going.
+This sequence runs **only on a resumed run** — a post-compaction note, a mismatch between expected and actual conversation state, or the user says "resume." On a fresh or in-flight run, skip it and keep going.
 
 On a resumed run, orient before continuing:
 
 1. `goldfish:recall` — retrieve the active brief and recent checkpoints.
-2. Restore any immutable REVIEW CAMPAIGN setup and current counters from the checkpoint before considering review work. Counters only increase; participants and budgets never change after resume.
-3. If recalled `REVIEW CAMPAIGN STATUS` contains `campaign_closed: yes`, treat it as terminal and do not dispatch another reviewer, including when the state is `capped` or `blocked`.
+2. Restore any immutable REVIEW CAMPAIGN setup and current counters from the checkpoint. Counters only increase; participants and budgets never change after resume.
+3. If recalled `REVIEW CAMPAIGN STATUS` contains `campaign_closed: yes`, treat it as terminal and do not dispatch another reviewer, even when the state is `capped` or `blocked`.
 4. Read the plan file, noting which acceptance-criteria checkboxes are already `[x]`.
 5. Check the TaskList for completed / in-progress / pending tasks.
 6. `git log --oneline <base>..HEAD` — verify what is actually committed.
 7. Identify the next incomplete task and resume execution.
 
-For any unattended goal or continuation predicate, `campaign_closed: yes` is terminal. Remaining findings in a `capped` campaign do not authorize another review campaign or reviewer dispatch.
-
 ## Remember
-- Review plan critically first
-- Follow plan steps exactly
-- Don't skip verifications
-- Reference skills when plan says to
-- Stop only for real blockers; if you can reason through a plan-consistent path, take it and note the choice (see blocker taxonomy)
-- Never start implementation on main/master branch without explicit user consent
-- Never declare the plan complete while a worktree this run created still holds uncommitted or unmerged work you have not named
+
+- Review the plan critically first; then follow its steps exactly and run every verification.
+- Stop only for real blockers; otherwise take the plan-consistent path and note the choice.
+- Never start on main/master without explicit user consent.
+- Never declare the plan complete while a worktree this run created holds unnamed uncommitted or unmerged work.
 
 ## Integration
 
-**Required workflow skills:**
-- **razorback:using-git-worktrees** - Set up isolated workspace before starting; its Step 0b inventories outstanding worktrees and branches first. Skip only with explicit user consent (small, single-session work where a feature branch is sufficient).
-- The `razorback:using-razorback` skill's `references/source-control-hygiene.md` - Check A before creating a worktree, Check B before Step 4 hands off to the finish skill.
-- **razorback:writing-plans** - Creates the plan this skill executes; propagates `reviewer_choice` and verification strategy as inputs.
-- **razorback:pre-merge-review** - Invoked at Step 3 when `reviewer_choice` is `codex` / `claude`. Skipped if the choice is `none`.
-- **razorback:managing-review-campaigns** - Provides the immutable campaign state preserved across checkpoints and continuation.
-- **razorback:finishing-a-development-branch** - Complete development after all tasks (and pre-merge review, if any)
-
-## It's working if
-
-- Every task's acceptance checkboxes flipped to `[x]` as it completed, with no pause between tasks.
-- Non-required refactor ideas landed in the report as candidates, never in the diff.
-- The run stopped only for taxonomy blockers, and Check B ran before the finish skill took over.
+- `razorback:using-git-worktrees` — isolate first (Step 0b inventories outstanding worktrees); `source-control-hygiene.md` Check A before creating one, Check B before Step 4.
+- `razorback:writing-plans` produces the plan and propagates `reviewer_choice`; `razorback:pre-merge-review` at Step 3; `razorback:managing-review-campaigns` owns campaign state; `razorback:finishing-a-development-branch` finishes.

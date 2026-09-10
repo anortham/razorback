@@ -5,13 +5,7 @@ description: Use when encountering any bug, test failure, or unexpected behavior
 
 # Systematic Debugging
 
-## Overview
-
-Random fixes waste time and create new bugs. Quick patches mask underlying issues.
-
-**Core principle:** ALWAYS find root cause before attempting fixes. Symptom fixes are failure.
-
-**Violating the letter of this process is violating the spirit of debugging.**
+**Core principle:** find the root cause before any fix. Symptom fixes are failure.
 
 ## The Iron Law
 
@@ -19,90 +13,27 @@ Random fixes waste time and create new bugs. Quick patches mask underlying issue
 NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST
 ```
 
-If you haven't completed Phase 1, you cannot propose fixes.
+Phase 1 incomplete → no fix proposals.
 
 ## When to Use
 
-Use for ANY technical issue:
-- Test failures
-- Bugs in production
-- Unexpected behavior
-- Build failures
-- Integration issues
+Any technical issue: test failures, production bugs, unexpected behavior, build failures, integration issues. Especially under time pressure, when "one quick fix" seems obvious, after fixes that did not work, or when you do not fully understand the issue.
 
-**Not here:** when the output is right but late — a slow endpoint, query, page, job, build, or
-test suite — use `razorback:diagnosing-performance`. A defect has a wrong answer to trace back
-to a wrong line; slowness has no wrong line, so it needs measurement instead of tracing.
-
-**Use this ESPECIALLY when:**
-- Under time pressure or told to fix it NOW — emergencies make guessing tempting, and systematic is faster than thrashing
-- "Just one quick fix" seems obvious, or the issue seems simple — simple bugs have root causes too
-- You've already tried fixes that didn't work
-- You don't fully understand the issue
+**Not here:** when the output is right but late — a slow endpoint, query, page, job, build, or test suite — use `razorback:diagnosing-performance`. Slowness has no wrong line to trace; it needs measurement.
 
 ## The Four Phases
 
-You MUST complete each phase before proceeding to the next.
+Complete each phase before the next.
 
 ### Phase 1: Root Cause Investigation
 
-**BEFORE attempting ANY fix:**
-
-1. **Read Error Messages Carefully**
-   - Don't skip past errors or warnings
-   - They often contain the exact solution
-   - Read stack traces completely
-   - Note line numbers, file paths, error codes
-
-2. **Reproduce Consistently**
-   - Can you trigger it reliably?
-   - What are the exact steps?
-   - Does it happen every time?
-   - If not reproducible → gather more data, don't guess
-
-3. **Check Recent Changes**
-   - What changed that could cause this?
-   - Git diff, recent commits
-   - New dependencies, config changes
-   - Environmental differences
-
-4. **Gather Evidence in Multi-Component Systems**
-
-   **WHEN system has multiple components (CI → build → signing, API → service → database):**
-
-   **BEFORE proposing fixes, add diagnostic instrumentation:**
-   ```
-   For EACH component boundary:
-     - Log what data enters component
-     - Log what data exits component
-     - Verify environment/config propagation
-     - Check state at each layer
-
-   Run once to gather evidence showing WHERE it breaks
-   THEN analyze evidence to identify failing component
-   THEN investigate that specific component
-   ```
-
-   **Example (multi-layer system):**
+1. **Read the error completely.** Full stack trace, line numbers, file paths, error codes.
+2. **Reproduce consistently.** Exact steps; every time? If not reproducible, gather more data — do not guess.
+3. **Check recent changes.** Git diff, recent commits, new dependencies, config, environment differences.
+4. **Gather evidence across component boundaries** (CI → build → signing, API → service → database). Before proposing fixes, log what enters and exits each component, verify env/config propagation, run once, and read which layer breaks. Show presence, never values:
    ```bash
-   # Layer 1: Workflow
-   echo "=== Secrets available in workflow: ==="
    echo "IDENTITY: $([ -n "${IDENTITY:-}" ] && echo SET || echo UNSET)"
-
-   # Layer 2: Build script
-   echo "=== Env vars in build script: ==="
-   echo "IDENTITY: $([ -n "${IDENTITY:-}" ] && echo SET || echo UNSET)"
-
-   # Layer 3: Signing script
-   echo "=== Keychain state: ==="
-   security list-keychains
-   security find-identity -v
-
-   # Layer 4: Actual signing
-   codesign --sign "$IDENTITY" --verbose=4 "$APP"
    ```
-
-   **This reveals:** Which layer fails (secrets → workflow ✓, workflow → build ✗)
 
 <!-- Canonical Redact rule: skills/security-review/SKILL.md — update all copies together. -->
 **Redact:**
@@ -110,122 +41,31 @@ You MUST complete each phase before proceeding to the next.
 - Build loops against env vars so the credential stays in the environment rather than in displayed output.
 - From captured artifacts, quote only the lines that carry the signal.
 
-5. **Trace Data Flow**
+5. **Trace data flow** when the error is deep in the call stack: where does the bad value originate, what called this with it, keep going up to the source. Fix at the source. Read `root-cause-tracing.md` in this directory for the full backward-tracing technique.
 
-   **WHEN error is deep in call stack:**
-
-   See `root-cause-tracing.md` in this directory for the complete backward tracing technique.
-
-   **Quick version:**
-   - Where does bad value originate?
-   - What called this with bad value?
-   - Keep tracing up until you find the source
-   - Fix at source, not at symptom
-
-**Use Miller for investigation:**
-- **Inspect** the buggy function — understand callers, callees, type flow with `inspect(target, depth=full)` (the symbol at issue earns `full`)
-- **Find references** — find all call sites that might trigger the bug with `trace`
-- **Orient** on the broader subsystem with `context`
+Miller: `inspect(target, depth=full)` on the buggy function (callers, callees, type flow); `trace` for every call site that can trigger it; `context` to orient on the subsystem.
 
 ### Phase 2: Pattern Analysis
 
-**Find the pattern before fixing:**
-
-1. **Find Working Examples**
-   - **Search** for similar working code in the codebase with Miller `search`
-   - **Orient** for a token-budgeted view of the relevant area with Miller `context`
-   - What works that's similar to what's broken?
-
-2. **Compare Against References**
-   - If implementing pattern, read reference implementation COMPLETELY
-   - Don't skim - read every line
-   - Understand the pattern fully before applying
-
-3. **Identify Differences**
-   - What's different between working and broken?
-   - List every difference, however small
-   - Don't assume "that can't matter"
-
-4. **Understand Dependencies**
-   - **Inspect** the broken function — see callers, callees, types, children with Miller `inspect(target, depth=full)`
-   - What other components does this need?
-   - What settings, config, environment?
-   - What assumptions does it make?
+1. **Find working examples** of similar code with Miller `search`; orient with `context`.
+2. **Read the reference implementation completely** before applying its pattern. No skimming.
+3. **List every difference** between working and broken, however small. Do not assume "that can't matter".
+4. **Understand dependencies** with `inspect(target, depth=full)`: components, config, environment, assumptions.
 
 ### Phase 3: Hypothesis and Testing
 
-**Scientific method:**
-
-1. **Form Single Hypothesis**
-   - State clearly: "I think X is the root cause because Y"
-   - Write it down
-   - Be specific, not vague
-
-2. **Test Minimally**
-   - Make the SMALLEST possible change to test hypothesis
-   - One variable at a time
-   - Don't fix multiple things at once
-
-3. **Verify Before Continuing**
-   - Did it work? Yes → Phase 4
-   - Didn't work? Form NEW hypothesis
-   - DON'T add more fixes on top
-
-4. **When You Don't Know**
-   - Say "I don't understand X"
-   - Don't pretend to know
-   - Research more with Miller, targeted docs, and the smallest relevant verification command
-   - In an approved autonomous run, stop only if the uncertainty matches the blocker taxonomy
-   - Outside an approved run, ask one specific question if the research path is exhausted
+1. **One written hypothesis:** "I think X is the root cause because Y." Specific, not vague.
+2. **Smallest change that tests it.** One variable at a time.
+3. **Worked → Phase 4. Did not → new hypothesis.** Never stack fixes.
+4. **Do not know?** Say "I don't understand X". Research with Miller, targeted docs, and the smallest verification command. In an approved autonomous run, stop only when the uncertainty matches the blocker taxonomy; outside one, ask one specific question once research is exhausted.
 
 ### Phase 4: Implementation
 
-**Fix the root cause, not the symptom:**
-
-1. **Create Failing Test Case**
-   - Simplest possible reproduction
-   - Automated test if possible
-   - One-off test script if no framework
-   - MUST have before fixing
-   - **REQUIRED SUB-SKILL:** razorback:test-driven-development — write the failing test properly
-
-2. **Implement Single Fix**
-   - Before writing the fix, assess the blast radius: Miller `impact(target='<symbol being changed>')` returns the impacted symbols plus the likely tests
-   - Address the root cause identified
-   - ONE change at a time
-   - No "while I'm here" improvements
-   - No bundled refactoring
-
-3. **Verify Fix**
-   - Test passes now?
-   - Required affected scope still green?
-   - Issue actually resolved?
-
-4. **If Fix Doesn't Work**
-   - STOP
-   - Count: How many fixes have you tried?
-   - If < 3: Return to Phase 1, re-analyze with new information
-   - **If ≥ 3: STOP and question the architecture (step 5 below)**
-   - DON'T attempt Fix #4 without architectural discussion
-
-5. **If 3+ Fixes Failed: Question Architecture**
-
-   **Pattern indicating architectural problem:**
-   - Each fix reveals new shared state/coupling/problem in different place
-   - Fixes require "massive refactoring" to implement
-   - Each fix creates new symptoms elsewhere
-
-   **STOP and question fundamentals:**
-   - Is this pattern fundamentally sound?
-   - Are we "sticking with it through sheer inertia"?
-   - Should we refactor architecture vs. continue fixing symptoms?
-
-   In an approved autonomous run, route this through the blocker taxonomy:
-   if a plan-consistent architecture fix exists, take it and log the decision;
-   if the plan is contradicted or tests are unresolvable, stop as a real blocker.
-   Outside an approved run, discuss the architecture before attempting more fixes.
-
-   This is NOT a failed hypothesis - this is a wrong architecture.
+1. **Failing test first** — simplest reproduction, automated when possible. **REQUIRED SUB-SKILL:** razorback:test-driven-development.
+2. **Single fix** — run Miller `impact(target='<symbol being changed>')` first for impacted symbols and likely tests. ONE change; no "while I'm here" improvements, no bundled refactoring.
+3. **Verify** — test passes, affected scope still green, issue actually resolved.
+4. **Fix failed?** STOP. Count attempts. Under 3 → Phase 1 with the new information. **3 or more → question the architecture. Do not attempt fix #4.**
+5. **3+ failures = architectural problem**, not a failed hypothesis. Signs: each fix reveals new shared state or coupling elsewhere, fixes need "massive refactoring", each fix creates new symptoms. In an approved autonomous run, route through the blocker taxonomy: take a plan-consistent architecture fix and log the decision, or stop as a real blocker when the plan is contradicted or tests are unresolvable. Outside a run, discuss the architecture before more fixes. Use razorback:architecture-quality.
 
 ## Red Flags - STOP and Return to Phase 1
 
@@ -250,27 +90,9 @@ Every row below — whether it is your own thought or a redirection from the use
 | User says "Ultra-think this" | Question fundamentals, not just symptoms. |
 | User asks "We're stuck?" (frustrated) | Your approach isn't working. |
 
-**If 3+ fixes failed:** the problem is structural, not local. Stop patching and question the architecture with razorback:architecture-quality.
+## No Root Cause Found
 
-## Quick Reference
-
-| Phase | Key Activities | Success Criteria |
-|-------|---------------|------------------|
-| **1. Root Cause** | Read errors, reproduce, check changes, gather evidence | Understand WHAT and WHY |
-| **2. Pattern** | Find working examples, compare | Identify differences |
-| **3. Hypothesis** | Form theory, test minimally | Confirmed or new hypothesis |
-| **4. Implementation** | Create test, fix, verify | Bug resolved, tests pass |
-
-## When Process Reveals "No Root Cause"
-
-If systematic investigation reveals issue is truly environmental, timing-dependent, or external:
-
-1. You've completed the process
-2. Document what you investigated
-3. Implement appropriate handling (retry, timeout, error message)
-4. Add monitoring/logging for future investigation
-
-**But:** 95% of "no root cause" cases are incomplete investigation.
+When investigation shows the issue is truly environmental, timing-dependent, or external: document what you investigated, implement appropriate handling (retry, timeout, error message), and add logging for the next time. 95% of "no root cause" cases are incomplete investigation.
 
 ## It's working if
 
@@ -281,14 +103,9 @@ If systematic investigation reveals issue is truly environmental, timing-depende
 
 ## Supporting Techniques
 
-These techniques are part of systematic debugging and available in this directory:
+- `root-cause-tracing.md` — trace backward through the call stack to the original trigger
+- `defense-in-depth.md` — add validation at multiple layers after finding the root cause
+- `condition-based-waiting.md` — replace arbitrary timeouts with condition polling
+- `find-polluter.sh` — bisect test ordering to find state pollution
 
-- **`root-cause-tracing.md`** - Trace bugs backward through call stack to find original trigger
-- **`defense-in-depth.md`** - Add validation at multiple layers after finding root cause
-- **`condition-based-waiting.md`** - Replace arbitrary timeouts with condition polling
-
-**Related skills:**
-- **razorback:diagnosing-performance** - When the output is right but late; measurement replaces tracing
-- **razorback:test-driven-development** - For creating failing test case (Phase 4, Step 1)
-- **razorback:verification-before-completion** - Verify fix worked before claiming success
-- **razorback:fixing-small-issues** - When the root-caused fix meets the quick-fix criteria, execute it there: in place, affected-scope verification, no worktree or baseline-suite ceremony
+**Related skills:** razorback:diagnosing-performance (right but late); razorback:test-driven-development (Phase 4 failing test); razorback:verification-before-completion (prove the fix before claiming it); razorback:fixing-small-issues — when the root-caused fix meets the quick-fix criteria, execute it there: in place, affected-scope verification, no worktree or baseline suite.

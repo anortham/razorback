@@ -5,29 +5,16 @@ description: Use when implementing any feature or bugfix, before writing impleme
 
 # Test-Driven Development (TDD)
 
-## Overview
-
 Write the test first. Watch it fail. Write minimal code to pass.
 
 **Core principle:** If you didn't watch the test fail, you don't know if it tests the right thing.
 **Interface rule:** The interface is the test surface.
 
-**Violating the letter of the rules is violating the spirit of the rules.**
-
 ## When to Use
 
-**Always:**
-- New features
-- Bug fixes
-- Refactoring
-- Behavior changes
+**Always:** new features, bug fixes, refactoring, behavior changes.
 
-**Planned exceptions (must be explicit in the user request or plan, and logged):**
-- Throwaway prototypes
-- Generated code
-- Configuration files
-
-Thinking "skip TDD just this once"? Stop. That's rationalization.
+**Planned exceptions (explicit in the user request or plan, and logged):** throwaway prototypes, generated code, configuration files. "Skip TDD just this once" is rationalization.
 
 ## The Iron Law
 
@@ -35,54 +22,14 @@ Thinking "skip TDD just this once"? Stop. That's rationalization.
 NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST
 ```
 
-Write code before the test? Delete it. Start over.
-
-**No exceptions:**
-- Don't keep it as "reference"
-- Don't "adapt" it while writing tests
-- Don't look at it
-- Delete means delete
-
-Implement fresh from tests. Period.
+Wrote code before the test? Delete it. Not as "reference", not "adapted" while writing tests. Implement fresh from tests.
 
 ## Red-Green-Refactor
 
-```dot
-digraph tdd_cycle {
-    rankdir=LR;
-    red [label="RED\nWrite failing test", shape=box, style=filled, fillcolor="#ffcccc"];
-    verify_red [label="Verify fails\ncorrectly", shape=diamond];
-    green [label="GREEN\nMinimal code", shape=box, style=filled, fillcolor="#ccffcc"];
-    verify_green [label="Verify passes\nRelevant scope green", shape=diamond];
-    refactor [label="REFACTOR\nClean up", shape=box, style=filled, fillcolor="#ccccff"];
-    next [label="Next", shape=ellipse];
+**Understand before testing.** Miller `inspect(target, depth=overview)` on the function under test (interface, callers, types); `depth=full` when you are about to change it. `context` on the test area for existing patterns. Skip only if you just wrote the code.
 
-    red -> verify_red;
-    verify_red -> green [label="yes"];
-    verify_red -> red [label="wrong\nfailure"];
-    green -> verify_green;
-    verify_green -> refactor [label="yes -\nclean up"];
-    verify_green -> green [label="no"];
-    refactor -> verify_green [label="stay\ngreen"];
-    verify_green -> next [label="yes -\ndone"];
-    next -> red;
-}
-```
+### RED — one minimal failing test
 
-### Understand Before Testing
-
-Before writing any test, understand what you're testing:
-
-1. **Inspect** the function/module to test — understand interface, callers, types, existing behavior with Miller `inspect(target, depth=overview)`; escalate to `depth=full` when you are about to change the code under test
-2. **Orient** on the test area — find existing test patterns and conventions in the codebase with Miller `context`
-
-This prevents writing tests against wrong assumptions about the API. Skip only if you just wrote the code being tested.
-
-### RED - Write Failing Test
-
-Write one minimal test showing what should happen.
-
-<Good>
 ```typescript
 test('retries failed operations 3 times', async () => {
   let attempts = 0;
@@ -91,116 +38,37 @@ test('retries failed operations 3 times', async () => {
     if (attempts < 3) throw new Error('fail');
     return 'success';
   };
-
-  const result = await retryOperation(operation);
-
-  expect(result).toBe('success');
+  expect(await retryOperation(operation)).toBe('success');
   expect(attempts).toBe(3);
 });
 ```
-Clear name, tests real behavior, one thing
-</Good>
 
-<Bad>
-```typescript
-test('retry works', async () => {
-  const mock = jest.fn()
-    .mockRejectedValueOnce(new Error())
-    .mockRejectedValueOnce(new Error())
-    .mockResolvedValueOnce('success');
-  await retryOperation(mock);
-  expect(mock).toHaveBeenCalledTimes(3);
-});
-```
-Vague name, tests mock not code
-</Bad>
+One behavior, clear name, real code (mocks only when unavoidable). `test('retry works')` against a `jest.fn()` chain tests the mock, not the code.
 
-**Requirements:**
-- One behavior
-- Clear name
-- Real code (no mocks unless unavoidable)
+### Verify RED — MANDATORY
 
-### Verify RED - Watch It Fail
+Run the project-defined worker-scope command. Confirm the test fails (not errors), with the expected message, because the feature is missing (not a typo). Passes → you are testing existing behavior; fix the test. Errors → fix, re-run until it fails correctly.
 
-**MANDATORY. Never skip.**
+### GREEN — minimal code
 
-Run the project-defined worker-scope command for this behavior.
-
-Confirm:
-- Test fails (not errors)
-- Failure message is expected
-- Fails because feature missing (not typos)
-
-**Test passes?** You're testing existing behavior. Fix test.
-
-**Test errors?** Fix error, re-run until it fails correctly.
-
-### GREEN - Minimal Code
-
-Write simplest code to pass the test.
-
-<Good>
 ```typescript
 async function retryOperation<T>(fn: () => Promise<T>): Promise<T> {
   for (let i = 0; i < 3; i++) {
-    try {
-      return await fn();
-    } catch (e) {
-      if (i === 2) throw e;
-    }
+    try { return await fn(); } catch (e) { if (i === 2) throw e; }
   }
   throw new Error('unreachable');
 }
 ```
-Just enough to pass
-</Good>
 
-<Bad>
-```typescript
-async function retryOperation<T>(
-  fn: () => Promise<T>,
-  options?: {
-    maxRetries?: number;
-    backoff?: 'linear' | 'exponential';
-    onRetry?: (attempt: number) => void;
-  }
-): Promise<T> {
-  // YAGNI
-}
-```
-Over-engineered
-</Bad>
+No `options?: { maxRetries, backoff, onRetry }` the test did not ask for. No refactoring other code, no "improving" beyond the test.
 
-Don't add features, refactor other code, or "improve" beyond the test.
+### Verify GREEN — MANDATORY
 
-### Verify GREEN - Watch It Pass
+Same command. Test passes, worker scope stays green, output pristine (no errors or warnings). Test fails → fix code, not test. Required scope fails → fix now.
 
-**MANDATORY.**
+### REFACTOR — after green only
 
-Run the same project-defined worker-scope command.
-
-Confirm:
-- Test passes
-- The relevant worker scope stays green
-- Output pristine (no errors, warnings)
-
-**Test fails?** Fix code, not test.
-
-**Required scope fails?** Fix now.
-
-### REFACTOR - Clean Up
-
-After green only:
-- Remove duplication
-- Improve names
-- Extract helpers
-- Keep the test surface on the caller-facing interface, not private internals
-
-Keep tests green. Don't add behavior.
-
-### Repeat
-
-Next failing test for next feature.
+Remove duplication, improve names, extract helpers. Keep the test surface on the caller-facing interface, not private internals. Stay green; add no behavior. Then the next failing test.
 
 ## Good Tests
 
@@ -228,25 +96,14 @@ Next failing test for next feature.
 
 ## Red Flags - STOP and Start Over
 
-- Code before test
-- Test after implementation
-- Test passes immediately
-- Can't explain why test failed
-- Tests added "later"
-- Any excuse from the Rationalizations table — "just this once", "keep as reference", "it's about spirit not ritual", "this is different because..."
-
-**All of these mean: Delete code. Start over with TDD.**
+Code before test; test after implementation; test passes immediately; can't explain why the test failed; tests added "later"; any excuse from the table above. **All of these mean: Delete code. Start over with TDD.**
 
 ## Verification Checklist
 
-Before marking work complete:
-
 - [ ] Every new function/method has a test
-- [ ] Watched each test fail before implementing
-- [ ] Each test failed for expected reason (feature missing, not typo)
+- [ ] Watched each test fail for the expected reason (feature missing, not typo)
 - [ ] Wrote minimal code to pass each test
-- [ ] Required verification scopes pass
-- [ ] Output pristine (no errors, warnings)
+- [ ] Required verification scopes pass; output pristine
 - [ ] Tests use real code (mocks only if unavoidable)
 - [ ] Edge cases and errors covered
 
@@ -256,26 +113,16 @@ Can't check all boxes? You skipped TDD. Start over.
 
 | Problem | Solution |
 |---------|----------|
-| Don't know how to test | Inspect nearby tests with Miller. Write wished-for API. Write the assertion first. If still unclear in an approved autonomous run, pick the smallest plan-consistent test shape, log it, and stop only for blocker-taxonomy ambiguity. |
+| Don't know how to test | Inspect nearby tests with Miller. Write the wished-for API, then the assertion first. In an approved autonomous run, pick the smallest plan-consistent test shape, log it, and stop only for blocker-taxonomy ambiguity. |
 | Test too complicated | Design too complicated. Simplify interface. |
 | Must mock everything | Code too coupled. Use dependency injection. |
 | Test setup huge | Extract helpers. Still complex? Simplify design. |
 | Don't know existing patterns | List a file's symbols with Miller `inspect` to see test file organization |
 
-## Debugging Integration
+**Bug found?** Root-cause it with razorback:systematic-debugging, then write the failing reproduction test and follow the cycle. Never fix bugs without a test.
 
-Bug found? Diagnose the root cause first with razorback:systematic-debugging, then write the failing test that reproduces it and follow the TDD cycle. The test proves the fix and prevents regression.
-
-Never fix bugs without a test.
-
-## Writing Good Tests
-
-When writing or changing any test, read [writing-good-tests.md](writing-good-tests.md):
-- Name the production change that would make this test fail — and is that change a bug or a decision?
-- Derive expected values by hand, never with the code under test
-- Assert real behavior, never the mock itself
-- Finish with the mutation check: each realistic mutation should fail at least one test
+**Writing or changing any test?** Read [writing-good-tests.md](writing-good-tests.md): name the production change that would fail the test; derive expected values by hand, never with the code under test; assert behavior, never the mock; finish with the mutation check.
 
 ## Final Rule
 
-Production code requires a test that existed and failed first — otherwise it is not TDD. Exceptions are only the planned exceptions above: they must be explicit in the user request or approved plan and logged. Missing exception language is not a mid-run permission stop; follow TDD or classify the issue under the blocker taxonomy.
+Production code requires a test that existed and failed first. Exceptions are only the planned exceptions above: explicit in the user request or approved plan, and logged. Missing exception language is not a mid-run permission stop; follow TDD or classify the issue under the blocker taxonomy.

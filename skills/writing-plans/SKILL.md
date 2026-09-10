@@ -5,286 +5,105 @@ description: Use when you have a spec or requirements for a multi-step task, bef
 
 # Writing Plans
 
-## Overview
+**Announce:** "I'm using the writing-plans skill to create the implementation plan."
 
-Write implementation plans scaled to the situation. The right level of detail depends on who's executing and when.
+Run in the task worktree razorback:brainstorming created; if not in one, run razorback:using-git-worktrees first. Save to `docs/plans/YYYY-MM-DD-<feature-name>.md`. Copy the plan header, Verification Strategy, Parallel Execution Contract, and task templates from `task-templates.md` (this directory).
 
-**Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
+**Not for:** a moderate same-session task with an agreed design (razorback:brainstorming lightweight path; the design doc is the plan) or a small local defect (razorback:fixing-small-issues).
 
-**Context:** This should be run in a dedicated worktree — razorback:brainstorming sets one up (via razorback:using-git-worktrees) after spec approval. If you are not in one, run razorback:using-git-worktrees before writing the plan.
+After approval, razorback runs to completion and stops only for real blockers (`razorback:using-razorback` skill's `references/blocker-taxonomy.md`).
 
-**Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
+## Plan Depth
 
-**When NOT to use:** a moderate, same-session task with an agreed design takes razorback:brainstorming's lightweight path (the design doc is the plan); a small local defect takes razorback:fixing-small-issues. A formal plan that would only restate the design adds process, not safety.
+| | Full plan | Light plan |
+|---|---|---|
+| Use for | Async handoffs, no-delegation runs, multi-session or unfamiliar work | Same-session execution by dispatched subagents via `subagent-driven-development` |
+| Tasks | Step-by-step TDD (write test → verify fail → implement → verify pass → apply commit mode), one action per step, complete code, exact commands with expected output | What to build, exact files, approach notes, acceptance criteria; the implementer reads code with Miller and follows TDD |
 
-Once the plan is approved, razorback runs to completion; it stops only for real blockers (see the `razorback:using-razorback` skill's `references/blocker-taxonomy.md`). A blocker is real only when the agent cannot resolve it through reasonable plan-consistent judgment.
+When in doubt, ask.
 
-## Plan Depth: Full vs. Light
+## Before Writing
 
-**Full plan** — for async handoffs, complex multi-session work, or unfamiliar domains:
-- Complete code snippets in every task
-- Step-by-step TDD choreography (write test → verify fail → implement → verify pass → apply commit mode)
-- Exact verification scopes with commands supplied from the target repo's docs
-- Assumes the engineer has zero codebase context and questionable taste
-
-**Light plan** — for same-session execution where implementers execute immediately:
-- Task-level granularity: what to build, which files, acceptance criteria
-- Exact file paths (always useful) but no complete code snippets
-- Brief approach notes instead of full implementations — the implementer uses Miller to read the actual code
-- TDD expectation stated once, not choreographed per-step — the implementer follows TDD naturally
-- Verification strategy stated once: worker scope, affected-change scope, branch gate, and expensive-tier triggers
-- Typically 1/3 the length of a full plan
-
-**How to choose:** If the plan will be executed in this session by dispatched subagents via `subagent-driven-development`, use light. If it's a handoff to another session, a no-delegation run, or work for another developer, use full. When in doubt, ask.
-
-## Scope Check
-
-If the spec covers multiple independent subsystems, it should have been broken into sub-project specs during brainstorming. If it wasn't, suggest breaking this into separate plans, one per subsystem. Each plan should produce working, testable software on its own.
-
-## File Structure
-
-Before defining tasks, map out which files will be created or modified and what each one is responsible for. This is where decomposition decisions get locked in.
-
-- Design units with clear boundaries and well-defined interfaces. Each file should have one clear responsibility.
-- Prefer smaller, focused files over large ones that do too much.
-- Files that change together should live together. Split by responsibility, not by technical layer.
-- In existing codebases, follow established patterns. If the codebase uses large files, don't unilaterally restructure, but if a file you're modifying has grown unwieldy, including a split in the plan is reasonable.
-
-This structure informs the task decomposition. Each task should produce self-contained changes that make sense independently.
+1. **Scope check:** a spec covering several independent subsystems becomes one plan per subsystem, each producing working software alone.
+2. **Orient with Miller (REQUIRED):** `context` on the area; `inspect(target, depth=overview)` for key symbols, `depth=full` for symbols the plan modifies; `inspect` a file for line numbers in `Modify:` references; `impact(target)` for likely tests; `trace(target)` before changing a public API. Do NOT guess file paths, line numbers, symbol names, function signatures, config shapes, route names, CLI flags, or public contracts.
+3. **External API staleness:** where training knowledge may be stale, apply razorback:grounding-in-current-docs and record the verified surface or doc URL in the task.
+4. **File structure:** map created and modified files, one responsibility each. Follow existing patterns; split an unwieldy file only when the plan already modifies it.
 
 ## Task Slicing
 
-**Default to vertical slices.** Each task should cut through the stack to deliver one thin, observable behavior end to end — query + endpoint + UI affordance + test in one task — rather than one horizontal layer per task (all queries, then all endpoints, then all UI). Vertical slices are independently verifiable, reviewable, and revertible; horizontal layers ship nothing until the last one lands.
-
-Horizontal decomposition is justified only when a layer is genuinely shared by several later slices, or an interface contract must be locked before parallel work can fan out (contract-first). When one task carries most of the technical risk, schedule it first (risk-first) so a wrong bet is discovered at minimum sunk cost.
-
-**Keep it compilable.** Every task ends with the repo building and worker-scope verification green, then either committed by the worker (`serial-worker-commit`) or handed to the lead for staging and commit after inline review (`parallel-lead-commit`). No accepted task state may be broken; broader gates still run at the batch/branch scopes defined in the Verification Strategy.
-
-**Rollback-friendly ordering.** Order tasks so a partially executed plan leaves the branch shippable or cleanly revertible: no half-wired user-facing behavior between tasks, and the slice that completes a user-visible behavior is the one that exposes it.
-
-**Slice boundaries are not stop points.** Slices exist for verifiability and rollback, not for pausing. Completing a slice means checkpoint and continue immediately to the next task — the autonomous execution model stops only for the blocker taxonomy and the final PR, never because a slice finished.
-
-## No Placeholders
-
-Every step must contain the actual content an engineer needs. These are **plan failures**, never write them:
-- "TBD", "TODO", "implement later", "fill in details"
-- "Add appropriate error handling" / "add validation" / "handle edge cases"
-- "Write tests for the above" (without actual test code)
-- "Similar to Task N" (repeat the code, the engineer may be reading tasks out of order)
-
-## Codebase Orientation (REQUIRED before writing plan)
-
-You cannot write accurate file paths, line ranges, or implementation steps without understanding the code. Before writing any task:
-
-1. **Orient on the area:** Miller `context` — returns token-budgeted context with pivots and neighbors
-2. **Inspect key symbols:** Miller `inspect(target, depth=overview)` — bounded callers, callees, body preview; escalate to `depth=full` for symbols the plan will modify
-3. **Find exact locations:** list a file's symbols with Miller `inspect` — get file structure with line numbers for `Modify:` references
-4. **Assess impact:** Miller `impact(target)` — impacted symbols plus the likely tests, so the plan's Verification Strategy names real commands
-5. **Find references:** Miller `trace(target)` — every caller before planning a change to a public API
-
-**Do NOT guess file paths, line numbers, symbol names, function signatures, config shapes, route names, CLI flags, or public contracts.** Use Miller to discover them. Plans with wrong paths or invented API shapes waste implementer time on dead ends.
-
-**External API staleness check:** For each task that codes against an external framework, library, or API where training knowledge could be stale (new-in-version features, unfamiliar dependencies, changed defaults), apply razorback:grounding-in-current-docs while planning: verify the exact surface and record it — or the doc URL — in the task itself so implementers don't code external APIs from memory.
-
-## Bite-Sized Task Granularity (Full Plans)
-
-**Each step is one action (2-5 minutes):**
-- "Write the failing test" - step
-- "Run it to make sure it fails" - step
-- "Implement the minimal code to make the test pass" - step
-- "Run the tests and make sure they pass" - step
-- "Apply commit mode" - step
-
-Light plans use task-level granularity instead: each task is a coherent unit of work (add a function, modify an API, write tests for a component). Steps within a task are left to the implementer's judgment.
-
-## Plan Document Header
-
-**Every plan MUST start with this header:**
-
-```markdown
-# [Feature Name] Implementation Plan
-
-> **For agentic workers:** REQUIRED SUB-SKILL: Use razorback:subagent-driven-development whenever delegation is available and permitted, including for one task; serialize dependent tasks. Use razorback:executing-plans only when delegation is unavailable or the user/session explicitly selected single-agent execution.
-
-**Goal:** [One sentence describing what this builds]
-
-**Architecture:** [2-3 sentences about approach]
-
-**Tech Stack:** [Key technologies/libraries]
-
-**Architecture Quality:** [Approved module/interface shape, architecture risk, or `No Architecture Impact` for mechanical plans]
+- **Vertical slices by default:** one thin observable behavior end to end per task (query + endpoint + UI + test). Horizontal layers only when shared by several later slices or when a contract must lock before parallel fan-out. Riskiest task first.
+- **Keep it compilable:** every task ends with the repo building and worker-scope verification green, then the worker commits (`serial-worker-commit`) or hands the diff to the lead for staging and commit after inline review (`parallel-lead-commit`).
+- **Rollback-friendly order:** a partially executed plan leaves the branch shippable or cleanly revertible.
+- **Slices are not stop points:** checkpoint and continue; stops come only from the blocker taxonomy and the final PR.
+- **No placeholders:** "TBD", "implement later", "add appropriate error handling", "write tests for the above" without test code, "similar to Task N" (repeat the code) are plan failures.
 
 ## Global Constraints
 
-[One line per project-wide requirement, exact values verbatim from the spec — see the `## Global Constraints` rule below]
-
----
-```
-
-## Global Constraints
-
-Every plan MUST include `## Global Constraints` before the task list. Use it for requirements that bind every task: version floors, dependency limits, naming and copy rules, platform support, exact strings, exact formats, and relationships such as "same layout as X" or "matches Y".
-
-Copy exact values verbatim from the spec. Do not make each task repeat them, and do not leave implementers or reviewers to infer them from prose.
+Required before the task list: requirements that bind every task (version floors, dependency limits, naming and copy rules, platform support, exact strings and formats, "same layout as X"). Copy exact values verbatim from the spec; tasks do not repeat them.
 
 ## Architecture Quality
 
-Non-mechanical plans MUST include an `Architecture Quality` section that records the approved module/interface shape and the main architecture risk. Mechanical plans may use a `No Architecture Impact` note instead.
-
-If code reality contradicts the approved shape, the worker reports a plan mismatch rather than redesigning locally.
+Non-mechanical plans record the approved module/interface shape and the main architecture risk in the header's `Architecture Quality` field. Mechanical plans write `No Architecture Impact`. If code reality contradicts the approved shape, the worker reports a plan mismatch instead of redesigning locally.
 
 ## Verification Strategy
 
-Every plan MUST include a language-agnostic verification strategy. Razorback owns the scope boundaries; the target repo owns the commands.
+Required. Razorback owns scope boundaries; the target repo owns commands. Never bake language or test-runner commands into razorback skills. If the repo has no documented hierarchy, define one with the neutral labels **worker**, **affected-change**, **branch**, **expensive**.
+
+The security field is never left blank:
 
 ```markdown
-## Verification Strategy
-
-**Project source of truth:** [AGENTS.md / CLAUDE.md / docs path / CI config / manifest metadata that defines verification tiers]
-
-**Worker red/green scope:** [Lowest-cost verification that proves the new or changed behavior. Use the repo's documented command.]
-
-**Worker ceiling:** [Maximum scope workers may run on their own. Workers do not own broader regression gates. If the lead asks for broad diagnostic output, the lead still owns acceptance for that scope.]
-
-**Worker gate invariant:** [For each assigned worker gate, state the behavior or evidence invariant the gate proves.]
-
-**Lead affected-change scope:** [Project-defined affected-area or changed-files gate. Run after a coherent batch, not after every edit.]
-
-**Branch gate:** [Project-defined broad confidence gate before handoff, push, or PR.]
-
 **Security scope:** [Project-defined secrets-scan and dependency-audit commands run at the branch gate, or `none declared`.]
-
-**Replay/metric evidence:** [For replay, metric, or acceptance evidence, state which assertions or metrics are hard gates and which are report-only.]
-
-**Escalation triggers:** [Changed areas or failure modes that require broader tiers.]
-
-**Assigned verification failure:** Workers stop and report when assigned verification fails, unless this plan explicitly says to update that gate.
-
-**Verification ledger:** Record invariant, command, scope label, commit SHA, result, and timestamp. For replay or metric evidence, also record hard-gate metrics and report-only metrics. If the same HEAD already has a passing ledger entry for the required scope, reuse that evidence instead of rerunning the same expensive gate.
 ```
 
-The `Security scope` field must either name the commands or write `none declared` explicitly — silence is not allowed. `razorback:finishing-a-development-branch` renders `none declared` into the morning report, so the opt-out is visible. `razorback:security-review` defines the scopes (`security-secrets`, `security-deps`) and their gate semantics.
-
-If the repo has no documented hierarchy, define one in the plan using these neutral scope labels: **worker** (narrowest behavior proof), **affected-change** (changed files or touched subsystem), **branch** (broad pre-handoff confidence), and **expensive** (slow specialist gates, run only when touched areas require them).
-
-Do not bake language, framework, or test-runner commands into razorback skills. Put concrete commands in the plan from the target repo's docs.
+`razorback:finishing-a-development-branch` renders `none declared` in the morning report; `razorback:security-review` defines `security-secrets` and `security-deps`.
 
 ## Parallel Execution Contract
 
-Every plan MUST include `## Parallel Execution Contract` between
-`## Verification Strategy` and the task list. This is the lead's dispatch contract: it says which tasks form
-safe parallel batches, which ones must serialize, and why.
+Required between `## Verification Strategy` and the task list; the lead's dispatch contract. Per task: `Parallel batch` (a shared label only when tasks dispatch together without file or ordering conflicts), `File ownership` (exact; "same area" is not a proxy), `Serialization required` (`Yes` only for a real dependency or tool limitation), `Dependency reason` (mandatory: the blocking dependency, `None - safe parallel batch.`, or `Not applicable - single task.`).
 
-Use this exact structure:
-
-```markdown
-## Parallel Execution Contract
-
-| Task | Parallel batch | File ownership | Serialization required | Dependency reason |
-|---|---|---|---|---|
-| Task 1: [name] | [Batch A / Batch B / None - serial] | [Exact create/modify/test ownership for this task] | [No / Yes / Not applicable - single task.] | [Why serialization is required, or `None - safe parallel batch.` / `Not applicable - single task.`] |
-```
-
-Rules:
-- `Parallel batch` names the safe batch this task belongs to. Use a shared label
-  such as `Batch A` only when the tasks can dispatch together without file or
-  ordering conflicts.
-- `File ownership` is exact. Do not rely on "same area" or "related files" as a
-  proxy.
-- `Serialization required` is `No` for safe parallel tasks, `Yes` only for a real
-  dependency or tool limitation, and `Not applicable - single task.` only when the
-  whole plan has one task.
-- `Dependency reason` is mandatory. If serialization is `Yes`, record the blocking
-  dependency or tool limitation. If serialization is `No`, write
-  `None - safe parallel batch.`. If the plan has one task, write
-  `Not applicable - single task.`.
-
-Completion follows commit mode:
-- `serial-worker-commit`: after assigned verification passes, the worker may make
-  the owned-file commit and record the commit SHA.
-- `parallel-lead-commit`: after assigned verification passes, the worker does not
-  commit. The worker hands the verified diff to the lead for staging and commit
-  after inline review.
+Commit mode: `serial-worker-commit` = after assigned verification passes, the worker commits its owned files and records the SHA. `parallel-lead-commit` = the worker hands the verified diff to the lead, who stages and commits after inline review.
 
 ## Task Structure
 
-Copy the task template from `task-templates.md` (this directory). Both plan
-types share the same header block — Files, Interfaces, Contract inputs, File
-ownership, Serialization required, Dependency reason — then diverge:
+Both plan types share the header block — Files, Interfaces, **Contract inputs:**, **File ownership:**, **Serialization required:**, **Dependency reason:** — then diverge: full tasks choreograph TDD (test code, verify-fail run, implementation code, verify-pass run, "Apply commit mode"); light tasks give **What to build** and **Approach**. Every task ends with tickable `- [ ]` acceptance criteria; execution flips them to `[x]`.
 
-- **Full plan tasks** choreograph TDD step by step: the failing test (actual
-  test code), the verify-fail run, the minimal implementation (actual code),
-  the verify-pass run, then commit mode.
-- **Light plan tasks** replace the steps with **What to build** and
-  **Approach** notes; the implementer supplies the TDD choreography.
-
-Every task ends with tickable `- [ ]` acceptance criteria. The execution
-skills tick these `[ ]` → `[x]` as each task completes, so every task carries
-a tickable progress marker regardless of plan type.
+Always: exact file paths; reference skills as `razorback:<name>` (never `@` links, which force-load content); DRY, YAGNI, TDD.
 
 ## Compact Single-Task Full-Plan Form
 
-When a full plan has exactly one task, use the full-plan template from `task-templates.md` unchanged — full TDD steps and all. Only two things differ, so do not re-template the task:
+When a full plan has exactly one task, use the full-plan task template unchanged. Only two things differ:
 
-- Collapse `## Parallel Execution Contract` to a single row: `Parallel batch` is `None - serial`, `File ownership` carries the task's exact ownership, and both `Serialization required` and `Dependency reason` read `Not applicable - single task.`
-- Copy those same values into the task body: **Contract inputs:** and **File ownership:** carry their normal exact values, while **Serialization required:** and **Dependency reason:** both read `Not applicable - single task.`
-
-## Remember
-
-**Always (both plan types):**
-- Exact file paths
-- Reference relevant skills by name with the `razorback:` prefix (never `@` file links — those force-load content and burn context)
-- DRY, YAGNI, TDD, frequent review-approved branch updates through the active commit mode
-- Tickable `- [ ]` acceptance criteria per task — execution flips these to `[x]` as a durable, in-document progress record
-
-**Full plans only:**
-- Complete code in plan (not "add validation")
-- Exact project-defined verification commands with expected output
+- Collapse `## Parallel Execution Contract` to one row: `Parallel batch` is `None - serial`, `File ownership` carries the task's exact ownership, and both `Serialization required` and `Dependency reason` read `Not applicable - single task.`
+- In the task body, **Contract inputs:** and **File ownership:** carry their normal exact values, while **Serialization required:** and **Dependency reason:** both read `Not applicable - single task.`
 
 ## Plan Self-Review
 
-After writing the plan, look at it with fresh eyes before announcing it:
+1. Placeholder scan: TODOs, "TBD", steps too vague to act on.
+2. Spec alignment: every requirement covered, no scope creep.
+3. Task decomposition: clear boundaries, actionable steps, correct dependency order.
+4. Buildability: every path and symbol is real — Miller `search(query='<path>', mode=file)`, `inspect(target='<symbol>', depth=overview)`. Fix any invented API.
 
-1. **Placeholder scan:** Any TODOs, "TBD", or steps too vague to act on? Fix them.
-2. **Spec alignment:** Does the plan cover every spec requirement, with no scope creep?
-3. **Task decomposition:** Clear boundaries, actionable steps, correct dependency ordering?
-4. **Buildability:** Every file path and symbol the plan names must be real — Miller `search(query='<path>', mode=file)` and `inspect(target='<symbol>', depth=overview)`. Fix any API the plan invents.
-
-Fix issues inline. When the session can dispatch subagents, you may instead dispatch a plan reviewer using `plan-document-reviewer-prompt.md` (this directory).
+Fix inline. If the session can dispatch subagents, you may instead dispatch a reviewer with `plan-document-reviewer-prompt.md` (this directory).
 
 ## Execution Handoff
 
-**Step 1, announce plan save and request approval.** The plan's visual digest — `<plan>.html` beside the markdown, sibling basename, composed per the `razorback:using-razorback` skill's `references/digest-kit.md` — is opt-in: write it only when the user asked for a digest in this session or in project instructions. Never generate one unprompted. After saving the plan (and the digest, when requested), announce:
+1. **Announce and request approval.** The plan's visual digest (`<plan>.html`, sibling basename, composed per the `razorback:using-razorback` skill's `references/digest-kit.md`) is opt-in: write it only when the user asked for a digest in this session or in project instructions; never unprompted. Announce: **"Plan saved to `<path>`. Please review it and reply **approved** (with optional reviewer choice, e.g. 'approved, codex review'; omit reviewer choice for no external review) or request changes."** When a digest was requested, add "with a visual digest at `<plan>.html`".
+2. **Wait for explicit approval.** Silence, hedges ("looks ok"), questions, or partial feedback do not unblock; only "approved", "yes, go", "run it", or equivalent does. On change requests: revise, re-run the self-review, re-save, re-ask. This is the last human stop before autonomous local execution.
+3. **Record authority.** Implementation approval does not imply publication authority. Record sources already granted in the conversation or project instructions:
+   - `local_commit_authority: authorized — <implementation request/repo instruction>`
+   - `push_authority: authorized | missing — <user/repo instruction>`
+   - `pr_authority: authorized | missing — <user/repo instruction>`
 
-**"Plan saved to `<path>`. Please review it and reply **approved** (with optional reviewer choice, e.g. 'approved, codex review'; omit reviewer choice for no external review) or request changes."**
+   Local commits are authorized by the approved scope unless a user or host instruction prohibits them; a prohibition uses the approval/blocker boundary once the local diff and review materials are ready. Do not ask for missing push or PR authority here; `razorback:finishing-a-development-branch` asks once, later. Never infer push or PR authority from "implement it", plan approval, or permission to commit.
+4. **Capture the reviewer choice without prompting.** The default reviewer choice is `none`; set `codex` or `claude` only when the approval message or the saved spec named it. If project instructions declare an `## External model policy` block, the reviewer must appear in `Reviewer choices permitted:`; if not, surface the conflict now (`razorback:security-review` defines the block).
+5. **Invoke the execution skill immediately**, passing the plan path, reviewer choice, authority ledger, and verification strategy:
+   - Delegation is available and permitted → `razorback:subagent-driven-development`, including for one task; serialize dependent tasks.
+   - No delegation, or explicitly selected single-agent execution → `razorback:executing-plans`.
 
-When a digest was requested, add to the announcement: "with a visual digest at `<plan>.html`".
-
-**Step 2, wait for explicit approval.** Do NOT proceed on silence, hedged responses ("looks ok", "maybe", "I guess"), questions, or partial feedback. Only an explicit **"approved"**, **"yes, go"**, **"run it"**, or equivalent unblocks execution. The approval message can fold in the reviewer choice (e.g. "approved, codex review", "approved, no external review").
-
-If the user requests changes, revise the plan, re-run the self-review, re-save, and re-ask for approval. Brainstorming gates the spec; writing-plans gates the plan. This is the last human stop before autonomous local execution. Publication may still require authority at the finish boundary.
-
-**Implementation approval does not imply publication authority.** Preserve authority already granted in the conversation or project instructions and record its source in the execution handoff:
-
-- `local_commit_authority: authorized — <implementation request/repo instruction>`
-- `push_authority: authorized | missing — <user/repo instruction>`
-- `pr_authority: authorized | missing — <user/repo instruction>`
-
-Normal local commits are authorized by the approved implementation scope unless a user or host instruction explicitly prohibits them; record that source instead of inventing a commit-approval gate. An explicit prohibition uses the existing approval/blocker boundary after the local diff and review materials are ready. Do not ask for missing push or PR authority here. Local implementation and review continue first; `razorback:finishing-a-development-branch` asks once, after the local work and review materials are ready. Do not infer push or PR authority from “implement it,” plan approval, or permission to commit.
-
-**Step 3, capture the reviewer choice without prompting.** The default reviewer choice is `none`. If the approval message already named a choice (e.g. "approved, run it, pre-merge codex review", "approved, no external review") or the saved spec explicitly requested a reviewer, set `reviewer_choice` to `codex` or `claude` as requested. Do not ask a separate reviewer-choice question after approval.
-
-If the target repo's project instructions declare an `## External model policy` block, the chosen reviewer must appear in its `Reviewer choices permitted:` list. If it does not, surface the conflict to the user at approval time — a human is present at this gate — instead of proceeding. `razorback:security-review` defines the policy block format.
-
-**Step 4, invoke the execution skill immediately.** After approval, announce which execution skill will run and invoke it, passing the plan path, the reviewer choice (`none` / `codex` / `claude`), the authority ledger, and verification strategy:
-
-- **When delegation is available and permitted:** `razorback:subagent-driven-development`, including for one task; serialize dependent tasks.
-- **With no delegation, or explicitly selected single-agent execution:** `razorback:executing-plans`.
+   If the user requested a separate-session handoff before approval, tell them to open a new session in the worktree and use `razorback:executing-plans` there.
 
 ## It's working if
 
 - Every path, symbol, and command in the plan came from Miller or the repo's docs, never from memory.
 - Each task ends compilable, with tickable acceptance criteria and exact file ownership.
 - The self-review ran before the approval ask, and execution started only after an explicit "approved".
-
-Starting execution after approval is the default. If the user requested a separate-session handoff before approval, guide them to open a new session in the worktree and use `razorback:executing-plans` there.
