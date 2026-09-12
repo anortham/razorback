@@ -69,7 +69,7 @@ path (`& "$env:LOCALAPPDATA\cursor-agent\cursor-agent.exe"` in PowerShell,
 ## Implementation Prompt Contract
 
 Every prompt carries: the approved task text; exact files Cursor may edit;
-non-goals and forbidden actions; required verification commands; Miller-first
+non-goals and forbidden actions; required verification commands (a fix round reruns only the failing tests first, then the assigned command once); Miller-first
 expectations if Miller MCP is available in the workspace; a required final
 report (files changed, tests run, failures, decisions); and this block:
 

@@ -64,7 +64,7 @@ Do NOT dump the full diff upfront. A review that does not cite Miller-assisted i
 - Tests actually test logic (not mocks)?
 - Edge cases covered?
 - Integration tests where needed?
-- Required verification scopes passing?
+- Required verification scopes reported passing for this HEAD? Cite the given evidence; a missing scope is a finding, not a reason to rerun it.
 - Run the mutation check from `test-driven-development/writing-good-tests.md`: mentally mutate the production code; a test should fail for each realistic mutation.
 
 **Requirements:**

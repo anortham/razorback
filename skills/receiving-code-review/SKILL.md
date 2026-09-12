@@ -16,7 +16,7 @@ Use before implementing any review item, from an external reviewer or the user. 
 3. VERIFY against codebase reality.
 4. EVALUATE: technically sound for THIS codebase?
 5. RESPOND: technical acknowledgment or reasoned pushback.
-6. IMPLEMENT one item at a time; test each.
+6. IMPLEMENT one item at a time; run each item's covering test. The affected scope runs once after the last item.
 
 ## Forbidden Responses
 
@@ -62,7 +62,7 @@ External architecture feedback is evaluated through `razorback:architecture-qual
 
 1. Clarify anything unclear first.
 2. Blocking issues (breaks, security), then simple fixes (typos, imports), then complex fixes (refactoring, logic).
-3. Test each fix individually; verify no regressions.
+3. Test each fix with its covering test; after the last fix, run the affected scope once for regressions.
 
 ## When To Push Back
 

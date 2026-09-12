@@ -23,6 +23,7 @@ Dispatch a reviewer subagent:
     | Spec Alignment | Plan covers spec requirements, no major scope creep |
     | Task Decomposition | Tasks have clear boundaries, steps are actionable |
     | Buildability | Could an engineer follow this plan without getting stuck? |
+    | Verification | Does the worker red/green scope name the repo runner narrowed to the change (one test or the focused group), with the full suite only at the branch gate? |
 
     ## Verify Buildability with Miller
 

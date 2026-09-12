@@ -85,7 +85,7 @@ Write skill addressing the specific baseline failures you documented. Don't add 
 
 Run same scenarios WITH skill. Agent should now comply.
 
-If agent still fails: skill is unclear or incomplete. Revise and re-test.
+If a scenario still fails: the skill is unclear or incomplete. Revise, rerun only that scenario until it passes, then the full scenario set once.
 
 ## VERIFY GREEN: Pressure Testing
 
@@ -228,7 +228,7 @@ Add symptoms of ABOUT to violate.
 
 ### Re-verify After Refactoring
 
-**Re-test same scenarios with updated skill.**
+**Re-test the scenario that exposed the loophole; when it holds, run the full scenario set once.**
 
 Agent should now:
 - Choose correct option

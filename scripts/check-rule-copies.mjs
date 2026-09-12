@@ -44,7 +44,8 @@ const INVARIANTS = [
   'Do not infer or invent API shapes',
   'choose the safest plan-consistent path', // evidence-gap rule
   'Restricted external CLI reviewers',
-  'Do not rerun a passing scope on an unchanged tree', // test-scope rule
+  'Do not rerun any scope on an unchanged tree', // test-scope rule
+  'rerun only the failing test ids', // after-failure loop
 ];
 
 // The three files that restate the exploration rules. Not byte-comparable to each other:

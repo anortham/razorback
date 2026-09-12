@@ -110,7 +110,7 @@ Agents find loopholes under pressure (`persuasion-principles.md` covers why the 
 
 - **RED:** run the pressure scenario with a subagent WITHOUT the skill. Record choices and rationalizations verbatim, and which pressures triggered violations.
 - **GREEN:** write the minimal skill that addresses those rationalizations, nothing hypothetical. Re-run the same scenarios WITH the skill.
-- **REFACTOR:** new rationalization → explicit counter → re-test until bulletproof.
+- **REFACTOR:** new rationalization → explicit counter → rerun the scenario that exposed it until it holds, then the full set once.
 
 `testing-skills-with-subagents.md` covers pressure scenario design, pressure types, plugging holes, and meta-testing.
 

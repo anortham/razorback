@@ -43,8 +43,8 @@ const ACCESS_TEXT = {
   opencode: /\*\*In OpenCode:\*\*/,
 };
 
-test('check-rule-copies exposes exactly the nine rule invariants this hook must carry', () => {
-  assert.equal(RULE_INVARIANTS.length, 9, `parsed invariants: ${JSON.stringify(RULE_INVARIANTS)}`);
+test('check-rule-copies exposes exactly the ten rule invariants this hook must carry', () => {
+  assert.equal(RULE_INVARIANTS.length, 10, `parsed invariants: ${JSON.stringify(RULE_INVARIANTS)}`);
 });
 
 test('session-start emits the Claude Code SessionStart hookSpecificOutput shape', () => {
@@ -155,7 +155,7 @@ test('every branch carries the full Miller toolchain table', () => {
   }
 });
 
-test('every branch carries all nine check-rule-copies invariants', () => {
+test('every branch carries all ten check-rule-copies invariants', () => {
   for (const [branch, payload] of Object.entries(payloadOf)) {
     const text = payload();
     for (const phrase of RULE_INVARIANTS) {

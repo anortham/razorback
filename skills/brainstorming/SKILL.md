@@ -64,7 +64,7 @@ Every path starts with Miller orientation (`context`, `inspect`, `trace`; no Glo
 
 ## Lightweight Implementation
 
-The design doc is the plan: what to build and why, exact file paths from Miller, acceptance criteria, key decisions and edge cases.
+The design doc is the plan: what to build and why, exact file paths from Miller, acceptance criteria, the worker verification scope (repo runner narrowed to the change; full suite at the branch gate), key decisions and edge cases.
 
 - **Delegation is available and permitted:** `razorback:subagent-driven-development`, including for one task; parallel for independent parts with distinct file ownership, serialized for dependent ones. Use `subagent-driven-development/implementer-prompt.md` with the design doc as the task. The lead reviews inline (spec compliance + code quality) and routes fixes through the same skill.
 - **No delegation, or single-agent execution explicitly selected:** `razorback:executing-plans` with the design doc as the plan.

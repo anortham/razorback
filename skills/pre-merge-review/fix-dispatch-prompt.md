@@ -54,8 +54,9 @@ Fresh implementer dispatch (delegation available):
 
     1. Apply the minimum change that resolves the finding.
     2. Add or update the test that would have caught it (real-bug findings;
-       skip when a test is not meaningful for a real-improvement).
-    3. Run the assigned verification scope from the plan:
+       skip when a test is not meaningful for a real-improvement). Iterate on that
+       test alone through the runner's own filter until it passes.
+    3. Then run the assigned verification scope from the plan once:
 
        ```
        [scope label and concrete command from the plan's Verification Strategy]

@@ -51,7 +51,7 @@ The quick-fix tier applies only when ALL criteria hold. Project instructions may
 
 ## Step 4: Verify the affected scope only
 
-- Miller `impact(target='<changed symbol>')` gives the impacted symbols and likely tests — run those and reconfirm the symptom is gone. razorback:verification-before-completion applies in full.
+- Miller `impact(target='<changed symbol>')` gives the impacted symbols and likely tests — run those and reconfirm the symptom is gone. A failing test iterates on its own id until it passes; the impacted set runs once after (razorback:systematic-debugging Phase 4). razorback:verification-before-completion applies in full.
 - The full suite is NOT part of this tier; the full suite runs at the branch gate (CI or pre-merge).
 - Commit with a clear message; open a PR where the project is branch-gated.
 - In the closing summary, list any `# razorback:` markers left (`<file>:<line>` + ceiling), or say "no markers left."

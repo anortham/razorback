@@ -118,7 +118,7 @@ Expected: PASS
 
 **Acceptance criteria:**
 - [ ] [Specific, testable requirement for this task]
-- [ ] Tests pass and the change is either committed by the worker or handed to the lead per commit mode
+- [ ] Worker-scope verification passes and the change is either committed by the worker or handed to the lead per commit mode
 ````
 
 ## Light Plan Task Template

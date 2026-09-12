@@ -47,7 +47,7 @@ One behavior, clear name, real code (mocks only when unavoidable). `test('retry 
 
 ### Verify RED — MANDATORY
 
-Run the project-defined worker-scope command. Confirm the test fails (not errors), with the expected message, because the feature is missing (not a typo). Passes → you are testing existing behavior; fix the test. Errors → fix, re-run until it fails correctly.
+Run only the new test: the project runner narrowed with its own filter (file, name pattern, or id); never invent a runner. Confirm the test fails (not errors), with the expected message, because the feature is missing (not a typo). Passes → you are testing existing behavior; fix the test. Errors → fix, re-run that test until it fails correctly.
 
 ### GREEN — minimal code
 
@@ -64,7 +64,7 @@ No `options?: { maxRetries, backoff, onRetry }` the test did not ask for. No ref
 
 ### Verify GREEN — MANDATORY
 
-Same command. Test passes, worker scope stays green, output pristine (no errors or warnings). Test fails → fix code, not test. Required scope fails → fix now.
+Same narrowed command until the test passes; output pristine (no errors or warnings). Test fails → fix code, not test. When the task's tests are all green, run the assigned worker scope once on the final tree. Scope fails → rerun only the failing test ids until they pass, then the scope once more (razorback:systematic-debugging Phase 4).
 
 ### REFACTOR — after green only
 
@@ -92,6 +92,7 @@ Remove duplication, improve names, extract helpers. Keep the test surface on the
 | "Test hard = design unclear" | Listen to test. Hard to test = hard to use. |
 | "TDD will slow me down" | TDD faster than debugging. Pragmatic = test-first. |
 | "Manual test faster" | Manual doesn't prove edge cases. You'll re-test every change. |
+| "Run the whole scope after every edit to be safe" | The edit's test is the inner loop. The scope runs once when it passes; the full suite once at the branch gate. |
 | "Existing code has no tests" | You're improving it. Add tests for existing code. |
 
 ## Red Flags - STOP and Start Over

@@ -79,10 +79,13 @@ Dispatch one implementer subagent:
 
     ## Verification Scope
 
-    Assigned worker scope: [worker-red-green / worker-ceiling command from plan]
+    Worker red/green scope (per change): [worker-red-green command from plan]
+    Worker ceiling (once, on the final tree): [worker-ceiling command from plan]
 
-    - Run the lowest-cost repo-defined command that proves the changed behavior; never
-      invent runner commands.
+    - Run the lowest-cost repo-defined command that proves the changed behavior: the
+      repo's runner narrowed with its own filter (file, name pattern, or id). Never invent
+      a runner. After a failure, rerun only the failing test ids until they pass, then the
+      assigned scope once; capture wide output to a file instead of rerunning to read it.
     - State the invariant each assigned test, replay, metric, or acceptance gate proves; for
       replay/metric evidence, separate hard gates from report-only metrics.
     - If assigned verification fails, stop and report BLOCKED unless the plan says to update

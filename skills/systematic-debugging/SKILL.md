@@ -28,7 +28,7 @@ Complete each phase before the next.
 ### Phase 1: Root Cause Investigation
 
 1. **Read the error completely.** Full stack trace, line numbers, file paths, error codes.
-2. **Reproduce consistently.** Exact steps; every time? If not reproducible, gather more data — do not guess.
+2. **Reproduce consistently.** Exact steps; every time? If not reproducible, gather more data — do not guess. A failing test run is already the reproduction: capture its full output to a file on the first run (long runs in the background), list every failing test id from that file, and reproduce with those ids only through the project runner's own filter (file, name pattern, or id). Never rerun the wide command to re-read output or to find the next failure.
 3. **Check recent changes.** Git diff, recent commits, new dependencies, config, environment differences.
 4. **Gather evidence across component boundaries** (CI → build → signing, API → service → database). Before proposing fixes, log what enters and exits each component, verify env/config propagation, run once, and read which layer breaks. Show presence, never values:
    ```bash
@@ -63,7 +63,7 @@ Miller: `inspect(target, depth=full)` on the buggy function (callers, callees, t
 
 1. **Failing test first** — simplest reproduction, automated when possible. **REQUIRED SUB-SKILL:** razorback:test-driven-development.
 2. **Single fix** — run Miller `impact(target='<symbol being changed>')` first for impacted symbols and likely tests. ONE change; no "while I'm here" improvements, no bundled refactoring.
-3. **Verify** — test passes, affected scope still green, issue actually resolved.
+3. **Verify** — rerun only the failing test ids until they pass, then the affected scope once; issue actually resolved. If a wider command failed, rerun that command once, on the changed tree, after every listed id passes; new failures → step 1 with the new ids. Only that final run is completion evidence.
 4. **Fix failed?** STOP. Count attempts. Under 3 → Phase 1 with the new information. **3 or more → question the architecture. Do not attempt fix #4.**
 5. **3+ failures = architectural problem**, not a failed hypothesis. Signs: each fix reveals new shared state or coupling elsewhere, fixes need "massive refactoring", each fix creates new symptoms. In an approved autonomous run, route through the blocker taxonomy: take a plan-consistent architecture fix and log the decision, or stop as a real blocker when the plan is contradicted or tests are unresolvable. Outside a run, discuss the architecture before more fixes. Use razorback:architecture-quality.
 
@@ -79,6 +79,7 @@ Every row below — whether it is your own thought or a redirection from the use
 | "It's probably X, let me fix that" / "I see the problem, let me fix it" | Seeing symptoms ≠ understanding root cause. |
 | "Here are the main problems: [lists fixes without investigation]" — proposing solutions before tracing data flow | Fixes proposed before investigation are guesses wearing a diagnosis. |
 | "Add multiple changes, run tests" / "Multiple fixes at once saves time" | Can't isolate what worked. Causes new bugs. |
+| "Rerun the suite to see what is still failing" / "The output scrolled, run it again" | The first run's captured output already lists every failing id. Read the file; run the ids. The wide command runs once more, after the ids pass. |
 | "Skip the test, I'll manually verify" / "I'll write test after confirming fix works" | Untested fixes don't stick. Test first proves it. |
 | "Pattern says X but I'll adapt it differently" / "Reference too long, I'll adapt the pattern" | Partial understanding guarantees bugs. Read the reference completely. |
 | "I don't fully understand but this might work" | Not understanding IS the finding. Investigate it, don't route around it. |
@@ -97,6 +98,7 @@ When investigation shows the issue is truly environmental, timing-dependent, or 
 ## It's working if
 
 - A written hypothesis preceded every fix, and each fix changed exactly one thing.
+- The wide test command ran at most twice: once to capture the failing ids, once after they all passed.
 - The fix has a failing-test reproduction that now passes.
 - No fourth fix was attempted without questioning the architecture.
 - Nothing secret appeared unredacted in any output you showed or sent.

@@ -26,7 +26,8 @@ SendMessage (to: "<implementer-agent-id-or-name>"):
 
     1. Fix each finding. Fix the structural cause, not only the symptom.
     2. Do not weaken tests or introduce speculative seams. Do not refactor beyond the findings.
-    3. Run the assigned verification scope, apply the commit mode, report.
+    3. Verify each fix with its covering test (the runner's own filter); when all pass, run
+       the assigned verification scope once on the final tree, apply the commit mode, report.
 
     ## Re-Orientation (REQUIRED before editing)
 

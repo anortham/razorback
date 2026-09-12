@@ -44,7 +44,7 @@ Which option?
 
 | Option | Commands | Then |
 |--------|----------|------|
-| 1. Merge locally | `git checkout <base>` → `git pull` → `git merge <feature>` → `<branch-gate command>` → if green, `git branch -d <feature>` | Step 5 |
+| 1. Merge locally | `git checkout <base>` → `git pull` → `git merge <feature>` → if the merge fast-forwarded to the HEAD Step 1 verified, cite that ledger entry; otherwise `<branch-gate command>` once → if green, `git branch -d <feature>` | Step 5 |
 | 2. Push + PR | `git push -u origin <feature>` → `gh pr create --title "<title>" --body "<Summary bullets + Test Plan checklist>"`; if `gh` fails, walk the Autonomous Step 6 forge ladder | Keep worktree |
 | 3. Keep as-is | Report: "Keeping branch <name>. Worktree preserved at <path>." | Keep worktree |
 | 4. Discard | Show branch, commit list, and worktree path. Require the user to type `discard`. Then `git checkout <base>` → `git branch -D <feature>` | Step 5 |

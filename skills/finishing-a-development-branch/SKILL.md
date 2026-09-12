@@ -29,7 +29,7 @@ Read the handoff's authority ledger and preserve its cited sources: `local_commi
 
 Run the plan's `branch-gate` scope, or reuse a passing verification-ledger entry for current HEAD. Add required `expensive-specialist` scopes. Running the branch gate includes running the plan's declared Security scope commands (`security-secrets`, `security-deps` — `razorback:security-review`); `none declared` skips them and the report says so.
 
-On failure: keep the branch local; diagnose, repair, and rerun the failed scope while a safe, plan-consistent recovery path remains. Follow razorback:security-review for scanner or security-finding failures. Record each attempt and refresh the ledger for the resulting HEAD. Do not classify the first failed run as blocker taxonomy #5.
+On failure: keep the branch local; diagnose, repair, and rerun the failed scope while a safe, plan-consistent recovery path remains. Capture the failing run to a file once; repair against the failing test ids through the runner's own filter (razorback:systematic-debugging Phase 4); rerun the failed scope once when every id passes, not after each repair. Follow razorback:security-review for scanner or security-finding failures. Record each attempt and refresh the ledger for the resulting HEAD. Do not classify the first failed run as blocker taxonomy #5.
 
 Only after recovery paths are exhausted, classify with the blocker taxonomy (#5 for unfixable test failures, #1 for environmental). No PR. Render a partial report with `Status: Blocked` (failure in `Tests`, blocker in `Blockers hit`), write it to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md`, emit `Blocked. Report: <path>`, exit.
 
@@ -65,7 +65,7 @@ Classify every worktree and branch:
 |-------|---------|--------|
 | Landed | Commits are ancestors of this branch or merged into base | None |
 | Riding along | Commits are on the branch about to be pushed | None |
-| Stranded | Commits absent from base and this branch, or uncommitted changes in a worktree this run created | Land it (then rerun Step 1 — the diff changed) or name it |
+| Stranded | Commits absent from base and this branch, or uncommitted changes in a worktree this run created | Land it or name it; after the last landing, rerun Step 1 once — the diff changed |
 | The user's | Worktree outside razorback-managed locations, or a branch this run did not create | Report the path; change nothing |
 
 Stranded work deliberately left is a `Next steps` item, not a blocker; the run still reports `Complete`. Stranded work you can neither land nor explain is a judgment call to log, not a reason to withhold the report. Autonomous Mode never removes worktrees.
@@ -163,6 +163,7 @@ Canonical definition: the `razorback:using-razorback` skill's `references/source
 | Excuse | Reality |
 |--------|---------|
 | "Tests passed earlier, the gate is a formality" | The gate needs evidence for the current HEAD. Stale evidence is no evidence. |
+| "Fixed one failure, rerun the whole gate to see the rest" | The captured first run lists every failure. Fix them against their ids; rerun the gate once. |
 | "The PR is open, the run may as well merge it" | Stopping at PR creation is the design. Merge is a separate human (or agent) action after review. |
 | "The push failed — I'll just show the menu" | Mid-run fallback breaks the autonomous contract. Report `Blocked` and exit. |
 | "The other worktree isn't this run's problem" | Unaccounted state makes the report a lie. Land it or name it. |

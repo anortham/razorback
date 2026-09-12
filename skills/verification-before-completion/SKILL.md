@@ -29,7 +29,7 @@ Before any status claim or expression of satisfaction:
 
 | Claim | Requires | Not Sufficient | How to verify |
 |-------|----------|----------------|---------------|
-| Tests pass | Test output or ledger entry for current HEAD and required scope: 0 failures | Stale run, wrong scope, "should pass" | Long output: capture to a file, then Miller `content(operation='import', path='<file>')` + `content(operation='search', query='<failure>')` |
+| Tests pass | Test output or ledger entry for current HEAD and required scope: 0 failures | Stale run, wrong scope, "should pass", a rerun on an unchanged tree | Short output: read it. Long output: capture it to a file on the first run, then Miller `content(operation='import', path='<file>')` + `content(operation='search', query='<failure>')`. Never rerun to re-read |
 | Linter clean | Linter output: 0 errors | Partial check | Read the output |
 | Build succeeds | Build exit 0 | Linter passing, logs look good | Long logs: Miller `content(...)` import, then search |
 | Bug fixed | Original symptom passes at worker scope | Code changed, assumed fixed | Re-run the original repro |
@@ -65,7 +65,9 @@ Also prove API shapes with Miller (`trace`, `inspect(target, depth=full)`) befor
 | "Linter passed" | Linter ≠ compiler |
 | "Agent said success" | Verify independently |
 | "I'm tired" | Exhaustion ≠ excuse |
-| "Partial check is enough" | Partial proves nothing |
+| "Partial check is enough" | Less than the claim's scope proves nothing about the claim |
+| "The gate wants the full scope, so rerun it after every edit" | The gate applies to the claim, not to each edit. Between edits run the failing ids; the wide command runs once when they pass (razorback:systematic-debugging Phase 4). |
+| "Run it again to see the output" | Read the output you have; long output is captured to a file on the first run. A rerun on an unchanged tree is not fresh evidence. |
 | "The other worktree isn't my task" | Then name it in the report. Silence is the bug. |
 | "Tests pass, so the phase is done" | Passing tests is not integration. Landed is integration. |
 | "Different words so rule doesn't apply" | Spirit over letter |

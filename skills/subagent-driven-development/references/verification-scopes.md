@@ -5,7 +5,7 @@ Razorback is language-agnostic: the target repo supplies concrete commands throu
 | Scope | Owner | When |
 |---|---|---|
 | `worker-red-green` | Implementer | Prove the new or changed behavior during TDD with the lowest-cost repo-defined command |
-| `worker-ceiling` | Implementer | Maximum scope a worker may run without lead assignment |
+| `worker-ceiling` | Implementer | Maximum scope a worker may run without lead assignment; once on the final tree, not after each edit |
 | `affected-change` | Lead | Touched files, changed subsystem, or repo-defined affected area after a coherent batch |
 | `branch-gate` | Lead | Broad confidence before handoff, push, or PR |
 | `expensive-specialist` | Lead | Slow domain gates only when touched areas or failures require them |
@@ -22,4 +22,4 @@ Verification ledger, maintained by the lead:
 |-------|-----------|---------|--------|--------|------|
 ```
 
-A passing entry for the same HEAD and scope is reusable instead of rerunning an expensive command. A new HEAD makes the affected scopes stale.
+A passing entry for the same HEAD and scope is reusable instead of rerunning an expensive command. A new HEAD makes the affected scopes stale. A failing wide run is worked from its captured output: failing ids first, then the wide command once (razorback:systematic-debugging Phase 4).
