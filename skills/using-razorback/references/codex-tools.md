@@ -46,11 +46,52 @@ When a skill says to dispatch a subagent with a prompt:
    arguments present in the live schema.
 
 ```
-spawn_agent(task_name="task-N-<slug>", message=<filled prompt>)
+spawn_agent(task_name="task-N-<slug>", message=<filled prompt>, fork_turns="none")
 ```
 
 Model choice is left to the lead agent. Razorback does not require a model table
 or a per-task model override before spawning workers.
+
+- **Spawning with context isolation:** give children a clean context with
+  `spawn_agent {fork_turns: "none"}`; the default `"all"` copies your
+  entire transcript into the child. On Codex 0.145+, role files under
+  `~/.codex/agents/` attach to isolated forks via `agent_type`.
+  Full-history forks accept `model` and `reasoning_effort` overrides
+  (only `agent_type` is refused there) — isolated forks are the default
+  for context hygiene.
+- **Fix rounds and resumes:** on multi-agent V2, resume the implementer
+  with `followup_task(target=<agent-id>, message=...)` — it delivers your
+  message, triggers a turn, and transparently reloads a child the harness
+  evicted.
+- **Lifecycle:** V2 has no `close_agent`. Finished children are evicted
+  automatically when slots are needed; leaving them unclosed costs nothing.
+  Only V1 sessions have `close_agent` — there, close implementers after their
+  task's review passes.
+- **Model routing on spawns:** every `spawn_agent` call that sets `model`
+  MUST set `reasoning_effort` explicitly as well. Setting `model` alone
+  silently resets reasoning effort to that model's default, not to yours.
+  You can set a machine-level backstop in `~/.codex/config.toml`:
+  ```toml
+  [agents]
+  default_subagent_model = "<a mid-tier model from your spawn allowlist>"
+  default_subagent_reasoning_effort = "medium"
+  ```
+
+### Waiting on children
+
+`wait_agent` is an event subscription, not a poll: a long wait wakes
+the moment a child produces mailbox activity, with the same latency as
+a short one. Short-timeout polling buys nothing and costs a tool call —
+and a context rebill — per poll.
+
+- While you still have local work, do not wait at all. A completed child's
+  final answer is pushed into your mailbox and arrives with your next turn.
+- When you are genuinely idle with children outstanding, wait in bounded
+  stretches: `wait_agent` with `timeout_ms` 300000-600000 (5-10 minutes).
+  Never stack polls shorter than five minutes; the event subscription wakes
+  a bounded stretch just as fast as a short one.
+- Completion mail cannot wake an idle controller (it is delivered without
+  triggering a turn); covering that idle window is `wait_agent`'s only job.
 
 ### Parallel safe batches
 

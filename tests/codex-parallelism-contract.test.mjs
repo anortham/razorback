@@ -86,6 +86,16 @@ test('codex tools require parallel safe batches to use multiple spawn_agent call
   assert.match(codexTools, /serializing requires a recorded dependency or tool limitation/i);
 });
 
+test('codex tools reference documents V2 context isolation, event-driven waiting, and spawn routing', () => {
+  const codexTools = read('skills/using-razorback/references/codex-tools.md');
+
+  assert.match(codexTools, /fork_turns:\s*"none"/);
+  assert.match(codexTools, /wait_agent` is an event subscription, not a poll/i);
+  assert.match(codexTools, /300000|5-10 minutes/);
+  assert.match(codexTools, /reasoning_effort/);
+  assert.match(codexTools, /followup_task/);
+});
+
 // Bind each commit-mode name to its actual git behavior, so an inverted or
 // corrupted definition fails instead of passing on mere string presence.
 test('commit modes are bound to their git behavior in the worker prompts', () => {
