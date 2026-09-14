@@ -21,7 +21,7 @@ Fresh implementer dispatch (delegation available):
 
     ## Symbol target
 
-    [The symbol or code region this finding touches, plus one short note if public API impact matters. No raw inspect/trace output; you re-orient with Miller before editing.]
+    [The symbol or code region this finding touches, plus one short note if public API impact matters. No raw inspect/trace output; you re-orient with code-kb before editing.]
 
     ## Plan context
 
@@ -38,16 +38,16 @@ Fresh implementer dispatch (delegation available):
 
     ## Orientation (REQUIRED before coding)
 
-    1. List the file's symbols with Miller `inspect(target='<file>')`.
-    2. Inspect the symbol, its callers and callees, with Miller
-       `inspect(target='<symbol>', depth=full)`.
-    3. Find references with Miller `trace(target='<symbol>')` if your fix
+    1. Inspect file outline with code-kb `file_skeleton(file_path)`.
+    2. Inspect the symbol, its callers and callees, with code-kb
+       `get_context_slice(symbol_name, file_path?)` or `get_symbol_body(symbol_name, file_path?)`.
+    3. Find references with code-kb `find_references(symbol_name, direction="callers")` if your fix
        changes caller-visible behavior.
 
     Do NOT use Glob -> Read -> Grep chains or start from raw files or diffs.
     Do not infer or invent API shapes: discover symbol names, function
     signatures, config shapes, route names, CLI flags, and public contracts with
-    Miller before relying on them. If Miller cannot prove the shape, say what
+    code-kb before relying on them. If code-kb cannot prove the shape, say what
     evidence is missing instead of guessing.
 
     ## Your job
@@ -75,8 +75,8 @@ Fresh implementer dispatch (delegation available):
     - What you changed (file:line references)
     - Commit SHA (first 7 chars)
     - Verification scope, command, commit SHA, result, and timestamp
-    - **Miller calls used** - the orient / inspect / find-references calls you made before editing
-    - **API-shape evidence** - the Miller evidence for any symbol names, function signatures, config shapes, route names, CLI flags, or public contracts you relied on
+    - **code-kb calls used** - the skeleton / slice / body / refs calls you made before editing
+    - **API-shape evidence** - the code-kb evidence for any symbol names, function signatures, config shapes, route names, CLI flags, or public contracts you relied on
     - Observations for the morning report's judgment-calls log
 
     If BLOCKED: what blocked you and what the lead needs to do (re-dispatch

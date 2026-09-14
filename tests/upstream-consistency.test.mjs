@@ -44,7 +44,7 @@ test('spec reviewer catches inline task text instead of the canonical brief path
   );
 });
 
-test('parallel dispatch catches missing Miller refresh between write batches', () => {
+test('parallel dispatch catches missing code-kb refresh between write batches', () => {
   const body = read('skills/subagent-driven-development/SKILL.md');
   const parallelDispatch = body.slice(
     body.indexOf('### Parallel Dispatch (Independent Tasks)'),
@@ -53,7 +53,7 @@ test('parallel dispatch catches missing Miller refresh between write batches', (
 
   assert.match(
     parallelDispatch,
-    /After a completed batch of file writes, run Miller `workspace refresh` before the next dispatch\./,
-    'parallel dispatch must refresh Miller after a write batch before dispatching again'
+    /After a completed batch of file writes, run `code-kb scan` before the next dispatch\./,
+    'parallel dispatch must refresh code-kb after a write batch before dispatching again'
   );
 });

@@ -28,7 +28,7 @@ Dispatch one implementer subagent:
 
     ## Ambiguity
 
-    Re-read the brief and Contract inputs, then check the codebase with Miller. If still
+    Re-read the brief and Contract inputs, then check the codebase with code-kb. If still
     ambiguous, pick the plan-consistent option and note it in your report (file:line + reason).
 
     Stop and report BLOCKED only for the blocker taxonomy
@@ -39,21 +39,21 @@ Dispatch one implementer subagent:
 
     ## Codebase Orientation (HARD REQUIREMENT)
 
-    Miller first, before reading raw files or writing code:
-    1. Orient: Miller `context(query='<area>')`.
-    2. Inspect each symbol you will modify: Miller `inspect(target='<name>', depth=full)`.
-    3. Find references before changing anything: Miller `trace(target='<name>')`.
-    4. List a file's symbols instead of reading it whole: Miller `inspect(target='<file>')`.
+    code-kb first, before reading raw files or writing code:
+    1. Orient: `codebase_outline(path?, depth?)`.
+    2. Inspect file outline before reading it whole: `file_skeleton(file_path)`.
+    3. Inspect each symbol you will modify: `get_symbol_body(symbol_name, file_path?)` or `get_context_slice(symbol_name, file_path?)`.
+    4. Find references before changing anything: `find_references(symbol_name, direction="callers")`.
     5. Only then read the minimum raw code the edit needs.
     No Glob -> Read -> Grep chains.
 
     ## API Shape Evidence
 
-    Do not infer or invent API shapes. Use Miller to prove symbol names, function
+    Do not infer or invent API shapes. Use code-kb to prove symbol names, function
     signatures, config shapes, route names, CLI flags, or public contracts before relying
-    on them. In your report, report the exact Miller calls that proved each shape; if Miller
+    on them. In your report, report the exact code-kb calls that proved each shape; if code-kb
     cannot prove one, say what evidence is missing and take the safest plan-consistent path.
-    Miller covers this repo only: for external framework/library/API surfaces use the verified
+    code-kb covers this repo only: for external framework/library/API surfaces use the verified
     surface or doc URL in your task, never training memory; if none is given, say so and follow
     the repo's existing usage pattern.
 
@@ -115,8 +115,8 @@ Dispatch one implementer subagent:
     - What you implemented; files changed
     - Verification invariant, scope label, command, commit SHA if any, result, timestamp;
       hard-gate vs report-only metrics when relevant
-    - **Miller calls used** — each orient / inspect / trace / list-symbols call and what it confirmed
-    - **API-shape evidence** — Miller evidence for every symbol name, signature, config shape,
+    - **code-kb calls used** — each outline / skeleton / symbol / slice / refs call and what it confirmed
+    - **API-shape evidence** — code-kb evidence for every symbol name, signature, config shape,
       route, CLI flag, or public contract relied on
     - **Judgment calls made** — `file:line - chose X over Y because [reason]`, one per
       ambiguity resolved without asking (feeds the morning report)

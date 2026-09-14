@@ -1,6 +1,6 @@
 # Verification Protocol
 
-External reviewers over-report. Classify every finding against the actual code before acting. Verify with Miller: `inspect(target, depth=overview)` for the referenced symbol (`depth=full` only for the symbol the finding centers on), `trace` when a public API or shared utility is touched, `inspect(target='<file>')` to confirm the reviewer points at the right region.
+External reviewers over-report. Classify every finding against the actual code before acting. Verify with code-kb: `get_context_slice(symbol_name, file_path?)` for the referenced symbol (`get_symbol_body` only for the symbol the finding centers on), `find_references` when a public API or shared utility is touched, `file_skeleton(file_path)` to confirm the reviewer points at the right region.
 
 ## Classifications
 

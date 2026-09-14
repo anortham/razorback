@@ -24,12 +24,12 @@ Lead inline review — spec compliance for Task N:
     - Extra: anything built that was not requested, over-engineered, or "nice to have"?
     - Misread: wrong interpretation, wrong problem, right feature done the wrong way?
 
-    ## How to Review (use Miller)
+    ## How to Review (use code-kb)
 
-    1. Miller `inspect(target='<file>')` — list symbols before reading any file.
-    2. Miller `trace(target='<symbol>')` — confirm the implementation connects to the codebase.
-    3. Miller `inspect(target='<symbol>', depth=overview)` when behavior is unclear;
-       `depth=full` only for the symbol the question centers on.
+    1. `file_skeleton(file_path)` — inspect symbols before reading any file.
+    2. `find_references(symbol_name, direction="callers")` — confirm the implementation connects to the codebase.
+    3. `get_context_slice(symbol_name, file_path?)` when behavior is unclear;
+       `get_symbol_body(symbol_name, file_path?)` only for the symbol the question centers on.
     Read only the sections the symbol listing points to; never whole files.
 
     Report:

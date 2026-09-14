@@ -20,7 +20,7 @@ Dispatch, follow-up, and wait tool names per harness: read `references/harness-d
 1. Read the plan once. `TaskCreate` per task.
 2. Read the ledger: `ws=$("$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE); cat "$ws/progress.md"`. Trust it only when its first line names this plan file; any other ledger (or a stray one at the old flat path) is another plan's — leave it, start fresh.
 3. Tasks marked complete **with a named commit** are DONE (verify with `git log`). A completion line whose SHA is missing, `pending`, or absent from `git log` is **INCOMPLETE** — the `parallel-lead-commit` crash window: `git status`, inspect the task's owned files, then re-review and commit the approved edits (Commit Mode Contract) or re-dispatch.
-4. Orient with Miller: `context` on the plan's areas; `inspect` the files the plan modifies so review can spot drift. No Glob/Grep/Read chains.
+4. Orient with code-kb: `codebase_outline` on the plan's areas; `file_skeleton` on the files the plan modifies so review can spot drift. No Glob/Grep/Read chains.
 5. Validate the plan's `## Parallel Execution Contract`: a safe batch with 2+ eligible tasks dispatches together. Safe = non-overlapping file ownership, no ordering dependency, `Serialization required: No`. Serialized lanes need `Serialization required: Yes` plus a `Dependency reason`. Serializing a safe batch requires a recorded dependency or tool limitation — caution is not one.
 
 ## Step 2: Dispatch Implementer Subagent
@@ -29,7 +29,7 @@ Template: `./implementer-prompt.md`. Record `BASE=$(git rev-parse HEAD)` first; 
 
 **The brief file is the single source of task requirements.** Task text and every exact value live only in `task-N-brief.md`, never in the spawn prompt, which introduces the brief path as "read this first — it is your requirements, with the exact values to use verbatim".
 
-Prompt-resident (the template's sections): scene-setting; earlier-task interfaces and lead ambiguity resolutions (never prior-task summaries); file ownership; Miller directives and evidence requirement; API-shape evidence requirement; gate invariant requirement; TDD (`razorback:test-driven-development`); verification scope; commit mode; architecture-quality context (approved architecture, any `No Architecture Impact` note, the plan mismatch rule); report path under `.razorback/sdd/<plan-key>/` (the worker returns only status, commits, test summary, concerns).
+Prompt-resident (the template's sections): scene-setting; earlier-task interfaces and lead ambiguity resolutions (never prior-task summaries); file ownership; code-kb directives and evidence requirement; API-shape evidence requirement; gate invariant requirement; TDD (`razorback:test-driven-development`); verification scope; commit mode; architecture-quality context (approved architecture, any `No Architecture Impact` note, the plan mismatch rule); report path under `.razorback/sdd/<plan-key>/` (the worker returns only status, commits, test summary, concerns).
 
 **Verification scopes** (`references/verification-scopes.md`, read before the first dispatch): workers run `worker-red-green` / `worker-ceiling`; the lead owns `affected-change`, `branch-gate`, `expensive-specialist` and the verification ledger. A passing ledger entry for the same HEAD and scope is reusable.
 
@@ -64,13 +64,13 @@ Workspace: `"$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE` prints `<repo-root>/.r
 
 ### Parallel Dispatch (Independent Tasks)
 
-One call per task in a single turn; file ownership per subagent. Coupled tasks (same files, shared state, ordering) run one at a time with the `Dependency reason` recorded. Review each task inline as it returns; never batch reviews. After a completed batch of file writes, run Miller `workspace refresh` before the next dispatch.
+One call per task in a single turn; file ownership per subagent. Coupled tasks (same files, shared state, ordering) run one at a time with the `Dependency reason` recorded. Review each task inline as it returns; never batch reviews. After a completed batch of file writes, run `code-kb scan` before the next dispatch.
 
 ## Step 3: Lead Inline Review
 
 One pass by the lead. No reviewer subagents. Checklists: `./spec-reviewer-prompt.md`, `./code-quality-reviewer-prompt.md`.
 
-**Spec:** everything requested, nothing extra, no misread requirement. Scan changed files with Miller `inspect`. The report must show Miller-first orientation and API-shape evidence for every symbol, signature, config shape, route, CLI flag, or public contract — a guessed shape goes back.
+**Spec:** everything requested, nothing extra, no misread requirement. Scan changed files with code-kb `file_skeleton`. The report must show code-kb-first orientation and API-shape evidence for every symbol, signature, config shape, route, CLI flag, or public contract — a guessed shape goes back.
 
 **architecture-quality:** the worker preserved the approved architecture or reported a plan mismatch; reject worker-local redesigns not in the plan.
 - Does this keep complexity local?
@@ -80,7 +80,7 @@ One pass by the lead. No reviewer subagents. Checklists: `./spec-reviewer-prompt
 - Did this avoid speculative extensibility?
 - Did it fix the structural cause, not only the symptom?
 
-**Quality:** tests assert meaningful values; no duplication, tight coupling, unclear names, missing error paths. Miller `inspect(target, depth=overview)` on key symbols (`full` for the task's core), `trace` on changed APIs. Concrete plans get a quality-focused pass; ambiguous or safety-sensitive tasks get the full pass.
+**Quality:** tests assert meaningful values; no duplication, tight coupling, unclear names, missing error paths. code-kb `get_context_slice` on key symbols (`get_symbol_body` for the task's core), `find_references` on changed APIs. Concrete plans get a quality-focused pass; ambiguous or safety-sensitive tasks get the full pass.
 
 **Severity:** only Critical and Important enter the fix loop (Step 4). Minor → `minor (deferred)` ledger line for Step 4a.
 
@@ -192,7 +192,7 @@ This sequence runs only on resumed runs. A fresh run enters at Step 1. Subagent 
 - Extend the fix loop with Minor findings or with observations outside the fix diff — both go to the deferred list
 - Close an open finding at the cap without a recorded ruling
 - Dispatch a separate reviewer subagent when the lead can review inline
-- Approve work from an implementer who cannot show Miller-first orientation
+- Approve work from an implementer who cannot show code-kb-first orientation
 - Open a new phase worktree without running the Step 0b inventory against the prior phase's
 - Reach Step 5 without statusing every worktree the run created (Check B)
 - Pause for user input between tasks - the plan is approved, run it to completion. Stops are governed by the blocker taxonomy. If you can reason through a plan-consistent path, keep moving and log the choice.

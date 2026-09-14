@@ -5,7 +5,7 @@ description: Use after all tasks are complete and branch verification passes, be
 
 # Pre-Merge External Review
 
-The chosen reviewer (codex / claude) gets one general adversarial pass and one security pass over the full branch diff: two invocations, ever. Each pass runs once; fixes get local confirmation without a post-fix external re-review. The lead verifies every finding with Miller, classifies it, then fixes, dismisses with a written reason, or flags it for human judgment, and emits the morning-report block.
+The chosen reviewer (codex / claude) gets one general adversarial pass and one security pass over the full branch diff: two invocations, ever. Each pass runs once; fixes get local confirmation without a post-fix external re-review. The lead verifies every finding with code-kb, classifies it, then fixes, dismisses with a written reason, or flags it for human judgment, and emits the morning-report block.
 
 **REQUIRED SUB-SKILL:** razorback:managing-review-campaigns.
 
@@ -41,7 +41,7 @@ A dispatch consumes its invocation even when output is unusable. A required revi
 
 ## Step 1: Build diff + review tree
 
-Use Miller to inspect changed symbols, `trace` changed public APIs, and assess test impact; summarize that as `$MILLER_EVIDENCE`. The external reviewer does not run Miller; it reads the bundle and the exported tree and reports missing evidence when they cannot support a conclusion.
+Use code-kb to inspect changed symbols, `find_references` for changed public APIs, and assess test impact with `blast_radius`; summarize that as `$CODE_KB_EVIDENCE`. The external reviewer does not run code-kb; it reads the bundle and the exported tree and reports missing evidence when they cannot support a conclusion.
 
 ```bash
 BASE=$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null)
@@ -57,7 +57,7 @@ DIFF=$(git diff "$BASE"..HEAD --no-ext-diff)
 FILE_STAT=$(git diff --stat "$BASE"..HEAD)
 COMMIT_LOG=$(git log --oneline "$BASE"..HEAD)
 PLAN_PATH="docs/plans/<YYYY-MM-DD>-<feature>.md"
-MILLER_EVIDENCE="<compact summary of changed symbols, public-API references, and likely tests>"
+CODE_KB_EVIDENCE="<compact summary of changed symbols, public-API references, and likely tests>"
 ```
 
 `prepare-review-tree` exports tracked content of the ref only (no `.git`, no untracked files, no symlinks that escape the root) and rejects an output path inside the repo. Include a user focus only when the plan carried one. Use the CLI's default model unless one was explicitly selected.
@@ -75,7 +75,7 @@ Count calls even when parsing later fails. Never dispatch a scope twice. If a di
 
 ### Redact each pass payload
 
-Build the complete prompt (instruction, optional focus, labelled Target / File stat / Commit log / Lead Miller evidence / Diff bundle), then filter it and apply the `review-payload.md` contract from razorback:security-review. Payloads over 128 KiB become a review artifact inside `$REVIEW_ROOT`; the prompt file then carries only the bounded static wrapper. Never load the artifact into a shell variable or positional argument.
+Build the complete prompt (instruction, optional focus, labelled Target / File stat / Commit log / Lead code-kb evidence / Diff bundle), then filter it and apply the `review-payload.md` contract from razorback:security-review. Payloads over 128 KiB become a review artifact inside `$REVIEW_ROOT`; the prompt file then carries only the bounded static wrapper. Never load the artifact into a shell variable or positional argument.
 
 ```bash
 PAYLOAD_FILE=$(mktemp)
@@ -87,9 +87,9 @@ if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" >
   echo "outbound redaction failed" >&2
   exit 1
 fi
-if ! REVIEW_ARTIFACT=$("$SKILL_DIR/../security-review/scripts/prepare-review-artifact" \
-  "$REVIEW_ROOT" "$REDACTED_PAYLOAD_FILE"); then
-  rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
+rm -f -- "$PAYLOAD_FILE"
+if ! REVIEW_ARTIFACT=$("$SKILL_DIR/../security-review/scripts/prepare-review-artifact" "$REVIEW_ROOT" "$REDACTED_PAYLOAD_FILE"); then
+  rm -f -- "$REDACTED_PAYLOAD_FILE"
   rm -rf -- "$REVIEW_ROOT"
   echo "review artifact preparation failed" >&2
   exit 1
@@ -109,13 +109,13 @@ fi
 
 Use `$REVIEW_PROMPT_FILE` for one pass, then remove the payload files and the artifact path before building the next pass in the same `$REVIEW_ROOT`.
 
-## Step 3: Parse
+### Step 3: Run and parse each pass
 
-Run `validate-review-output` on each pass output; it normalizes both shapes (codex: direct schema on stdout; claude: result envelope with the object in `.structured_output`):
+Capture the output directly to `$OUT_DIR/reviewer-output-general.json` and `$OUT_DIR/reviewer-output-security.json` (`$OUT_DIR` is a fresh mktemp directory outside both `$PROJECT_DIR` and `$REVIEW_ROOT`). Validate each output per [`../codex-cli/references/shared-cli-review.md`](../codex-cli/references/shared-cli-review.md); validate each pass against `schemas/review-output.schema.json` via:
 
 ```bash
-"$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$OUT_DIR/<reviewer>-output.json" > "$OUT_DIR/<reviewer>-normalized.json"
-jq '.findings[]?' < "$OUT_DIR/<reviewer>-normalized.json"
+"$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$OUT_DIR/reviewer-output-general.json"
+"$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$OUT_DIR/reviewer-output-security.json"
 ```
 
 Do not gate on `jq -e '.findings[]'`; it exits 4 on a valid empty array. Malformed, incomplete, or schema-invalid output is a failed required-reviewer pass: close `blocked` with the consumed count, no retry. Merge both outputs into one list, tagging each finding `general` / `security`. Cost: claude sums `.total_cost_usd` and `.usage` across both passes; codex reports no per-request counts, so note the absence.
@@ -124,7 +124,7 @@ After both outputs are parsed (or on any failure path), run `rm -rf -- "$REVIEW_
 
 ## Step 4: Verify and classify
 
-Full protocol with examples: [`verification-protocol.md`](verification-protocol.md). Verify every finding with Miller (`inspect(target, depth=overview)`, `depth=full` for the central symbol, `trace` for public APIs) and classify:
+Full protocol with examples: [`verification-protocol.md`](verification-protocol.md). Verify every finding with code-kb (`get_context_slice`, `get_symbol_body` for the central symbol, `find_references` for public APIs) and classify:
 
 | Class | Action |
 |---|---|
@@ -137,7 +137,7 @@ Dedupe: both passes flagging the same file, lines, and root issue collapse into 
 
 ## Step 5: Apply fixes
 
-Miller-first either way. With delegation: one fresh implementer per finding, or one per file when findings cluster, using [`fix-dispatch-prompt.md`](fix-dispatch-prompt.md); parallel only across disjoint files. Without delegation: fix inline, one finding (or one file batch) at a time, using the same template as a checklist. Fresh workers carry no implementation-phase bias.
+code-kb-first either way. With delegation: one fresh implementer per finding, or one per file when findings cluster, using [`fix-dispatch-prompt.md`](fix-dispatch-prompt.md); parallel only across disjoint files. Without delegation: fix inline, one finding (or one file batch) at a time, using the same template as a checklist. Fresh workers carry no implementation-phase bias.
 
 ## Step 6: Local confirmation
 
@@ -169,7 +169,7 @@ campaign_closed: yes
 | "Cap the reviewer so this run costs less" | A cap truncates the review mid-flight, and a truncated review gets re-run in full. Scope lives in the prompt. |
 | "The reviewer output was garbage — dispatch again" | The invocation is consumed. Malformed output closes the campaign `blocked`. |
 | "Skip the security pass, the general pass covered it" | Half a review silently downgrades an explicit user choice. Both passes, or blocked. |
-| "The finding is probably right, just fix it" | Verify with Miller first. Reviewers emit noise; rubber-stamping cuts both ways. |
+| "The finding is probably right, just fix it" | Verify with code-kb first. Reviewers emit noise; rubber-stamping cuts both ways. |
 
 ## Red flags
 

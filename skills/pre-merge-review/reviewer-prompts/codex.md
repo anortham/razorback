@@ -5,8 +5,8 @@ Invocation for `codex` as the pre-merge adversarial reviewer. Background: `razor
 ## Preconditions
 
 - `codex --version` succeeds; `codex login status` exits 0 (else blocker taxonomy #1, `razorback:using-razorback` `references/blocker-taxonomy.md`).
-- `$REVIEW_ROOT` (exported tree from Step 1, outside `$PROJECT_DIR`, shared by both passes) and `$DIFF`, `$FILE_STAT`, `$COMMIT_LOG`, `$MILLER_EVIDENCE`, optional `$USER_FOCUS` exist. Never run Codex from the live worktree.
-- This reviewer does not run Miller and never claims to. It works from the lead's Miller-backed bundle and the exported tree, and reports missing evidence when they cannot support a conclusion.
+- `$REVIEW_ROOT` (exported tree from Step 1, outside `$PROJECT_DIR`, shared by both passes) and `$DIFF`, `$FILE_STAT`, `$COMMIT_LOG`, `$CODE_KB_EVIDENCE`, optional `$USER_FOCUS` exist. Never run Codex from the live worktree.
+- This reviewer does not run code-kb and never claims to. It works from the lead's code-kb-backed bundle and the exported tree, and reports missing evidence when they cannot support a conclusion.
 
 ## Build the adversarial prompt
 
@@ -14,7 +14,7 @@ Read `$SKILL_DIR/../codex-cli/adversarial-prompt.txt` and substitute:
 
 - `{{TARGET_LABEL}}` ← `"branch <name>: N files changed, base..HEAD"`.
 - `{{USER_FOCUS}}` ← `$USER_FOCUS` or `"none specified"`.
-- `{{REVIEW_INPUT}}` ← `$FILE_STAT`, `$COMMIT_LOG`, `$MILLER_EVIDENCE`, `$DIFF` under the labelled `Target:`, `File stat:`, `Commit log:`, `Lead Miller evidence:`, `Diff:` headings.
+- `{{REVIEW_INPUT}}` ← `$FILE_STAT`, `$COMMIT_LOG`, `$CODE_KB_EVIDENCE`, `$DIFF` under the labelled `Target:`, `File stat:`, `Commit log:`, `Lead code-kb evidence:`, `Diff:` headings.
 
 Write the rendered prompt to `$PAYLOAD_FILE`, filter it through `skills/security-review/scripts/redact-outbound`, and apply [`review-payload.md`](../../security-review/review-payload.md) with `prepare-review-artifact`. That yields `$REVIEW_PROMPT_FILE` and `$REVIEW_ARTIFACT`: the complete redacted review prompt at or below 128 KiB, or the bounded static wrapper `Read and follow the complete redacted review bundle at:` plus the artifact path (`.razorback-review/review-input.md` inside `$REVIEW_ROOT`) above it. Codex reads the artifact with its read-only tools; never pass the large payload through `echo`, stdin, or a positional argument.
 
@@ -91,4 +91,4 @@ A run of 10-20+ minutes is working, not stuck. Wait for it.
 
 ## Security pass
 
-Same invocation, same flags, model handling, timeout, and stdin pipe, run a second time from the same `$REVIEW_ROOT`. Only the prompt differs: render `$SKILL_DIR/../security-review/security-adversarial-prompt.txt` with the same `$MILLER_EVIDENCE` section into a fresh `PAYLOAD_FILE`, redact it, apply `prepare-review-artifact`, and pipe the fresh `$REVIEW_PROMPT_FILE`. Reusing the general prompt yields two general reviews and no security review. Capture stdout to `$OUT_DIR/reviewer-output-security.json` so `codex-output.json` is preserved. Apply the same parsing, cost, and error rules; a security-pass failure is reviewer unavailability, never a silent skip. If it fails, remove `"$REVIEW_ROOT"` before returning the blocker.
+Same invocation, same flags, model handling, timeout, and stdin pipe, run a second time from the same `$REVIEW_ROOT`. Only the prompt differs: render `$SKILL_DIR/../security-review/security-adversarial-prompt.txt` with the same `$CODE_KB_EVIDENCE` section into a fresh `PAYLOAD_FILE`, redact it, apply `prepare-review-artifact`, and pipe the fresh `$REVIEW_PROMPT_FILE`. Reusing the general prompt yields two general reviews and no security review. Capture stdout to `$OUT_DIR/reviewer-output-security.json` so `codex-output.json` is preserved. Apply the same parsing, cost, and error rules; a security-pass failure is reviewer unavailability, never a silent skip. If it fails, remove `"$REVIEW_ROOT"` before returning the blocker.

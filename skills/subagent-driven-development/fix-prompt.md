@@ -31,10 +31,10 @@ SendMessage (to: "<implementer-agent-id-or-name>"):
 
     ## Re-Orientation (REQUIRED before editing)
 
-    Miller first, even on a resume: `inspect(target='<file>')` to re-anchor the edit location;
-    `inspect(target='<symbol>', depth=full)` on the symbol you change; `trace(target='<symbol>')`
+    code-kb first, even on a resume: `file_skeleton(file_path)` to re-anchor the edit location;
+    `get_symbol_body(symbol_name, file_path?)` or `get_context_slice(symbol_name, file_path?)` on the symbol you change; `find_references(symbol_name, direction="callers")`
     if callers could observe the change. Do not infer or invent API shapes — prove symbol names,
-    function signatures, config shapes, route names, CLI flags, or public contracts with Miller,
+    function signatures, config shapes, route names, CLI flags, or public contracts with code-kb,
     or say what evidence is missing.
 
     ## Commit mode
@@ -53,7 +53,7 @@ SendMessage (to: "<implementer-agent-id-or-name>"):
     - **Covering tests per finding** — the test(s), the exact command, and the output. The
       lead gates re-review on this; a report without it comes back unreviewed.
     - Verification invariant, scope label, command, commit SHA if any, result, timestamp
-    - **Miller calls used** and **API-shape evidence** for every shape relied on
+    - **code-kb calls used** and **API-shape evidence** for every shape relied on
     - Judgment calls made
 ```
 

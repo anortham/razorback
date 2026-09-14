@@ -6,8 +6,8 @@ Invocation for `claude -p` as the pre-merge adversarial reviewer. Background: `r
 
 - `claude --version` succeeds; `claude auth status` exits 0 (else blocker taxonomy #1, `razorback:using-razorback` `references/blocker-taxonomy.md`).
 - Do not add `--bare`: current Claude help says bare mode skips OAuth and keychain auth reads.
-- `$REVIEW_ROOT` (exported tree from Step 1, outside `$PROJECT_DIR`, shared by both passes) and `$DIFF`, `$FILE_STAT`, `$COMMIT_LOG`, `$MILLER_EVIDENCE`, optional `$USER_FOCUS` exist. Never run Claude from the live worktree.
-- This reviewer does not run Miller (`--strict-mcp-config` removes MCP) and never claims to. It works from the lead's Miller-backed bundle and the exported tree, and reports missing evidence when they cannot support a conclusion.
+- `$REVIEW_ROOT` (exported tree from Step 1, outside `$PROJECT_DIR`, shared by both passes) and `$DIFF`, `$FILE_STAT`, `$COMMIT_LOG`, `$CODE_KB_EVIDENCE`, optional `$USER_FOCUS` exist. Never run Claude from the live worktree.
+- This reviewer does not run code-kb (`--strict-mcp-config` removes MCP) and never claims to. It works from the lead's code-kb-backed bundle and the exported tree, and reports missing evidence when they cannot support a conclusion.
 
 ## Build the user prompt
 
@@ -26,8 +26,8 @@ User focus: ${USER_FOCUS:-none specified}
 Commit log:
 $COMMIT_LOG
 
-Lead Miller evidence:
-$MILLER_EVIDENCE
+Lead code-kb evidence:
+$CODE_KB_EVIDENCE
 
 Diff:
 $DIFF"

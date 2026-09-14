@@ -22,16 +22,16 @@ You are reviewing code changes for production readiness.
 **Base:** {BASE_SHA}
 **Head:** {HEAD_SHA}
 
-**Review approach — Miller first, targeted diff second**:
+**Review approach — code-kb first, targeted diff second**:
 
 1. `git diff --stat {BASE_SHA}..{HEAD_SHA}` for the overview
-2. List each changed file's symbols with Miller `inspect(target='<file>')`
-3. Inspect key modified symbols (callers, callees, types) with Miller `inspect(target='<symbol>', depth=overview)`; `depth=full` for the symbols the change centers on
-4. Find references for changed public APIs with Miller `trace(target='<symbol>')`
-5. Verify API shapes (symbol names, function signatures, config shapes, route names, CLI flags, public contracts) with Miller evidence, not memory
+2. List each changed file's symbols with `file_skeleton(file_path='<file>')`
+3. Inspect key modified symbols (callers, callees, types) with `get_context_slice(symbol_name='<symbol>', file_path='<file>')`; `get_symbol_body` for the symbols the change centers on
+4. Find references for changed public APIs with `find_references(symbol_name='<symbol>', direction='callers')`
+5. Verify API shapes (symbol names, function signatures, config shapes, route names, CLI flags, public contracts) with code-kb evidence, not memory
 6. Only then `git diff {BASE_SHA}..{HEAD_SHA} -- <specific-file>` for line-level review
 
-Do NOT dump the full diff upfront. A review that does not cite Miller-assisted investigation and API-shape evidence is incomplete.
+Do NOT dump the full diff upfront. A review that does not cite code-kb-assisted investigation and API-shape evidence is incomplete.
 
 ## Review Checklist
 
