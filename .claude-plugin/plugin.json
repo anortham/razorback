@@ -1,7 +1,7 @@
 {
   "name": "razorback",
   "description": "code-kb-powered development workflow with subagent-driven execution, inline review, and code-kb-first codebase orientation.",
-  "version": "0.41.0",
+  "version": "0.42.0",
   "author": {
     "name": "anortham"
   },
