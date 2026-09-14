@@ -55,10 +55,10 @@ test('subagent-start injects the code-kb-first ruleset', () => {
   // Capability table entries.
   assert.match(additionalContext, /codebase_outline\(path\?, depth\?\)/);
   assert.match(additionalContext, /file_skeleton\(file_path\)/);
-  assert.match(additionalContext, /find_symbol\(query, path\?\)/);
+  assert.match(additionalContext, /lookup_symbol\(query, path\?\)/);
   assert.match(additionalContext, /search_symbols\(query, path\?\)/);
   assert.match(additionalContext, /get_symbol_body\(symbol_name, file_path\?\)/);
-  assert.match(additionalContext, /get_context_slice\(symbol_name, file_path\?\)/);
+  assert.match(additionalContext, /get_symbol_context\(symbol_name, file_path\?\)/);
   assert.match(additionalContext, /find_references\(symbol_name, direction="callers"\|"callees"\)/);
   assert.match(additionalContext, /blast_radius\(symbol\?, file\?, depth\?\)/);
   assert.match(additionalContext, /find_structural_facts\(category\?\)/);

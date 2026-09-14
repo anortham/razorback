@@ -136,10 +136,10 @@ test('every branch carries the full code-kb toolchain table', () => {
   const tableRows = [
     /\| \*\*Orient\*\* .* \| `codebase_outline\(path\?, depth\?\)` \|/,
     /\| `file_skeleton\(file_path\)` \|/,
-    /\| `find_symbol\(query, path\?\)` \|/,
+    /\| `lookup_symbol\(query, path\?\)` \|/,
     /\| `search_symbols\(query, path\?\)` \|/,
     /\| `get_symbol_body\(symbol_name, file_path\?\)` \|/,
-    /\| `get_context_slice\(symbol_name, file_path\?\)` \|/,
+    /\| `get_symbol_context\(symbol_name, file_path\?\)` \|/,
     /`find_references\(symbol_name, direction="callers"\|"callees"\)`/,
     /\| `blast_radius\(symbol\?, file\?, depth\?\)` \|/,
     /\| `find_structural_facts\(category\?\)` \|/,
