@@ -69,33 +69,30 @@ The lead reviews inline (spec compliance + code quality) on every path. Process 
 
 ## Your Toolchain
 
-When Miller supplies an injected routing block or server instructions, follow them. The fallback below applies only when that guidance is absent.
+When code-kb supplies an injected routing block or server instructions, follow them. The fallback below applies only when that guidance is absent.
 
-**Miller MCP is available and MUST be used** for ALL codebase exploration — instead of Glob/Grep/Read chains. Discover the workspace with `workspace operation=list`, or register one with `workspace operation=open path=/absolute/project`; pass the returned `workspace_id` on workspace-bound calls. Read the callable tool schema before choosing parameters.
+**code-kb MCP is available and MUST be used** for ALL codebase exploration — instead of Glob/Grep/Read chains. Read the callable tool schema before choosing parameters.
 
-| Capability — do this BEFORE the raw-file reflex | Miller tool |
+| Capability — do this BEFORE the raw-file reflex | code-kb tool |
 |---|---|
-| **Orient** — token-budgeted bundle for a task or area | `context(query)` |
-| **Search** — text, symbol, file/path, or concept; `markers` for TODO/FIXME, `source` for bodies, `content` for docs/prose | `search(query, mode=auto\|text\|symbol\|file\|markers\|content\|source\|external\|web\|all-text)` |
-| **List a file's symbols** before reading the whole file | `inspect(target='<file>')` |
-| **Inspect a symbol** — `overview` first; `full` only when editing it | `inspect(target='<symbol>', depth=summary\|overview\|full)` |
-| **Find references** before changing a public API | `trace(target)` |
-| **Assess impact / blast radius** | `impact(target)` |
-| **Code-shape facts** — routes, config keys, doc structure | `patterns(...)` |
-| **Large text** — import, then search logs or CI output | `content(...)` |
-| **Rename / edit** a symbol safely | `edit(operation, target)` |
-| **Manage the workspace index** | `workspace(...)` |
-| **Check continuous testing** — read-only status | `tests(operation=status)` |
+| **Orient** — top-level directory layout & architecture outline | `codebase_outline(path?, depth?)` |
+| **List a file's symbols** before reading the whole file | `file_skeleton(file_path)` |
+| **Exact / Prefix symbol search** | `find_symbol(query, path?)` |
+| **Concept / BM25 search** over docstrings & signatures | `search_symbols(query, path?)` |
+| **Inspect a symbol** — full implementation body | `get_symbol_body(symbol_name, file_path?)` |
+| **Surgical context slice** — body + callee signatures + types + tests | `get_context_slice(symbol_name, file_path?)` |
+| **Find references** before changing a public API (callers/callees) | `find_references(symbol_name, direction="callers"|"callees")` |
+| **Assess impact / blast radius** of a change | `blast_radius(symbol?, file?, depth?)` |
+| **Structural facts** — routes, queries, models, config keys | `find_structural_facts(category?)` |
+| **Rename / edit** a symbol safely with AST validation | `replace_symbol_body(symbol_name, file_path, new_body)` |
 
 **Rules (lead and every native implementer, reviewer, and fix worker):**
-1. Use Miller for ALL codebase exploration. Do NOT fall back to Glob → Read → Grep chains.
+1. Use code-kb for ALL codebase exploration. Do NOT fall back to Glob → Read → Grep chains.
 2. List a file's symbols before reading it in full.
 3. Inspect a symbol before modifying it.
 4. Find a symbol's references before changing it, to check impact.
-5. Do not infer or invent API shapes. Use Miller to discover symbol names, function signatures, config shapes, route names, CLI flags, or public contracts before relying on them.
-6. When Miller cannot prove a shape, say what evidence is missing and choose the safest plan-consistent path. Do not fill gaps from memory or plausible guesses.
+5. Do not infer or invent API shapes. Use code-kb to discover symbol names, function signatures, config shapes, route names, CLI flags, or public contracts before relying on them.
+6. When code-kb cannot prove a shape, say what evidence is missing and choose the safest plan-consistent path. Do not fill gaps from memory or plausible guesses.
 7. Scope test runs: inner loop runs single tests or the focused group covering the change; the full suite runs once at the branch gate. Do not rerun any scope on an unchanged tree: capture a wide run's output to a file and read that. After a wide run fails, rerun only the failing test ids (project runner plus its own filter) until they pass, then the wide command once.
 
-Restricted external CLI reviewers invoked by `razorback:pre-merge-review` are the deliberate exception: they run without MCP under a read-only allowlist. The lead supplies a sanitized Miller-backed evidence bundle and verifies every finding with Miller; the reviewer reports missing evidence instead of claiming it ran Miller.
-
-Continuous testing is opt-in; status never enables it. When enabled, use the current `tests` schema to run the stale set. When disabled, use the discovered project runner.
+Restricted external CLI reviewers invoked by `razorback:pre-merge-review` are the deliberate exception: they run without MCP under a read-only allowlist. The lead supplies a sanitized code-kb-backed evidence bundle and verifies every finding with code-kb; the reviewer reports missing evidence instead of claiming it ran code-kb.

@@ -36,7 +36,7 @@ const COPIES = [
 
 // Load-bearing rules that must appear verbatim in EVERY invariant source below.
 const INVARIANTS = [
-  'Miller MCP is available and MUST be used', // the hard requirement itself
+  'code-kb MCP is available and MUST be used', // the hard requirement itself
   'Do NOT fall back to Glob → Read → Grep chains', // no raw-file reflex
   "List a file's symbols before reading it in full",
   'Inspect a symbol before modifying it',
