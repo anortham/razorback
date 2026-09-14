@@ -35,15 +35,15 @@ test('subagent-start emits the Claude Code SubagentStart hookSpecificOutput shap
   assert.deepEqual(Object.keys(parsed), ['hookSpecificOutput']);
 });
 
-test('subagent-start injects the Miller-first ruleset', () => {
+test('subagent-start injects the code-kb-first ruleset', () => {
   const { additionalContext } = JSON.parse(runSubagentStart()).hookSpecificOutput;
 
-  assert.match(additionalContext, /Miller/);
+  assert.match(additionalContext, /code-kb/);
   // The six exploration rules, carried verbatim from using-razorback.
   assert.match(additionalContext, /Inspect a symbol before modifying it\./);
   assert.match(
     additionalContext,
-    /Use Miller for ALL codebase exploration\. Do NOT fall back to Glob . Read . Grep chains\./,
+    /Use code-kb for ALL codebase exploration\. Do NOT fall back to Glob . Read . Grep chains\./,
   );
   assert.match(additionalContext, /List a file's symbols before reading it in full\./);
   assert.match(
@@ -51,12 +51,18 @@ test('subagent-start injects the Miller-first ruleset', () => {
     /Find a symbol's references before changing it, to check impact\./,
   );
   assert.match(additionalContext, /Do not infer or invent API shapes\./);
-  assert.match(additionalContext, /When Miller cannot prove a shape/);
+  assert.match(additionalContext, /When code-kb cannot prove a shape/);
   // Capability table entries.
-  assert.match(additionalContext, /inspect\(target='<symbol>', depth=summary\\\|overview\\\|full\)/);
-  assert.match(additionalContext, /impact\(target\)/);
-  assert.match(additionalContext, /patterns\(\.\.\.\)/);
-  assert.match(additionalContext, /content\(\.\.\.\)/);
+  assert.match(additionalContext, /codebase_outline\(path\?, depth\?\)/);
+  assert.match(additionalContext, /file_skeleton\(file_path\)/);
+  assert.match(additionalContext, /find_symbol\(query, path\?\)/);
+  assert.match(additionalContext, /search_symbols\(query, path\?\)/);
+  assert.match(additionalContext, /get_symbol_body\(symbol_name, file_path\?\)/);
+  assert.match(additionalContext, /get_context_slice\(symbol_name, file_path\?\)/);
+  assert.match(additionalContext, /find_references\(symbol_name, direction="callers"\|"callees"\)/);
+  assert.match(additionalContext, /blast_radius\(symbol\?, file\?, depth\?\)/);
+  assert.match(additionalContext, /find_structural_facts\(category\?\)/);
+  assert.match(additionalContext, /replace_symbol_body\(symbol_name, file_path, new_body\)/);
   // Subagent-specific worktree-state reporting requirement.
   assert.match(additionalContext, /worktree/i);
   assert.match(additionalContext, /path, branch, commit, (and )?dirty state/i);

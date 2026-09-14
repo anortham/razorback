@@ -132,18 +132,18 @@ test('unknown-platform fallback injects SKILL.md verbatim, markers included', ()
   assert.ok(payloadOf.fallback().includes(read('skills/using-razorback/SKILL.md').trim()));
 });
 
-test('every branch carries the full Miller toolchain table', () => {
+test('every branch carries the full code-kb toolchain table', () => {
   const tableRows = [
-    /\| \*\*Orient\*\* .* \| `context\(query\)` \|/,
-    /`search\(query, mode=auto\\\|text\\\|symbol\\\|file\\\|markers\\\|content\\\|source\\\|external\\\|web\\\|all-text\)`/,
-    /\| `inspect\(target='<file>'\)` \|/,
-    /`inspect\(target='<symbol>', depth=summary\\\|overview\\\|full\)`/,
-    /\| `trace\(target\)` \|/,
-    /\| `impact\(target\)` \|/,
-    /\| `patterns\(\.\.\.\)` \|/,
-    /\| `content\(\.\.\.\)` \|/,
-    /\| `edit\(operation, target\)` \|/,
-    /\| `workspace\(\.\.\.\)` \|/,
+    /\| \*\*Orient\*\* .* \| `codebase_outline\(path\?, depth\?\)` \|/,
+    /\| `file_skeleton\(file_path\)` \|/,
+    /\| `find_symbol\(query, path\?\)` \|/,
+    /\| `search_symbols\(query, path\?\)` \|/,
+    /\| `get_symbol_body\(symbol_name, file_path\?\)` \|/,
+    /\| `get_context_slice\(symbol_name, file_path\?\)` \|/,
+    /`find_references\(symbol_name, direction="callers"\|"callees"\)`/,
+    /\| `blast_radius\(symbol\?, file\?, depth\?\)` \|/,
+    /\| `find_structural_facts\(category\?\)` \|/,
+    /\| `replace_symbol_body\(symbol_name, file_path, new_body\)` \|/,
   ];
 
   for (const [branch, payload] of Object.entries(payloadOf)) {

@@ -105,24 +105,24 @@ user asked for status. Prefer a quiet long wait with an empty `write_stdin` call
 and `yield_time_ms=300000`, then inspect the final output, diff, and
 verification results after the command exits.
 
-## Miller MCP
+## code-kb MCP
 
-Razorback assumes Miller MCP is available. The exploration directives in skill bodies (orient, search, inspect, find references, assess impact) require it.
+Razorback assumes code-kb MCP is available. The exploration directives in skill bodies (orient, search, inspect, find references, assess impact) require it.
 
-Use these Miller tools by capability:
+Use these code-kb tools by capability:
 
-- Orient: `context(query)`
-- Search: `search(query, mode=auto|text|symbol|file|markers|content|source|external|web|all-text)`
-- List a file's symbols before reading it whole: `inspect(target='<file>')`
-- Inspect a symbol: `inspect(target='<symbol>', depth=summary|overview|full)` — `overview` for the first read, `full` only when editing it
-- Find references/call paths: `trace(target)`
-- Assess blast radius: `impact(target)`
-- Code-shape facts (routes, config keys, doc structure): `patterns(...)`
-- Large text (logs, CI output, web imports) without full-file reads: `content(...)`
-- Rename/edit a symbol safely: `edit(operation, target)`
-- Manage indexing: `workspace(...)`
+- Orient: `codebase_outline(path?, depth?)`
+- List a file's symbols / skeleton: `file_skeleton(file_path)`
+- Exact/prefix symbol lookup: `find_symbol(query, path?)`
+- Concept / BM25 search: `search_symbols(query, path?)`
+- Inspect symbol body: `get_symbol_body(symbol_name, file_path?)`
+- Surgical context slice: `get_context_slice(symbol_name, file_path?)`
+- Find callers/callees: `find_references(symbol_name, direction="callers"|"callees")`
+- Assess blast radius / test impact: `blast_radius(symbol?, file?, depth?)`
+- Code-shape facts (routes, queries, models, config keys): `find_structural_facts(category?)`
+- Rename/edit a symbol safely: `replace_symbol_body(symbol_name, file_path, new_body, expected_body_hash?)`
 
-See the capability → tool mapping table in `using-razorback`'s "Your Toolchain" section. Install and configure Miller before using razorback for real work.
+See the capability → tool mapping table in `using-razorback`'s "Your Toolchain" section. Install and configure code-kb before using razorback for real work.
 
 ## Goldfish MCP
 
