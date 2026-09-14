@@ -15,6 +15,8 @@ Copy these blocks into the plan in this order: header, Verification Strategy, Pa
 
 **Tech Stack:** [Key technologies/libraries]
 
+**Spec:** [path to the spec/design doc this plan implements — the plan argues from the spec, so the spec travels with it; executors read both]
+
 **Architecture Quality:** [Approved module/interface shape, architecture risk, or `No Architecture Impact` for mechanical plans]
 
 ## Global Constraints

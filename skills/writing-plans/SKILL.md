@@ -45,6 +45,11 @@ Required before the task list: requirements that bind every task (version floors
 
 Non-mechanical plans record the approved module/interface shape and the main architecture risk in the header's `Architecture Quality` field. Mechanical plans write `No Architecture Impact`. If code reality contradicts the approved shape, the worker reports a plan mismatch instead of redesigning locally.
 
+## Spec Pointer
+
+**Spec:** Every plan header points to the spec or design doc this plan implements (`**Spec:** [path to the spec/design doc this plan implements]`). The plan argues from the spec, so the spec travels with it; executors read both so ambiguities and conflicts inside the plan resolve against the binding spec. A plan with no reachable spec gets a ledger note saying so — rulings made without one are provisional.
+
+
 ## Verification Strategy
 
 Required. Razorback owns scope boundaries; the target repo owns commands. Never bake language or test-runner commands into razorback skills. If the repo has no documented hierarchy, define one with the neutral labels **worker**, **affected-change**, **branch**, **expensive**.

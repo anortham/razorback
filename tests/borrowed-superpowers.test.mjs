@@ -169,3 +169,18 @@ test('writing-plans carries global constraints and per-task interfaces', () => {
   assert.match(templates, /Produces:/);
   assert.match(templates, /A task's implementer sees only their own task/);
 });
+
+test('plans carry spec pointer and sdd enforces spec reading, conflict scan table, task batching, and rulings collection', () => {
+  const writingPlans = read('skills/writing-plans/SKILL.md');
+  const templates = read('skills/writing-plans/task-templates.md');
+  const sdd = read('skills/subagent-driven-development/SKILL.md');
+
+  assert.match(templates, /\*\*Spec:\*\*\s*\[path to the spec\/design doc/);
+  assert.match(writingPlans, /\*\*Spec:\*\*/);
+  assert.match(sdd, /If the plan names a Spec, read that too/i);
+  assert.match(sdd, /The scan's output is a table, not a verdict/i);
+  assert.match(sdd, /Batch small same-shape work/i);
+  assert.match(sdd, /re-read.*evidence|do not ask a reviewer to re-run tests|reviewers will not re-run tests/i);
+  assert.match(sdd, /Rulings I made/i);
+});
+

@@ -17,11 +17,13 @@ Dispatch, follow-up, and wait tool names per harness: read `references/harness-d
 
 ## Step 1: Extract Tasks from the Plan
 
-1. Read the plan once. `TaskCreate` per task.
+1. Read the plan once. `TaskCreate` per task. If the plan names a Spec, read that too: the spec is the authority the plan argues from, and conflicts inside the plan resolve against it. A plan with no reachable spec gets a ledger note saying so — rulings made without one are provisional.
 2. Read the ledger: `ws=$("$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE); cat "$ws/progress.md"`. Trust it only when its first line names this plan file; any other ledger (or a stray one at the old flat path) is another plan's — leave it, start fresh.
 3. Tasks marked complete **with a named commit** are DONE (verify with `git log`). A completion line whose SHA is missing, `pending`, or absent from `git log` is **INCOMPLETE** — the `parallel-lead-commit` crash window: `git status`, inspect the task's owned files, then re-review and commit the approved edits (Commit Mode Contract) or re-dispatch.
 4. Orient with code-kb: `codebase_outline` on the plan's areas; `file_skeleton` on the files the plan modifies so review can spot drift. No Glob/Grep/Read chains.
 5. Validate the plan's `## Parallel Execution Contract`: a safe batch with 2+ eligible tasks dispatches together. Safe = non-overlapping file ownership, no ordering dependency, `Serialization required: No`. Serialized lanes need `Serialization required: Yes` plus a `Dependency reason`. Serializing a safe batch requires a recorded dependency or tool limitation — caution is not one.
+6. **Pre-dispatch conflict scan:** Before dispatching Task 1, scan the plan once for conflicts (tasks that contradict each other or the plan's Global Constraints; requirements treated as defects; self-contradictions). The scan's output is a table, not a verdict: one row for every pair of tasks that share a file or an interface (what one produces against what the other consumes, and what you found), and one row for every task checking its own internal agreement (tests specified against code specified, files created vs touched). Write the table to the ledger. Rule on every conflict found before execution begins (the spec is the binding authority, the plan is its argument) and record each ruling in the ledger beside its row.
+
 
 ## Step 2: Dispatch Implementer Subagent
 
@@ -66,6 +68,11 @@ Workspace: `"$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE` prints `<repo-root>/.r
 
 One call per task in a single turn; file ownership per subagent. Coupled tasks (same files, shared state, ordering) run one at a time with the `Dependency reason` recorded. Review each task inline as it returns; never batch reviews. After a completed batch of file writes, run `code-kb scan` before the next dispatch.
 
+### Batch Small Same-Shape Work
+
+When the plan lists several tasks that are each a small, independent edit of the same kind — the same one-line fix, constant change, or field addition repeated across files — do not dispatch one subagent per task. Compose ONE dispatch brief listing every file and its change, send the whole batch to a single subagent, and review its diff as one unit. Reserve one-dispatch-per-task for work that needs its own judgment, its own tests, or its own review surface.
+
+
 ## Step 3: Lead Inline Review
 
 One pass by the lead. No reviewer subagents. Checklists: `./spec-reviewer-prompt.md`, `./code-quality-reviewer-prompt.md`.
@@ -80,7 +87,7 @@ One pass by the lead. No reviewer subagents. Checklists: `./spec-reviewer-prompt
 - Did this avoid speculative extensibility?
 - Did it fix the structural cause, not only the symptom?
 
-**Quality:** tests assert meaningful values; no duplication, tight coupling, unclear names, missing error paths. code-kb `get_context_slice` on key symbols (`get_symbol_body` for the task's core), `find_references` on changed APIs. Concrete plans get a quality-focused pass; ambiguous or safety-sensitive tasks get the full pass.
+**Quality:** tests assert meaningful values; no duplication, tight coupling, unclear names, missing error paths. code-kb `get_context_slice` on key symbols (`get_symbol_body` for the task's core), `find_references` on changed APIs. Do not ask a reviewer or yourself to re-run tests the implementer already ran on the same code — the implementer's report carries the test evidence. Reviewers will not re-run tests for you; if evidence is missing or illegible, re-read the report or bounce it back to the worker to provide pristine test output rather than rerunning full test suites. Concrete plans get a quality-focused pass; ambiguous or safety-sensitive tasks get the full pass.
 
 **Severity:** only Critical and Important enter the fix loop (Step 4). Minor → `minor (deferred)` ledger line for Step 4a.
 
@@ -115,8 +122,9 @@ Reviewer choice `codex` or `claude`: ensure the ledger has a passing `branch-gat
 
 1. **Final verification:** `branch-gate` (or a passing ledger entry for this HEAD) plus required `expensive-specialist` scopes. Branch-gate includes the plan's declared Security scope commands (`security-secrets`, `security-deps` — `razorback:security-review`); `none declared` skips them and is rendered in the morning report.
 2. **Reconcile source-control state:** Check B of `razorback:using-razorback` `references/source-control-hygiene.md`. Status every worktree this run or a subagent created and every branch produced. Land stranded commits here (re-run branch-gate) or carry them as named morning-report items.
-3. **Clean up:** re-resolve the workspace with `"$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE` immediately before `rm -rf <printed path>`. Never delete a remembered path or sibling plan directories.
-4. `razorback:finishing-a-development-branch`.
+3. **Collect rulings:** Before deleting the workspace, collect every ledger line containing `Ruling:` — preflight rulings, parked findings, breaker adjudications — into the final message under "Rulings I made", in the order made, each with what it costs if wrong.
+4. **Clean up:** re-resolve the workspace with `"$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE` immediately before `rm -rf <printed path>`. Never delete a remembered path or sibling plan directories.
+5. `razorback:finishing-a-development-branch`.
 
 ## Blockers
 
