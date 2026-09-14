@@ -61,7 +61,7 @@ The quick-fix tier applies only when ALL criteria hold. Project instructions may
 Checked continuously while fixing:
 
 - The change needs a **3rd source file** or **~2× the line budget**
-- The root cause lands in **shared or public code** (API, schema, shared state, security boundary) — check with code-kb `find_references(target)` and `blast_radius(target)`
+- The root cause lands in **shared or public code** (API, schema, shared state, security boundary) — check with code-kb `find_references(symbol_name='<symbol>')` and `blast_radius(symbol='<symbol>')`
 - A **second fix attempt fails**
 - The fix needs a **dependency change or a new module**
 

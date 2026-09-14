@@ -20,7 +20,7 @@ Tests: wrapper-only tests are weak. Prefer tests through the caller-facing inter
 
 Smell: the same policy, parsing, or validation shows up in multiple files.
 
-Find it: `search_symbols('<rule or validation phrase>')` — hits across multiple files are the evidence.
+Find it: `search_symbols('<rule or validation concept>')` across candidate symbols, then inspect implementations with `get_symbol_body` or `get_context_slice` — hits across multiple files are the evidence.
 
 Evidence: the same bug fix, rule, or fallback keeps appearing in different places.
 

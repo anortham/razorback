@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - [OpenCode.ai](https://opencode.ai) installed
-- **Miller MCP** configured and available — razorback uses it for code orientation and symbol-aware review, and requires it (unlike superpowers, there is no fallback to generic tools)
+- **code-kb MCP** configured and available — razorback uses it for code orientation and symbol-aware review, and requires it (unlike superpowers, there is no fallback to generic tools)
 
 ## Installation
 
@@ -83,9 +83,9 @@ Then restart OpenCode.
 2. Confirm the plugin is loading (see above) — if it is, the skills directory is registered automatically
 3. Confirm you don't have a stale `skills.paths` entry pointing at a symlinked location
 
-### Miller MCP not available
+### code-kb MCP not available
 
-Razorback skills assume Miller is present. If Miller is not configured, many skills (exploration, editing, refs) won't function. Install and configure Miller before using razorback.
+Razorback skills assume code-kb is present. If code-kb is not configured, many skills (exploration, editing, refs) won't function. Install and configure code-kb before using razorback.
 
 ### Tool mapping
 

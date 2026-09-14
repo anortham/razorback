@@ -30,7 +30,7 @@ Dispatch a reviewer subagent:
     A plan is only buildable if the code it names is real. Verify against the
     codebase — do not approve a path or symbol from memory:
 
-    - Every file path the plan names resolves — code-kb `file_skeleton('<path>')` or `find_symbol(path='<path>')`
+    - Every file path the plan names resolves — code-kb `file_skeleton(file_path='<path>')` or `codebase_outline(path='<path>')`
     - Every symbol the plan names exists — code-kb `get_context_slice('<symbol>')`;
       escalate to `get_symbol_body` only for the symbols the plan actually rewrites
     - Flag every API the plan invents. A function signature, config key, route, or

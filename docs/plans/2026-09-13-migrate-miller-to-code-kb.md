@@ -92,6 +92,7 @@
   - `'Restricted external CLI reviewers'`
   - `'Do not rerun any scope on an unchanged tree'`
   - `'rerun only the failing test ids'`
+- External model policy: Explicit user instruction added xai and google to allowed providers in CLAUDE.md / AGENTS.md (`Allowed providers: anthropic, openai, xai, google`).
 
 **File ownership:** `scripts/check-rule-copies.mjs`, `skills/using-razorback/references/instruction-tier.md`, `skills/using-razorback/references/subagent-toolchain.md`, `skills/using-razorback/SKILL.md`, `.clinerules/razorback.md`, `.cursor/rules/razorback.mdc`, `.github/copilot-instructions.md`, `.kiro/steering/razorback.md`, `.windsurf/rules/razorback.md`, `tests/rule-copies.test.mjs`.
 

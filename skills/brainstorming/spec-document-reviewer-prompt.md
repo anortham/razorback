@@ -29,7 +29,7 @@ Dispatch a reviewer subagent:
     Scope and YAGNI are judgments about the actual codebase, not about the spec in
     isolation. Verify before flagging — or approving:
 
-    - Every file path or module the spec names resolves — code-kb `file_skeleton('<path>')` or `find_symbol(path='<path>')`
+    - Every file path or module the spec names resolves — code-kb `file_skeleton(file_path='<path>')` or `codebase_outline(path='<path>')`
     - Every symbol the spec builds on exists — code-kb `find_symbol('<symbol>')` or `get_context_slice('<symbol>')`
     - Flag every API the spec invents. A function signature, config key, route, or
       CLI flag that code-kb cannot find means the spec assumes code that is not there
