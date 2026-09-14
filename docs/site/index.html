@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Razorback - Miller-powered development workflow for coding agents</title>
-  <meta name="description" content="Razorback is a skill set for Claude Code, Codex CLI / ChatGPT desktop app, and OpenCode. It routes every agent and subagent through Miller MCP, dispatches implementation to fresh subagents, and runs approved plans to completion.">
+  <title>Razorback - code-kb-powered development workflow for coding agents</title>
+  <meta name="description" content="Razorback is a skill set for Claude Code, Codex CLI / ChatGPT desktop app, and OpenCode. It routes every agent and subagent through code-kb MCP, dispatches implementation to fresh subagents, and runs approved plans to completion.">
   <link rel="canonical" href="https://anortham.github.io/razorback/">
   <link rel="icon" href="assets/razorback-small.svg" type="image/svg+xml">
   <link rel="stylesheet" href="style.css">
@@ -29,11 +29,11 @@
 
   <header id="top" class="hero">
     <div class="hero-content">
-      <p class="eyebrow">Miller-powered development workflow</p>
+      <p class="eyebrow">code-kb-powered development workflow</p>
       <h1>Razorback</h1>
       <p class="hero-lede">
         A skill set for Claude Code, Codex CLI / ChatGPT desktop app, and OpenCode. It routes every
-        agent and every subagent through Miller instead of grep-and-read chains, dispatches
+        agent and every subagent through code-kb instead of grep-and-read chains, dispatches
         implementation to fresh subagents, and runs an approved plan to completion without waking you
         for anything short of a real blocker.
       </p>
@@ -67,18 +67,19 @@
         <p>
           Razorback diverged from
           <a href="https://github.com/obra/superpowers" target="_blank" rel="noopener">Superpowers</a>
-          to fix that. It keeps the process discipline and replaces the exploration layer with Miller,
+          to fix that. It keeps the process discipline and replaces the exploration layer with code-kb,
           a local code-intelligence server that answers orientation questions in one or two structured
           calls. Three things follow from that choice.
         </p>
       </div>
       <div class="feature-strip">
         <div>
-          <strong>Miller-first, for every worker</strong>
+          <strong>code-kb-first, for every worker</strong>
           <span>
             The lead, implementers, reviewers, and fix workers all orient with
-            <code>search</code>, <code>context</code>, <code>inspect</code>, <code>trace</code>, and
-            <code>impact</code> before any raw file read. On Claude Code a <code>SubagentStart</code>
+            <code>codebase_outline</code>, <code>file_skeleton</code>, <code>find_symbol</code>,
+            <code>get_symbol_body</code>, <code>find_references</code>, and
+            <code>blast_radius</code> before any raw file read. On Claude Code a <code>SubagentStart</code>
             hook injects that ruleset into every dispatched subagent, so a fresh worker cannot fall
             back to grep by accident.
           </span>
@@ -324,7 +325,7 @@
       </div>
       <p class="setup-intro">
         Razorback is a pure-content plugin — skills, agents, and hooks, with no build step and no
-        runtime dependency. What it does need is Miller and Goldfish, so install those first. Pick your
+        runtime dependency. What it does need is code-kb and Goldfish, so install those first. Pick your
         harness and work down the tab.
       </p>
 
@@ -341,9 +342,8 @@
             <li>
               <h3>Node.js</h3>
               <p>
-                Miller's plugin launcher is a Node script, so Node.js must be on your
-                <code>PATH</code>. Without it the plugin fails with the opaque MCP error
-                <code>-32000</code> and writes no log. Install Node.js LTS, then fully restart the
+                Required for certain plugin launchers and tools, so Node.js should be on your
+                <code>PATH</code>. Install Node.js LTS, then fully restart the
                 agent — an in-session reconnect keeps the old environment and still fails.
               </p>
               <pre><code># Windows, for example
@@ -354,10 +354,10 @@ winget install OpenJS.NodeJS.LTS</code></pre>
               </p>
             </li>
             <li>
-              <h3>Miller</h3>
+              <h3>code-kb</h3>
               <p>Code intelligence. Razorback requires it — there is no fallback to grep.</p>
-              <pre><code>/plugin marketplace add anortham/miller
-/plugin install miller@miller</code></pre>
+              <pre><code>/plugin marketplace add anortham/code-kb
+/plugin install code-kb@code-kb</code></pre>
             </li>
             <li>
               <h3>Goldfish</h3>
@@ -385,17 +385,16 @@ winget install OpenJS.NodeJS.LTS</code></pre>
             <li>
               <h3>Node.js</h3>
               <p>
-                Miller's plugin launcher is a Node script, so Node.js must be on your
-                <code>PATH</code>. Install Node.js LTS and fully restart the agent.
+                Install Node.js LTS and fully restart the agent.
               </p>
               <pre><code># Windows, for example
 winget install OpenJS.NodeJS.LTS</code></pre>
             </li>
             <li>
-              <h3>Miller</h3>
-              <pre><code>codex plugin marketplace add anortham/miller
+              <h3>code-kb</h3>
+              <pre><code>codex plugin marketplace add anortham/code-kb
 codex
-# then open /plugins and install Miller from the miller marketplace</code></pre>
+# then open /plugins and install code-kb from the code-kb marketplace</code></pre>
             </li>
             <li>
               <h3>Goldfish</h3>
@@ -430,42 +429,30 @@ multi_agent = true</code></pre>
             <li>
               <h3>Node.js</h3>
               <p>
-                Not needed on this path. OpenCode has no Miller plugin launcher, so you run the
-                <code>miller</code> binary directly. No .NET SDK either.
+                Not needed on this path. OpenCode runs the
+                <code>code-kb</code> binary directly.
               </p>
             </li>
             <li>
-              <h3>Miller</h3>
+              <h3>code-kb</h3>
               <p>
                 Download an archive from
-                <a href="https://github.com/anortham/miller/releases" target="_blank" rel="noopener">Miller's releases</a>,
+                <a href="https://github.com/anortham/code-kb/releases" target="_blank" rel="noopener">code-kb's releases</a>,
                 verify its <code>.sha256</code> sidecar, extract it, then point OpenCode at the
                 binary in <code>opencode.json</code>:
               </p>
               <pre><code>{
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "miller": {
+    "code-kb": {
       "type": "local",
-      "command": ["/absolute/path/to/miller", "serve"],
+      "command": ["/absolute/path/to/code-kb", "serve"],
       "enabled": true
     }
   }
 }</code></pre>
-              <p>
-                Installing the server does not make an agent use it. Add the routing block to the
-                file OpenCode always reads:
-              </p>
-              <pre><code>miller rules --harness agents &gt;&gt; AGENTS.md</code></pre>
               <p class="step-note">
-                <code>agents</code> is the selector for any harness that loads a repository-root
-                <code>AGENTS.md</code>, OpenCode included. The full list is
-                <code>cursor</code>, <code>windsurf</code>, <code>cline</code>, <code>kiro</code>,
-                <code>copilot</code>, <code>agents</code>. On Windows use the full path to
-                <code>miller.exe</code>. Miller binds the workspace from MCP roots on the first tool
-                call; if your client does not pass them, see
-                <a href="https://github.com/anortham/miller/blob/main/docs/install.md" target="_blank" rel="noopener">Miller's install guide</a>
-                for the <code>MILLER_WORKSPACE_ROOT</code> fallback.
+                On Windows use the full path to <code>code-kb.exe</code>.
               </p>
             </li>
             <li>
@@ -503,7 +490,7 @@ multi_agent = true</code></pre>
           <h3>Copilot CLI gets the ruleset only</h3>
           <p>
             No skills, no agents, no delegated execution. Copilot reads
-            <code>.github/copilot-instructions.md</code> natively, so copy razorback's Miller-first
+            <code>.github/copilot-instructions.md</code> natively, so copy razorback's code-kb-first
             ruleset into the repo you work in. If that file already exists, merge the ruleset in
             rather than overwriting it.
           </p>
@@ -530,8 +517,8 @@ multi_agent = true</code></pre>
       </div>
       <div class="split-copy">
         <p>
-          <strong>Miller and Goldfish are mandatory, not suggested.</strong> Razorback deleted the
-          generic-tool fallback on purpose. Without Miller the exploration, editing, and reference
+          <strong>code-kb and Goldfish are mandatory, not suggested.</strong> Razorback deleted the
+          generic-tool fallback on purpose. Without code-kb the exploration, editing, and reference
           skills do not function. Without Goldfish there is no durable memory, so a long autonomous
           run loses its thread at the first context compaction. If you will not install both, this is
           not the right tool for you.
@@ -539,7 +526,7 @@ multi_agent = true</code></pre>
         <p>
           <strong>Support is tiered, and the tiers are real.</strong> Three harnesses get the full
           plugin. Cursor is frozen — it works, but it gets no new work. Copilot CLI gets the
-          Miller-first ruleset and nothing else: no skills, no agents, no delegation. Razorback also
+          code-kb-first ruleset and nothing else: no skills, no agents, no delegation. Razorback also
           owns process contracts only. It never picks your model, and the concrete verification
           commands come from your repository, not from razorback.
         </p>
@@ -600,7 +587,7 @@ multi_agent = true</code></pre>
     </p>
     <p class="footer-links">
       <a href="https://github.com/anortham/razorback" target="_blank" rel="noopener">Repository</a>
-      <a href="https://github.com/anortham/miller" target="_blank" rel="noopener">Miller</a>
+      <a href="https://github.com/anortham/code-kb" target="_blank" rel="noopener">code-kb</a>
       <a href="https://github.com/anortham/goldfish" target="_blank" rel="noopener">Goldfish</a>
       <a href="https://github.com/anortham/razorback/issues" target="_blank" rel="noopener">Issues</a>
     </p>

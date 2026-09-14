@@ -49,7 +49,7 @@ test('external reviewers receive a lead-built code-kb evidence bundle without MC
   const claude = read('skills/pre-merge-review/reviewer-prompts/claude.md');
   const codex = read('skills/pre-merge-review/reviewer-prompts/codex.md');
 
-  for (const text of [bootstrap, subagent, canonical]) {
+  for (const text of [bootstrap, subagent, canonical, project]) {
     assert.match(text, /external CLI reviewers/i);
     assert.match(text, /code-kb-backed\s+evidence/i);
   }

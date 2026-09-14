@@ -236,7 +236,7 @@ test('every enforcement point redacts its payload and fails closed before dispat
 test('the repository declares the exact external-model policy values', () => {
   const policy = [
     '## External model policy',
-    'Allowed providers: anthropic, openai',
+    'Allowed providers: anthropic, openai, xai, google',
     'Reviewer choices permitted: codex, claude',
   ].join('\n');
   assert.ok(

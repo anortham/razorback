@@ -36,15 +36,15 @@ test('codex plugin manifest matches package metadata and Codex contract', () => 
 
   assert.deepEqual(manifest.interface, {
     displayName: 'Razorback',
-    shortDescription: 'Miller-powered development workflow skills.',
+    shortDescription: 'code-kb-powered development workflow skills.',
     longDescription:
-      'Development workflow skills for Codex with Miller-first orientation, TDD discipline, and subagent-driven execution.',
+      'Development workflow skills for Codex with code-kb-first orientation, TDD discipline, and subagent-driven execution.',
     developerName: 'anortham',
     category: 'Productivity',
     capabilities: ['Write'],
     websiteURL: pkg.homepage,
     defaultPrompt: [
-      'Plan a code change with Miller-first repo grounding.',
+      'Plan a code change with code-kb-first repo grounding.',
       'Run a TDD fix with worker verification and a concise report.',
       'Review a diff for regressions, contract drift, and missing tests.'
     ],

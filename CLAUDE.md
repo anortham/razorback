@@ -1,12 +1,12 @@
 # Razorback — Project Instructions
 
-Razorback is a skill set for Claude Code, Codex CLI / ChatGPT desktop app, and OpenCode that diverged from [Superpowers](https://github.com/obra/superpowers). It uses Miller MCP for token-efficient codebase orientation. Plan execution routes through `subagent-driven-development` on harnesses that support delegation, and through `executing-plans` otherwise.
+Razorback is a skill set for Claude Code, Codex CLI / ChatGPT desktop app, and OpenCode that diverged from [Superpowers](https://github.com/obra/superpowers). It uses code-kb MCP for token-efficient codebase orientation. Plan execution routes through `subagent-driven-development` on harnesses that support delegation, and through `executing-plans` otherwise.
 
 ## External model policy
-Allowed providers: anthropic, openai
+Allowed providers: anthropic, openai, xai, google
 Reviewer choices permitted: codex, claude
 
-**Harness tiers.** Plugin-tier hosts (Claude Code, Codex CLI / ChatGPT desktop app, OpenCode) get a manifest, bootstrap, and full skill set. Cursor is **frozen** — its existing plugin support is documented as-is and receives no new work. Copilot CLI is **instruction-tier**: it gets the Miller-first ruleset via `.github/copilot-instructions.md` and nothing else. See `docs/adding-a-harness.md` for the tier vocabulary and the per-tier file checklist.
+**Harness tiers.** Plugin-tier hosts (Claude Code, Codex CLI / ChatGPT desktop app, OpenCode) get a manifest, bootstrap, and full skill set. Cursor is **frozen** — its existing plugin support is documented as-is and receives no new work. Copilot CLI is **instruction-tier**: it gets the code-kb-first ruleset via `.github/copilot-instructions.md` and nothing else. See `docs/adding-a-harness.md` for the tier vocabulary and the per-tier file checklist.
 
 ## Project Structure
 
@@ -21,7 +21,7 @@ agents/*.md                        — Agent definitions (Claude Code / Cursor)
 hooks/hooks.json                   — Claude Code hook configuration (SessionStart + SubagentStart)
 hooks/hooks-cursor.json            — Cursor hook configuration (sessionStart, camelCase)
 hooks/session-start                — Polyglot bash script injecting using-razorback
-hooks/subagent-start               — SubagentStart script injecting the Miller-first ruleset into subagents (Claude Code)
+hooks/subagent-start               — SubagentStart script injecting the code-kb-first ruleset into subagents (Claude Code)
 hooks/run-hook.cmd                 — Cross-platform polyglot wrapper (bash/cmd)
 .opencode/plugins/razorback.js     — OpenCode plugin (config hook + messages.transform)
 .codex/INSTALL.md                  — Codex install instructions
@@ -43,7 +43,7 @@ docs/specs/                         — Design specifications
 
 | Harness | Tier | Harness-specific files | Bootstrap mechanism |
 |---------|------|------------------------|---------------------|
-| Claude Code | plugin | `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `agents/`, `hooks/hooks.json`, `hooks/session-start`, `hooks/subagent-start`, `hooks/run-hook.cmd` | `SessionStart` hook injects `using-razorback` as `hookSpecificOutput.additionalContext`; `SubagentStart` hook injects the Miller-first ruleset into dispatched subagents |
+| Claude Code | plugin | `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `agents/`, `hooks/hooks.json`, `hooks/session-start`, `hooks/subagent-start`, `hooks/run-hook.cmd` | `SessionStart` hook injects `using-razorback` as `hookSpecificOutput.additionalContext`; `SubagentStart` hook injects the code-kb-first ruleset into dispatched subagents |
 | Codex CLI / ChatGPT desktop app | plugin | `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json`, `.codex/INSTALL.md`, `skills/using-razorback/references/codex-tools.md` | Preferred: install the Codex plugin from the repo-scoped marketplace entry. Fallback: local clone plus `~/.agents/skills/razorback/` symlink. Native skill discovery loads the installed skills at startup. |
 | OpenCode | plugin | `.opencode/plugins/razorback.js`, `AGENTS.md` symlink, `package.json`, `index.js` | Plugin's `config` hook registers skills path; `experimental.chat.messages.transform` injects bootstrap into first user message |
 | Cursor (frozen) | plugin | `.cursor-plugin/plugin.json`, `hooks/hooks-cursor.json` (reuses `hooks/session-start`) | `sessionStart` hook injects `using-razorback` as `additional_context` (snake_case) |
@@ -74,34 +74,37 @@ The ChatGPT desktop app was rebranded from Codex; both share the Codex plugin pa
 - Hook scripts are extensionless bash files for cross-platform compatibility.
 - `run-hook.cmd` is a polyglot that works as both a cmd.exe batch file and bash script. On Windows without Git Bash, it emits a stderr warning and exits 0 (plugin still loads, bootstrap disabled).
 - `hooks/session-start` detects the harness from the `CURSOR_PLUGIN_ROOT` / `CLAUDE_PLUGIN_ROOT` env vars and emits the JSON shape that harness expects; unknown platforms fall back to the SDK-standard top-level `additionalContext`.
-- `hooks/subagent-start` (Claude Code only) injects the compact Miller-first ruleset into every dispatched subagent — subagents skip `using-razorback` by design, so this hook is what gives them the toolchain floor.
+- `hooks/subagent-start` (Claude Code only) injects the compact code-kb-first ruleset into every dispatched subagent — subagents skip `using-razorback` by design, so this hook is what gives them the toolchain floor.
 
 ### Tests
 - `npm test` runs the guard suite in `tests/*.test.mjs` (also run by CI via `.github/workflows/test.yml`).
 - `scripts/check-rule-copies.mjs` (exercised by `tests/rule-copies.test.mjs`) keeps the instruction-tier ruleset byte-identical across its host copies (`.clinerules/`, `.cursor/rules/`, `.kiro/steering/`, `.windsurf/rules/`, `.github/copilot-instructions.md`, `using-razorback` SKILL.md, `subagent-toolchain.md`).
 - The architecture-quality checklist duplication across skills is intentional and test-guarded — do not dedupe it.
 
-## Miller MCP Integration Pattern
+## code-kb MCP Integration Pattern
 
-Razorback works with Miller as its orientation and symbol-awareness layer. Skills reference Miller by **capability** first, and then by the concrete Miller tool name. Legacy predecessor tool names should appear only as migration/compatibility notes, not as the default workflow.
+Razorback works with code-kb as its orientation and symbol-awareness layer. Skills reference code-kb by **capability** first, and then by the concrete code-kb tool name. Legacy predecessor tool names should appear only as migration/compatibility notes, not as the default workflow.
 
 When modifying skills, add tool awareness at exploration/investigation points by capability:
 
-| Capability | Miller tool |
+| Capability | code-kb tool |
 |---|---|
-| Search code (text, symbol, file/path, or concept) | `search(query, mode?)` |
-| Orient on the codebase | `context(query)` |
-| Inspect a symbol before modifying it | `inspect(target, depth=full)` |
-| Find references before changing a public API | `trace(target)` |
-| List a file's symbols before reading it | `inspect(target)` |
-| Assess impact / blast radius | `impact(target)` |
-| Manage the workspace index | `workspace(...)` |
+| Orient — directory layout & architecture outline | `codebase_outline(path?, depth?)` |
+| List a file's symbols before reading it in full | `file_skeleton(file_path)` |
+| Exact / Prefix symbol search | `find_symbol(query, path?)` |
+| Concept / BM25 search over docstrings & signatures | `search_symbols(query, path?)` |
+| Inspect a symbol — full implementation body | `get_symbol_body(symbol_name, file_path?)` |
+| Surgical context slice — body + callee signatures + types | `get_context_slice(symbol_name, file_path?)` |
+| Find references before changing a public API (callers/callees) | `find_references(symbol_name, direction="callers"|"callees")` |
+| Assess impact / blast radius of a change | `blast_radius(symbol?, file?, depth?)` |
+| Structural facts — routes, queries, models, config keys | `find_structural_facts(category?)` |
+| Rename / edit a symbol safely with AST validation | `replace_symbol_body(symbol_name, file_path, new_body)` |
 
-Miller's `search` is lexical-first with a `mode=auto|text|symbol|file|content` selector. Use `mode=content` for docs/prose content and `inspect(target, depth=full)` for symbol bodies, callers, and callees.
+code-kb indexes symbols, signatures, docstrings, references, and structural facts across the workspace with zero config (`code-kb scan`).
 
-Miller-first applies to the lead and every native implementer, reviewer, and fix worker. Restricted external CLI reviewers invoked by `pre-merge-review` are the deliberate exception: they run without MCP under an enforced read-only allowlist. The lead supplies a sanitized Miller-backed evidence bundle, the reviewer reports missing evidence instead of claiming Miller use, and the lead verifies every finding with Miller.
+code-kb-first applies to the lead and every native implementer, reviewer, and fix worker. Restricted external CLI reviewers invoked by `pre-merge-review` are the deliberate exception: they run without MCP under an enforced read-only allowlist. The lead supplies a sanitized code-kb-backed evidence bundle, the reviewer reports missing evidence instead of claiming code-kb use, and the lead verifies every finding with code-kb.
 
-Use directive, capability-first language in lead-facing skills: "inspect a symbol BEFORE modifying it" and name Miller where the command matters. In **subagent-facing prompt files** (implementer/fix/reviewer prompts), name Miller inline — e.g. "inspect the symbol with Miller `inspect(target='<symbol>', depth=full)`" — because dispatched subagents do not receive the using-razorback toolchain table.
+Use directive, capability-first language in lead-facing skills: "inspect a symbol BEFORE modifying it" and name code-kb where the command matters. In **subagent-facing prompt files** (implementer/fix/reviewer prompts), name code-kb inline — e.g. "inspect the symbol with code-kb `get_context_slice(symbol_name='<symbol>')`" — because dispatched subagents do not receive the using-razorback toolchain table.
 
 ## Naming Rules
 - All skill cross-references use `razorback:` prefix, never `superpowers:`
@@ -109,9 +112,9 @@ Use directive, capability-first language in lead-facing skills: "inspect a symbo
 - SessionStart hook announces "You have razorback."
 
 ## Dependencies
-- Miller MCP is a **hard requirement** — no fallback to generic tools for codebase exploration
+- code-kb MCP is a **hard requirement** — no fallback to generic tools for codebase exploration
 - Goldfish MCP server is a **hard requirement** — used for persistent memory (checkpoints, briefs, recall) and compaction-durable execution during long autonomous runs
-- Skills assume both Miller and Goldfish are configured and available
+- Skills assume both code-kb and Goldfish are configured and available
 
 ## Execution Model
 
@@ -128,7 +131,7 @@ Use directive, capability-first language in lead-facing skills: "inspect a symbo
 - **Cursor:** same `hooks/session-start` script; platform detection keys on `CURSOR_PLUGIN_ROOT` and emits `additional_context` (snake_case).
 - **Codex CLI / ChatGPT desktop app:** the preferred install path is the Codex plugin defined by `.codex-plugin/plugin.json` and exposed through `.agents/plugins/marketplace.json`; local clone plus `~/.agents/skills/razorback/` symlink remains the development fallback. Native skill discovery loads the installed skills at startup. Users see the raw SKILL.md content; delegated runs use `subagent-driven-development` when the session can spawn workers, and fall back to `executing-plans` otherwise. Tool-name mapping lives in `skills/using-razorback/references/codex-tools.md`.
 - **OpenCode:** `.opencode/plugins/razorback.js` registers the skills directory and injects the bootstrap on the first user message (via `experimental.chat.messages.transform`). The plugin injects the shared bootstrap verbatim and adds OpenCode tool mapping.
-- **Copilot CLI (instruction-tier):** no bootstrap. Copilot reads `.github/copilot-instructions.md` natively, which carries the Miller-first ruleset and nothing more.
+- **Copilot CLI (instruction-tier):** no bootstrap. Copilot reads `.github/copilot-instructions.md` natively, which carries the code-kb-first ruleset and nothing more.
 
 ### Autonomy
 
@@ -152,7 +155,7 @@ The `.version-bump.json` config drives the script. `.memories/` and `docs/plans/
 - Process flows (brainstorm → plan → TDD → execute → review → finish)
 - Anti-rationalization tables in skills
 - Two-pass inline review (spec compliance + code quality, done by lead, not separate agents)
-- Miller-first exploration (no Glob/Read/Grep chains)
+- code-kb-first exploration (no Glob/Read/Grep chains)
 - Single-repo marketplace layout (Claude Code reads `.claude-plugin/marketplace.json` from this repo; Codex reads `.agents/plugins/marketplace.json`)
 - Autonomous-by-default execution (blocker-gated, not task-gated) with optional pre-merge external review
 - These conventions are intentionally chosen for token efficiency and quality

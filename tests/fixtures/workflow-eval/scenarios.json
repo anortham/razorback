@@ -56,13 +56,13 @@
       ]
     },
     {
-      "id": "missing_miller",
+      "id": "missing_code_kb",
       "facts": [
-        "The task is a repository debt audit that requires Miller-first exploration.",
+        "The task is a repository debt audit that requires code-kb-first exploration.",
         "Tool discovery, reconnection, and recovery have been exhausted.",
-        "Shell grep is available but the project forbids it as a Miller fallback.",
+        "Shell grep is available but the project forbids it as a code-kb fallback.",
         "Collected diagnostic evidence must be preserved.",
-        "The agent may report the block directly or ask one concise question to restore Miller access."
+        "The agent may report the block directly or ask one concise question to restore code-kb access."
       ],
       "workflow_files": [
         "skills/harvesting-debt/SKILL.md",
@@ -73,8 +73,8 @@
       "id": "restricted_reviewer",
       "facts": [
         "The selected Claude external reviewer is enforced read-only with Read, Grep, and Glob only; MCP is unavailable in that process.",
-        "The lead has already gathered Miller-grounded evidence and can sanitize it into a review bundle.",
-        "The reviewer must identify evidence gaps and cannot claim direct Miller access.",
+        "The lead has already gathered code-kb-grounded evidence and can sanitize it into a review bundle.",
+        "The reviewer must identify evidence gaps and cannot claim direct code-kb access.",
         "Write-capable tools must remain disabled, and following the host's enforced restrictions is a valid explicit action."
       ],
       "workflow_files": [

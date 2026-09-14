@@ -8,7 +8,7 @@ Razorback supports a small, deliberate set of harnesses. Adding one is a commitm
 
 **skill-tier** — the host discovers `skills/` but has no plugin manifest or hook. Skills load; bootstrap is manual or absent. No current occupants; use when a host has skill discovery but no plugin system.
 
-**instruction-tier** — the host reads a single instructions file and nothing else. It gets the Miller-first ruleset (`skills/using-razorback/references/instruction-tier.md`) as a synced host copy, no skills and no delegation. Current: Copilot CLI (`.github/copilot-instructions.md`), plus `.clinerules/`, `.cursor/rules/`, `.kiro/steering/`, `.windsurf/rules/`.
+**instruction-tier** — the host reads a single instructions file and nothing else. It gets the code-kb-first ruleset (`skills/using-razorback/references/instruction-tier.md`) as a synced host copy, no skills and no delegation. Current: Copilot CLI (`.github/copilot-instructions.md`), plus `.clinerules/`, `.cursor/rules/`, `.kiro/steering/`, `.windsurf/rules/`.
 
 **Default to instruction-tier.** Promote only when the host can actually run delegated execution and someone will maintain it.
 

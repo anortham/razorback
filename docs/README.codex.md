@@ -18,7 +18,7 @@ The preferred path is the Codex plugin install flow from this repository's `.age
 
 - OpenAI Codex CLI or Codex desktop app
 - Git
-- Miller MCP configured in Codex
+- code-kb MCP configured in Codex
 - [Goldfish MCP Server](https://github.com/anortham/goldfish) configured in Codex
 
 ### Steps
@@ -64,7 +64,7 @@ Codex CLI and the Codex desktop app share native skill discovery. With the prefe
 The `using-razorback` skill is discovered automatically and enforces skill usage discipline. No additional Codex hook setup is required for this plugin path or for the fallback symlink.
 
 **Note:** On Codex, delegated plan execution routes through `subagent-driven-development`, which dispatches fresh implementer subagents in parallel when tasks are independent. If the current session cannot delegate, fall back to `executing-plans`.
-Miller-first applies to the lead session and every spawned worker. Implementers, reviewers, and fix workers should orient with Miller before raw file reads.
+code-kb-first applies to the lead session and every spawned worker. Implementers, reviewers, and fix workers should orient with code-kb before raw file reads.
 
 **Desktop note:** The same Codex agent lifecycle applies in desktop sessions that expose `spawn_agent`, `send_input`, `wait_agent`, and `close_agent`. The separate `razorback:codex-cli` skill is for launching an external Codex CLI reviewer or delegate, not for the desktop app's built-in tools.
 
@@ -75,9 +75,9 @@ Skills are discovered automatically. Codex activates them when:
 - The task matches a skill's description
 - The `using-razorback` skill directs Codex to use one
 
-### Miller MCP
+### code-kb MCP
 
-Razorback skills assume Miller is configured. Without it, the exploration directives in skill bodies will fail. Use Miller by capability: `context` to orient, `search` to find text/symbols/files/content, `inspect` to list file symbols or inspect symbols, `trace` to find references, `impact` to assess blast radius, and `workspace` to manage indexing. Install and configure Miller before relying on razorback for real work.
+Razorback skills assume code-kb is configured. Without it, the exploration directives in skill bodies will fail. Use code-kb by capability: `codebase_outline` to orient, `file_skeleton` to list file symbols, `find_symbol` and `search_symbols` to locate symbols, `get_symbol_body` and `get_context_slice` to inspect implementations, `find_references` to track callers/callees, `blast_radius` to assess impact, `find_structural_facts` to query AST relationships, and `replace_symbol_body` for atomic edits. Install and configure code-kb before relying on razorback for real work.
 
 ### Goldfish MCP
 

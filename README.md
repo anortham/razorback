@@ -1,26 +1,26 @@
 # Razorback
 
-**Miller-powered development workflow for Claude Code, Codex CLI / ChatGPT desktop app, OpenCode, and Antigravity.**
+**code-kb-powered development workflow for Claude Code, Codex CLI / ChatGPT desktop app, OpenCode, and Antigravity.**
 
 > Website: [anortham.github.io/razorback](https://anortham.github.io/razorback/) — the setup path from nothing to a working install, on one page.
 
-Razorback is a skill set for coding-agent harnesses, diverged from [Superpowers](https://github.com/obra/superpowers) to add Miller MCP for token-efficient codebase orientation. Plan execution runs through `subagent-driven-development` on harnesses that support delegation, and `executing-plans` where delegation is unavailable.
+Razorback is a skill set for coding-agent harnesses, diverged from [Superpowers](https://github.com/obra/superpowers) to add code-kb MCP for token-efficient codebase orientation. Plan execution runs through `subagent-driven-development` on harnesses that support delegation, and `executing-plans` where delegation is unavailable.
 
-**Supported harnesses.** Claude Code, Codex CLI / ChatGPT desktop app (rebranded from Codex), OpenCode, and Antigravity get the full plugin: skills, agents, bootstrap, and delegated execution. Cursor is **frozen** — its plugin support still works and is documented below, but it receives no new work. Copilot CLI is **instruction-tier**: it picks up razorback's Miller-first ruleset from `.github/copilot-instructions.md` and nothing else.
+**Supported harnesses.** Claude Code, Codex CLI / ChatGPT desktop app (rebranded from Codex), OpenCode, and Antigravity get the full plugin: skills, agents, bootstrap, and delegated execution. Cursor is **frozen** — its plugin support still works and is documented below, but it receives no new work. Copilot CLI is **instruction-tier**: it picks up razorback's code-kb-first ruleset from `.github/copilot-instructions.md` and nothing else.
 
 ## Why?
 
 AI-assisted development burns tokens on repetitive codebase exploration. Every agent and subagent re-discovers the same code through Glob/Grep/Read chains. Razorback solves this two ways:
 
-- **Miller MCP** routes all exploration through purpose-built tools — `search`, `context`, `inspect`, `trace`, `impact`, and `workspace` — that return targeted context in 1-2 calls instead of 5-8.
-- **Miller-first applies to every worker**: the lead, implementers, reviewers, and fix workers all orient with Miller before raw file reads.
+- **code-kb MCP** routes all exploration through purpose-built tools — `codebase_outline`, `file_skeleton`, `find_symbol`, `search_symbols`, `get_symbol_body`, `get_context_slice`, `find_references`, `blast_radius`, `find_structural_facts`, and `replace_symbol_body` — that return targeted context in 1-2 calls instead of 5-8.
+- **code-kb-first applies to every worker**: the lead, implementers, reviewers, and fix workers all orient with code-kb before raw file reads.
 - **Parallel subagent dispatch with inline review by the lead** keeps the main agent's context clean while letting independent tasks move concurrently.
 - **Autonomous execution of approved plans** with optional pre-merge external review (codex / claude) and compaction-durable goldfish checkpoints; runs overnight without waking you for anything short of a real blocker
 
 ## Requirements
 
 - A supported harness: [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex CLI / ChatGPT desktop app](https://openai.com/codex/), [OpenCode](https://opencode.ai), or [Antigravity](https://github.com/google-deepmind) — plus frozen support for [Cursor](https://cursor.sh)
-- Miller MCP — hard requirement for code orientation and symbol-aware review; must be configured and indexing your workspace
+- [code-kb MCP](https://github.com/anortham/code-kb) — hard requirement for code orientation and symbol-aware review; must be configured and indexing your workspace
 - [Goldfish MCP Server](https://github.com/anortham/goldfish) — hard requirement for persistent memory (checkpoints, briefs, recall); used for compaction-durable execution during long autonomous runs
 - For Codex: enable `multi_agent = true` in `~/.codex/config.toml` so parallel execution skills can dispatch subagents
 
@@ -125,7 +125,7 @@ ln -s /path/to/razorback/skills/* .agents/skills/
 
 ### Copilot CLI (instruction-tier)
 
-Copilot CLI gets the Miller-first ruleset only — no skills, no agents, no delegated execution. Copy razorback's instruction-tier ruleset into the repo you work in; Copilot reads that path natively:
+Copilot CLI gets the code-kb-first ruleset only — no skills, no agents, no delegated execution. Copy razorback's instruction-tier ruleset into the repo you work in; Copilot reads that path natively:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/anortham/razorback/refs/heads/main/.github/copilot-instructions.md \
@@ -140,9 +140,9 @@ Once loaded, razorback works automatically. The bootstrap path varies by harness
 
 1. **Session starts** — the `SessionStart` hook (Claude Code, Cursor), `messages.transform` (OpenCode), native skill discovery from the installed Codex plugin or fallback skills symlink (Codex), or global/workspace skill discovery and plugin import (Antigravity) surfaces the `using-razorback` skill.
 2. **You request work** — the agent checks for applicable skills before every response.
-3. **Skills guide the workflow** — brainstorming, planning, TDD, execution, review, and verification all route through Miller and the appropriate execution strategy for your harness.
+3. **Skills guide the workflow** — brainstorming, planning, TDD, execution, review, and verification all route through code-kb and the appropriate execution strategy for your harness.
 
-No configuration needed beyond plugin installation (assuming Miller is already set up).
+No configuration needed beyond plugin installation (assuming code-kb is already set up).
 
 ## Project Policy
 
@@ -152,7 +152,7 @@ plus the approved plan.
 
 Razorback owns process contracts:
 
-- skill routing and Miller-first orientation
+- skill routing and code-kb-first orientation
 - parallel-safety checks and file ownership
 - commit mode for serial versus parallel batches
 - verification scopes and gate ownership
@@ -261,7 +261,7 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 
 | Skill | Purpose |
 |-------|---------|
-| using-razorback | Entry point: skill routing, execution model, Miller toolchain |
+| using-razorback | Entry point: skill routing, execution model, code-kb toolchain |
 | brainstorming | Requirements exploration, design, approach selection |
 | prototyping | Throwaway-code off-ramp from brainstorming for empirical design questions: logic TUIs or UI variants, captured on a `prototype/<slug>` branch |
 | fixing-small-issues | Quick-fix tier: triage small defects/tweaks by objective criteria, fix in place, affected-scope verification |
@@ -296,7 +296,7 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 | File | Purpose |
 |------|---------|
 | [Workflow decision evaluation](docs/workflow-evaluation.md) | Prepare blind baseline/revised packets and grade fresh-agent decisions with the local deterministic evaluator |
-| subagent-driven-development/implementer-prompt.md | Implementer spawn: task assignment, file ownership, Miller directives, status protocol |
+| subagent-driven-development/implementer-prompt.md | Implementer spawn: task assignment, file ownership, code-kb directives, status protocol |
 | subagent-driven-development/fix-prompt.md | Fix-round prompt with reviewer findings and reframed-context guidance |
 | subagent-driven-development/spec-reviewer-prompt.md | Review guide: spec compliance criteria |
 | subagent-driven-development/code-quality-reviewer-prompt.md | Review guide: code quality criteria |

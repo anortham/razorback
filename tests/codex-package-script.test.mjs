@@ -205,7 +205,7 @@ function createFixture() {
   writeFile(path.join(repo, '.cursor-plugin/plugin.json'), '{}\n');
   writeFile(path.join(repo, '.opencode/plugins/razorback.js'), 'export {};\n');
   writeFile(path.join(repo, '.memories/checkpoint.md'), '# memory\n');
-  writeFile(path.join(repo, '.miller/cache.db'), 'cache\n');
+  writeFile(path.join(repo, '.code-kb/artifact.db'), 'cache\n');
   writeFile(path.join(repo, 'package.json'), '{ "name": "fixture" }\n');
 
   run('git', ['-C', repo, 'add', '.']);
@@ -274,7 +274,7 @@ test('packages a rootless Codex-only archive with every skill and no manifest ho
       '.cursor-plugin/plugin.json',
       '.opencode/plugins/razorback.js',
       '.memories/checkpoint.md',
-      '.miller/cache.db',
+      '.code-kb/artifact.db',
       'package.json'
     ]) {
       assert.equal(zipEntries.includes(forbiddenPath), false, `${forbiddenPath} should be excluded`);
