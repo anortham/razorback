@@ -63,6 +63,22 @@ If listed **and** the provenance rule in SKILL.md says it is yours:
 git worktree remove "$WORKTREE_PATH"
 ```
 
+**If removal is refused** (`contains modified or untracked files`): the
+worktree holds files that exist nowhere else — uncommitted plans, notes,
+or scratch work. Never `--force` on your own initiative. Show the user
+what is at stake:
+
+```bash
+git -C "$WORKTREE_PATH" status --porcelain -uall
+```
+
+Ask:
+1. Commit them to <branch> before cleanup
+2. Move them into <main repo root>
+3. Delete them (unrecoverable)
+
+Carry out the choice, then remove the worktree.
+
 Report: "Removed worktree $WORKTREE_PATH for branch $FEATURE_BRANCH."
 
 ## Step 6: Reconcile remaining source-control state

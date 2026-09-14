@@ -114,3 +114,16 @@ test('completion claims require source-control evidence', () => {
   assert.match(skill, /source-control-hygiene\.md/);
   assert.match(skill, /inventory, not a cleanliness check/i);
 });
+
+test('interactive finish refuses forced worktree removal on untracked files', () => {
+  const interactive = read('skills/finishing-a-development-branch/references/interactive-mode.md');
+  const finishing = read('skills/finishing-a-development-branch/SKILL.md');
+
+  assert.match(interactive, /If removal is refused/i);
+  assert.match(interactive, /contains modified or untracked files/i);
+  assert.match(interactive, /Never `--force` on your own initiative/i);
+  assert.match(interactive, /status --porcelain -uall/);
+  assert.match(interactive, /Commit them to <branch> before cleanup/i);
+  assert.match(finishing, /Removal refused — `--force` is just finishing the cleanup/);
+});
+

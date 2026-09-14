@@ -168,6 +168,7 @@ Canonical definition: the `razorback:using-razorback` skill's `references/source
 | "The push failed — I'll just show the menu" | Mid-run fallback breaks the autonomous contract. Report `Blocked` and exit. |
 | "The other worktree isn't this run's problem" | Unaccounted state makes the report a lie. Land it or name it. |
 | "Removing the worktree now saves the user a step" | The branch is live behind an open PR. Disposition is the user's call. |
+| "Removal refused — `--force` is just finishing the cleanup" | The refusal means files exist only in that worktree. `--force` destroys them permanently. Show the user and ask. |
 
 ## Red Flags
 
