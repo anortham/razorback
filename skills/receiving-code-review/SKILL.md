@@ -41,12 +41,12 @@ BEFORE implementing:
   3. Reason for the current implementation?
   4. Works on all platforms/versions?
   5. Does the reviewer have the full context?
-  6. Inspect the symbol with Miller `inspect(target, depth=overview)`; `depth=full` for the symbol the feedback centers on
-  7. Find references with Miller `trace` so the change won't break callers
+  6. Inspect the symbol with code-kb `get_context_slice`; `get_symbol_body` for the symbol the feedback centers on
+  7. Find references with code-kb `find_references` so the change won't break callers
 
 IF suggestion seems wrong: push back with technical reasoning
 IF can't easily verify:
-  Investigate with Miller and the smallest relevant verification command.
+  Investigate with code-kb and the smallest relevant verification command.
   Autonomous run: classify as flagged-for-review in the report and continue unless it matches the blocker taxonomy.
   Interactive: ask one specific clarifying question.
 IF conflicts with the user's prior decisions:
@@ -56,7 +56,7 @@ IF conflicts with the user's prior decisions:
 
 External architecture feedback is evaluated through `razorback:architecture-quality` before implementation.
 
-**YAGNI check:** when a reviewer suggests "implementing properly", find references with Miller `trace`. Unused → "This endpoint isn't called. Remove it (YAGNI)?" Used → implement properly. The reviewer doesn't set scope; the user does.
+**YAGNI check:** when a reviewer suggests "implementing properly", find references with code-kb `find_references`. Unused → "This endpoint isn't called. Remove it (YAGNI)?" Used → implement properly. The reviewer doesn't set scope; the user does.
 
 ## Implementation Order
 

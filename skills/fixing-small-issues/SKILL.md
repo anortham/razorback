@@ -21,9 +21,9 @@ No worktree, no project setup, no baseline or full-suite run until the change ta
 
 ## Step 1: Investigate (no infrastructure)
 
-- Locate the target with Miller: `search` for the symptom, `inspect(target, depth=full)` on the implicated symbol, `trace` if it might be shared.
+- Locate the target with code-kb: `search_symbols` for the symptom, `get_symbol_body` on the implicated symbol, `find_references` if it might be shared.
 - Defects: razorback:systematic-debugging Phase 1 — reproduce, find root cause.
-- Tweaks: confirm the exact target (selector, constant, string) with Miller evidence.
+- Tweaks: confirm the exact target (selector, constant, string) with code-kb evidence.
 
 ## Step 2: Triage (measure, don't vibe)
 
@@ -31,7 +31,7 @@ The quick-fix tier applies only when ALL criteria hold. Project instructions may
 
 | Criterion | Threshold |
 |-----------|-----------|
-| Target located | Confirmed with Miller evidence, not guessed |
+| Target located | Confirmed with code-kb evidence, not guessed |
 | Files | ≤ 2 source files (tests excluded) |
 | Lines | ~20 changed lines (tests excluded) |
 | Contracts | No public API, schema, persisted-data, config-contract, security-behavior, or dependency changes |
@@ -51,7 +51,7 @@ The quick-fix tier applies only when ALL criteria hold. Project instructions may
 
 ## Step 4: Verify the affected scope only
 
-- Miller `impact(target='<changed symbol>')` gives the impacted symbols and likely tests — run those and reconfirm the symptom is gone. A failing test iterates on its own id until it passes; the impacted set runs once after (razorback:systematic-debugging Phase 4). razorback:verification-before-completion applies in full.
+- code-kb `blast_radius(symbol='<changed symbol>')` gives the impacted symbols and likely tests — run those and reconfirm the symptom is gone. A failing test iterates on its own id until it passes; the impacted set runs once after (razorback:systematic-debugging Phase 4). razorback:verification-before-completion applies in full.
 - The full suite is NOT part of this tier; the full suite runs at the branch gate (CI or pre-merge).
 - Commit with a clear message; open a PR where the project is branch-gated.
 - In the closing summary, list any `# razorback:` markers left (`<file>:<line>` + ceiling), or say "no markers left."
@@ -61,7 +61,7 @@ The quick-fix tier applies only when ALL criteria hold. Project instructions may
 Checked continuously while fixing:
 
 - The change needs a **3rd source file** or **~2× the line budget**
-- The root cause lands in **shared or public code** (API, schema, shared state, security boundary) — check with Miller `trace(target)` and `impact(target)`
+- The root cause lands in **shared or public code** (API, schema, shared state, security boundary) — check with code-kb `find_references(target)` and `blast_radius(target)`
 - A **second fix attempt fails**
 - The fix needs a **dependency change or a new module**
 

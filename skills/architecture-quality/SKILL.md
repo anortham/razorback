@@ -73,8 +73,8 @@ Candidates are approval-gated. Folding non-required candidates into the current 
 Finds friction and emits candidates; never implements during the sweep.
 
 1. **Read `docs/adr/` first.** Recorded decisions are not re-litigated; a candidate that contradicts an ADR must flag the conflict and justify reopening it. Absent or empty → note it and continue.
-2. **Scope the sweep.** Miller `context(query)` on the named area. No area named → rank by recent churn (`git log --oneline` over a meaningful window) and caller count (Miller `trace`/`impact` on entry points) together; high-churn, high-caller first. State the scope — do not boil the whole repo.
-3. **Hunt by smell, not by file.** Walk `analysis-heuristics.md`; each heuristic's `Find it` line names the Miller calls. Apply the deletion test to every shallow-looking module.
+2. **Scope the sweep.** code-kb `codebase_outline(path)` on the named area. No area named → rank by recent churn (`git log --oneline` over a meaningful window) and caller count (code-kb `find_references`/`blast_radius` on entry points) together; high-churn, high-caller first. State the scope — do not boil the whole repo.
+3. **Hunt by smell, not by file.** Walk `analysis-heuristics.md`; each heuristic's `Find it` line names the code-kb calls. Apply the deletion test to every shallow-looking module.
 4. **Do not design interfaces during the sweep.** Interface shape comes after acceptance, via `interface-design.md`.
 5. **Emit ranked candidates** in the Candidate Mode template, ordered by strength, ending with the single top recommendation and why.
 

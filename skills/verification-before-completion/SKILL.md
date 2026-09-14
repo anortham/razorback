@@ -29,19 +29,19 @@ Before any status claim or expression of satisfaction:
 
 | Claim | Requires | Not Sufficient | How to verify |
 |-------|----------|----------------|---------------|
-| Tests pass | Test output or ledger entry for current HEAD and required scope: 0 failures | Stale run, wrong scope, "should pass", a rerun on an unchanged tree | Short output: read it. Long output: capture it to a file on the first run, then Miller `content(operation='import', path='<file>')` + `content(operation='search', query='<failure>')`. Never rerun to re-read |
+| Tests pass | Test output or ledger entry for current HEAD and required scope: 0 failures | Stale run, wrong scope, "should pass", a rerun on an unchanged tree | Short output: read it. Long output: capture it to a file on the first run, then search it or read a bounded slice. Never rerun to re-read |
 | Linter clean | Linter output: 0 errors | Partial check | Read the output |
-| Build succeeds | Build exit 0 | Linter passing, logs look good | Long logs: Miller `content(...)` import, then search |
+| Build succeeds | Build exit 0 | Linter passing, logs look good | Long logs: capture to file, then search or read a bounded slice |
 | Bug fixed | Original symptom passes at worker scope | Code changed, assumed fixed | Re-run the original repro |
 | Regression test works | Red-green cycle verified | Test passes once | Revert the fix, watch it fail, restore |
 | Agent completed | VCS diff shows changes | Agent reports "success" | Read the diff |
-| Requirements met | Line-by-line checklist against the plan or spec | Tests passing alone | Miller `inspect(target)` each symbol the requirement names |
-| Architecture decision followed | Approved architecture visible in the diff, ADR note, or verified implementation | "Looks aligned" | Miller `trace(target)` the boundary; `impact(target)` for what the change reaches |
-| Review finding fixed | Fresh verification at the affected scope shows the finding no longer reproduces | Code changed, assumed fixed | Miller `inspect(target, depth=full)` the fixed symbol |
+| Requirements met | Line-by-line checklist against the plan or spec | Tests passing alone | code-kb `get_context_slice` or `get_symbol_body` each symbol the requirement names |
+| Architecture decision followed | Approved architecture visible in the diff, ADR note, or verified implementation | "Looks aligned" | code-kb `find_references` the boundary; `blast_radius` for what the change reaches |
+| Review finding fixed | Fresh verification at the affected scope shows the finding no longer reproduces | Code changed, assumed fixed | code-kb `get_symbol_body` the fixed symbol |
 | Work is integrated | `git log --oneline <base>..<branch>` per worktree: every commit landed, pushed, or named in the report | Tests pass, task marked done | Check B of the `razorback:using-razorback` skill's `references/source-control-hygiene.md` |
 | Nothing is stranded | `git worktree list` plus `git -C <path> status --short --branch` for each: no unreported dirty tree or unmerged branch | `git worktree list` alone — that is an inventory, not a cleanliness check | Status every listed path |
 
-Also prove API shapes with Miller (`trace`, `inspect(target, depth=full)`) before claiming symbol names, signatures, config shapes, routes, CLI flags, or public contracts are correct.
+Also prove API shapes with code-kb (`find_references`, `get_symbol_body`, `get_context_slice`) before claiming symbol names, signatures, config shapes, routes, CLI flags, or public contracts are correct.
 
 ## Red Flags - STOP
 

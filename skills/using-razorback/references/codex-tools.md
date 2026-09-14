@@ -38,7 +38,7 @@ dispatched to a subagent.)
 When a skill says to dispatch a subagent with a prompt:
 
 1. Read the prompt file
-2. Fill any template placeholders (task spec, file ownership, Miller directives)
+2. Fill any template placeholders (task spec, file ownership, code-kb directives)
 3. Choose any model or role override only when the user, environment, or lead
    explicitly wants one and the live schema exposes it. Otherwise use the
    harness default.

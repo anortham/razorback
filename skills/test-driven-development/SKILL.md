@@ -26,7 +26,7 @@ Wrote code before the test? Delete it. Not as "reference", not "adapted" while w
 
 ## Red-Green-Refactor
 
-**Understand before testing.** Miller `inspect(target, depth=overview)` on the function under test (interface, callers, types); `depth=full` when you are about to change it. `context` on the test area for existing patterns. Skip only if you just wrote the code.
+**Understand before testing.** code-kb `get_context_slice` on the function under test (interface, callers, types); `get_symbol_body` when you are about to change it. `codebase_outline` on the test area for existing patterns. Skip only if you just wrote the code.
 
 ### RED — one minimal failing test
 
@@ -114,11 +114,11 @@ Can't check all boxes? You skipped TDD. Start over.
 
 | Problem | Solution |
 |---------|----------|
-| Don't know how to test | Inspect nearby tests with Miller. Write the wished-for API, then the assertion first. In an approved autonomous run, pick the smallest plan-consistent test shape, log it, and stop only for blocker-taxonomy ambiguity. |
+| Don't know how to test | Inspect nearby tests with code-kb. Write the wished-for API, then the assertion first. In an approved autonomous run, pick the smallest plan-consistent test shape, log it, and stop only for blocker-taxonomy ambiguity. |
 | Test too complicated | Design too complicated. Simplify interface. |
 | Must mock everything | Code too coupled. Use dependency injection. |
 | Test setup huge | Extract helpers. Still complex? Simplify design. |
-| Don't know existing patterns | List a file's symbols with Miller `inspect` to see test file organization |
+| Don't know existing patterns | List a file's symbols with code-kb `file_skeleton` to see test file organization |
 
 **Bug found?** Root-cause it with razorback:systematic-debugging, then write the failing reproduction test and follow the cycle. Never fix bugs without a test.
 

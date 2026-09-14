@@ -48,14 +48,12 @@ test('the debt-marker convention is documented in both skills', () => {
   assert.match(harvest, /\/\//);
 });
 
-test('harvesting-debt scans only through Miller and reports evidence gaps', () => {
+test('harvesting-debt scans only through code-kb and reports evidence gaps', () => {
   const skill = read('skills/harvesting-debt/SKILL.md');
 
-  assert.match(skill, /search\(query='razorback:', regions=comment\)/);
-  assert.match(skill, /search\(query='RAZORBACK', mode=markers\)/);
-  assert.match(skill, /mode=source/);
-  assert.match(skill, /mode=content/);
-  assert.match(skill, /provider-owned/);
+  assert.match(skill, /search_symbols\(query='razorback:'\)/);
+  assert.match(skill, /find_symbol/);
+  assert.match(skill, /code-kb scan/);
   assert.match(skill, /incomplete audit/i);
   assert.match(skill, /evidence gap/i);
   assert.match(skill, /truncated|omitted|continuation/i);
@@ -102,7 +100,7 @@ test('fixing-small-issues triage criteria survive the marker edit unchanged', ()
   assert.match(skill, /≤ 2 source files/);
   assert.match(skill, /~20 changed lines/);
   assert.match(skill, /single `git revert`/);
-  assert.match(skill, /Confirmed with Miller evidence/);
+  assert.match(skill, /Confirmed with code-kb evidence/);
   assert.match(
     skill,
     /\*\*Any criterion fails or cannot be measured → exit this skill\.\*\*/,

@@ -16,7 +16,7 @@ test('fixing-small-issues defines objective entry criteria, not judgment calls',
   assert.match(skill, /≤ 2 source files/);
   assert.match(skill, /~20 changed lines/);
   assert.match(skill, /single `git revert`/);
-  assert.match(skill, /Confirmed with Miller evidence/);
+  assert.match(skill, /Confirmed with code-kb evidence/);
   assert.match(skill, /An unknown is a failure, not a pass/);
   assert.doesNotMatch(skill, /RAZORBACK\.md/);
 });

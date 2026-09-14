@@ -43,26 +43,26 @@ Complete each phase before the next.
 
 5. **Trace data flow** when the error is deep in the call stack: where does the bad value originate, what called this with it, keep going up to the source. Fix at the source. Read `root-cause-tracing.md` in this directory for the full backward-tracing technique.
 
-Miller: `inspect(target, depth=full)` on the buggy function (callers, callees, type flow); `trace` for every call site that can trigger it; `context` to orient on the subsystem.
+code-kb: `get_context_slice(symbol_name, file_path)` or `get_symbol_body` on the buggy function; `find_references(symbol_name, direction="callers")` for call sites that can trigger it; `codebase_outline` to orient on the subsystem.
 
 ### Phase 2: Pattern Analysis
 
-1. **Find working examples** of similar code with Miller `search`; orient with `context`.
+1. **Find working examples** of similar code with code-kb `search_symbols`; orient with `codebase_outline`.
 2. **Read the reference implementation completely** before applying its pattern. No skimming.
 3. **List every difference** between working and broken, however small. Do not assume "that can't matter".
-4. **Understand dependencies** with `inspect(target, depth=full)`: components, config, environment, assumptions.
+4. **Understand dependencies** with `get_context_slice` and `find_references`: components, config, environment, assumptions.
 
 ### Phase 3: Hypothesis and Testing
 
 1. **One written hypothesis:** "I think X is the root cause because Y." Specific, not vague.
 2. **Smallest change that tests it.** One variable at a time.
 3. **Worked → Phase 4. Did not → new hypothesis.** Never stack fixes.
-4. **Do not know?** Say "I don't understand X". Research with Miller, targeted docs, and the smallest verification command. In an approved autonomous run, stop only when the uncertainty matches the blocker taxonomy; outside one, ask one specific question once research is exhausted.
+4. **Do not know?** Say "I don't understand X". Research with code-kb, targeted docs, and the smallest verification command. In an approved autonomous run, stop only when the uncertainty matches the blocker taxonomy; outside one, ask one specific question once research is exhausted.
 
 ### Phase 4: Implementation
 
 1. **Failing test first** — simplest reproduction, automated when possible. **REQUIRED SUB-SKILL:** razorback:test-driven-development.
-2. **Single fix** — run Miller `impact(target='<symbol being changed>')` first for impacted symbols and likely tests. ONE change; no "while I'm here" improvements, no bundled refactoring.
+2. **Single fix** — run code-kb `blast_radius(symbol='<symbol being changed>')` first for impacted symbols and likely tests. ONE change; no "while I'm here" improvements, no bundled refactoring.
 3. **Verify** — rerun only the failing test ids until they pass, then the affected scope once; issue actually resolved. If a wider command failed, rerun that command once, on the changed tree, after every listed id passes; new failures → step 1 with the new ids. Only that final run is completion evidence.
 4. **Fix failed?** STOP. Count attempts. Under 3 → Phase 1 with the new information. **3 or more → question the architecture. Do not attempt fix #4.**
 5. **3+ failures = architectural problem**, not a failed hypothesis. Signs: each fix reveals new shared state or coupling elsewhere, fixes need "massive refactoring", each fix creates new symptoms. In an approved autonomous run, route through the blocker taxonomy: take a plan-consistent architecture fix and log the decision, or stop as a real blocker when the plan is contradicted or tests are unresolvable. Outside a run, discuss the architecture before more fixes. Use razorback:architecture-quality.

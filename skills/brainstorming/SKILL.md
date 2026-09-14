@@ -29,7 +29,7 @@ This is a measured gate, not a judgment call. "Feels simple" is not a criterion;
 
 Test: can you state the agreed design concretely (components, data flow, key decisions)? Yes → fast path or lightweight, by task size. "It's basically just X" → full process.
 
-Every path starts with Miller orientation (`context`, `inspect`, `trace`; no Glob → Read → Grep chains) plus `git log --oneline -10`, and ends in "After the Design".
+Every path starts with code-kb orientation (`codebase_outline`, `file_skeleton`, `find_symbol`, `find_references`; no Glob → Read → Grep chains) plus `git log --oneline -10`, and ends in "After the Design".
 
 **Fast path / Lightweight:** summarize the agreed design for user confirmation. Note the approved module/interface shape, or `No Architecture Impact` for mechanical work; writing-plans copies this into the plan header. Lightweight: include an acceptance criteria checklist; the doc is the implementer's spec.
 
@@ -46,7 +46,7 @@ Every path starts with Miller orientation (`context`, `inspect`, `trace`; no Glo
 
 - Infer and record routine, reversible details instead of asking. Ask only unresolved questions whose answers materially change product intent, safety, scope, or architecture.
 - One question per message, with a falsifiable guess: "I'm guessing X because Y — is that right?" Prefer multiple choice; guess first, labelled.
-- Environment facts (repo contents, tool support, config values) come from Miller or a subagent, never the user. Only questions downstream of that fact wait.
+- Environment facts (repo contents, tool support, config values) come from code-kb or a subagent, never the user. Only questions downstream of that fact wait.
 - A question is on the frontier when its prerequisites are settled. If the dialogue loops on a question only running code can answer, take the razorback:prototyping off-ramp and record the verdict on return.
 - Stop asking when no frontier question can materially change product intent, safety, scope, or architecture, you can state purpose, constraints, and success criteria in your own words, and your last material question produced no correction. Record chosen defaults and move on.
 
@@ -64,7 +64,7 @@ Every path starts with Miller orientation (`context`, `inspect`, `trace`; no Glo
 
 ## Lightweight Implementation
 
-The design doc is the plan: what to build and why, exact file paths from Miller, acceptance criteria, the worker verification scope (repo runner narrowed to the change; full suite at the branch gate), key decisions and edge cases.
+The design doc is the plan: what to build and why, exact file paths from code-kb, acceptance criteria, the worker verification scope (repo runner narrowed to the change; full suite at the branch gate), key decisions and edge cases.
 
 - **Delegation is available and permitted:** `razorback:subagent-driven-development`, including for one task; parallel for independent parts with distinct file ownership, serialized for dependent ones. Use `subagent-driven-development/implementer-prompt.md` with the design doc as the task. The lead reviews inline (spec compliance + code quality) and routes fixes through the same skill.
 - **No delegation, or single-agent execution explicitly selected:** `razorback:executing-plans` with the design doc as the plan.

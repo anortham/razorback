@@ -44,7 +44,7 @@ await execFileAsync('git', ['init'], { cwd: projectDir });
 
 ### 3. Ask: What Called This?
 
-**Inspect the symbol first** with Miller `inspect(target='<function>', depth=full)` — it shows callers, callees, and type flow automatically, replacing manual tracing in most cases.
+**Inspect the symbol first** with code-kb `get_context_slice('<function>')` or `find_references('<function>', direction='callers')` — it shows callers, callees, and types automatically, replacing manual tracing in most cases.
 
 If that reveals the chain, skip to step 5 (find original trigger). If the chain is too dynamic or indirect for static analysis, trace manually:
 
@@ -91,16 +91,11 @@ async function gitInit(directory: string) {
 
 **Run and capture:**
 
-Run only the failing test through the runner's own filter; widen only while the triggering test is unknown (see "Finding Which Test Causes Pollution"). Test and CI runs are large. Capture the run to a file, then read it through Miller's content corpus — import once, search for the marker, and read a bounded window around each hit instead of pulling the whole run into context:
+Run only the failing test through the runner's own filter; widen only while the triggering test is unknown (see "Finding Which Test Causes Pollution"). Test and CI runs are large. Capture the run to a file, then search for the marker or inspect a bounded window around each hit instead of pulling the whole run into context:
 
 ```bash
 <failing-test command> > /tmp/debug-run.log 2>&1
-```
-Then: `content(operation='import', path='/tmp/debug-run.log')`, `content(operation='search', query='DEBUG git init')`, `content(operation='read', source_id='<id from the hit>', line=<n>)`.
-
-Without Miller, pipe through grep:
-```bash
-<failing-test command> 2>&1 | grep 'DEBUG git init'
+grep -n 'DEBUG git init' /tmp/debug-run.log
 ```
 
 **Analyze stack traces:**

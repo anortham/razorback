@@ -14,18 +14,17 @@ Collects every deliberate-shortcut marker into one read-only ledger so a deferra
 
 **Announce at start:** "I'm using the harvesting-debt skill to build the debt ledger."
 
-**Not here:** generic TODO/FIXME/HACK audits — that is Miller `search(mode=markers)`. Paying a marker down is a separate change that re-enters razorback:fixing-small-issues triage or the standard flow.
+**Not here:** generic TODO/FIXME/HACK audits. Paying a marker down is a separate change that re-enters razorback:fixing-small-issues triage or the standard flow.
 
-## Scan (Miller only)
+## Scan (code-kb only)
 
-1. `search(query='razorback:', regions=comment)` — comment regions are where markers live.
-2. When the live schema lists RAZORBACK in its marker vocabulary, also run `search(query='RAZORBACK', mode=markers)` and keep only exact `# razorback:` / `// razorback:` hits. Marker vocabulary is provider-owned; read it from the live schema, do not hard-code it.
-3. Languages whose comments are not region-tagged: a bounded `mode=source` search, keep only real comment markers.
-4. Prose or documentation markers, if in scope: a separate bounded `mode=content` search, labeled non-source debt.
+1. `search_symbols(query='razorback:')` — search indexed symbols, docstrings, comments, and declarations for debt markers.
+2. `find_symbol(query='razorback')` — prefix/exact symbol search.
+3. Language symbols and structural annotations: check structural facts with `find_structural_facts` if custom marker categories are indexed.
 
-Miller's index already excludes vendored, generated, and tool-state content and returns file:line.
+code-kb's index already excludes vendored, generated, and tool-state content and returns file:line.
 
-**Coverage.** Results are bounded. On truncated or omitted results, a continuation, or a result cap: exhaust the continuation or narrow the query by path, language, or content scope until every in-scope result is accounted for. If the index is stale, refresh the workspace and repeat. If coverage still cannot be established, or Miller cannot cover a relevant language or region, stop discovery and report an **incomplete audit**: name the exact evidence gap and the scopes that completed. Do not fall back to shell search. Never claim a comprehensive or clean ledger while any result or scope remains omitted.
+**Coverage.** Results are bounded. On truncated or omitted results, a continuation, or a result cap: exhaust the continuation or narrow the query by path until every in-scope result is accounted for. If the index is stale, run `code-kb scan` to refresh the index and repeat. If coverage still cannot be established, or code-kb cannot cover a relevant file or scope, stop discovery and report an **incomplete audit**: name the exact evidence gap and the scopes that completed. Do not fall back to shell search (e.g., shell grep). Never claim a comprehensive or clean ledger while any result or scope remains omitted.
 
 ## Output
 

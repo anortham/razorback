@@ -35,7 +35,7 @@ If ambiguous and the user is unreachable: backend module → logic; page or comp
 3. **No production code in the same pass.** Do not write, port, or "while I'm at it" the real implementation until the verdict has gone back through brainstorming and an approved design. Schedule pressure is the trigger for this violation, not an excuse.
 4. **Throwaway from day one, marked as such.** In-memory state, no tests, no error handling beyond runnable, no abstractions. Name files and routes so a reader sees "prototype".
 5. **Surface the full state** after every action (logic) or on every variant switch (UI).
-6. **Orient with Miller first.** `context`/`inspect` the module or page the prototype sits next to, so it speaks the project's vocabulary.
+6. **Orient with code-kb first.** `codebase_outline`/`file_skeleton` the module or page the prototype sits next to, so it speaks the project's vocabulary.
 7. **Capture when answered.** Never delete the prototype, never leave it in main.
 
 ## Capture

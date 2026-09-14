@@ -25,16 +25,16 @@ Dispatch a reviewer subagent:
     | Buildability | Could an engineer follow this plan without getting stuck? |
     | Verification | Does the worker red/green scope name the repo runner narrowed to the change (one test or the focused group), with the full suite only at the branch gate? |
 
-    ## Verify Buildability with Miller
+    ## Verify Buildability with code-kb
 
     A plan is only buildable if the code it names is real. Verify against the
     codebase — do not approve a path or symbol from memory:
 
-    - Every file path the plan names resolves — Miller `search(query='<path>', mode=file)`
-    - Every symbol the plan names exists — Miller `inspect(target='<symbol>', depth=overview)`;
-      escalate to `depth=full` only for the symbols the plan actually rewrites
+    - Every file path the plan names resolves — code-kb `file_skeleton('<path>')` or `find_symbol(path='<path>')`
+    - Every symbol the plan names exists — code-kb `get_context_slice('<symbol>')`;
+      escalate to `get_symbol_body` only for the symbols the plan actually rewrites
     - Flag every API the plan invents. A function signature, config key, route, or
-      CLI flag that Miller cannot find is a real issue — the implementer will build
+      CLI flag that code-kb cannot find is a real issue — the implementer will build
       against something that does not exist. Name the step and what is missing.
 
     Do not read whole files to check this.

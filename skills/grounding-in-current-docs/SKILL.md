@@ -5,13 +5,13 @@ description: Use when writing code against an external framework, library, or AP
 
 # Grounding in Current Docs
 
-Miller is the source of truth inside the repo. This skill covers truth outside it: external framework, library, and API behavior, where memory goes stale and plausible code that compiles is still semantically wrong.
+code-kb is the source of truth inside the repo. This skill covers truth outside it: external framework, library, and API behavior, where memory goes stale and plausible code that compiles is still semantically wrong.
 
 ## The Rule
 
 Before coding against an external API where your knowledge could be stale:
 
-1. **Check the repo first.** Miller `search` for existing usage. Working code in the repo is the cheapest ground truth, and repo conventions win over docs.
+1. **Check the repo first.** code-kb `search_symbols` or `find_symbol` for existing usage. Working code in the repo is the cheapest ground truth, and repo conventions win over docs.
 2. **Fetch the current official docs** for the specific feature with your harness's web tool (WebFetch on Claude Code, web search on Codex; prefer a token-efficient fetcher when available). Official source, not blog posts.
 3. **Verify the exact surface:** name, signature/options, semantics, version gates, deprecations. When verified behavior differs from common knowledge, cite the doc URL in the task notes or commit message.
 4. **Verify once per feature per session.** Record it (Goldfish checkpoint or plan note) instead of re-fetching.
@@ -29,7 +29,7 @@ Leads: when a task touches a staleness-risk API, put the verified surface (or do
 
 ## Do Not Fetch
 
-- The repo already uses the API and Miller shows the pattern — follow the repo.
+- The repo already uses the API and code-kb shows the pattern — follow the repo.
 - Long-settled APIs you know well (standard library basics).
 - Never fetch ceremonially for every import. Target staleness risk, not ritual.
 

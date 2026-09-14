@@ -24,17 +24,17 @@ Dispatch a reviewer subagent:
     | Scope | Focused enough for a single plan — not covering multiple independent subsystems |
     | YAGNI | Unrequested features, over-engineering |
 
-    ## Check Scope Against Code Reality with Miller
+    ## Check Scope Against Code Reality with code-kb
 
     Scope and YAGNI are judgments about the actual codebase, not about the spec in
     isolation. Verify before flagging — or approving:
 
-    - Every file path or module the spec names resolves — Miller `search(query='<path>', mode=file)`
-    - Every symbol the spec builds on exists — Miller `inspect(target='<symbol>', depth=overview)`
+    - Every file path or module the spec names resolves — code-kb `file_skeleton('<path>')` or `find_symbol(path='<path>')`
+    - Every symbol the spec builds on exists — code-kb `find_symbol('<symbol>')` or `get_context_slice('<symbol>')`
     - Flag every API the spec invents. A function signature, config key, route, or
-      CLI flag that Miller cannot find means the spec assumes code that is not there
-    - Before accepting a requirement as new work, search for it — Miller
-      `search(query='<capability>')`. A capability that already exists is scope
+      CLI flag that code-kb cannot find means the spec assumes code that is not there
+    - Before accepting a requirement as new work, search for it — code-kb
+      `search_symbols('<capability>')`. A capability that already exists is scope
       creep worth flagging, not a feature to build twice
 
     Do not read whole files to check this.

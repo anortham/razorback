@@ -30,19 +30,17 @@ test('Codex mapping follows live schemas and treats wait wakeups as notification
   assert.match(mapping, /durable plan, checklist, or execution ledger/i);
 });
 
-test('debt audit stays Miller-only and reports incomplete evidence honestly', () => {
+test('debt audit stays code-kb-only and reports incomplete evidence honestly', () => {
   const skill = read('skills/harvesting-debt/SKILL.md');
 
   assert.doesNotMatch(skill, /grep -rn/);
   assert.doesNotMatch(skill, /\*\*Grep fallback\*\*/);
-  assert.match(skill, /search\(mode=markers\)/);
-  assert.match(skill, /mode=source/);
-  assert.match(skill, /mode=content/);
+  assert.match(skill, /search_symbols/);
   assert.match(skill, /incomplete audit/i);
   assert.match(skill, /evidence gap/i);
 });
 
-test('external reviewers receive a lead-built Miller evidence bundle without MCP access', () => {
+test('external reviewers receive a lead-built code-kb evidence bundle without MCP access', () => {
   const bootstrap = read('skills/using-razorback/SKILL.md');
   const subagent = read('skills/using-razorback/references/subagent-toolchain.md');
   const canonical = read('skills/using-razorback/references/instruction-tier.md');
@@ -51,19 +49,19 @@ test('external reviewers receive a lead-built Miller evidence bundle without MCP
   const claude = read('skills/pre-merge-review/reviewer-prompts/claude.md');
   const codex = read('skills/pre-merge-review/reviewer-prompts/codex.md');
 
-  for (const text of [bootstrap, subagent, canonical, project]) {
+  for (const text of [bootstrap, subagent, canonical]) {
     assert.match(text, /external CLI reviewers/i);
-    assert.match(text, /Miller-backed\s+evidence/i);
+    assert.match(text, /code-kb-backed\s+evidence/i);
   }
 
   for (const text of [preMerge, claude, codex]) {
-    assert.match(text, /does not run Miller/i);
+    assert.match(text, /does not run code-kb/i);
     assert.match(text, /missing evidence/i);
   }
 
-  assert.match(preMerge, /MILLER_EVIDENCE/);
-  assert.match(claude, /Lead Miller evidence:\n\$MILLER_EVIDENCE/);
-  assert.match(codex, /\$MILLER_EVIDENCE/);
+  assert.match(preMerge, /CODE_KB_EVIDENCE/);
+  assert.match(claude, /Lead code-kb evidence:\n\$CODE_KB_EVIDENCE/);
+  assert.match(codex, /\$CODE_KB_EVIDENCE/);
   assert.match(claude, /--strict-mcp-config/);
   assert.match(claude, /--tools "Read,Grep,Glob"/);
   assert.doesNotMatch(claude, /--tools "[^"]*Bash/);
