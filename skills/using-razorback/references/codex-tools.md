@@ -154,10 +154,10 @@ Use these code-kb tools by capability:
 
 - Orient: `codebase_outline(path?, depth?)`
 - List a file's symbols / skeleton: `file_skeleton(file_path)`
-- Exact/prefix symbol lookup: `find_symbol(query, path?)`
+- Exact/prefix symbol lookup: `lookup_symbol(query, path?)`
 - Concept / BM25 search: `search_symbols(query, path?)`
 - Inspect symbol body: `get_symbol_body(symbol_name, file_path?)`
-- Surgical context slice: `get_context_slice(symbol_name, file_path?)`
+- Surgical context slice: `get_symbol_context(symbol_name, file_path?)`
 - Find callers/callees: `find_references(symbol_name, direction="callers"|"callees")`
 - Assess blast radius / test impact: `blast_radius(symbol?, file?, depth?)`
 - Code-shape facts (routes, queries, models, config keys): `find_structural_facts(category?)`

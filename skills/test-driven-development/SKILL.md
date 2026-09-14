@@ -26,7 +26,7 @@ Wrote code before the test? Delete it. Not as "reference", not "adapted" while w
 
 ## Red-Green-Refactor
 
-**Understand before testing.** code-kb `get_context_slice` on the function under test (interface, callers, types); `get_symbol_body` when you are about to change it. `codebase_outline` on the test area for existing patterns. Skip only if you just wrote the code.
+**Understand before testing.** code-kb `get_symbol_context` on the function under test (interface, callers, types); `get_symbol_body` when you are about to change it. `codebase_outline` on the test area for existing patterns. Skip only if you just wrote the code.
 
 ### RED — one minimal failing test
 
