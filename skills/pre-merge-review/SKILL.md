@@ -124,7 +124,7 @@ After both outputs are parsed (or on any failure path), run `rm -rf -- "$REVIEW_
 
 ## Step 4: Verify and classify
 
-Full protocol with examples: [`verification-protocol.md`](verification-protocol.md). Verify every finding with code-kb (`get_context_slice`, `get_symbol_body` for the central symbol, `find_references` for public APIs) and classify:
+Full protocol with examples: [`verification-protocol.md`](verification-protocol.md). Verify every finding with code-kb (`get_symbol_context`, `get_symbol_body` for the central symbol, `find_references` for public APIs) and classify:
 
 | Class | Action |
 |---|---|

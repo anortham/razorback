@@ -28,7 +28,7 @@ Lead inline review — spec compliance for Task N:
 
     1. `file_skeleton(file_path)` — inspect symbols before reading any file.
     2. `find_references(symbol_name, direction="callers")` — confirm the implementation connects to the codebase.
-    3. `get_context_slice(symbol_name, file_path?)` when behavior is unclear;
+    3. `get_symbol_context(symbol_name, file_path?)` when behavior is unclear;
        `get_symbol_body(symbol_name, file_path?)` only for the symbol the question centers on.
     Read only the sections the symbol listing points to; never whole files.
 

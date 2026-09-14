@@ -32,7 +32,7 @@ SendMessage (to: "<implementer-agent-id-or-name>"):
     ## Re-Orientation (REQUIRED before editing)
 
     code-kb first, even on a resume: `file_skeleton(file_path)` to re-anchor the edit location;
-    `get_symbol_body(symbol_name, file_path?)` or `get_context_slice(symbol_name, file_path?)` on the symbol you change; `find_references(symbol_name, direction="callers")`
+    `get_symbol_context(symbol_name, file_path?)` or `get_symbol_body(symbol_name, file_path?)` on the symbol you change; `find_references(symbol_name, direction="callers")`
     if callers could observe the change. Do not infer or invent API shapes — prove symbol names,
     function signatures, config shapes, route names, CLI flags, or public contracts with code-kb,
     or say what evidence is missing.

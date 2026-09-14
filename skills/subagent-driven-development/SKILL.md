@@ -87,7 +87,7 @@ One pass by the lead. No reviewer subagents. Checklists: `./spec-reviewer-prompt
 - Did this avoid speculative extensibility?
 - Did it fix the structural cause, not only the symptom?
 
-**Quality:** tests assert meaningful values; no duplication, tight coupling, unclear names, missing error paths. code-kb `get_context_slice` on key symbols (`get_symbol_body` for the task's core), `find_references` on changed APIs. Do not ask a reviewer or yourself to re-run tests the implementer already ran on the same code — the implementer's report carries the test evidence. Reviewers will not re-run tests for you; if evidence is missing or illegible, re-read the report or bounce it back to the worker to provide pristine test output rather than rerunning full test suites. Concrete plans get a quality-focused pass; ambiguous or safety-sensitive tasks get the full pass.
+**Quality:** tests assert meaningful values; no duplication, tight coupling, unclear names, missing error paths. code-kb `get_symbol_context` on key symbols (`get_symbol_body` for the task's core), `find_references` on changed APIs. Do not ask a reviewer or yourself to re-run tests the implementer already ran on the same code — the implementer's report carries the test evidence. Reviewers will not re-run tests for you; if evidence is missing or illegible, re-read the report or bounce it back to the worker to provide pristine test output rather than rerunning full test suites. Concrete plans get a quality-focused pass; ambiguous or safety-sensitive tasks get the full pass.
 
 **Severity:** only Critical and Important enter the fix loop (Step 4). Minor → `minor (deferred)` ledger line for Step 4a.
 

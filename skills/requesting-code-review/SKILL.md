@@ -14,7 +14,7 @@ After each implementer reports DONE in `razorback:subagent-driven-development` (
 **Spec compliance:** built what was requested, nothing missing, nothing extra. List each changed file's symbols with `code-kb` `file_skeleton`, then compare the code to the task requirements line by line.
 
 **Code quality:**
-- Inspect key modified symbols with `code-kb` `get_context_slice(symbol_name, file_path?)`; `get_symbol_body` for symbols the change centers on.
+- Inspect key modified symbols with `code-kb` `get_symbol_context(symbol_name, file_path?)`; `get_symbol_body` for symbols the change centers on.
 - Find references with `code-kb` `find_references(symbol_name, direction="callers")` to verify dependents still work.
 - Tests verify behavior, not that code runs.
 - Reject the report if the implementer cannot show code-kb-first orientation and the code-kb calls used.

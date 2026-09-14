@@ -6,7 +6,7 @@ The lead applies this checklist directly during inline review, after spec compli
 
 Use `requesting-code-review/code-reviewer.md` with: `WHAT_WAS_IMPLEMENTED` (implementer report), `PLAN_OR_REQUIREMENTS` (Task N from plan), `BASE_SHA`, `HEAD_SHA`, `DESCRIPTION`.
 
-code-kb: `get_context_slice(symbol_name, file_path?)` on modified symbols (`get_symbol_body` for the change's core); `find_references(symbol_name, direction="callers")` to check dependents; `file_skeleton(file_path)` to review structure without reading whole files.
+code-kb: `get_symbol_context(symbol_name, file_path?)` on modified symbols (`get_symbol_body` for the change's core); `find_references(symbol_name, direction="callers")` to check dependents; `file_skeleton(file_path)` to review structure without reading whole files.
 
 **Test quality:**
 - Run the mutation check from `test-driven-development/writing-good-tests.md`: mentally mutate the production code; a test should fail for each realistic mutation.

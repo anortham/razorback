@@ -31,7 +31,7 @@ Dispatch a reviewer subagent:
     codebase — do not approve a path or symbol from memory:
 
     - Every file path the plan names resolves — code-kb `file_skeleton(file_path='<path>')` or `codebase_outline(path='<path>')`
-    - Every symbol the plan names exists — code-kb `get_context_slice('<symbol>')`;
+    - Every symbol the plan names exists — code-kb `get_symbol_context('<symbol>')`;
       escalate to `get_symbol_body` only for the symbols the plan actually rewrites
     - Flag every API the plan invents. A function signature, config key, route, or
       CLI flag that code-kb cannot find is a real issue — the implementer will build
