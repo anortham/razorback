@@ -174,6 +174,7 @@ This sequence runs only on resumed runs. A fresh run enters at Step 1. Subagent 
 | "Record the task complete now, commit in a moment" | A completion record without a verifiable SHA strands work in the crash window. Commit first, then record. |
 | "The fix is close — one more round past the cap" | Three attempts, then the reframed 4th, then adjudication. The cap is the mechanism, not a suggestion. |
 | "The worker's diff looks fine, skip the re-review" | Every fix gets a scoped re-review. "Attempted" is not ADDRESSED. |
+| "The implementer spawned its own reviewer — free extra assurance" | It's a duplicate seat reviewing the same diff; the lead's inline review is the gate. A worker-spawned reviewer is a defect to flag, not rigor. |
 
 ## Red Flags
 

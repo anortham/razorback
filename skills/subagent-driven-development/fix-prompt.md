@@ -47,6 +47,15 @@ SendMessage (to: "<implementer-agent-id-or-name>"):
     - `serial-worker-commit`: after assigned verification passes, checkpoint before the commit, explicitly stage the Goldfish checkpoint artifact with only your owned files, commit, and report the resulting SHA.
     - `parallel-lead-commit`: do not checkpoint the batch and do not run `git add` or `git commit`. Edit only your owned files, write the full report to the report file, and report `commit SHA: none - parallel-lead-commit`; the lead checkpoints before the reviewed lead commit.
 
+    ## You Do Not Dispatch Subagents
+
+    Do all of this task's work yourself. Never spawn a subagent to
+    implement part of the fix, and above all never spawn a reviewer to
+    check your work. Review is the lead's job: after you report, the lead
+    conducts an inline review against your diff. A reviewer you spawn
+    duplicates that review at full cost, and its approval counts for nothing.
+    Report instead.
+
     ## Report Format
 
     - What you changed
