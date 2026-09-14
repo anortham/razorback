@@ -44,7 +44,7 @@ await execFileAsync('git', ['init'], { cwd: projectDir });
 
 ### 3. Ask: What Called This?
 
-**Inspect the symbol first** with code-kb `get_context_slice('<function>')` or `find_references('<function>', direction='callers')` — it shows callers, callees, and types automatically, replacing manual tracing in most cases.
+**Inspect the symbol first** with code-kb `get_symbol_context('<function>')` or `find_references('<function>', direction='callers')` — it shows callers, callees, and types automatically, replacing manual tracing in most cases.
 
 If that reveals the chain, skip to step 5 (find original trigger). If the chain is too dynamic or indirect for static analysis, trace manually:
 

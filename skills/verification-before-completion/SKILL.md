@@ -35,13 +35,13 @@ Before any status claim or expression of satisfaction:
 | Bug fixed | Original symptom passes at worker scope | Code changed, assumed fixed | Re-run the original repro |
 | Regression test works | Red-green cycle verified | Test passes once | Revert the fix, watch it fail, restore |
 | Agent completed | VCS diff shows changes | Agent reports "success" | Read the diff |
-| Requirements met | Line-by-line checklist against the plan or spec | Tests passing alone | code-kb `get_context_slice` or `get_symbol_body` each symbol the requirement names |
+| Requirements met | Line-by-line checklist against the plan or spec | Tests passing alone | code-kb `get_symbol_context` or `get_symbol_body` each symbol the requirement names |
 | Architecture decision followed | Approved architecture visible in the diff, ADR note, or verified implementation | "Looks aligned" | code-kb `find_references` the boundary; `blast_radius` for what the change reaches |
 | Review finding fixed | Fresh verification at the affected scope shows the finding no longer reproduces | Code changed, assumed fixed | code-kb `get_symbol_body` the fixed symbol |
 | Work is integrated | `git log --oneline <base>..<branch>` per worktree: every commit landed, pushed, or named in the report | Tests pass, task marked done | Check B of the `razorback:using-razorback` skill's `references/source-control-hygiene.md` |
 | Nothing is stranded | `git worktree list` plus `git -C <path> status --short --branch` for each: no unreported dirty tree or unmerged branch | `git worktree list` alone — that is an inventory, not a cleanliness check | Status every listed path |
 
-Also prove API shapes with code-kb (`find_references`, `get_symbol_body`, `get_context_slice`) before claiming symbol names, signatures, config shapes, routes, CLI flags, or public contracts are correct.
+Also prove API shapes with code-kb (`find_references`, `get_symbol_body`, `get_symbol_context`) before claiming symbol names, signatures, config shapes, routes, CLI flags, or public contracts are correct.
 
 ## Red Flags - STOP
 

@@ -30,7 +30,7 @@ Per task:
 4. `TaskUpdate` completed, then tick the task's acceptance-criteria checkboxes in the plan file (`[ ]` → `[x]`). Bookkeeping only — do not pause or ask; continue to the next task.
 5. Candidate Mode: record non-required refactor candidates in the report or ADR offer, not in the diff. Fold in only refactors required for correctness, testability, or avoiding a brittle patch.
 
-Return to Step 1 review only when new codebase evidence contradicts the plan: re-check with code-kb (`codebase_outline` + `get_symbol_body` / `find_symbol`); if the plan fails, that is blocker #3.
+Return to Step 1 review only when new codebase evidence contradicts the plan: re-check with code-kb (`codebase_outline` + `get_symbol_body` / `lookup_symbol`); if the plan fails, that is blocker #3.
 
 ## Step 3: Pre-merge external review (if chosen)
 

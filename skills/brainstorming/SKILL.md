@@ -37,7 +37,7 @@ Every path ends with the user approving your intent before implementation. A tod
 
 ## Path Workflows
 
-Every path starts with code-kb orientation (`codebase_outline`, `file_skeleton`, `find_symbol`, `find_references`; no Glob → Read → Grep chains) plus `git log --oneline -10`.
+Every path starts with code-kb orientation (`codebase_outline`, `file_skeleton`, `lookup_symbol`, `find_references`; no Glob → Read → Grep chains) plus `git log --oneline -10`.
 
 ### Spike Workflow
 1. **Explore project context** via code-kb enough to frame the probe.

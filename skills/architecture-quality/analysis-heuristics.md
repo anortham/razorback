@@ -20,7 +20,7 @@ Tests: wrapper-only tests are weak. Prefer tests through the caller-facing inter
 
 Smell: the same policy, parsing, or validation shows up in multiple files.
 
-Find it: `search_symbols('<rule or validation concept>')` across candidate symbols, then inspect implementations with `get_symbol_body` or `get_context_slice` — hits across multiple files are the evidence.
+Find it: `search_symbols('<rule or validation concept>')` across candidate symbols, then inspect implementations with `get_symbol_body` or `get_symbol_context` — hits across multiple files are the evidence.
 
 Evidence: the same bug fix, rule, or fallback keeps appearing in different places.
 
@@ -32,7 +32,7 @@ Tests: shared behavior should be tested once through the shared interface, not c
 
 Smell: callers need to know implementation details, or a helper exposes the wrong amount of behavior.
 
-Find it: `get_context_slice('<symbol>')` for the interface shape; `find_references('<symbol>', direction='callers')` for what every caller is forced to know.
+Find it: `get_symbol_context('<symbol>')` for the interface shape; `find_references('<symbol>', direction='callers')` for what every caller is forced to know.
 
 Evidence: the API shape leaks storage, transport, or orchestration details that callers should not own.
 

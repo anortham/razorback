@@ -25,7 +25,7 @@ When in doubt, ask.
 ## Before Writing
 
 1. **Scope check:** a spec covering several independent subsystems becomes one plan per subsystem, each producing working software alone.
-2. **Orient with code-kb (REQUIRED):** `codebase_outline` on the area; `get_context_slice` for key symbols, `get_symbol_body` for symbols the plan modifies; `file_skeleton` for a file's outline and symbols; `blast_radius` for likely tests and dependents; `find_references` before changing a public API. Do NOT guess file paths, line numbers, symbol names, function signatures, config shapes, route names, CLI flags, or public contracts.
+2. **Orient with code-kb (REQUIRED):** `codebase_outline` on the area; `get_symbol_context` for key symbols, `get_symbol_body` for symbols the plan modifies; `file_skeleton` for a file's outline and symbols; `blast_radius` for likely tests and dependents; `find_references` before changing a public API. Do NOT guess file paths, line numbers, symbol names, function signatures, config shapes, route names, CLI flags, or public contracts.
 3. **External API staleness:** where training knowledge may be stale, apply razorback:grounding-in-current-docs and record the verified surface or doc URL in the task.
 4. **File structure:** map created and modified files, one responsibility each. Follow existing patterns; split an unwieldy file only when the plan already modifies it.
 
@@ -86,7 +86,7 @@ When a full plan has exactly one task, use the full-plan task template unchanged
 1. Placeholder scan: TODOs, "TBD", steps too vague to act on.
 2. Spec alignment: every requirement covered, no scope creep.
 3. Task decomposition: clear boundaries, actionable steps, correct dependency order.
-4. Buildability: every path and symbol is real — code-kb `file_skeleton('<path>')` or `find_symbol(path='<path>')`, `get_context_slice('<symbol>')`. Fix any invented API.
+4. Buildability: every path and symbol is real — code-kb `file_skeleton('<path>')` or `lookup_symbol(path='<path>')`, `get_symbol_context('<symbol>')`. Fix any invented API.
 
 Fix inline. If the session can dispatch subagents, you may instead dispatch a reviewer with `plan-document-reviewer-prompt.md` (this directory).
 

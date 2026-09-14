@@ -52,7 +52,7 @@ test('harvesting-debt scans only through code-kb and reports evidence gaps', () 
   const skill = read('skills/harvesting-debt/SKILL.md');
 
   assert.match(skill, /search_symbols\(query='razorback:'\)/);
-  assert.match(skill, /find_symbol/);
+  assert.match(skill, /lookup_symbol/);
   assert.match(skill, /code-kb scan/);
   assert.match(skill, /incomplete audit/i);
   assert.match(skill, /evidence gap/i);

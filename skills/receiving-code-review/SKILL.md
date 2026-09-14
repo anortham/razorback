@@ -41,7 +41,7 @@ BEFORE implementing:
   3. Reason for the current implementation?
   4. Works on all platforms/versions?
   5. Does the reviewer have the full context?
-  6. Inspect the symbol with code-kb `get_context_slice`; `get_symbol_body` for the symbol the feedback centers on
+  6. Inspect the symbol with code-kb `get_symbol_context`; `get_symbol_body` for the symbol the feedback centers on
   7. Find references with code-kb `find_references` so the change won't break callers
 
 IF suggestion seems wrong: push back with technical reasoning

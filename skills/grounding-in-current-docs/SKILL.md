@@ -11,7 +11,7 @@ code-kb is the source of truth inside the repo. This skill covers truth outside 
 
 Before coding against an external API where your knowledge could be stale:
 
-1. **Check the repo first.** code-kb `search_symbols` or `find_symbol` for existing usage. Working code in the repo is the cheapest ground truth, and repo conventions win over docs.
+1. **Check the repo first.** code-kb `search_symbols` or `lookup_symbol` for existing usage. Working code in the repo is the cheapest ground truth, and repo conventions win over docs.
 2. **Fetch the current official docs** for the specific feature with your harness's web tool (WebFetch on Claude Code, web search on Codex; prefer a token-efficient fetcher when available). Official source, not blog posts.
 3. **Verify the exact surface:** name, signature/options, semantics, version gates, deprecations. When verified behavior differs from common knowledge, cite the doc URL in the task notes or commit message.
 4. **Verify once per feature per session.** Record it (Goldfish checkpoint or plan note) instead of re-fetching.

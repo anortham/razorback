@@ -19,7 +19,7 @@ Collects every deliberate-shortcut marker into one read-only ledger so a deferra
 ## Scan (code-kb only)
 
 1. `search_symbols(query='razorback:')` — search indexed symbol names, docstrings, signatures, and declarations for debt markers.
-2. `find_symbol(query='razorback')` — prefix/exact symbol search.
+2. `lookup_symbol(query='razorback')` — prefix/exact symbol search.
 3. Language symbols and structural annotations: check structural facts with `find_structural_facts` if custom marker categories are indexed.
 
 code-kb's index already excludes vendored, generated, and tool-state content and returns file:line.

@@ -160,7 +160,7 @@ The canonical three-way cap contract is in `razorback:subagent-driven-developmen
 The lead reviews every Cursor implementation before accepting it: diff matches
 the task and file ownership; nothing unrequested; tests are meaningful and run
 through caller-facing behavior; verification passed and each command proved a
-named invariant; architecture or API changes got code-kb `find_references`, `get_context_slice`, or
+named invariant; architecture or API changes got code-kb `find_references`, `get_symbol_context`, or
 `blast_radius`. Cursor's final report is never proof.
 
 ## Failure Handling
