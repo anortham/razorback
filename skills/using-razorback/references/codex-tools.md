@@ -163,7 +163,7 @@ Use these code-kb tools by capability:
 - Code-shape facts (routes, queries, models, config keys): `find_structural_facts(category?)`
 - Rename/edit a symbol safely: `replace_symbol_body(symbol_name, file_path, new_body, expected_body_hash?)`
 
-See the capability → tool mapping table in `using-razorback`'s "Your Toolchain" section. Install and configure code-kb before using razorback for real work.
+See the capability → tool mapping table in `using-razorback`'s "Your Toolchain" section. CLI 1:1 commands are `code-kb lookup <query>` and `code-kb context <symbol>`. Install and configure code-kb before using razorback for real work.
 
 ## Goldfish MCP
 

@@ -25,7 +25,7 @@ Announce: "I'm using the executing-plans skill to implement this plan."
 
 Per task:
 1. Mark in_progress.
-2. Orient with code-kb before coding: `codebase_outline` on the area; `get_symbol_body` on symbols you edit; `find_references` before changing any symbol; `file_skeleton` before reading a file; prove API shapes (symbol names, signatures, config shapes, routes, CLI flags, public contracts) with code-kb evidence. No Glob → Read → Grep chains.
+2. Orient with code-kb before coding: `codebase_outline` on the area; `get_symbol_context` on symbols you edit (`get_symbol_body` for isolated code); `find_references` before changing any symbol; `file_skeleton` before reading a file; prove API shapes (symbol names, signatures, config shapes, routes, CLI flags, public contracts) with code-kb evidence. No Glob → Read → Grep chains.
 3. Follow the plan's steps exactly; run the specified verifications.
 4. `TaskUpdate` completed, then tick the task's acceptance-criteria checkboxes in the plan file (`[ ]` → `[x]`). Bookkeeping only — do not pause or ask; continue to the next task.
 5. Candidate Mode: record non-required refactor candidates in the report or ADR offer, not in the diff. Fold in only refactors required for correctness, testability, or avoiding a brittle patch.

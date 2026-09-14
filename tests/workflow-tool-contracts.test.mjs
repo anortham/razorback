@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { execSync } from 'node:child_process';
 
 const root = join(import.meta.dirname, '..');
 const read = (path) => readFileSync(join(root, path), 'utf8');
@@ -66,4 +67,17 @@ test('external reviewers receive a lead-built code-kb evidence bundle without MC
   assert.match(claude, /--tools "Read,Grep,Glob"/);
   assert.doesNotMatch(claude, /--tools "[^"]*Bash/);
   assert.match(codex, /-s read-only/);
+});
+
+test('active files do not reference legacy code-kb tool names find_symbol or get_context_slice', () => {
+  const result = execSync(
+    'git grep -n -E "(find_symbol|get_context_slice)" -- . ":!docs/plans" ":!.memories" ":!tests/workflow-tool-contracts.test.mjs" || true',
+    { cwd: root, encoding: 'utf8' }
+  ).trim();
+
+  assert.equal(
+    result,
+    '',
+    `Active repository files must not name find_symbol or get_context_slice:\n${result}`
+  );
 });

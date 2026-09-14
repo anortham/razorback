@@ -86,7 +86,7 @@ When a full plan has exactly one task, use the full-plan task template unchanged
 1. Placeholder scan: TODOs, "TBD", steps too vague to act on.
 2. Spec alignment: every requirement covered, no scope creep.
 3. Task decomposition: clear boundaries, actionable steps, correct dependency order.
-4. Buildability: every path and symbol is real — code-kb `file_skeleton('<path>')` or `lookup_symbol(path='<path>')`, `get_symbol_context('<symbol>')`. Fix any invented API.
+4. Buildability: every path and symbol is real — code-kb `file_skeleton('<path>')`, `lookup_symbol(query='<symbol>')`, `get_symbol_context('<symbol>')`. Fix any invented API.
 
 Fix inline. If the session can dispatch subagents, you may instead dispatch a reviewer with `plan-document-reviewer-prompt.md` (this directory).
 
