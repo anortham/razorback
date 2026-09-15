@@ -69,15 +69,15 @@ test('external reviewers receive a lead-built code-kb evidence bundle without MC
   assert.match(codex, /-s read-only/);
 });
 
-test('active files do not reference legacy code-kb tool names find_symbol or get_context_slice', () => {
+test('active files do not reference legacy code-kb tool names find_symbol, get_context_slice, or code_kb_stats', () => {
   const result = execSync(
-    'git grep -n -E "(find_symbol|get_context_slice)" -- . ":!docs/plans" ":!.memories" ":!tests/workflow-tool-contracts.test.mjs" || true',
+    'git grep -n -E "(find_symbol|get_context_slice|code_kb_stats)" -- . ":!docs/plans" ":!.memories" ":!tests/workflow-tool-contracts.test.mjs" || true',
     { cwd: root, encoding: 'utf8' }
   ).trim();
 
   assert.equal(
     result,
     '',
-    `Active repository files must not name find_symbol or get_context_slice:\n${result}`
+    `Active repository files must not name find_symbol, get_context_slice, or code_kb_stats:\n${result}`
   );
 });

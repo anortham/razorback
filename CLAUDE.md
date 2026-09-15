@@ -94,13 +94,13 @@ When modifying skills, add tool awareness at exploration/investigation points by
 | Exact / Prefix symbol lookup | `lookup_symbol(query, path?)` |
 | Concept / BM25 search over docstrings & signatures | `search_symbols(query, path?)` |
 | Inspect a symbol — full implementation body | `get_symbol_body(symbol_name, file_path?)` |
-| Surgical context slice — body + callee signatures + types | `get_symbol_context(symbol_name, file_path?)` |
+| Surgical context slice — body + callee signatures + types + tests | `get_symbol_context(symbol_name, file_path?)` |
 | Find references before changing a public API (callers/callees) | `find_references(symbol_name, direction="callers"|"callees")` |
 | Assess impact / blast radius of a change | `blast_radius(symbol?, file?, depth?)` |
 | Structural facts — routes, queries, models, config keys | `find_structural_facts(category?)` |
 | Rename / edit a symbol safely with AST validation | `replace_symbol_body(symbol_name, file_path, new_body)` |
 
-code-kb indexes symbols, signatures, docstrings, references, and structural facts across the workspace with zero config (`code-kb scan`). CLI 1:1 commands: `code-kb lookup <query>` (exact/prefix symbol lookup) and `code-kb context <symbol>` (symbol context before edits).
+code-kb indexes symbols, signatures, docstrings, references, and structural facts across the workspace with zero config (`code-kb scan`). CLI 1:1 commands: `code-kb lookup <query>` (exact/prefix symbol lookup) and `code-kb context <symbol>` (symbol context before edits). CLI tool aliases include `code-kb blast-radius` / `code-kb impact` and `code-kb stats` / `code-kb telemetry`.
 
 code-kb-first applies to the lead and every native implementer, reviewer, and fix worker. Restricted external CLI reviewers invoked by `pre-merge-review` are the deliberate exception: they run without MCP under an enforced read-only allowlist. The lead supplies a sanitized code-kb-backed evidence bundle, the reviewer reports missing evidence instead of claiming code-kb use, and the lead verifies every finding with code-kb.
 

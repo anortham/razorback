@@ -43,7 +43,7 @@ Complete each phase before the next.
 
 5. **Trace data flow** when the error is deep in the call stack: where does the bad value originate, what called this with it, keep going up to the source. Fix at the source. Read `root-cause-tracing.md` in this directory for the full backward-tracing technique.
 
-code-kb: `get_symbol_context(symbol_name, file_path)` or `get_symbol_body` on the buggy function; `find_references(symbol_name, direction="callers")` for call sites that can trigger it; `codebase_outline` to orient on the subsystem.
+code-kb: `get_symbol_context(symbol_name, file_path?)` or `get_symbol_body` on the buggy function; `find_references(symbol_name, direction="callers")` for call sites that can trigger it; `codebase_outline` to orient on the subsystem.
 
 ### Phase 2: Pattern Analysis
 
