@@ -24,6 +24,13 @@ Razorback assumes both code-kb and Goldfish are available.
 
 3. **Restart Codex** (quit and relaunch the CLI or desktop app) so native skill discovery reloads the installed plugin skills.
 
+4. **Update later** by refreshing the marketplace snapshot first. `codex plugin remove` keeps the snapshot, so a plain remove-and-add reinstalls the same version:
+   ```bash
+   codex plugin marketplace upgrade
+   codex plugin remove razorback@razorback
+   codex plugin add razorback@razorback
+   ```
+
 ### Fallback: local clone plus skills symlink
 
 1. **Clone the razorback repository:**
