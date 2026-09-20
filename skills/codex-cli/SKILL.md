@@ -144,7 +144,7 @@ an argument, stdin, or `--prompt-file`.
 
 ```bash
 cat "$REVIEW_PROMPT_FILE" | "$SKILL_DIR/scripts/codex-exec" --ephemeral --color never \
-  -s read-only -C "$REVIEW_ROOT" - 2>/dev/null
+  -s read-only --skip-git-repo-check -C "$REVIEW_ROOT" - 2>/dev/null
 rm -f -- "$REDACTED_PAYLOAD_FILE" "$REVIEW_PROMPT_FILE"; rm -rf -- "$REVIEW_ROOT"
 ```
 
@@ -171,7 +171,7 @@ SCHEMA_FILE=$(mktemp); RESULT_FILE=$(mktemp)
 "$SKILL_DIR/scripts/openai-schema" > "$SCHEMA_FILE" || { echo "schema preparation failed" >&2; exit 1; }
 trap 'rm -f "$REDACTED_PAYLOAD_FILE" "$REVIEW_PROMPT_FILE" "$RESULT_FILE" "$SCHEMA_FILE"; rm -rf "$REVIEW_ROOT"' EXIT
 cat "$REVIEW_PROMPT_FILE" | "$SKILL_DIR/scripts/codex-exec" --ephemeral --color never \
-  -s read-only -C "$REVIEW_ROOT" --output-schema "$SCHEMA_FILE" -o "$RESULT_FILE" - 2>/dev/null
+  -s read-only --skip-git-repo-check -C "$REVIEW_ROOT" --output-schema "$SCHEMA_FILE" -o "$RESULT_FILE" - 2>/dev/null
 "$SKILL_DIR/scripts/validate-review-output" "$RESULT_FILE"
 ```
 
@@ -186,7 +186,9 @@ rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ```
 
 `--add-dir <DIR>` per extra writable directory; `--skip-git-repo-check`
-outside a git repo.
+outside a git repo. The exported `$REVIEW_ROOT` has no `.git`, so every
+review dispatch against it carries `--skip-git-repo-check`; without it codex
+rejects the arguments before any model turn.
 
 ## Sessions and Other Projects
 

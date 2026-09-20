@@ -123,3 +123,12 @@ test('review campaigns do not count a failed preflight as a consumed invocation'
   const skill = read('skills/managing-review-campaigns/SKILL.md');
   assert.match(skill, /preflight[\s\S]*?consumes no invocation/i);
 });
+
+test('codex-cli review recipes skip the git repo check on the exported review tree', () => {
+  const skill = read('skills/codex-cli/SKILL.md');
+  const dispatches = skill.match(/^.*codex-exec".*\n.*-C "\$REVIEW_ROOT".*$/gm) ?? [];
+  assert.equal(dispatches.length, 2);
+  for (const block of dispatches) {
+    assert.match(block, /--skip-git-repo-check/);
+  }
+});
