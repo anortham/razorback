@@ -1,6 +1,6 @@
 {
   "name": "razorback",
-  "version": "0.44.2",
+  "version": "0.44.3",
   "description": "code-kb-powered development workflow for Claude Code, Codex, and OpenCode.",
   "type": "module",
   "scripts": {
