@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root = join(import.meta.dirname, '..');
@@ -67,21 +68,30 @@ const CASES = [
     mutation: 'Replacing only the first occurrence or ignoring environment-derived values would leak a later match.',
   },
   {
-    name: 'short sensitive environment values fail closed when present',
-    input: 'example text x line 1',
+    name: 'short sensitive environment values fail closed when present and name the variable',
+    input: 'example text p4ss line 1',
     expected: null,
     status: 1,
-    environment: { API_KEY: 'x' },
-    secrets: ['x'],
-    mutation: 'Replacing a short environment value globally would corrupt benign payload text instead of failing closed.',
+    stderrIncludes: 'API_KEY',
+    environment: { API_KEY: 'p4ss' },
+    secrets: ['p4ss'],
+    mutation: 'Replacing a short environment value globally would corrupt benign payload text instead of failing closed, and an unnamed variable leaves the caller guessing.',
   },
   {
     name: 'short sensitive environment values absent from the payload are ignored',
     input: 'safe review body',
     expected: 'safe review body',
-    environment: { API_KEY: 'x' },
+    environment: { API_KEY: 'p4ss' },
     secrets: [],
     mutation: 'Failing on an absent short environment value would block a safe dispatch unnecessarily.',
+  },
+  {
+    name: 'short lowercase config words in sensitive-named variables are not secrets',
+    input: 'the cached result and the cache itself',
+    expected: 'the cached result and the cache itself',
+    environment: { GCM_CREDENTIAL_STORE: 'cache' },
+    secrets: [],
+    mutation: 'Treating a plain configuration word as a secret by variable name alone blocks every payload that contains the word.',
   },
   {
     name: 'unterminated quoted sensitive assignments fail closed',
@@ -145,13 +155,14 @@ const CASES = [
   },
 ];
 
-for (const { name, input, expected, status = 0, environment, secrets, mutation } of CASES) {
+for (const { name, input, expected, status = 0, stderrIncludes, environment, secrets, mutation } of CASES) {
   test(`${name} (${mutation})`, () => {
     const result = runRedactor(input, environment);
     assert.equal(result.status, status, result.stderr || 'redactor returned an unexpected exit status');
     if (status !== 0) {
       assert.equal(result.stdout, '');
-      assert.equal(result.stderr, 'redact-outbound: unable to process input\n');
+      assert.match(result.stderr, /^redact-outbound: unable to process input: .+\n$/);
+      if (stderrIncludes) assert.ok(result.stderr.includes(stderrIncludes), result.stderr);
     } else {
       assert.equal(result.stdout, expected);
       assert.equal(result.stderr, '');
@@ -162,3 +173,10 @@ for (const { name, input, expected, status = 0, environment, secrets, mutation }
     }
   });
 }
+
+test('the security review template passes redaction with GCM_CREDENTIAL_STORE=cache in the environment', () => {
+  const template = readFileSync(join(root, 'skills/security-review/security-adversarial-prompt.txt'), 'utf8');
+  const result = runRedactor(template, { GCM_CREDENTIAL_STORE: 'cache' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout, template);
+});

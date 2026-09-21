@@ -24,19 +24,25 @@ const QUOTED_ASSIGNMENT = new RegExp(`${ASSIGNMENT_PREFIX}(${ASSIGNMENT_KEY})\\2
 const QUOTED_ASSIGNMENT_START = new RegExp(`${ASSIGNMENT_PREFIX}(${ASSIGNMENT_KEY})\\2(${ASSIGNMENT_SEPARATOR})(["'])`, 'gim');
 const UNQUOTED_ASSIGNMENT = new RegExp(`${ASSIGNMENT_PREFIX}(${ASSIGNMENT_KEY})\\2(${ASSIGNMENT_SEPARATOR})(?!["'])(?!${REDACTED})([^\\s,;&]+)`, 'gim');
 
-function sensitiveEnvironmentValues(environment) {
+const SHORT_VALUE_LENGTH = 8;
+const CONFIG_WORD = /^[a-z]+$/;
+
+function isShortConfigWord(value) {
+  return value.length < SHORT_VALUE_LENGTH && CONFIG_WORD.test(value);
+}
+
+function sensitiveEnvironmentEntries(environment) {
   return Object.entries(environment)
-    .filter(([name, value]) => SENSITIVE_ENV_NAME.test(name) && value)
-    .map(([, value]) => value)
-    .sort((left, right) => right.length - left.length)
-    .filter((value, index, values) => values.indexOf(value) === index);
+    .filter(([name, value]) => SENSITIVE_ENV_NAME.test(name) && value && !isShortConfigWord(value))
+    .sort(([, left], [, right]) => right.length - left.length)
+    .filter(([, value], index, entries) => entries.findIndex(([, other]) => other === value) === index);
 }
 
 function replaceEnvironmentValues(payload, environment) {
   let redacted = payload;
-  for (const value of sensitiveEnvironmentValues(environment)) {
-    if (value.length < 8) {
-      if (payload.includes(value)) throw new Error('short sensitive environment value in payload');
+  for (const [name, value] of sensitiveEnvironmentEntries(environment)) {
+    if (value.length < SHORT_VALUE_LENGTH) {
+      if (payload.includes(value)) throw new Error(`short value of environment variable ${name} appears in the payload`);
       continue;
     }
     redacted = redacted.split(value).join(REDACTED);
@@ -107,7 +113,7 @@ async function main() {
   process.stdout.write(redact(payload, process.env));
 }
 
-main().catch(() => {
-  process.stderr.write('redact-outbound: unable to process input\n');
+main().catch((error) => {
+  process.stderr.write(`redact-outbound: unable to process input: ${error.message}\n`);
   process.exitCode = 1;
 });

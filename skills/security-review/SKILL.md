@@ -65,7 +65,7 @@ Run at every enforcement point, every time, before repo content leaves the machi
 
 ## Outbound Payload Redaction
 
-`skills/security-review/scripts/redact-outbound` reads the fully constructed prompt, diff, or report on stdin and writes the same shape with sensitive matches replaced by `<REDACTED>`; it never prints matched material. Every enforcement point runs it immediately before dispatch and sends only the redacted artifact. A nonzero status is a failed dispatch: remove temporary artifacts, report the generic failure, and stop before invoking the provider. Do not log the original payload or any matched value.
+`skills/security-review/scripts/redact-outbound` reads the fully constructed prompt, diff, or report on stdin and writes the same shape with sensitive matches replaced by `<REDACTED>`; it never prints matched material. Every enforcement point runs it immediately before dispatch and sends only the redacted artifact. A nonzero status is a failed dispatch: remove temporary artifacts, report the generic failure, and stop before invoking the provider. The stderr line names the cause, such as the environment variable whose short value appears in the payload, but never the value itself. Do not log the original payload or any matched value.
 
 ```bash
 PAYLOAD_FILE=$(mktemp)
