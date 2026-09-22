@@ -98,7 +98,8 @@ When modifying skills, add tool awareness at exploration/investigation points by
 | Find references before changing a public API (callers/callees) | `find_references(symbol_name, direction="callers"|"callees")` |
 | Assess impact / blast radius of a change | `blast_radius(symbol?, file?, depth?)` |
 | Structural facts — routes, queries, models, config keys | `find_structural_facts(category?)` |
-| Rename / edit a symbol safely with AST validation | `replace_symbol_body(symbol_name, file_path, new_body)` |
+
+Use your host's native editing tools to modify files.
 
 code-kb indexes symbols, signatures, docstrings, references, and structural facts across the workspace with zero config (`code-kb scan`). CLI 1:1 commands: `code-kb lookup <query>` (exact/prefix symbol lookup) and `code-kb context <symbol>` (symbol context before edits). CLI tool aliases include `code-kb blast-radius` / `code-kb impact` and `code-kb stats` / `code-kb telemetry`.
 

@@ -84,7 +84,8 @@ When code-kb supplies an injected routing block or server instructions, follow t
 | **Find references** before changing a public API (callers/callees) | `find_references(symbol_name, direction="callers"|"callees")` |
 | **Assess impact / blast radius** of a change | `blast_radius(symbol?, file?, depth?)` |
 | **Structural facts** — routes, queries, models, config keys | `find_structural_facts(category?)` |
-| **Rename / edit** a symbol safely with AST validation | `replace_symbol_body(symbol_name, file_path, new_body)` |
+
+Use your host's native editing tools to modify files.
 
 **Rules (lead and every native implementer, reviewer, and fix worker):**
 1. Use code-kb for ALL codebase exploration. Do NOT fall back to Glob → Read → Grep chains.

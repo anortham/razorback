@@ -161,7 +161,6 @@ Use these code-kb tools by capability:
 - Find callers/callees: `find_references(symbol_name, direction="callers"|"callees")`
 - Assess blast radius / test impact: `blast_radius(symbol?, file?, depth?)`
 - Code-shape facts (routes, queries, models, config keys): `find_structural_facts(category?)`
-- Rename/edit a symbol safely: `replace_symbol_body(symbol_name, file_path, new_body, expected_body_hash?)`
 - Tool usage & token savings summary: `telemetry_summary(time_window?, workspace_only?)`
 
 See the capability → tool mapping table in `using-razorback`'s "Your Toolchain" section. CLI 1:1 commands are `code-kb lookup <query>`, `code-kb context <symbol>`, and `code-kb stats` (or `code-kb telemetry`). Install and configure code-kb before using razorback for real work.

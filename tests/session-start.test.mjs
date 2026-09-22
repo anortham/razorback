@@ -143,7 +143,6 @@ test('every branch carries the full code-kb toolchain table', () => {
     /`find_references\(symbol_name, direction="callers"\|"callees"\)`/,
     /\| `blast_radius\(symbol\?, file\?, depth\?\)` \|/,
     /\| `find_structural_facts\(category\?\)` \|/,
-    /\| `replace_symbol_body\(symbol_name, file_path, new_body\)` \|/,
   ];
 
   for (const [branch, payload] of Object.entries(payloadOf)) {
@@ -152,6 +151,7 @@ test('every branch carries the full code-kb toolchain table', () => {
     for (const row of tableRows) {
       assert.match(text, row, `${branch} is missing toolchain row ${row}`);
     }
+    assert.match(text, /Use your host's native editing tools to modify files\./, `${branch} is missing the native-editing directive`);
   }
 });
 

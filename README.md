@@ -12,7 +12,7 @@ Razorback is a skill set for coding-agent harnesses, diverged from [Superpowers]
 
 AI-assisted development burns tokens on repetitive codebase exploration. Every agent and subagent re-discovers the same code through Glob/Grep/Read chains. Razorback solves this two ways:
 
-- **code-kb MCP** routes all exploration through purpose-built tools — `codebase_outline`, `file_skeleton`, `lookup_symbol`, `search_symbols`, `get_symbol_body`, `get_symbol_context`, `find_references`, `blast_radius`, `find_structural_facts`, and `replace_symbol_body` — that return targeted context in 1-2 calls instead of 5-8.
+- **code-kb MCP** routes all exploration through purpose-built tools — `codebase_outline`, `file_skeleton`, `lookup_symbol`, `search_symbols`, `get_symbol_body`, `get_symbol_context`, `find_references`, `blast_radius`, and `find_structural_facts` — that return targeted context in 1-2 calls instead of 5-8.
 - **code-kb-first applies to every worker**: the lead, implementers, reviewers, and fix workers all orient with code-kb before raw file reads.
 - **Parallel subagent dispatch with inline review by the lead** keeps the main agent's context clean while letting independent tasks move concurrently.
 - **Autonomous execution of approved plans** with optional pre-merge external review (codex / claude) and compaction-durable goldfish checkpoints; runs overnight without waking you for anything short of a real blocker

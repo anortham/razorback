@@ -2,10 +2,18 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { execSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 
 const root = join(import.meta.dirname, '..');
 const read = (path) => readFileSync(join(root, path), 'utf8');
+const activeMatches = (pattern) => {
+  const result = spawnSync('git', [
+    'grep', '--untracked', '-n', '-E', pattern, '--', '.',
+    ':!docs/plans', ':!.memories', ':!tests/workflow-tool-contracts.test.mjs',
+  ], { cwd: root, encoding: 'utf8' });
+  assert.ok(result.status === 0 || result.status === 1, result.stderr || result.error?.message);
+  return result.stdout.trim();
+};
 
 test('bootstrap states achievable instruction priority and capability-based execution routing', () => {
   const skill = read('skills/using-razorback/SKILL.md');
@@ -70,14 +78,27 @@ test('external reviewers receive a lead-built code-kb evidence bundle without MC
 });
 
 test('active files do not reference legacy code-kb tool names find_symbol, get_context_slice, or code_kb_stats', () => {
-  const result = execSync(
-    'git grep -n -E "(find_symbol|get_context_slice|code_kb_stats)" -- . ":!docs/plans" ":!.memories" ":!tests/workflow-tool-contracts.test.mjs" || true',
-    { cwd: root, encoding: 'utf8' }
-  ).trim();
+  const result = activeMatches('(find_symbol|get_context_slice|code_kb_stats)');
 
   assert.equal(
     result,
     '',
     `Active repository files must not name find_symbol, get_context_slice, or code_kb_stats:\n${result}`
   );
+});
+
+test('active guidance uses native editing tools instead of code-kb edit tools', () => {
+  const guidance = [
+    'skills/using-razorback/SKILL.md',
+    'skills/using-razorback/references/instruction-tier.md',
+    'skills/using-razorback/references/subagent-toolchain.md',
+  ];
+
+  for (const file of guidance) {
+    assert.match(read(file), /Use your host's native editing tools to modify files\./);
+  }
+
+  const result = activeMatches('replace_symbol_body');
+
+  assert.equal(result, '', `Active repository files still reference the removed edit tool:\n${result}`);
 });

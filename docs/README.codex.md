@@ -77,7 +77,7 @@ Skills are discovered automatically. Codex activates them when:
 
 ### code-kb MCP
 
-Razorback skills assume code-kb is configured. Without it, the exploration directives in skill bodies will fail. Use code-kb by capability: `codebase_outline` to orient, `file_skeleton` to list file symbols, `lookup_symbol` and `search_symbols` to locate symbols, `get_symbol_body` and `get_symbol_context` to inspect implementations, `find_references` to track callers/callees, `blast_radius` to assess impact, `find_structural_facts` to query AST relationships, and `replace_symbol_body` for atomic edits. Install and configure code-kb before relying on razorback for real work.
+Razorback skills assume code-kb is configured. Without it, the exploration directives in skill bodies will fail. Use code-kb by capability: `codebase_outline` to orient, `file_skeleton` to list file symbols, `lookup_symbol` and `search_symbols` to locate symbols, `get_symbol_body` and `get_symbol_context` to inspect implementations, `find_references` to track callers/callees, `blast_radius` to assess impact, and `find_structural_facts` to query AST relationships. Use your host's native editing tools to modify files. Install and configure code-kb before relying on razorback for real work.
 
 ### Goldfish MCP
 

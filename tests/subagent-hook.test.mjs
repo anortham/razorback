@@ -62,7 +62,7 @@ test('subagent-start injects the code-kb-first ruleset', () => {
   assert.match(additionalContext, /find_references\(symbol_name, direction="callers"\|"callees"\)/);
   assert.match(additionalContext, /blast_radius\(symbol\?, file\?, depth\?\)/);
   assert.match(additionalContext, /find_structural_facts\(category\?\)/);
-  assert.match(additionalContext, /replace_symbol_body\(symbol_name, file_path, new_body\)/);
+  assert.match(additionalContext, /Use your host's native editing tools to modify files\./);
   // Subagent-specific worktree-state reporting requirement.
   assert.match(additionalContext, /worktree/i);
   assert.match(additionalContext, /path, branch, commit, (and )?dirty state/i);

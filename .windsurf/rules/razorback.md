@@ -15,7 +15,8 @@ Use code-kb by capability, not by raw file reading:
 | **Find references** before changing a public API (callers/callees) | `find_references(symbol_name, direction="callers"|"callees")` |
 | **Assess impact / blast radius** of a change | `blast_radius(symbol?, file?, depth?)` |
 | **Structural facts** — routes, queries, models, config keys | `find_structural_facts(category?)` |
-| **Rename / edit** a symbol safely with AST validation | `replace_symbol_body(symbol_name, file_path, new_body)` |
+
+Use your host's native editing tools to modify files.
 
 **Exploration rules:**
 
