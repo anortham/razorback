@@ -35,6 +35,7 @@ tests/*.test.mjs                   — Repo guard tests (`npm test`)
 index.js                           — OpenCode package entry point (stub)
 assets/                            — Plugin icons
 docs/adding-a-harness.md            — Tier vocabulary + file checklist for adding a harness
+docs/site/                          — GitHub Pages landing site (deployed by .github/workflows/pages.yml; tests/site-content.test.mjs fails when a skill is added or removed without updating it)
 docs/plans/                         — Historical design and implementation plans
 docs/specs/                         — Design specifications
 ```

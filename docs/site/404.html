@@ -3,18 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Razorback - Page not found</title>
-  <link rel="icon" href="assets/razorback-small.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css">
+  <title>Page not found - Razorback</title>
+  <meta name="theme-color" content="#e8ecef" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#121b24" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/razorback/assets/razorback-small.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700..900&family=DM+Mono:wght@400;500&family=Public+Sans:wght@400;600&display=swap">
+  <link rel="stylesheet" href="/razorback/style.css">
 </head>
 <body>
-  <main class="section">
-    <div class="section-heading">
-      <p class="eyebrow">404</p>
-      <h1>Not found</h1>
-      <p>That razorback page does not exist.</p>
-      <p><a class="button primary" href="/razorback/">Back to Razorback</a></p>
-    </div>
+  <header class="topbar">
+    <a class="brand" href="/razorback/">
+      <img src="/razorback/assets/razorback-small.svg" alt="" width="28" height="28">
+      <span>Razorback</span>
+    </a>
+  </header>
+  <main>
+    <section class="not-found" aria-labelledby="nf-title">
+      <h1 id="nf-title">Off the trail.</h1>
+      <p>That page does not exist. The workflow, the skills, and the setup steps are all on the front page.</p>
+      <p><a class="button primary" href="/razorback/">Back to razorback</a></p>
+    </section>
   </main>
 </body>
 </html>
