@@ -254,13 +254,12 @@ test('grade enforces required operation ordering', () => {
   assert.match(report.cases.find(({ id }) => id === 'push_recovery').reasons.join('\n'), /retry_push must occur after check_remote_tip/);
 });
 
-test('grade requires pre-commit checkpoints before staging', () => {
+test('grade requires staging before commit and a warranted checkpoint before staging', () => {
   const packets = prepare(join(testRoot, 'checkpoint-order-packets.json'));
   const answers = materializeValidAnswers(packets);
   answers.cases.find(({ id }) => id === 'checkpoint').actions = [
-    'stage_intended_files',
-    'checkpoint_precommit',
     'commit_task',
+    'stage_intended_files',
     'record_commit_sha',
   ];
   answers.cases.find(({ id }) => id === 'parallel_commit').actions = [
@@ -272,7 +271,7 @@ test('grade requires pre-commit checkpoints before staging', () => {
   const { result, report } = grade(packets, answers);
 
   assert.equal(result.status, 1);
-  assert.match(report.cases.find(({ id }) => id === 'checkpoint').reasons.join('\n'), /stage_intended_files must occur after checkpoint_precommit/);
+  assert.match(report.cases.find(({ id }) => id === 'checkpoint').reasons.join('\n'), /commit_task must occur after stage_intended_files/);
   assert.match(report.cases.find(({ id }) => id === 'parallel_commit').reasons.join('\n'), /stage_task_a_files must occur after checkpoint_precommit/);
 });
 
@@ -295,11 +294,11 @@ test('grade requires interrupted work reconciliation before completion', () => {
   assert.match(report.cases.find(({ id }) => id === 'interrupted_run').reasons.join('\n'), /mark_task_complete must occur after reconcile_uncommitted/);
 });
 
-test('grade rejects more than one code-kb restoration question', () => {
+test('grade rejects more than one audit scope question', () => {
   const packets = prepare(join(testRoot, 'question-range-packets.json'));
   const oneQuestion = materializeValidAnswers(packets);
   const missingCodeKb = oneQuestion.cases.find(({ id }) => id === 'missing_code_kb');
-  missingCodeKb.actions = ['preserve_evidence', 'request_code_kb_enablement'];
+  missingCodeKb.actions = ['native_text_search', 'preserve_evidence', 'ask_scope_question'];
   missingCodeKb.terminal_state = 'awaiting_user';
   missingCodeKb.user_questions = 1;
 
@@ -323,7 +322,7 @@ test('grade still requires exactly one publication approval question', () => {
   assert.match(report.cases.find(({ id }) => id === 'approval').reasons.join('\n'), /user_questions must equal 1/);
 });
 
-test('grade accepts active simulation terminals for planned delegation sequences', () => {
+test('grade accepts active simulation terminals for planned sequences', () => {
   const packets = prepare(join(testRoot, 'simulation-terminal-packets.json'));
   const answers = materializeValidAnswers(packets);
   answers.cases.find(({ id }) => id === 'single_task').terminal_state = 'active';
@@ -352,11 +351,12 @@ test('grade accepts safe extended workflow sequences', () => {
   answers.cases.find(({ id }) => id === 'push_recovery').terminal_state = 'active';
   answers.cases.find(({ id }) => id === 'checkpoint').actions.push('mark_task_complete');
   answers.cases.find(({ id }) => id === 'single_task').actions = [
-    'dispatch_implementer',
-    'checkpoint_precommit',
-    'worker_commit',
+    'lead_implements_directly',
     'lead_spec_review',
     'lead_quality_review',
+    'stage_intended_files',
+    'commit_task',
+    'record_commit_sha',
     'mark_task_complete',
   ];
   answers.cases.find(({ id }) => id === 'restricted_reviewer').actions.push('follow_host_restrictions');
@@ -385,7 +385,6 @@ test('grade rejects optional completion before its evidence', () => {
   const answers = materializeValidAnswers(packets);
   const checkpoint = answers.cases.find(({ id }) => id === 'checkpoint');
   checkpoint.actions = [
-    'checkpoint_precommit',
     'stage_intended_files',
     'commit_task',
     'mark_task_complete',
@@ -398,27 +397,61 @@ test('grade rejects optional completion before its evidence', () => {
   assert.match(report.cases.find(({ id }) => id === 'checkpoint').reasons.join('\n'), /mark_task_complete must occur after record_commit_sha/);
 });
 
-test('grade rejects selected commits without checkpoint and staging prerequisites', () => {
+test('grade rejects selected commits without staging and does not require routine checkpoints', () => {
   const packets = prepare(join(testRoot, 'commit-dependency-packets.json'));
   const answers = materializeValidAnswers(packets);
-  answers.cases.find(({ id }) => id === 'single_task').actions.splice(1, 0, 'worker_commit');
+  answers.cases.find(({ id }) => id === 'single_task').actions.push('commit_task');
   const interrupted = answers.cases.find(({ id }) => id === 'interrupted_run');
   interrupted.actions.splice(-1, 0, 'commit_task');
 
   const { result, report } = grade(packets, answers);
 
   assert.equal(result.status, 1);
-  assert.match(report.cases.find(({ id }) => id === 'single_task').reasons.join('\n'), /worker_commit requires checkpoint_precommit/);
+  assert.match(report.cases.find(({ id }) => id === 'single_task').reasons.join('\n'), /commit_task requires stage_intended_files/);
   const interruptedReasons = report.cases.find(({ id }) => id === 'interrupted_run').reasons.join('\n');
-  assert.match(interruptedReasons, /commit_task requires checkpoint_precommit/);
   assert.match(interruptedReasons, /commit_task requires stage_intended_files/);
+  assert.doesNotMatch(interruptedReasons, /requires checkpoint_precommit/);
 });
 
-test('grade accepts either code-kb block outcome and rejects mismatched restoration questions', () => {
+test('grade rejects delegating one coherent task and a checkpoint on a routine commit', () => {
+  const packets = prepare(join(testRoot, 'ceremony-packets.json'));
+  const answers = materializeValidAnswers(packets);
+  answers.cases.find(({ id }) => id === 'single_task').actions = [
+    'dispatch_implementer',
+    'lead_spec_review',
+    'lead_quality_review',
+  ];
+  answers.cases.find(({ id }) => id === 'checkpoint').actions.unshift('checkpoint_precommit');
+
+  const { result, report } = grade(packets, answers);
+
+  assert.equal(result.status, 1);
+  const singleReasons = report.cases.find(({ id }) => id === 'single_task').reasons.join('\n');
+  assert.match(singleReasons, /forbidden action dispatch_implementer/);
+  assert.match(singleReasons, /missing required action lead_implements_directly/);
+  assert.match(report.cases.find(({ id }) => id === 'checkpoint').reasons.join('\n'), /forbidden action checkpoint_precommit/);
+});
+
+test('grade rejects blocking an audit on missing code-kb when native search works', () => {
+  const packets = prepare(join(testRoot, 'missing-code-kb-block-packets.json'));
+  const answers = materializeValidAnswers(packets);
+  const missingCodeKb = answers.cases.find(({ id }) => id === 'missing_code_kb');
+  missingCodeKb.actions = ['preserve_evidence', 'report_blocked'];
+  missingCodeKb.terminal_state = 'blocked';
+
+  const { result, report } = grade(packets, answers);
+
+  assert.equal(result.status, 1);
+  const reasons = report.cases.find(({ id }) => id === 'missing_code_kb').reasons.join('\n');
+  assert.match(reasons, /forbidden action report_blocked/);
+  assert.match(reasons, /missing required action native_text_search/);
+});
+
+test('grade accepts either audit outcome and rejects mismatched scope questions', () => {
   const packets = prepare(join(testRoot, 'code-kb-outcome-packets.json'));
   const restoration = materializeValidAnswers(packets);
   const missingCodeKb = restoration.cases.find(({ id }) => id === 'missing_code_kb');
-  missingCodeKb.actions = ['preserve_evidence', 'request_code_kb_enablement'];
+  missingCodeKb.actions = ['native_text_search', 'preserve_evidence', 'ask_scope_question'];
   missingCodeKb.terminal_state = 'awaiting_user';
   missingCodeKb.user_questions = 1;
 
@@ -428,14 +461,14 @@ test('grade accepts either code-kb block outcome and rejects mismatched restorat
   mismatched.cases.find(({ id }) => id === 'missing_code_kb').user_questions = 0;
   const { result, report } = grade(packets, mismatched);
   assert.equal(result.status, 1);
-  assert.match(report.cases.find(({ id }) => id === 'missing_code_kb').reasons.join('\n'), /request_code_kb_enablement requires user_questions between 1 and 1/);
+  assert.match(report.cases.find(({ id }) => id === 'missing_code_kb').reasons.join('\n'), /ask_scope_question requires user_questions between 1 and 1/);
 });
 
-test('grade accepts reporting the code-kb blocker while asking once for restoration', () => {
+test('grade accepts reporting an evidence gap while asking once about the scope', () => {
   const packets = prepare(join(testRoot, 'combined-code-kb-outcome-packets.json'));
   const answers = materializeValidAnswers(packets);
   const missingCodeKb = answers.cases.find(({ id }) => id === 'missing_code_kb');
-  missingCodeKb.actions = ['preserve_evidence', 'report_blocked', 'request_code_kb_enablement'];
+  missingCodeKb.actions = ['native_text_search', 'preserve_evidence', 'report_evidence_gaps', 'ask_scope_question'];
   missingCodeKb.terminal_state = 'awaiting_user';
   missingCodeKb.user_questions = 1;
 
@@ -444,18 +477,18 @@ test('grade accepts reporting the code-kb blocker while asking once for restorat
   assert.equal(result.status, 0, JSON.stringify(report));
 });
 
-test('grade rejects a code-kb restoration request with blocked terminal state', () => {
+test('grade rejects a scope question with a complete terminal state', () => {
   const packets = prepare(join(testRoot, 'mismatched-code-kb-state-packets.json'));
   const answers = materializeValidAnswers(packets);
   const missingCodeKb = answers.cases.find(({ id }) => id === 'missing_code_kb');
-  missingCodeKb.actions = ['preserve_evidence', 'report_blocked', 'request_code_kb_enablement'];
-  missingCodeKb.terminal_state = 'blocked';
+  missingCodeKb.actions = ['native_text_search', 'preserve_evidence', 'report_evidence_gaps', 'ask_scope_question'];
+  missingCodeKb.terminal_state = 'complete';
   missingCodeKb.user_questions = 1;
 
   const { result, report } = grade(packets, answers);
 
   assert.equal(result.status, 1);
-  assert.match(report.cases.find(({ id }) => id === 'missing_code_kb').reasons.join('\n'), /request_code_kb_enablement requires terminal_state awaiting_user/);
+  assert.match(report.cases.find(({ id }) => id === 'missing_code_kb').reasons.join('\n'), /ask_scope_question requires terminal_state awaiting_user/);
 });
 
 test('grade accepts safe evidence and follow-through alternatives across cases', () => {
@@ -463,16 +496,13 @@ test('grade accepts safe evidence and follow-through alternatives across cases',
   const answers = materializeValidAnswers(packets);
   const singleTask = answers.cases.find(({ id }) => id === 'single_task');
   singleTask.actions = [
-    'dispatch_implementer',
-    'checkpoint_precommit',
-    'worker_commit',
+    'lead_implements_directly',
     'lead_spec_review',
     'lead_quality_review',
-    'record_commit_sha',
     'mark_task_complete',
   ];
   const missingCodeKb = answers.cases.find(({ id }) => id === 'missing_code_kb');
-  missingCodeKb.actions.splice(1, 0, 'report_evidence_gaps');
+  missingCodeKb.actions = ['preserve_evidence', 'native_text_search', 'report_evidence_gaps', 'report_ledger'];
   const liveTools = answers.cases.find(({ id }) => id === 'live_tools');
   liveTools.actions = [
     'track_durable_plan',
@@ -494,12 +524,12 @@ test('grade rejects unsafe follow-through order and an invented native task tool
   const answers = materializeValidAnswers(packets);
   const singleTask = answers.cases.find(({ id }) => id === 'single_task');
   singleTask.actions = [
-    'dispatch_implementer',
-    'checkpoint_precommit',
-    'record_commit_sha',
-    'worker_commit',
+    'lead_implements_directly',
     'lead_spec_review',
     'lead_quality_review',
+    'stage_intended_files',
+    'record_commit_sha',
+    'commit_task',
   ];
   const liveTools = answers.cases.find(({ id }) => id === 'live_tools');
   liveTools.actions = [
@@ -514,7 +544,7 @@ test('grade rejects unsafe follow-through order and an invented native task tool
   const { result, report } = grade(packets, answers);
 
   assert.equal(result.status, 1);
-  assert.match(report.cases.find(({ id }) => id === 'single_task').reasons.join('\n'), /record_commit_sha must occur after worker_commit/);
+  assert.match(report.cases.find(({ id }) => id === 'single_task').reasons.join('\n'), /record_commit_sha must occur after commit_task/);
   const liveReasons = report.cases.find(({ id }) => id === 'live_tools').reasons.join('\n');
   assert.match(liveReasons, /forbidden action use_native_task_tool/);
   assert.match(liveReasons, /lead_spec_review must occur after check_agent_completion/);

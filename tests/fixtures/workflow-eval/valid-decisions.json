@@ -4,13 +4,13 @@
   "cases": [
     {"id":"approval","actions":["complete_local_materials","request_publication_authority"],"terminal_state":"awaiting_user","user_questions":1},
     {"id":"push_recovery","actions":["diagnose_network","check_remote_tip","retry_push","confirm_remote"],"terminal_state":"complete","user_questions":0},
-    {"id":"checkpoint","actions":["checkpoint_precommit","stage_intended_files","commit_task","record_commit_sha"],"terminal_state":"complete","user_questions":0},
-    {"id":"single_task","actions":["dispatch_implementer","lead_spec_review","lead_quality_review"],"terminal_state":"complete","user_questions":0},
-    {"id":"missing_code_kb","actions":["preserve_evidence","report_blocked"],"terminal_state":"blocked","user_questions":0},
+    {"id":"checkpoint","actions":["stage_intended_files","commit_task","record_commit_sha"],"terminal_state":"complete","user_questions":0},
+    {"id":"single_task","actions":["lead_implements_directly","lead_spec_review","lead_quality_review"],"terminal_state":"complete","user_questions":0},
+    {"id":"missing_code_kb","actions":["native_text_search","preserve_evidence","report_evidence_gaps","report_ledger"],"terminal_state":"complete","user_questions":0},
     {"id":"restricted_reviewer","actions":["build_sanitized_evidence","launch_readonly_reviewer","report_evidence_gaps"],"terminal_state":"complete","user_questions":0},
     {"id":"live_tools","actions":["inspect_live_schema","track_durable_plan","spawn_agent","check_agent_completion"],"terminal_state":"complete","user_questions":0},
     {"id":"instruction_priority","actions":["follow_host_restrictions"],"terminal_state":"complete","user_questions":0},
-    {"id":"interrupted_run","actions":["recall_memory","inspect_plan","inspect_ledger","inspect_git","reconcile_uncommitted","mark_task_complete"],"terminal_state":"complete","user_questions":0},
+    {"id":"interrupted_run","actions":["inspect_plan","inspect_ledger","inspect_git","reconcile_uncommitted","mark_task_complete"],"terminal_state":"complete","user_questions":0},
     {"id":"parallel_commit","actions":["checkpoint_precommit","stage_task_a_files","commit_task_a"],"terminal_state":"complete","user_questions":0}
   ]
 }

@@ -31,8 +31,8 @@
       "id": "checkpoint",
       "facts": [
         "A reviewed parallel task batch is ready to commit.",
-        "The live Goldfish contract requires a checkpoint before every commit.",
-        "The lead owns commits and must stage only intended source, plan, and checkpoint files.",
+        "The commit is routine: it records no consequential decision, surprising failure, or unfinished handoff.",
+        "The lead owns commits and must stage only intended source and plan files.",
         "The actual commit SHA must be recorded after commit, then the task may be marked complete."
       ],
       "workflow_files": [
@@ -43,26 +43,26 @@
     {
       "id": "single_task",
       "facts": [
-        "A moderate, coherent feature has an approved design.",
-        "Native delegation is available and preferred.",
-        "Return the full planned successful sequence from dispatch through lead specification and code-quality review.",
+        "A moderate, coherent feature: the user's request says what to build and settles its design choices.",
+        "Native delegation is available.",
+        "Return the full planned successful sequence from implementation through specification and code-quality review of the completed change.",
         "Describe the sequence only; no agent is actually dispatched during this evaluation.",
-        "A selected serial worker commit requires a pre-commit Goldfish checkpoint before the commit; task completion follows lead review."
+        "The commit is routine: no consequential decision, surprising failure, or unfinished handoff."
       ],
       "workflow_files": [
         "skills/using-razorback/SKILL.md",
-        "skills/subagent-driven-development/SKILL.md",
-        "skills/executing-plans/SKILL.md"
+        "skills/brainstorming/SKILL.md",
+        "skills/writing-plans/SKILL.md"
       ]
     },
     {
       "id": "missing_code_kb",
       "facts": [
-        "The task is a repository debt audit that requires code-kb-first exploration.",
-        "Tool discovery, reconnection, and recovery have been exhausted.",
-        "Shell grep is available but the project forbids it as a code-kb fallback.",
+        "The task is a repository debt audit.",
+        "code-kb tools are unavailable after tool discovery; native text search is available.",
+        "Native search covers the tracked source except one generated directory that cannot be read.",
         "Collected diagnostic evidence must be preserved.",
-        "The agent may report the block directly or ask one concise question to restore code-kb access."
+        "The agent may report the unreadable scope as an evidence gap, or ask one concise question about whether that scope matters."
       ],
       "workflow_files": [
         "skills/harvesting-debt/SKILL.md",
@@ -114,9 +114,9 @@
       "facts": [
         "After compaction, TaskList says task2 is done but its ledger SHA is pending.",
         "The worktree is dirty and task1 already exists.",
-        "Goldfish recall, the plan, ledger, and git state are available as independent evidence.",
+        "The plan, ledger, and git state are available as independent evidence; Goldfish recall is also available.",
         "Uncommitted task state must be reconciled before completion or duplicate dispatch.",
-        "If reconciliation includes a commit, checkpoint before staging, stage intended files only, commit, and record the actual SHA."
+        "If reconciliation includes a commit, stage intended files only, commit, and record the actual SHA. The commit is routine unless reconciliation records a consequential decision."
       ],
       "workflow_files": [
         "skills/subagent-driven-development/SKILL.md",
@@ -128,7 +128,8 @@
       "facts": [
         "Task A is reviewed and ready to commit.",
         "Task B has unreviewed changes still in flight in the same worktree.",
-        "The lead owns commits and must include Task A source, plan, and pre-commit checkpoint only.",
+        "Task A's commit records a consequential decision with a rejected alternative, so it warrants a Goldfish checkpoint.",
+        "The lead owns commits and must include Task A source, plan, and that checkpoint only.",
         "Broad staging and worker commits are prohibited.",
         "After the lead commit, recording its actual SHA and then marking Task A complete are valid."
       ],

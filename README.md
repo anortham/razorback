@@ -237,10 +237,10 @@ Re-run the `curl` from the install section to refresh `.github/copilot-instructi
 
 ## Workflow
 
-The core process: brainstorm, plan, TDD, execute, review, finish.
+The core process scales with the task. Clear, ordinary work goes straight to TDD, review, and finish. Unclear or consequential work adds brainstorming, and work that needs a handoff or parallel workers adds a written plan.
 
 **Execution model (primary path depends on harness):**
-- **Autonomous by default:** once a plan is approved, execution runs to completion gated only by real blockers. A blocker is real only when the agent cannot resolve it through reasonable plan-consistent judgment. An optional pre-merge external review (codex / claude) runs before branch finish. See [autonomous-execution design](docs/plans/2026-04-18-autonomous-execution-design.md) for the rationale.
+- **Autonomous by default:** once a plan is approved, or the request already authorized the work, execution runs to completion gated only by real blockers. A blocker is real only when the agent cannot resolve it through reasonable plan-consistent judgment. An optional pre-merge external review (codex / claude) runs before branch finish. See [autonomous-execution design](docs/plans/2026-04-18-autonomous-execution-design.md) for the rationale.
 - **One coherent task:** the current agent does it directly. No plan file, worker, or task report.
 - **Independent tasks, or tasks that benefit from a separate context (any plugin-tier harness):** `subagent-driven-development` dispatches fresh implementer subagents (in parallel when tasks are independent), and the lead does inline review (spec compliance + code quality) per task.
 - **A written plan with dependent tasks, or no delegation available:** `executing-plans` runs it in the current agent.

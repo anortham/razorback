@@ -47,7 +47,8 @@ planning and orchestration available when the task benefits from them.
   including `skills/finishing-a-development-branch/SKILL.md`, for conflicting rules.
   Acceptance: ordinary work completes with native tools alone; a meaningful
   memory, when created, is still included with the relevant commit.
-- [ ] Preserve outcome checks and safety while updating the workflow contract.
+- [x] Preserve outcome checks and safety while updating the workflow contract.
+  Done on branch `workflow-reduction` (not merged; waits for the comparison).
   Keep root-cause investigation, relevant tests, review of completed changes,
   explicit ownership for parallel edits, truthful completion claims, and source
   control/secret/publication safeguards. Update `CLAUDE.md` and its `AGENTS.md`
@@ -59,10 +60,6 @@ planning and orchestration available when the task benefits from them.
   cases for the new workflow; retain checks for unsafe actions and missing work.
   Use `scripts/check-rule-copies.mjs`, focused `node --test` files for changed
   contracts, and `npm run test:workflow-eval`; run `npm test` at integration.
-  Known stale eval cases in `tests/fixtures/workflow-eval/`: `single_task` still
-  forbids the lead implementing directly, `missing_code_kb` still forbids native
-  search and requires a block, and `checkpoint`, `parallel_commit`, and
-  `interrupted_run` still require a checkpoint before every commit.
   Acceptance: small repairs, clear features, uncertain designs, and resumed work
   receive appropriate handling without weakening verification or approval boundaries.
 - [ ] Compare the lighter default with the current workflow on real tasks.
