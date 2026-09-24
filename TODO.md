@@ -18,7 +18,7 @@ planning and orchestration available when the task benefits from them.
   Acceptance: the baseline tag is named in the comparison notes before the first
   skill edit lands.
 - [x] Remove automatic process escalation from the bootstrap and brainstorming.
-  Done on branch `workflow-reduction` (not merged; waits for the comparison).
+  Done on branch `workflow-reduction`, merged to main on 2026-09-24 before the comparison.
   Update `skills/using-razorback/SKILL.md` and
   `skills/brainstorming/SKILL.md`: remove the 1% invocation rule, mandatory skill
   loading before every response, and the rule forbidding a lighter path once
@@ -27,7 +27,7 @@ planning and orchestration available when the task benefits from them.
   Acceptance: clear ordinary work proceeds directly; ambiguous requirements
   get clarification; consequential design choices still get explicit attention.
 - [x] Make delegation and durable plans optional for ordinary work.
-  Done on branch `workflow-reduction` (not merged; waits for the comparison).
+  Done on branch `workflow-reduction`, merged to main on 2026-09-24 before the comparison.
   Update `skills/writing-plans/SKILL.md`,
   `skills/subagent-driven-development/SKILL.md`, and
   `skills/executing-plans/SKILL.md`. Default to the current agent for one coherent
@@ -38,7 +38,7 @@ planning and orchestration available when the task benefits from them.
   Acceptance: a bounded task can finish without a worker, plan file, task report,
   or repeated approval of intent already authorized by the user.
 - [x] Remove hard coupling to Goldfish and code-kb from the default workflow.
-  Done on branch `workflow-reduction` (not merged; waits for the comparison).
+  Done on branch `workflow-reduction`, merged to main on 2026-09-24 before the comparison.
   Prefer the retrieval method that supplies sufficient current evidence; permit
   ordinary search and file reads without first following a fixed tool sequence.
   Missing optional tools must not block work that native tools can complete.
@@ -48,7 +48,7 @@ planning and orchestration available when the task benefits from them.
   Acceptance: ordinary work completes with native tools alone; a meaningful
   memory, when created, is still included with the relevant commit.
 - [x] Preserve outcome checks and safety while updating the workflow contract.
-  Done on branch `workflow-reduction` (not merged; waits for the comparison).
+  Done on branch `workflow-reduction`, merged to main on 2026-09-24 before the comparison.
   Keep root-cause investigation, relevant tests, review of completed changes,
   explicit ownership for parallel edits, truthful completion claims, and source
   control/secret/publication safeguards. Update `CLAUDE.md` and its `AGENTS.md`
@@ -63,6 +63,8 @@ planning and orchestration available when the task benefits from them.
   Acceptance: small repairs, clear features, uncertain designs, and resumed work
   receive appropriate handling without weakening verification or approval boundaries.
 - [ ] Compare the lighter default with the current workflow on real tasks.
+  The lighter default merged before this comparison ran; `v0.44.4` stays the
+  reproducible baseline for the current-workflow arm.
   Own the shared experiment here. Start with existing transcripts, then select
   8 to 12 tasks spanning repairs, unfamiliar modules, cross-file changes, and
   resumed work. Pin model/effort, harness version, repository state (baseline
