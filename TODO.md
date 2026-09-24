@@ -11,7 +11,8 @@ Local backlog from the tooling assessment; implementation has not started.
 Make the default a direct, proportionate development workflow, with detailed
 planning and orchestration available when the task benefits from them.
 
-- [ ] Pin the current workflow as the comparison baseline before any skill changes.
+- [x] Pin the current workflow as the comparison baseline before any skill changes.
+  Done: `docs/plans/2026-09-24-workflow-comparison.md`.
   Record `v0.44.4` as the baseline repository state for the comparison item below,
   so the current-workflow arm stays reproducible after the defaults change.
   Acceptance: the baseline tag is named in the comparison notes before the first
