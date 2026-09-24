@@ -38,17 +38,16 @@ Fresh implementer dispatch (delegation available):
 
     ## Orientation (REQUIRED before coding)
 
-    1. Inspect file outline with code-kb `file_skeleton(file_path)`.
-    2. Inspect the symbol, its callers and callees, with code-kb
-       `get_symbol_context(symbol_name, file_path?)` or `get_symbol_body(symbol_name, file_path?)`.
-    3. Find references with code-kb `find_references(symbol_name, direction="callers")` if your fix
-       changes caller-visible behavior.
+    1. Read the code the finding touches: a file read, or code-kb `file_skeleton(file_path)`.
+    2. Inspect the symbol, its callers and callees: code-kb
+       `get_symbol_context(symbol_name, file_path?)`, or file reads and a search.
+    3. Find the callers (code-kb `find_references(symbol_name, direction="callers")` or a search)
+       if your fix changes caller-visible behavior.
 
-    Do NOT use Glob -> Read -> Grep chains or start from raw files or diffs.
-    Do not infer or invent API shapes: discover symbol names, function
-    signatures, config shapes, route names, CLI flags, and public contracts with
-    code-kb before relying on them. If code-kb cannot prove the shape, say what
-    evidence is missing instead of guessing.
+    Do not infer or invent API shapes: confirm symbol names, function
+    signatures, config shapes, route names, CLI flags, and public contracts from
+    current source before relying on them. If the evidence cannot prove the shape,
+    say what is missing instead of guessing.
 
     ## Your job
 
@@ -75,8 +74,7 @@ Fresh implementer dispatch (delegation available):
     - What you changed (file:line references)
     - Commit SHA (first 7 chars)
     - Verification scope, command, commit SHA, result, and timestamp
-    - **code-kb calls used** - the skeleton / context / body / refs calls you made before editing
-    - **API-shape evidence** - the code-kb evidence for any symbol names, function signatures, config shapes, route names, CLI flags, or public contracts you relied on
+    - **API-shape evidence** - the search, file read, or code-kb call that confirmed any symbol names, function signatures, config shapes, route names, CLI flags, or public contracts you relied on
     - Observations for the morning report's judgment-calls log
 
     If BLOCKED: what blocked you and what the lead needs to do (re-dispatch

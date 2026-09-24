@@ -22,16 +22,15 @@ You are reviewing code changes for production readiness.
 **Base:** {BASE_SHA}
 **Head:** {HEAD_SHA}
 
-**Review approach — code-kb first, targeted diff second**:
+**Review approach — evidence first, targeted diff second**:
 
 1. `git diff --stat {BASE_SHA}..{HEAD_SHA}` for the overview
-2. List each changed file's symbols with `file_skeleton(file_path='<file>')`
-3. Inspect key modified symbols (callers, callees, types) with `get_symbol_context(symbol_name='<symbol>', file_path='<file>')`; `get_symbol_body` for the symbols the change centers on
-4. Find references for changed public APIs with `find_references(symbol_name='<symbol>', direction='callers')`
-5. Verify API shapes (symbol names, function signatures, config shapes, route names, CLI flags, public contracts) with code-kb evidence, not memory
-6. Only then `git diff {BASE_SHA}..{HEAD_SHA} -- <specific-file>` for line-level review
+2. Read the changed files and the symbols the change centers on (file reads, or code-kb `file_skeleton(file_path='<file>')` and `get_symbol_context(symbol_name='<symbol>', file_path='<file>')`)
+3. Find the callers of changed public APIs (code-kb `find_references(symbol_name='<symbol>', direction='callers')` or a search)
+4. Verify API shapes (symbol names, function signatures, config shapes, route names, CLI flags, public contracts) against current source, not memory
+5. Only then `git diff {BASE_SHA}..{HEAD_SHA} -- <specific-file>` for line-level review
 
-Do NOT dump the full diff upfront. A review that does not cite code-kb-assisted investigation and API-shape evidence is incomplete.
+Do NOT dump the full diff upfront. A review that does not cite its evidence and API-shape checks is incomplete.
 
 ## You Do Not Dispatch Subagents
 

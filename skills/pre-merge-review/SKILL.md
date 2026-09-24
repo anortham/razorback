@@ -137,7 +137,7 @@ Dedupe: both passes flagging the same file, lines, and root issue collapse into 
 
 ## Step 5: Apply fixes
 
-code-kb-first either way. With delegation: one fresh implementer per finding, or one per file when findings cluster, using [`fix-dispatch-prompt.md`](fix-dispatch-prompt.md); parallel only across disjoint files. Without delegation: fix inline, one finding (or one file batch) at a time, using the same template as a checklist. Fresh workers carry no implementation-phase bias.
+Evidence first either way. With delegation: one fresh implementer per finding, or one per file when findings cluster, using [`fix-dispatch-prompt.md`](fix-dispatch-prompt.md); parallel only across disjoint files. Without delegation: fix inline, one finding (or one file batch) at a time, using the same template as a checklist. Fresh workers carry no implementation-phase bias.
 
 ## Step 6: Local confirmation
 
@@ -169,7 +169,7 @@ campaign_closed: yes
 | "Cap the reviewer so this run costs less" | A cap truncates the review mid-flight, and a truncated review gets re-run in full. Scope lives in the prompt. |
 | "The reviewer output was garbage — dispatch again" | The invocation is consumed. Malformed output closes the campaign `blocked`. |
 | "Skip the security pass, the general pass covered it" | Half a review silently downgrades an explicit user choice. Both passes, or blocked. |
-| "The finding is probably right, just fix it" | Verify with code-kb first. Reviewers emit noise; rubber-stamping cuts both ways. |
+| "The finding is probably right, just fix it" | Verify it against current source first. Reviewers emit noise; rubber-stamping cuts both ways. |
 
 ## Red flags
 

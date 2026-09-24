@@ -4,7 +4,7 @@
 // Layer 1: every host copy, once its host-specific frontmatter is stripped, must
 // byte-equal the canonical body.
 // Layer 2: SKILL.md is the runtime source of truth, and subagent-toolchain.md is the
-// dispatched-subagent restatement. Both carry the six exploration rules but legitimately
+// dispatched-subagent restatement. Both carry the exploration rules but legitimately
 // differ in framing and length, so neither can be byte-compared. Instead, assert the
 // load-bearing rules survive verbatim in ALL THREE files. Rewording a rule in any one of
 // them trips this, which is the reminder to propagate it to the other two.
@@ -36,13 +36,13 @@ const COPIES = [
 
 // Load-bearing rules that must appear verbatim in EVERY invariant source below.
 const INVARIANTS = [
-  'code-kb MCP is available and MUST be used', // the hard requirement itself
-  'Do NOT fall back to Glob → Read → Grep chains', // no raw-file reflex
-  "List a file's symbols before reading it in full",
-  'Inspect a symbol before modifying it',
-  "Find a symbol's references before changing it",
+  'code-kb is an optional retrieval aid',
+  'Use the retrieval method that supplies sufficient current evidence',
+  'Read the code a change touches before you edit it',
+  "Find a symbol's callers before changing it",
   'Do not infer or invent API shapes',
   'choose the safest plan-consistent path', // evidence-gap rule
+  'A missing or stale code-kb index never blocks work', // optional-tool rule
   'Restricted external CLI reviewers',
   'Do not rerun any scope on an unchanged tree', // test-scope rule
   'rerun only the failing test ids', // after-failure loop

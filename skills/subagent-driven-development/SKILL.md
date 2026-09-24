@@ -20,7 +20,7 @@ Dispatch, follow-up, and wait tool names per harness: read `references/harness-d
 1. Read the plan once. `TaskCreate` per task. If the plan names a Spec, read that too: the spec is the authority the plan argues from, and conflicts inside the plan resolve against it. A plan with no reachable spec gets a ledger note saying so — rulings made without one are provisional.
 2. Read the ledger: `ws=$("$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE); cat "$ws/progress.md"`. Trust it only when its first line names this plan file; any other ledger (or a stray one at the old flat path) is another plan's — leave it, start fresh.
 3. Tasks marked complete **with a named commit** are DONE (verify with `git log`). A completion line whose SHA is missing, `pending`, or absent from `git log` is **INCOMPLETE** — the `parallel-lead-commit` crash window: `git status`, inspect the task's owned files, then re-review and commit the approved edits (Commit Mode Contract) or re-dispatch.
-4. Orient with code-kb: `codebase_outline` on the plan's areas; `file_skeleton` on the files the plan modifies so review can spot drift. No Glob/Grep/Read chains.
+4. Read the plan's areas so review can spot drift: file reads, or code-kb `codebase_outline` and `file_skeleton` on the files the plan modifies.
 5. Validate the plan's `## Parallel Execution Contract`: a safe batch with 2+ eligible tasks dispatches together. Safe = non-overlapping file ownership, no ordering dependency, `Serialization required: No`. Serialized lanes need `Serialization required: Yes` plus a `Dependency reason`. Serializing a safe batch requires a recorded dependency or tool limitation — caution is not one.
 6. **Pre-dispatch conflict scan:** Before dispatching Task 1, scan the plan once for conflicts (tasks that contradict each other or the plan's Global Constraints; requirements treated as defects; self-contradictions). The scan's output is a table, not a verdict: one row for every pair of tasks that share a file or an interface (what one produces against what the other consumes, and what you found), and one row for every task checking its own internal agreement (tests specified against code specified, files created vs touched). Write the table to the ledger. Rule on every conflict found before execution begins (the spec is the binding authority, the plan is its argument) and record each ruling in the ledger beside its row.
 
@@ -31,7 +31,7 @@ Template: `./implementer-prompt.md`. Record `BASE=$(git rev-parse HEAD)` first; 
 
 **The brief file is the single source of task requirements.** Task text and every exact value live only in `task-N-brief.md`, never in the spawn prompt, which introduces the brief path as "read this first — it is your requirements, with the exact values to use verbatim".
 
-Prompt-resident (the template's sections): scene-setting; earlier-task interfaces and lead ambiguity resolutions (never prior-task summaries); file ownership; code-kb directives and evidence requirement; API-shape evidence requirement; gate invariant requirement; TDD (`razorback:test-driven-development`); verification scope; commit mode; architecture-quality context (approved architecture, any `No Architecture Impact` note, the plan mismatch rule); report path under `.razorback/sdd/<plan-key>/` (the worker returns only status, commits, test summary, concerns).
+Prompt-resident (the template's sections): scene-setting; earlier-task interfaces and lead ambiguity resolutions (never prior-task summaries); file ownership; evidence directives; API-shape evidence requirement; gate invariant requirement; TDD (`razorback:test-driven-development`); verification scope; commit mode; architecture-quality context (approved architecture, any `No Architecture Impact` note, the plan mismatch rule); report path under `.razorback/sdd/<plan-key>/` (the worker returns only status, commits, test summary, concerns).
 
 **Verification scopes** (`references/verification-scopes.md`, read before the first dispatch): workers run `worker-red-green` / `worker-ceiling`; the lead owns `affected-change`, `branch-gate`, `expensive-specialist` and the verification ledger. A passing ledger entry for the same HEAD and scope is reusable.
 
@@ -39,12 +39,12 @@ Prompt-resident (the template's sections): scene-setting; earlier-task interface
 
 Every dispatch copies one mode into the worker prompt; fix rounds keep it.
 
-- `serial-worker-commit`: single-threaded lane. After assigned verification passes, the worker writes a Goldfish checkpoint before the commit, stages that artifact with only its owned files, commits.
+- `serial-worker-commit`: single-threaded lane. After assigned verification passes, the worker stages only its owned files and commits (with a checkpoint artifact only when the checkpoint policy calls for one).
 - `parallel-lead-commit`: safe batch of 2+. The worker edits owned files, writes the report, runs no `git add`/`git commit`. The lead stages and commits after inline review.
 
 Local commits in both modes are authorized by the approved scope. If a user or host instruction prohibits commits, preserve the reviewed diff and report that approval boundary; never fabricate a completion SHA.
 
-**Lead staging (`parallel-lead-commit`):** tick the task's acceptance-criteria checkboxes, then the lead writes a Goldfish checkpoint before the commit. Explicitly stage the checkpoint artifact with the reviewed task's owned files plus the plan file — `git add <checkpoint> <owned paths> <plan file>` — then commit. Never `git add -A`, `git add .`, or `git commit -a`: sibling workers hold unreviewed in-flight edits.
+**Lead staging (`parallel-lead-commit`):** tick the task's acceptance-criteria checkboxes. When the checkpoint policy calls for a checkpoint, the lead writes it before the commit. Explicitly stage the reviewed task's owned files plus the plan file, and that checkpoint artifact when one exists — `git add <owned paths> <plan file> [<checkpoint>]` — then commit. Never `git add -A`, `git add .`, or `git commit -a`: sibling workers hold unreviewed in-flight edits.
 
 **Commit before you record:** commit first, then write the durable-progress line with the real commit SHA. A completion record without a verifiable commit strands work in the crash window.
 
@@ -77,7 +77,7 @@ When the plan lists several tasks that are each a small, independent edit of the
 
 One pass by the lead. No reviewer subagents. Checklists: `./spec-reviewer-prompt.md`, `./code-quality-reviewer-prompt.md`.
 
-**Spec:** everything requested, nothing extra, no misread requirement. Scan changed files with code-kb `file_skeleton`. The report must show code-kb-first orientation and API-shape evidence for every symbol, signature, config shape, route, CLI flag, or public contract — a guessed shape goes back.
+**Spec:** everything requested, nothing extra, no misread requirement. Read the changed files (code-kb `file_skeleton` helps). The report must show API-shape evidence for every symbol, signature, config shape, route, CLI flag, or public contract — a guessed shape goes back.
 
 **architecture-quality:** the worker preserved the approved architecture or reported a plan mismatch; reject worker-local redesigns not in the plan.
 - Does this keep complexity local?
@@ -145,24 +145,26 @@ Anything else: pick the plan-consistent option, note the choice in your report, 
 
 ## Checkpoints
 
-In addition to mandatory pre-commit checkpoints, the lead writes a `goldfish:checkpoint` at four phase/review milestones during the run. This persists progress and decisions across auto-compaction and session restarts.
+Write a `goldfish:checkpoint` only when it carries information a later session needs: a consequential decision (with the rejected alternative), a surprising failure with evidence, or unfinished work that needs a handoff. When a checkpoint is warranted for a commit, write it before that commit and explicitly stage the checkpoint artifact with the files that commit owns. Routine commits and phase boundaries need no checkpoint. If Goldfish is unavailable, record the same facts in the plan, the ledger, or the run report.
 
-1. **Phase boundary** — after each phase of a multi-phase plan: "Phase N of M complete. Decisions: …. Next: Phase N+1." Record the phase's branch and worktree path. A multi-phase plan runs in one worktree by default; a phase that opens its own worktree runs Step 0b of `razorback:using-git-worktrees` first.
+In `parallel-lead-commit` workers neither checkpoint nor commit; the lead owns both.
+
+The lead also checkpoints at these handoff moments:
+
+1. **Likely context loss** — in a long run, before compaction or a session end with work unfinished: the current task, the decisions made, the next step, and the branch and worktree path. A multi-phase plan runs in one worktree by default; a phase that opens its own worktree runs Step 0b of `razorback:using-git-worktrees` first.
 2. **Pre-review** — before Step 4a begins (if a reviewer was chosen): reviewer choice, diff range, verification strategy, and the immutable REVIEW CAMPAIGN setup and current counters.
 3. **Post-review** — after Step 4a completes: findings, classifications, fix commits, and the terminal `REVIEW CAMPAIGN STATUS` block.
 4. **PR-URL commit checkpoint** — inside `finishing-a-development-branch` Step 7, after the PR exists and before its PR-URL metadata commit; do not emit a duplicate checkpoint after finishing returns.
 
-Checkpoint before each commit and explicitly stage the checkpoint artifact with that commit. In `serial-worker-commit` the worker checkpoints before committing. In `parallel-lead-commit` workers neither checkpoint nor commit; the lead checkpoints before each reviewed lead commit. One pre-commit checkpoint per actual commit.
+Never create a checkpoint-only follow-up commit; it would need another checkpoint and recurse.
 
-Phase-level checkpoints remain useful in addition to mandatory pre-commit checkpoints. Never create a checkpoint-only follow-up commit; it would need another checkpoint and recurse.
-
-A checkpoint is a fast, non-blocking memory write — never a stop, a review gate, or a reason to ask the user anything. A phase boundary is a checkpoint trigger, not a stop: finishing a phase never means pausing for confirmation. Write it and immediately continue.
+A checkpoint is a fast, non-blocking memory write — never a stop, a review gate, or a reason to ask the user anything. A phase boundary is not a stop: finishing a phase never means pausing for confirmation. Write it and immediately continue.
 
 ## Recovery
 
 On detecting a resumed run (post-compaction note, mismatch between expected and actual conversation state, or the user says "resume"), the lead follows this fixed orientation sequence before continuing:
 
-1. `goldfish:recall` — retrieve the active brief and recent checkpoints.
+1. If Goldfish is available, `goldfish:recall` — retrieve the active brief and recent checkpoints. Without it, the plan file, the TaskList, and git state below are enough.
 2. Restore any immutable REVIEW CAMPAIGN setup and current counters from the checkpoint. Counters only increase; participants and budgets never change after resume.
 3. If recalled `REVIEW CAMPAIGN STATUS` contains `campaign_closed: yes`, treat it as terminal and do not dispatch another reviewer, even when the state is `capped` or `blocked`.
 4. Read the plan file, noting which acceptance-criteria checkboxes are already `[x]`.
@@ -201,7 +203,7 @@ This sequence runs only on resumed runs. A fresh run enters at Step 1. Subagent 
 - Extend the fix loop with Minor findings or with observations outside the fix diff — both go to the deferred list
 - Close an open finding at the cap without a recorded ruling
 - Dispatch a separate reviewer subagent when the lead can review inline
-- Approve work from an implementer who cannot show code-kb-first orientation
+- Approve work from an implementer who cannot show the evidence behind its API shapes
 - Open a new phase worktree without running the Step 0b inventory against the prior phase's
 - Reach Step 5 without statusing every worktree the run created (Check B)
 - Pause for user input between tasks - the plan is approved, run it to completion. Stops are governed by the blocker taxonomy. If you can reason through a plan-consistent path, keep moving and log the choice.

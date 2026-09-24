@@ -41,7 +41,7 @@ Before any status claim or expression of satisfaction:
 | Work is integrated | `git log --oneline <base>..<branch>` per worktree: every commit landed, pushed, or named in the report | Tests pass, task marked done | Check B of the `razorback:using-razorback` skill's `references/source-control-hygiene.md` |
 | Nothing is stranded | `git worktree list` plus `git -C <path> status --short --branch` for each: no unreported dirty tree or unmerged branch | `git worktree list` alone — that is an inventory, not a cleanliness check | Status every listed path |
 
-Also prove API shapes with code-kb (`find_references`, `get_symbol_body`, `get_symbol_context`) before claiming symbol names, signatures, config shapes, routes, CLI flags, or public contracts are correct.
+Also prove API shapes from current source (file reads, or code-kb `find_references` and `get_symbol_context`) before claiming symbol names, signatures, config shapes, routes, CLI flags, or public contracts are correct.
 
 ## Red Flags - STOP
 

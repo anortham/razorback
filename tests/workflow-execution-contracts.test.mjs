@@ -35,7 +35,7 @@ test('awaiting-publication status is committed before the approval request', () 
   assert.ok(renderStep < awaitingStatus && awaitingStatus < commitStep);
   assert.ok(commitStep < requestStep);
   assert.match(finishing, /ask using the prepared report/i);
-  assert.match(finishing, /authority metadata updates[\s\S]*checkpoint[\s\S]*explicitly stage[\s\S]*before push/i);
+  assert.match(finishing, /authority metadata updates[\s\S]*stage the report[\s\S]*before push/i);
   assert.match(finishing, /source-control state check/i);
 });
 
@@ -53,24 +53,30 @@ test('authorized push recovery checks remote state and bounds retries', () => {
   assert.doesNotMatch(finishing, /If the push is rejected[\s\S]{0,400}emit the terminal pointer, and exit/i);
 });
 
-test('every workflow commit has a Goldfish pre-commit checkpoint', () => {
+test('checkpoints follow the selective policy and travel with their commit', () => {
   const sdd = read('skills/subagent-driven-development/SKILL.md');
   const implementer = read('skills/subagent-driven-development/implementer-prompt.md');
   const fix = read('skills/subagent-driven-development/fix-prompt.md');
   const executing = read('skills/executing-plans/SKILL.md');
   const finishing = read('skills/finishing-a-development-branch/SKILL.md');
 
-  for (const content of [sdd, implementer, fix, executing, finishing]) {
-    assert.match(content, /checkpoint`? before (?:each|every|the) commit/i);
+  for (const content of [sdd, executing]) {
+    assert.match(content, /only when it carries information a later session needs/);
+    assert.match(content, /Routine commits and phase boundaries need no checkpoint/);
+    assert.match(content, /If Goldfish is unavailable/);
+    assert.doesNotMatch(content, /checkpoint`? before (?:each|every) commit/i);
   }
-  assert.match(sdd, /parallel-lead-commit[\s\S]*lead checkpoints/i);
+  for (const content of [implementer, fix]) {
+    assert.match(content, /write a Goldfish checkpoint before the commit and stage its artifact with your files/);
+  }
   assert.match(sdd, /commit before you record/i);
   assert.match(sdd, /real commit SHA/i);
   assert.match(sdd, /do not emit a duplicate checkpoint after finishing returns/i);
   assert.match(finishing, /Step 7[\s\S]*PR-URL metadata commit[\s\S]*checkpoint artifact/i);
-  assert.doesNotMatch(sdd, /per-task checkpoints are noise/i);
-  assert.doesNotMatch(executing, /per-task checkpoints are noise/i);
+  assert.match(finishing, /The report is the run's handoff record, so this commit needs no separate checkpoint/);
+  assert.doesNotMatch(finishing, /Checkpoint before every commit in this skill/);
 });
+
 
 test('one coherent task stays with the current agent and delegation needs a reason', () => {
   const brainstorming = read('skills/brainstorming/SKILL.md');

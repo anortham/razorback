@@ -104,8 +104,8 @@ test('commit modes are bound to their git behavior in the worker prompts', () =>
 
   for (const prompt of [implementerPrompt, fixPrompt]) {
     assert.match(prompt, /`parallel-lead-commit`:[^\n]*do not run `git add` or `git commit`/);
-    assert.match(prompt, /`serial-worker-commit`: after assigned verification passes, checkpoint before the commit/);
-    assert.match(prompt, /Goldfish checkpoint artifact/);
+    assert.match(prompt, /`serial-worker-commit`: after assigned verification passes, stage only your owned files, commit/);
+    assert.match(prompt, /consequential decision or a surprising\s+failure, write a Goldfish checkpoint before the commit/);
   }
 });
 
@@ -128,8 +128,8 @@ test('subagent-driven-development enforces the parallel-lead-commit durability c
 test('parallel-lead-commit includes plan progress in the lead commit', () => {
   const skill = read('skills/subagent-driven-development/SKILL.md');
 
-  assert.match(skill, /tick the task's acceptance-criteria checkboxes, then the lead writes a Goldfish checkpoint before the commit/i);
-  assert.match(skill, /stage the checkpoint artifact with the reviewed task's owned files plus the plan file/i);
+  assert.match(skill, /tick the task's acceptance-criteria checkboxes\. When the checkpoint policy calls for a checkpoint, the lead writes it before the commit/i);
+  assert.match(skill, /stage the reviewed task's owned files plus the plan file, and that checkpoint artifact when one exists/i);
   assert.match(skill, /then write the durable-progress line with the real commit SHA/i);
   assert.doesNotMatch(skill, /lead first stages that task's owned files and commits/i);
 });

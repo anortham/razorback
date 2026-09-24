@@ -85,10 +85,10 @@ Three renderings:
 
 Write `.memories/autonomous-run-YYYY-MM-DD-<slug>.md` (plus the `.html` sibling when requested); `<slug>` is a short kebab-case plan identifier. Render `{{pr_url}}` as `pending — filled in after PR creation`; Step 7 writes the real URL.
 
-Checkpoint before every commit in this skill and explicitly stage the Goldfish checkpoint artifact with that commit's report files. One checkpoint per commit. Never make a checkpoint-only follow-up commit.
+The report is the run's handoff record, so this commit needs no separate checkpoint. When a checkpoint is warranted (a blocker, a surprising failure), write it before the commit and stage its artifact with the report files. Never make a checkpoint-only follow-up commit.
 
 ```bash
-git add <checkpoint-path> .memories/autonomous-run-YYYY-MM-DD-<slug>.md   # plus the .html sibling when requested
+git add .memories/autonomous-run-YYYY-MM-DD-<slug>.md   # plus the .html sibling when requested, and a warranted checkpoint
 git commit -m "docs: autonomous run report for <plan name>"
 ```
 
@@ -98,7 +98,7 @@ This commit and the Step 7 write-back are metadata-only (`.memories/` only), so 
 
 After Steps 1–4 have produced local verification, source-control reconciliation, and the committed prepared report, ask using the prepared report once for all missing push and PR actions. This is an approval boundary, not a blocker. Emit a local terminal pointer and stop until the user answers.
 
-On resumption: preserve every previously authorized entry and its source; update only what the answer grants; never repeat granted questions. Persist report status and authority metadata updates: checkpoint, explicitly stage the checkpoint artifact with the report (and digest), commit, then run the source-control state check before push. If anything outside `.memories/` changed, rerun the affected branch gate. If authority remains missing, keep `Status: Awaiting publication approval`; do not call the work blocked or failed.
+On resumption: preserve every previously authorized entry and its source; update only what the answer grants; never repeat granted questions. Persist report status and authority metadata updates: stage the report (and digest), commit, then run the source-control state check before push. If anything outside `.memories/` changed, rerun the affected branch gate. If authority remains missing, keep `Status: Awaiting publication approval`; do not call the work blocked or failed.
 
 ### Step 5: Push branch
 
@@ -114,7 +114,7 @@ Capture exact output and exit status. On failure, inspect the exact failure and 
 - Non-fast-forward: fetch and inspect both histories; reconcile only via an authorized, plan-consistent fast-forward or ordinary merge/rebase into the feature branch. Any reconciliation that changes HEAD invalidates prior evidence: rerun Step 1's affected gate, Step 2a, and the authority check before retrying.
 - History rewriting returns to the approval boundary. Never force push.
 
-Declare a blocker only after these paths are exhausted: checkpoint before the report commit, record the diagnostics, set `Status: Blocked`, emit the terminal pointer, exit.
+Declare a blocker only after these paths are exhausted: checkpoint before the report commit (a blocker is a handoff), record the diagnostics, set `Status: Blocked`, emit the terminal pointer, exit.
 
 ### Step 6: Create PR
 
@@ -129,7 +129,7 @@ Walk the forge ladder; stop at the first rung that succeeds.
 
 Rungs 1–2 only. Replace `pending — filled in after PR creation` with the URL, update the digest's `PR` field when present, commit, push. Metadata-only; gate evidence holds.
 
-Write the run's final post-PR checkpoint here, after the PR exists and before the PR-URL metadata commit. Explicitly stage that checkpoint artifact with the URL report and digest in the same commit. This satisfies the SDD milestone; do not emit a duplicate checkpoint after this skill returns.
+Write the run's final post-PR checkpoint here when Goldfish is available: the PR is the handoff. Write it after the PR exists and before the PR-URL metadata commit, and explicitly stage that checkpoint artifact with the URL report and digest in the same commit. This satisfies the SDD milestone; do not emit a duplicate checkpoint after this skill returns.
 
 ```bash
 git add <checkpoint-path> .memories/autonomous-run-YYYY-MM-DD-<slug>.md   # plus the .html sibling when requested

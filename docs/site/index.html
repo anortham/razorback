@@ -43,9 +43,9 @@
       <p class="lede">
         Razorback is a set of skills for Claude Code, Codex CLI / ChatGPT desktop app, OpenCode, and
         Antigravity. It puts your agent on one workflow: agree on a design with you, write a plan you
-        approve, build it test-first, review it, and open a pull request for you to merge. It explores
-        your code through <a href="https://anortham.github.io/code-kb/">code-kb</a> and keeps its place
-        across long runs and sessions with <a href="https://github.com/anortham/goldfish">Goldfish</a>.
+        approve, build it test-first, review it, and open a pull request for you to merge. It can use
+        <a href="https://anortham.github.io/code-kb/">code-kb</a> to explore code and
+        <a href="https://github.com/anortham/goldfish">Goldfish</a> to keep decisions across sessions; both are optional.
       </p>
       <p class="actions">
         <a class="button primary" href="#setup">Install razorback</a>
@@ -100,12 +100,12 @@
           <tr>
             <th scope="row">Exploring code</th>
             <td data-label="A bare agent">Searches with grep and reads whole files until it finds what it needs.</td>
-            <td data-label="With razorback">Asks code-kb first: 1-2 structured calls instead of 5-8 grep-and-read calls. It lists a file's symbols before it reads the file, and it finds references before it changes a function.</td>
+            <td data-label="With razorback">Uses the smallest source of evidence that is enough: a search or a file read for a named file or error, and code-kb for an unfamiliar module. It finds a function's callers before it changes the function.</td>
           </tr>
           <tr>
             <th scope="row">Subagents</th>
             <td data-label="A bare agent">Subagents start without your working rules.</td>
-            <td data-label="With razorback">Each plan task goes to a fresh implementer subagent. On Claude Code, a <code>SubagentStart</code> hook gives every subagent the code-kb-first rules.</td>
+            <td data-label="With razorback">Each plan task goes to a fresh implementer subagent. On Claude Code, a <code>SubagentStart</code> hook gives every subagent the evidence rules.</td>
           </tr>
           <tr>
             <th scope="row">Small fixes</th>
@@ -115,7 +115,7 @@
           <tr>
             <th scope="row">Long plan runs</th>
             <td data-label="A bare agent">No rule for when to stop, and no saved state when the context compacts.</td>
-            <td data-label="With razorback">After you approve the plan, the run needs no per-task confirmation. It stops only for five kinds of real blocker, and it writes a Goldfish checkpoint before every commit.</td>
+            <td data-label="With razorback">After you approve the plan, the run needs no per-task confirmation. It stops only for five kinds of real blocker. It writes a Goldfish checkpoint for a key decision, a surprising failure, or unfinished work.</td>
           </tr>
           <tr>
             <th scope="row">Tests</th>
@@ -130,7 +130,7 @@
           <tr>
             <th scope="row">Memory across sessions</th>
             <td data-label="A bare agent">Each session starts from zero.</td>
-            <td data-label="With razorback">Goldfish checkpoints and briefs keep decisions. Say "resume" and the agent recalls them, reads the plan checkboxes and <code>git log</code>, and continues at the next open task.</td>
+            <td data-label="With razorback">Goldfish checkpoints and briefs keep decisions when Goldfish is installed. Say "resume" and the agent recalls them, reads the plan checkboxes and <code>git log</code>, and continues at the next open task.</td>
           </tr>
           <tr>
             <th scope="row">Finishing</th>
@@ -210,7 +210,7 @@
             </div>
             <div>
               <dt>Razorback</dt>
-              <dd>The lead reviews each task inline, spec first, then code quality. A pre-merge reviewer makes exactly two calls, one general and one security. The lead checks each finding with code-kb and fixes the real ones.</dd>
+              <dd>The lead reviews each task inline, spec first, then code quality. A pre-merge reviewer makes exactly two calls, one general and one security. The lead checks each finding against the current code and fixes the real ones.</dd>
             </div>
           </dl>
         </li>
@@ -236,7 +236,7 @@
             <h4>The quick-fix tier</h4>
             <p>A small defect or tweak skips brainstorming when all of these hold:</p>
             <ul>
-              <li>code-kb located the target;</li>
+              <li>the agent located the target in the current code;</li>
               <li>at most two source files and about 20 changed lines, tests excluded;</li>
               <li>no change to a public API, schema, persisted data, config contract, security behavior, or dependency;</li>
               <li>no new modules or components;</li>
@@ -339,7 +339,7 @@
         </li>
         <li>
           <h3>Say "resume" after a break or a compaction</h3>
-          <p>The agent recalls its Goldfish checkpoints, reads the plan checkboxes and <code>git log</code>, and continues at the next open task.</p>
+          <p>The agent recalls its Goldfish checkpoints if Goldfish is installed, reads the plan checkboxes and <code>git log</code>, and continues at the next open task.</p>
           <p class="say"><span class="say-label">Say</span> <code>resume</code></p>
           <a class="skill-ref" href="https://github.com/anortham/razorback/blob/main/skills/subagent-driven-development/SKILL.md">subagent-driven-development</a>
         </li>
@@ -469,10 +469,10 @@
 
       <div class="prereqs">
         <h3>Before you start</h3>
-        <p>Razorback needs two MCP servers. Neither is optional.</p>
+        <p>Razorback works with native tools alone. Two optional MCP servers add to it:</p>
         <ul>
-          <li><strong><a href="https://github.com/anortham/code-kb">code-kb</a></strong> for code exploration. It needs Node.js 18 or newer on your <code>PATH</code>.</li>
-          <li><strong><a href="https://github.com/anortham/goldfish">Goldfish</a></strong> for checkpoints, briefs, and recall. It needs Bun 1.0 or newer.</li>
+          <li><strong><a href="https://github.com/anortham/code-kb">code-kb</a></strong> for symbol lookup, callers, and likely tests in unfamiliar code. It needs Node.js 18 or newer on your <code>PATH</code>.</li>
+          <li><strong><a href="https://github.com/anortham/goldfish">Goldfish</a></strong> for decision and handoff checkpoints, briefs, and recall. It needs Bun 1.0 or newer.</li>
         </ul>
         <p>Razorback itself is pure content: no build step and no runtime dependencies.</p>
       </div>
@@ -649,7 +649,7 @@ agy plugin import .</code></pre>
       <div class="other-hosts">
         <div>
           <h3>Copilot CLI gets the rules only</h3>
-          <p>No skills, no agents, and no delegated execution. Copilot reads <code>.github/copilot-instructions.md</code>, so copy razorback's code-kb-first rules into your repo. If the file already exists, merge the rules into it.</p>
+          <p>No skills, no agents, and no delegated execution. Copilot reads <code>.github/copilot-instructions.md</code>, so copy razorback's rules into your repo. If the file already exists, merge the rules into it.</p>
           <pre><code>curl -fsSL https://raw.githubusercontent.com/anortham/razorback/refs/heads/main/.github/copilot-instructions.md \
   -o .github/copilot-instructions.md</code></pre>
         </div>
@@ -667,7 +667,7 @@ agy plugin import .</code></pre>
     <div>
       <h2>Part of a small toolkit</h2>
       <ul class="toolkit">
-        <li><a href="https://anortham.github.io/code-kb/">code-kb</a> Code intelligence for agents. Razorback explores code through it.</li>
+        <li><a href="https://anortham.github.io/code-kb/">code-kb</a> Code intelligence for agents. Razorback uses it when it helps.</li>
         <li><a href="https://github.com/anortham/goldfish">Goldfish</a> Persistent memory: checkpoints, briefs, and recall.</li>
         <li><a href="https://anortham.github.io/julie-extractors/">julie-extractors</a> The parser engine behind code-kb.</li>
       </ul>

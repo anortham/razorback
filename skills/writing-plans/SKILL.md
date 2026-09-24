@@ -35,7 +35,7 @@ Both depths describe outcomes, constraints, ownership, and checks. Neither prewr
 ## Before Writing
 
 1. **Scope check:** a spec covering several independent subsystems becomes one plan per subsystem, each producing working software alone.
-2. **Orient with code-kb (REQUIRED):** `codebase_outline` on the area; `get_symbol_context` for key symbols, `get_symbol_body` for symbols the plan modifies; `file_skeleton` for a file's outline and symbols; `blast_radius` for likely tests and dependents; `find_references` before changing a public API. Do NOT guess file paths, line numbers, symbol names, function signatures, config shapes, route names, CLI flags, or public contracts.
+2. **Read the code the plan touches:** file reads and searches, or code-kb (`codebase_outline`, `get_symbol_context`, `blast_radius` for likely tests, `find_references` before changing a public API). Do NOT guess file paths, line numbers, symbol names, function signatures, config shapes, route names, CLI flags, or public contracts.
 3. **External API staleness:** where training knowledge may be stale, apply razorback:grounding-in-current-docs and record the verified surface or doc URL in the task.
 4. **File structure:** map created and modified files, one responsibility each. Follow existing patterns; split an unwieldy file only when the plan already modifies it.
 
@@ -44,7 +44,7 @@ Both depths describe outcomes, constraints, ownership, and checks. Neither prewr
 - **Vertical slices by default:** one thin observable behavior end to end per task (query + endpoint + UI + test). Horizontal layers only when shared by several later slices or when a contract must lock before parallel fan-out. Riskiest task first.
 - **Keep it compilable:** every task ends with the repo building and worker-scope verification green, then the worker commits (`serial-worker-commit`) or hands the diff to the lead for staging and commit after inline review (`parallel-lead-commit`).
 - **Rollback-friendly order:** a partially executed plan leaves the branch shippable or cleanly revertible.
-- **Slices are not stop points:** checkpoint and continue; stops come only from the blocker taxonomy and the final PR.
+- **Slices are not stop points:** continue; stops come only from the blocker taxonomy and the final PR.
 - **No placeholders:** "TBD", "implement later", "add appropriate error handling", "write tests for the above" without naming the behavior each test proves, "similar to Task N" (state the outcome) are plan failures.
 
 ## Global Constraints
@@ -96,7 +96,7 @@ When a full plan has exactly one task, use the full-plan task template unchanged
 1. Placeholder scan: TODOs, "TBD", steps too vague to act on.
 2. Spec alignment: every requirement covered, no scope creep.
 3. Task decomposition: clear boundaries, actionable steps, correct dependency order.
-4. Buildability: every path and symbol is real — code-kb `file_skeleton(file_path='<path>')`, `lookup_symbol(query='<symbol>')`, `get_symbol_context(symbol_name='<symbol>')`. Fix any invented API.
+4. Buildability: every path and symbol is real — check it in current source (a file read, or code-kb `lookup_symbol(query='<symbol>')`). Fix any invented API.
 
 Fix inline. If the session can dispatch subagents, you may instead dispatch a reviewer with `plan-document-reviewer-prompt.md` (this directory).
 
@@ -119,7 +119,7 @@ Fix inline. If the session can dispatch subagents, you may instead dispatch a re
 
 ## It's working if
 
-- Every path, symbol, and command in the plan came from code-kb or the repo's docs, never from memory.
+- Every path, symbol, and command in the plan came from current source or the repo's docs, never from memory.
 - Each task ends compilable, with tickable acceptance criteria and exact file ownership.
 - The plan file existed because of a handoff, a multi-session effort, or a coordination need.
 - The plan described outcomes and checks, not prewritten implementation code.

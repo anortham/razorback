@@ -153,7 +153,7 @@ test('code-kb guidance forbids guessed API shapes in active workflows', () => {
   assert.match(writingPlans, surfaceList);
   assert.match(sdd, /API-shape evidence requirement/);
   assert.match(implementerPrompt, /## API Shape Evidence/);
-  assert.match(implementerPrompt, /report the exact code-kb calls/);
+  assert.match(implementerPrompt, /name the evidence that proved each shape/);
   assert.match(reviewSkill, /code-kb-backed\s+API-shape evidence/);
   assert.match(fixDispatchPrompt, /API-shape evidence/);
 });

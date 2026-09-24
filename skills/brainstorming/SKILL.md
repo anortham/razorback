@@ -42,16 +42,16 @@ Re-classify when the evidence changes. Hidden complexity discovered mid-task upg
 
 ## Path Workflows
 
-Every path starts with code-kb orientation (`codebase_outline`, `file_skeleton`, `lookup_symbol`, `find_references`; no Glob → Read → Grep chains) plus `git log --oneline -10`.
+Every path starts by reading the code the request touches (code-kb helps in an unfamiliar area) plus `git log --oneline -10`.
 
 ### Spike Workflow
-1. **Explore project context** via code-kb enough to frame the probe.
+1. **Explore project context** enough to frame the probe.
 2. **State question + probe plan** — 2-3 sentences.
 3. **Investigate** — as cheaply as correctness allows (pairs with `razorback:prototyping`).
 4. **Report findings as a recommendation**; label anything built as throwaway.
 
 ### Bounded Workflow
-1. **Explore project context** via code-kb (check files, docs, recent commits).
+1. **Explore project context** (check files, docs, recent commits).
 2. **Ask clarifying questions** — one at a time, the ones that matter.
 3. **Present a short design in chat** — approach, files touched, testing.
 4. **Get agreement on open choices** — wait for the user's answer on each consequential choice their request did not settle. Presenting an open choice and starting in the same breath is skipping the gate.
@@ -72,7 +72,7 @@ Every path starts with code-kb orientation (`codebase_outline`, `file_skeleton`,
 
 - Infer and record routine, reversible details instead of asking. Ask only unresolved questions whose answers materially change product intent, safety, scope, or architecture.
 - One question per message, with a falsifiable guess: "I'm guessing X because Y — is that right?" Prefer multiple choice; guess first, labelled.
-- Environment facts (repo contents, tool support, config values) come from code-kb or a subagent, never the user. Only questions downstream of that fact wait.
+- Environment facts (repo contents, tool support, config values) come from the repo (search, file reads, code-kb) or a subagent, never the user. Only questions downstream of that fact wait.
 - A question is on the frontier when its prerequisites are settled. If the dialogue loops on a question only running code can answer, take the razorback:prototyping off-ramp and record the verdict on return.
 - Stop asking when no frontier question can materially change product intent, safety, scope, or architecture, you can state purpose, constraints, and success criteria in your own words, and your last material question produced no correction. Record chosen defaults and move on.
 

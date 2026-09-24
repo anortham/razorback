@@ -38,13 +38,13 @@ test('codex plugin manifest matches package metadata and Codex contract', () => 
     displayName: 'Razorback',
     shortDescription: 'code-kb-powered development workflow skills.',
     longDescription:
-      'Development workflow skills for Codex with code-kb-first orientation, TDD discipline, and subagent-driven execution.',
+      'Development workflow skills for Codex with evidence-first orientation, optional code-kb, TDD discipline, and subagent-driven execution.',
     developerName: 'anortham',
     category: 'Productivity',
     capabilities: ['Write'],
     websiteURL: pkg.homepage,
     defaultPrompt: [
-      'Plan a code change with code-kb-first repo grounding.',
+      'Plan a code change grounded in the current repo.',
       'Run a TDD fix with worker verification and a concise report.',
       'Review a diff for regressions, contract drift, and missing tests.'
     ],

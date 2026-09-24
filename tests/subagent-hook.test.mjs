@@ -35,23 +35,18 @@ test('subagent-start emits the Claude Code SubagentStart hookSpecificOutput shap
   assert.deepEqual(Object.keys(parsed), ['hookSpecificOutput']);
 });
 
-test('subagent-start injects the code-kb-first ruleset', () => {
+test('subagent-start injects the retrieval ruleset with code-kb as an optional aid', () => {
   const { additionalContext } = JSON.parse(runSubagentStart()).hookSpecificOutput;
 
-  assert.match(additionalContext, /code-kb/);
-  // The six exploration rules, carried verbatim from using-razorback.
-  assert.match(additionalContext, /Inspect a symbol before modifying it\./);
-  assert.match(
-    additionalContext,
-    /Use code-kb for ALL codebase exploration\. Do NOT fall back to Glob . Read . Grep chains\./,
-  );
-  assert.match(additionalContext, /List a file's symbols before reading it in full\./);
-  assert.match(
-    additionalContext,
-    /Find a symbol's references before changing it, to check impact\./,
-  );
+  assert.match(additionalContext, /code-kb is an optional retrieval aid\./);
+  assert.match(additionalContext, /native search and file reads are always allowed/);
+  assert.doesNotMatch(additionalContext, /MUST be used/);
+  assert.doesNotMatch(additionalContext, /Do NOT fall back to Glob/);
+  assert.match(additionalContext, /Read the code a change touches before you edit it\./);
+  assert.match(additionalContext, /Find a symbol's callers before changing it, to check impact\./);
   assert.match(additionalContext, /Do not infer or invent API shapes\./);
-  assert.match(additionalContext, /When code-kb cannot prove a shape/);
+  assert.match(additionalContext, /When the evidence cannot prove a shape/);
+  assert.match(additionalContext, /A missing or stale code-kb index never blocks work/);
   // Capability table entries.
   assert.match(additionalContext, /codebase_outline\(path\?, depth\?\)/);
   assert.match(additionalContext, /file_skeleton\(file_path\)/);

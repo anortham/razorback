@@ -16,15 +16,14 @@ Collects every deliberate-shortcut marker into one read-only ledger so a deferra
 
 **Not here:** generic TODO/FIXME/HACK audits. Paying a marker down is a separate change that re-enters razorback:fixing-small-issues triage or the standard flow.
 
-## Scan (code-kb only)
+## Scan
 
-1. `search_symbols(query='razorback:')` — search indexed symbol names, docstrings, signatures, and declarations for debt markers.
-2. `lookup_symbol(query='razorback')` — prefix/exact symbol search.
-3. Language symbols and structural annotations: check structural facts with `find_structural_facts` if custom marker categories are indexed.
+Markers are comments, so search their literal text:
 
-code-kb's index already excludes vendored, generated, and tool-state content and returns file:line.
+1. The host's text search over tracked source, for example `rg -n 'razorback:'`, excluding vendored, generated, and tool-state directories.
+2. Optional: code-kb `search_symbols(query='razorback:')` and `lookup_symbol` add markers that sit in indexed docstrings. Run `code-kb scan` first if the index is stale.
 
-**Coverage.** Results are bounded. On truncated or omitted results, a continuation, or a result cap: exhaust the continuation or narrow the query by path until every in-scope result is accounted for. If the index is stale, run `code-kb scan` to refresh the index and repeat. If coverage still cannot be established, or code-kb cannot cover a relevant file or scope (such as inline comments unindexed by AST symbol tables), stop discovery and report an **incomplete audit**: name the exact evidence gap and the scopes that completed. Do not fall back to shell search (e.g., shell grep). Never claim a comprehensive or clean ledger while any result or scope remains omitted.
+**Coverage.** Results are bounded. On truncated or omitted results, a continuation, or a result cap: exhaust the continuation or narrow the query by path until every in-scope result is accounted for. If coverage still cannot be established for a relevant file or scope, stop discovery and report an **incomplete audit**: name the exact evidence gap and the scopes that completed. Never claim a comprehensive or clean ledger while any result or scope remains omitted.
 
 ## Output
 

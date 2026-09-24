@@ -21,9 +21,9 @@ No worktree, no project setup, no baseline or full-suite run until the change ta
 
 ## Step 1: Investigate (no infrastructure)
 
-- Locate the target with code-kb: `search_symbols` for the symptom, `get_symbol_body` on the implicated symbol, `find_references` if it might be shared.
+- Locate the target: a search for the symptom or error text, a file read, or code-kb (`search_symbols`, `get_symbol_body`, `find_references` if it might be shared).
 - Defects: razorback:systematic-debugging Phase 1 — reproduce, find root cause.
-- Tweaks: confirm the exact target (selector, constant, string) with code-kb evidence.
+- Tweaks: confirm the exact target (selector, constant, string) in current source.
 
 ## Step 2: Triage (measure, don't vibe)
 
@@ -31,7 +31,7 @@ The quick-fix tier applies only when ALL criteria hold. Project instructions may
 
 | Criterion | Threshold |
 |-----------|-----------|
-| Target located | Confirmed with code-kb evidence, not guessed |
+| Target located | Confirmed with evidence from current source, not guessed |
 | Files | ≤ 2 source files (tests excluded) |
 | Lines | ~20 changed lines (tests excluded) |
 | Contracts | No public API, schema, persisted-data, config-contract, security-behavior, or dependency changes |

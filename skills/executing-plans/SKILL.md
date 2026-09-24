@@ -17,7 +17,7 @@ Announce: "I'm using the executing-plans skill to implement this plan."
 
 ## Step 1: Load and Review Plan
 
-1. Read the plan. Use code-kb to confirm its file paths and symbol references still match current code.
+1. Read the plan. Confirm its file paths and symbol references still match current code.
 2. A real blocker per `razorback:using-razorback` `references/blocker-taxonomy.md` (especially #3 or #4) → stop and report. Any other design question → decide plan-consistently, note it (file:line + reason).
 3. `TaskCreate` per task.
 
@@ -25,12 +25,12 @@ Announce: "I'm using the executing-plans skill to implement this plan."
 
 Per task:
 1. Mark in_progress.
-2. Orient with code-kb before coding: `codebase_outline` on the area; `get_symbol_context` on symbols you edit (`get_symbol_body` for isolated code); `find_references` before changing any symbol; `file_skeleton` before reading a file; prove API shapes (symbol names, signatures, config shapes, routes, CLI flags, public contracts) with code-kb evidence. No Glob → Read → Grep chains.
+2. Read the code the task touches before coding. Find a symbol's callers before changing it. Prove API shapes (symbol names, signatures, config shapes, routes, CLI flags, public contracts) from current source. code-kb helps in an unfamiliar area: `codebase_outline`, `get_symbol_context`, `find_references`.
 3. Follow the plan's steps exactly; run the specified verifications.
 4. `TaskUpdate` completed, then tick the task's acceptance-criteria checkboxes in the plan file (`[ ]` → `[x]`). Bookkeeping only — do not pause or ask; continue to the next task.
 5. Candidate Mode: record non-required refactor candidates in the report or ADR offer, not in the diff. Fold in only refactors required for correctness, testability, or avoiding a brittle patch.
 
-Return to Step 1 review only when new codebase evidence contradicts the plan: re-check with code-kb (`codebase_outline` + `get_symbol_body` / `lookup_symbol`); if the plan fails, that is blocker #3.
+Return to Step 1 review only when new codebase evidence contradicts the plan: re-check the current source; if the plan fails, that is blocker #3.
 
 ## Step 3: Pre-merge external review (if chosen)
 
@@ -63,9 +63,11 @@ Anything else: pick the plan-consistent option, note the choice in your report, 
 
 ## Checkpoints
 
-Write a `goldfish:checkpoint` before each commit and explicitly stage the checkpoint artifact with the files that commit owns. Also checkpoint at phase boundaries (or every few tasks on a flat list) to persist progress and decisions across auto-compaction and session restarts. Before external review, capture the immutable REVIEW CAMPAIGN setup and current counters; after review, capture the terminal `REVIEW CAMPAIGN STATUS` block.
+Write a `goldfish:checkpoint` only when it carries information a later session needs: a consequential decision (with the rejected alternative), a surprising failure with evidence, or unfinished work that needs a handoff. When a checkpoint is warranted for a commit, write it before that commit and explicitly stage the checkpoint artifact with the files that commit owns. Routine commits and phase boundaries need no checkpoint. If Goldfish is unavailable, record the same facts in the plan, the ledger, or the run report.
 
-A checkpoint is a fast, non-blocking memory write. It is **not** a stop, a review gate, or a reason to ask the user anything — write it and immediately continue. A phase boundary is a checkpoint trigger, not a stop: finishing a phase never means pausing for confirmation. One checkpoint per actual commit; never a checkpoint-only follow-up commit, which would recurse.
+In a long run, unfinished work before a likely context loss is a handoff: checkpoint the current task, the decisions made, and the next step. Before external review, capture the immutable REVIEW CAMPAIGN setup and current counters; after review, capture the terminal `REVIEW CAMPAIGN STATUS` block.
+
+A checkpoint is a fast, non-blocking memory write. It is **not** a stop, a review gate, or a reason to ask the user anything — write it and immediately continue. A phase boundary is not a stop: finishing a phase never means pausing for confirmation. Never make a checkpoint-only follow-up commit, which would recurse.
 
 ## Recovery
 
@@ -73,7 +75,7 @@ This sequence runs **only on a resumed run** — a post-compaction note, a misma
 
 On a resumed run, orient before continuing:
 
-1. `goldfish:recall` — retrieve the active brief and recent checkpoints.
+1. If Goldfish is available, `goldfish:recall` — retrieve the active brief and recent checkpoints. Without it, the plan file, the TaskList, and git state below are enough.
 2. Restore any immutable REVIEW CAMPAIGN setup and current counters from the checkpoint. Counters only increase; participants and budgets never change after resume.
 3. If recalled `REVIEW CAMPAIGN STATUS` contains `campaign_closed: yes`, treat it as terminal and do not dispatch another reviewer, even when the state is `capped` or `blocked`.
 4. Read the plan file, noting which acceptance-criteria checkboxes are already `[x]`.

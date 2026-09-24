@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # SubagentStart hook for razorback plugin (Claude Code only).
 #
-# Injects the compact code-kb-first ruleset into every dispatched subagent.
+# Injects the compact toolchain ruleset into every dispatched subagent.
 # Subagents never see the using-razorback toolchain table -- they skip that
 # skill by design (<SUBAGENT-STOP>) -- so without this hook every dispatch
-# prompt has to restate code-kb usage from scratch. This makes the floor
+# prompt has to restate the retrieval rules from scratch. This makes the floor
 # automatic; prompt files still name task-specific symbols.
 #
 # razorback: injects into all subagents, add agent-type matcher if Explore-agent noise shows up.

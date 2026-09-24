@@ -12,16 +12,16 @@ Razorback is a skill set for coding-agent harnesses, diverged from [Superpowers]
 
 AI-assisted development burns tokens on repetitive codebase exploration. Every agent and subagent re-discovers the same code through Glob/Grep/Read chains. Razorback solves this two ways:
 
-- **code-kb MCP** routes all exploration through purpose-built tools — `codebase_outline`, `file_skeleton`, `lookup_symbol`, `search_symbols`, `get_symbol_body`, `get_symbol_context`, `find_references`, `blast_radius`, and `find_structural_facts` — that return targeted context in 1-2 calls instead of 5-8.
-- **code-kb-first applies to every worker**: the lead, implementers, reviewers, and fix workers all orient with code-kb before raw file reads.
+- **code-kb MCP (optional)** adds purpose-built tools — `codebase_outline`, `file_skeleton`, `lookup_symbol`, `search_symbols`, `get_symbol_body`, `get_symbol_context`, `find_references`, `blast_radius`, and `find_structural_facts` — for unfamiliar modules, callers, and likely tests.
+- **Evidence rules apply to every worker**: the lead, implementers, reviewers, and fix workers use the smallest source of evidence that is enough, and native search and file reads are always allowed.
 - **Parallel subagent dispatch with inline review by the lead** keeps the main agent's context clean while letting independent tasks move concurrently.
-- **Autonomous execution of approved plans** with optional pre-merge external review (codex / claude) and compaction-durable goldfish checkpoints; runs overnight without waking you for anything short of a real blocker
+- **Autonomous execution of approved plans** with optional pre-merge external review (codex / claude) and, when Goldfish is installed, decision and handoff checkpoints; runs overnight without waking you for anything short of a real blocker
 
 ## Requirements
 
 - A supported harness: [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex CLI / ChatGPT desktop app](https://openai.com/codex/), [OpenCode](https://opencode.ai), or [Antigravity](https://github.com/google-deepmind) — plus frozen support for [Cursor](https://cursor.sh)
-- [code-kb MCP](https://github.com/anortham/code-kb) — hard requirement for code orientation and symbol-aware review; must be configured and indexing your workspace
-- [Goldfish MCP Server](https://github.com/anortham/goldfish) — hard requirement for persistent memory (checkpoints, briefs, recall); used for compaction-durable execution during long autonomous runs
+- [code-kb MCP](https://github.com/anortham/code-kb) — optional; adds symbol lookup, callers, and likely tests. Work completes with native tools when it is missing.
+- [Goldfish MCP Server](https://github.com/anortham/goldfish) — optional; adds decision and handoff checkpoints, briefs, and recall. Without it, the plan, the ledger, and git state carry recovery.
 - For Codex: enable `multi_agent = true` in `~/.codex/config.toml` so parallel execution skills can dispatch subagents
 
 ## Installation
@@ -125,7 +125,7 @@ ln -s /path/to/razorback/skills/* .agents/skills/
 
 ### Copilot CLI (instruction-tier)
 
-Copilot CLI gets the code-kb-first ruleset only — no skills, no agents, no delegated execution. Copy razorback's instruction-tier ruleset into the repo you work in; Copilot reads that path natively:
+Copilot CLI gets the instruction-tier ruleset only — no skills, no agents, no delegated execution. Copy razorback's instruction-tier ruleset into the repo you work in; Copilot reads that path natively:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/anortham/razorback/refs/heads/main/.github/copilot-instructions.md \
@@ -139,10 +139,10 @@ If the repo already has a `.github/copilot-instructions.md`, merge the ruleset i
 Once loaded, razorback works automatically. The bootstrap path varies by harness:
 
 1. **Session starts** — the `SessionStart` hook (Claude Code, Cursor), `messages.transform` (OpenCode), native skill discovery from the installed Codex plugin or fallback skills symlink (Codex), or global/workspace skill discovery and plugin import (Antigravity) surfaces the `using-razorback` skill.
-2. **You request work** — the agent checks for applicable skills before every response.
-3. **Skills guide the workflow** — brainstorming, planning, TDD, execution, review, and verification all route through code-kb and the appropriate execution strategy for your harness.
+2. **You request work** — the agent matches the process to the task: clear work proceeds directly, and unclear or consequential work loads the matching skill.
+3. **Skills guide the workflow** — brainstorming, planning, TDD, execution, review, and verification use the execution strategy that fits your harness.
 
-No configuration needed beyond plugin installation (assuming code-kb is already set up).
+No configuration needed beyond plugin installation.
 
 ## Project Policy
 
@@ -152,7 +152,7 @@ plus the approved plan.
 
 Razorback owns process contracts:
 
-- skill routing and code-kb-first orientation
+- skill routing and evidence rules
 - parallel-safety checks and file ownership
 - commit mode for serial versus parallel batches
 - verification scopes and gate ownership

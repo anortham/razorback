@@ -37,23 +37,22 @@ Dispatch one implementer subagent:
     a load-bearing plan assumption; safety-critical ambiguity (security, data integrity,
     billing, auth) with no plan answer; test failures that do not converge.
 
-    ## Codebase Orientation (HARD REQUIREMENT)
+    ## Codebase Orientation
 
-    code-kb first, before reading raw files or writing code:
-    1. Orient: `codebase_outline(path?, depth?)`.
-    2. Inspect file outline before reading it whole: `file_skeleton(file_path)`.
-    3. Inspect each symbol you will modify: `get_symbol_context(symbol_name, file_path?)` (prefer before edits) or `get_symbol_body(symbol_name, file_path?)` (isolated code only).
-    4. Find references before changing anything: `find_references(symbol_name, direction="callers")`.
-    5. Only then read the minimum raw code the edit needs.
-    No Glob -> Read -> Grep chains.
+    Read the code the change touches before writing code. Use the smallest sufficient
+    evidence source: a search or file read for a named file, error, or string; code-kb for
+    an unfamiliar module (`codebase_outline(path?, depth?)`, `file_skeleton(file_path)`,
+    `get_symbol_context(symbol_name, file_path?)`). Find a symbol's callers before changing
+    it (`find_references(symbol_name, direction="callers")` or a search). If code-kb is
+    missing or its index is stale, use native search and file reads.
 
     ## API Shape Evidence
 
-    Do not infer or invent API shapes. Use code-kb to prove symbol names, function
-    signatures, config shapes, route names, CLI flags, or public contracts before relying
-    on them. In your report, report the exact code-kb calls that proved each shape; if code-kb
-    cannot prove one, say what evidence is missing and take the safest plan-consistent path.
-    code-kb covers this repo only: for external framework/library/API surfaces use the verified
+    Do not infer or invent API shapes. Confirm symbol names, function signatures, config
+    shapes, route names, CLI flags, or public contracts from current source before relying
+    on them. In your report, name the evidence that proved each shape; if the evidence
+    cannot prove one, say what is missing and take the safest plan-consistent path.
+    Repo evidence covers this repo only: for external framework/library/API surfaces use the verified
     surface or doc URL in your task, never training memory; if none is given, say so and follow
     the repo's existing usage pattern.
 
@@ -101,8 +100,8 @@ Dispatch one implementer subagent:
 
     If a user or host instruction explicitly prohibits commits, do not commit; report the exact instruction to the lead as an approval/blocker boundary.
 
-    - `serial-worker-commit`: after assigned verification passes, checkpoint before the commit, explicitly stage the Goldfish checkpoint artifact with only your owned files, commit, and report the resulting SHA.
-    - `parallel-lead-commit`: do not checkpoint the batch and do not run `git add` or `git commit`. Edit only your owned files, write the full report to the report file, and report `commit SHA: none - parallel-lead-commit`; the lead checkpoints before the reviewed lead commit.
+    - `serial-worker-commit`: after assigned verification passes, stage only your owned files, commit, and report the resulting SHA. If this commit records a consequential decision or a surprising failure, write a Goldfish checkpoint before the commit and stage its artifact with your files.
+    - `parallel-lead-commit`: do not checkpoint and do not run `git add` or `git commit`. Edit only your owned files, write the full report to the report file, and report `commit SHA: none - parallel-lead-commit`; the lead owns the commit.
 
     ## You Do Not Dispatch Subagents
 
@@ -127,9 +126,8 @@ Dispatch one implementer subagent:
     - What you implemented; files changed
     - Verification invariant, scope label, command, commit SHA if any, result, timestamp;
       hard-gate vs report-only metrics when relevant
-    - **code-kb calls used** — each outline / skeleton / lookup / context / body / refs call and what it confirmed
-    - **API-shape evidence** — code-kb evidence for every symbol name, signature, config shape,
-      route, CLI flag, or public contract relied on
+    - **API-shape evidence** — the search, file read, or code-kb call that confirmed each
+      symbol name, signature, config shape, route, CLI flag, or public contract relied on
     - **Judgment calls made** — `file:line - chose X over Y because [reason]`, one per
       ambiguity resolved without asking (feeds the morning report)
     - Self-review findings, issues, concerns

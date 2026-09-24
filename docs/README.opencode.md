@@ -123,8 +123,8 @@ The plugin (`.opencode/plugins/razorback.js`) wires two hooks:
 
 ### Execution model
 
-Delegated plan execution in opencode uses `subagent-driven-development`: a fresh subagent per task, with the lead doing inline review. Sequential work still uses `executing-plans`, and ad-hoc parallel work uses `dispatching-parallel-agents`.
-code-kb-first applies to the lead session and every child task session. Implementers, reviewers, and fix workers should orient with code-kb before raw file reads.
+One coherent task runs directly in the lead session. Delegated plan execution in opencode uses `subagent-driven-development` for independent tasks: a fresh subagent per task, with the lead doing inline review. Sequential plans use `executing-plans`, and ad-hoc parallel work uses `dispatching-parallel-agents`.
+The evidence rules apply to the lead session and every child task session: use the smallest source of evidence that is enough. code-kb is optional; native search and file reads are always allowed.
 
 ### Tool mapping
 

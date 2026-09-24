@@ -31,11 +31,11 @@ SendMessage (to: "<implementer-agent-id-or-name>"):
 
     ## Re-Orientation (REQUIRED before editing)
 
-    code-kb first, even on a resume: `file_skeleton(file_path)` to re-anchor the edit location;
-    `get_symbol_context(symbol_name, file_path?)` or `get_symbol_body(symbol_name, file_path?)` on the symbol you change; `find_references(symbol_name, direction="callers")`
-    if callers could observe the change. Do not infer or invent API shapes — prove symbol names,
-    function signatures, config shapes, route names, CLI flags, or public contracts with code-kb,
-    or say what evidence is missing.
+    Re-read the code you change, even on a resume: a file read, or code-kb `file_skeleton(file_path)`
+    and `get_symbol_context(symbol_name, file_path?)`. Find the callers if they could observe the
+    change (`find_references(symbol_name, direction="callers")` or a search). Do not infer or invent
+    API shapes — confirm symbol names, function signatures, config shapes, route names, CLI flags,
+    or public contracts from current source, or say what evidence is missing.
 
     ## Commit mode
 
@@ -44,8 +44,8 @@ SendMessage (to: "<implementer-agent-id-or-name>"):
 
     If a user or host instruction explicitly prohibits commits, do not commit; report the exact instruction to the lead as an approval/blocker boundary.
 
-    - `serial-worker-commit`: after assigned verification passes, checkpoint before the commit, explicitly stage the Goldfish checkpoint artifact with only your owned files, commit, and report the resulting SHA.
-    - `parallel-lead-commit`: do not checkpoint the batch and do not run `git add` or `git commit`. Edit only your owned files, write the full report to the report file, and report `commit SHA: none - parallel-lead-commit`; the lead checkpoints before the reviewed lead commit.
+    - `serial-worker-commit`: after assigned verification passes, stage only your owned files, commit, and report the resulting SHA. If this commit records a consequential decision or a surprising failure, write a Goldfish checkpoint before the commit and stage its artifact with your files.
+    - `parallel-lead-commit`: do not checkpoint and do not run `git add` or `git commit`. Edit only your owned files, write the full report to the report file, and report `commit SHA: none - parallel-lead-commit`; the lead owns the commit.
 
     ## You Do Not Dispatch Subagents
 
@@ -62,7 +62,7 @@ SendMessage (to: "<implementer-agent-id-or-name>"):
     - **Covering tests per finding** — the test(s), the exact command, and the output. The
       lead gates re-review on this; a report without it comes back unreviewed.
     - Verification invariant, scope label, command, commit SHA if any, result, timestamp
-    - **code-kb calls used** and **API-shape evidence** for every shape relied on
+    - **API-shape evidence** for every shape relied on
     - Judgment calls made
 ```
 

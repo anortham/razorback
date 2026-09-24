@@ -17,8 +17,7 @@ After each implementer reports DONE in `razorback:subagent-driven-development` (
 - Inspect key modified symbols with `code-kb` `get_symbol_context(symbol_name, file_path?)`; `get_symbol_body` for symbols the change centers on.
 - Find references with `code-kb` `find_references(symbol_name, direction="callers")` to verify dependents still work.
 - Tests verify behavior, not that code runs.
-- Reject the report if the implementer cannot show code-kb-first orientation and the code-kb calls used.
-- Reject the report if it relies on symbol names, function signatures, config shapes, route names, CLI flags, or public contracts without code-kb-backed API-shape evidence.
+- Reject the report if it relies on symbol names, function signatures, config shapes, route names, CLI flags, or public contracts without API-shape evidence from current source (code-kb-backed API-shape evidence or file reads).
 - Compare the diff against the approved architecture, not just the symptom. When repeated findings show the same structural issue, route it through `razorback:architecture-quality` Candidate Mode instead of looping patches.
 
 **If issues found:** route the fix back through the harness-native follow-up path (resume the implementer where possible, else dispatch a fresh one with fix context). Review cap: 3 iterations. The canonical three-way cap contract is in `razorback:subagent-driven-development` Step 3 ("Cap adjudication").
@@ -27,7 +26,7 @@ After each implementer reports DONE in `razorback:subagent-driven-development` (
 
 Standalone review is for ad-hoc or baseline review: when stuck, before a refactor, after a major feature outside an approved plan, or before merging ad-hoc work. Planned pre-merge external review uses `razorback:pre-merge-review`, which owns the branch-gate, chosen-reviewer, classification, fix, and report flow. A standalone external CLI second opinion stays in its provider skill (`razorback:codex-cli` or `razorback:claude-cli`) under the redaction and policy gate below; do not force it through a plan or clean-HEAD gate.
 
-Harness-native reviewer agents use code-kb directly. Restricted external reviewers in a planned pre-merge review get the lead's sanitized code-kb-backed evidence and report missing evidence without MCP.
+Harness-native reviewer agents use code-kb when it helps. Restricted external reviewers in a planned pre-merge review get the lead's sanitized code-kb-backed evidence and report missing evidence without MCP.
 
 **1. Redact the payload.** Fill the reviewer template, write the completed dispatch message to `PAYLOAD_FILE`, and dispatch only `REDACTED_PAYLOAD_FILE`. The harness-native `spawn_agent` or `Task` call receives its contents; never interpolate the unredacted template, diff, or description.
 

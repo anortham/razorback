@@ -164,7 +164,7 @@ See the capability → tool mapping table in `using-razorback`'s "Your Toolchain
 
 ## Goldfish MCP
 
-Razorback also assumes Goldfish MCP is available for checkpoints, recall, and recovery during long autonomous runs. Install and configure it before relying on the autonomous execution flow.
+Goldfish MCP is optional. When it is available, razorback uses it for decision and handoff checkpoints and for recall on resume. Without it, the plan, the ledger, and git state carry recovery.
 
 ## Environment detection for worktrees
 

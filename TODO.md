@@ -37,7 +37,8 @@ planning and orchestration available when the task benefits from them.
   remove default requirements to prewrite complete implementation code.
   Acceptance: a bounded task can finish without a worker, plan file, task report,
   or repeated approval of intent already authorized by the user.
-- [ ] Remove hard coupling to Goldfish and code-kb from the default workflow.
+- [x] Remove hard coupling to Goldfish and code-kb from the default workflow.
+  Done on branch `workflow-reduction` (not merged; waits for the comparison).
   Prefer the retrieval method that supplies sufficient current evidence; permit
   ordinary search and file reads without first following a fixed tool sequence.
   Missing optional tools must not block work that native tools can complete.
@@ -58,6 +59,10 @@ planning and orchestration available when the task benefits from them.
   cases for the new workflow; retain checks for unsafe actions and missing work.
   Use `scripts/check-rule-copies.mjs`, focused `node --test` files for changed
   contracts, and `npm run test:workflow-eval`; run `npm test` at integration.
+  Known stale eval cases in `tests/fixtures/workflow-eval/`: `single_task` still
+  forbids the lead implementing directly, `missing_code_kb` still forbids native
+  search and requires a block, and `checkpoint`, `parallel_commit`, and
+  `interrupted_run` still require a checkpoint before every commit.
   Acceptance: small repairs, clear features, uncertain designs, and resumed work
   receive appropriate handling without weakening verification or approval boundaries.
 - [ ] Compare the lighter default with the current workflow on real tasks.

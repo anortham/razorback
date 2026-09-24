@@ -71,7 +71,7 @@ test('checker fails when the copilot host copy drifts from the canonical body', 
 
 test('checker fails when a rule invariant is missing from SKILL.md', () => {
   const dir = makeFixture();
-  edit(dir, SKILL, (text) => text.replace('Inspect a symbol before modifying it', 'Look at a symbol first'));
+  edit(dir, SKILL, (text) => text.replace('Read the code a change touches before you edit it', 'Look at a symbol first'));
 
   const result = runChecker(dir);
   assert.equal(result.status, 1, 'expected exit 1 for a missing invariant');
@@ -87,13 +87,13 @@ test('checker fails when a rule invariant is missing from the canonical', () => 
   assert.match(result.stderr, /invariant/i);
 });
 
-// subagent-toolchain.md restates the same six rules for dispatched subagents. It is not
+// subagent-toolchain.md restates the same exploration rules for dispatched subagents. It is not
 // byte-comparable to the canonical (different framing, extra worktree-state clause), so it
 // is held to the invariant layer only — a reworded rule there must still trip the checker.
 test('checker fails when a rule invariant is missing from subagent-toolchain.md', () => {
   const dir = makeFixture();
   edit(dir, SUBAGENT, (text) =>
-    text.replace("Find a symbol's references before changing it", 'Look around a bit first')
+    text.replace("Find a symbol's callers before changing it", 'Look around a bit first')
   );
 
   const result = runChecker(dir);
