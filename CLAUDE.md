@@ -6,7 +6,7 @@ Razorback is a skill set for Claude Code, Codex CLI / ChatGPT desktop app, and O
 Allowed providers: anthropic, openai, xai, google
 Reviewer choices permitted: codex, claude
 
-**Harness tiers.** Plugin-tier hosts (Claude Code, Codex CLI / ChatGPT desktop app, OpenCode) get a manifest, bootstrap, and full skill set. Cursor is **frozen** — its existing plugin support is documented as-is and receives no new work. Copilot CLI is **instruction-tier**: it gets the code-kb-first ruleset via `.github/copilot-instructions.md` and nothing else. See `docs/adding-a-harness.md` for the tier vocabulary and the per-tier file checklist.
+**Harness tiers.** Plugin-tier hosts (Claude Code, Codex CLI / ChatGPT desktop app, OpenCode) get a manifest, bootstrap, and full skill set. Cursor is **frozen** — its existing plugin support is documented as-is and receives no new work. Copilot CLI is **instruction-tier**: it gets the instruction-tier ruleset via `.github/copilot-instructions.md` and nothing else. See `docs/adding-a-harness.md` for the tier vocabulary and the per-tier file checklist.
 
 ## Project Structure
 
@@ -44,7 +44,7 @@ docs/specs/                         — Design specifications
 
 | Harness | Tier | Harness-specific files | Bootstrap mechanism |
 |---------|------|------------------------|---------------------|
-| Claude Code | plugin | `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `agents/`, `hooks/hooks.json`, `hooks/session-start`, `hooks/subagent-start`, `hooks/run-hook.cmd` | `SessionStart` hook injects `using-razorback` as `hookSpecificOutput.additionalContext`; `SubagentStart` hook injects the code-kb-first ruleset into dispatched subagents |
+| Claude Code | plugin | `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `agents/`, `hooks/hooks.json`, `hooks/session-start`, `hooks/subagent-start`, `hooks/run-hook.cmd` | `SessionStart` hook injects `using-razorback` as `hookSpecificOutput.additionalContext`; `SubagentStart` hook injects the toolchain ruleset into dispatched subagents |
 | Codex CLI / ChatGPT desktop app | plugin | `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json`, `.codex/INSTALL.md`, `skills/using-razorback/references/codex-tools.md` | Preferred: install the Codex plugin from the repo-scoped marketplace entry. Fallback: local clone plus `~/.agents/skills/razorback/` symlink. Native skill discovery loads the installed skills at startup. |
 | OpenCode | plugin | `.opencode/plugins/razorback.js`, `AGENTS.md` symlink, `package.json`, `index.js` | Plugin's `config` hook registers skills path; `experimental.chat.messages.transform` injects bootstrap into first user message |
 | Cursor (frozen) | plugin | `.cursor-plugin/plugin.json`, `hooks/hooks-cursor.json` (reuses `hooks/session-start`) | `sessionStart` hook injects `using-razorback` as `additional_context` (snake_case) |
