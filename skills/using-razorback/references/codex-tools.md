@@ -145,7 +145,7 @@ verification results after the command exits.
 
 ## code-kb MCP
 
-Razorback assumes code-kb MCP is available. The exploration directives in skill bodies (orient, search, inspect, find references, assess impact) require it.
+code-kb MCP is optional. Use native search and file reads when they supply the needed evidence or when the index is unavailable.
 
 Use these code-kb tools by capability:
 
@@ -160,7 +160,7 @@ Use these code-kb tools by capability:
 - Code-shape facts (routes, queries, models, config keys): `find_structural_facts(category?)`
 - Tool usage & token savings summary: `telemetry_summary(time_window?, workspace_only?)`
 
-See the capability → tool mapping table in `using-razorback`'s "Your Toolchain" section. CLI 1:1 commands are `code-kb lookup <query>`, `code-kb context <symbol>`, and `code-kb stats` (or `code-kb telemetry`). Install and configure code-kb before using razorback for real work.
+See the capability → tool mapping table in `using-razorback`'s "Your Toolchain" section. CLI 1:1 commands are `code-kb lookup <query>`, `code-kb context <symbol>`, and `code-kb stats` (or `code-kb telemetry`). Install and configure code-kb only when its indexed retrieval is useful.
 
 ## Goldfish MCP
 

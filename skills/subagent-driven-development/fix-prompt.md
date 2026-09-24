@@ -44,7 +44,7 @@ SendMessage (to: "<implementer-agent-id-or-name>"):
 
     If a user or host instruction explicitly prohibits commits, do not commit; report the exact instruction to the lead as an approval/blocker boundary.
 
-    - `serial-worker-commit`: after assigned verification passes, stage only your owned files, commit, and report the resulting SHA. If this commit records a consequential decision or a surprising failure, write a Goldfish checkpoint before the commit and stage its artifact with your files.
+    - `serial-worker-commit`: after assigned verification passes, stage only your owned files, commit, and report the resulting SHA. If this commit records a consequential decision or a surprising failure, write a Goldfish checkpoint before the commit and stage its artifact with your files. If Goldfish is unavailable, record the decision or failure in your report and continue.
     - `parallel-lead-commit`: do not checkpoint and do not run `git add` or `git commit`. Edit only your owned files, write the full report to the report file, and report `commit SHA: none - parallel-lead-commit`; the lead owns the commit.
 
     ## You Do Not Dispatch Subagents

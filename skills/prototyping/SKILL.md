@@ -35,14 +35,14 @@ If ambiguous and the user is unreachable: backend module → logic; page or comp
 3. **No production code in the same pass.** Do not write, port, or "while I'm at it" the real implementation until the verdict has gone back through brainstorming and an approved design. Schedule pressure is the trigger for this violation, not an excuse.
 4. **Throwaway from day one, marked as such.** In-memory state, no tests, no error handling beyond runnable, no abstractions. Name files and routes so a reader sees "prototype".
 5. **Surface the full state** after every action (logic) or on every variant switch (UI).
-6. **Orient with code-kb first.** `codebase_outline`/`file_skeleton` the module or page the prototype sits next to, so it speaks the project's vocabulary.
+6. **Inspect neighboring code.** Use native search and file reads, or code-kb `codebase_outline`/`file_skeleton`, so the prototype speaks the project's vocabulary.
 7. **Capture when answered.** Never delete the prototype, never leave it in main.
 
 ## Capture
 
 The prototype is a primary source. When the question is settled:
 
-1. Record the verdict and question in the design doc, plus a goldfish checkpoint (what was settled, why, what it unblocks).
+1. Record the verdict and question in the design doc, and, when Goldfish is available, a checkpoint (what was settled, why, what it unblocks).
 2. `git switch -c prototype/<slug>`, commit all prototype files, `git switch -` back. The branch is never merged; the working branch is clean again.
 3. Reference the branch name in the design doc next to the verdict.
 

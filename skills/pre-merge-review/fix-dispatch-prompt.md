@@ -21,7 +21,7 @@ Fresh implementer dispatch (delegation available):
 
     ## Symbol target
 
-    [The symbol or code region this finding touches, plus one short note if public API impact matters. No raw inspect/trace output; you re-orient with code-kb before editing.]
+    [The symbol or code region this finding touches, plus one short note if public API impact matters. No raw inspect/trace output; inspect current source with native tools or code-kb before editing.]
 
     ## Plan context
 

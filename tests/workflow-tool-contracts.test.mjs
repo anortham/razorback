@@ -63,7 +63,7 @@ test('debt audit stays code-kb-only and reports incomplete evidence honestly', (
   assert.match(skill, /evidence gap/i);
 });
 
-test('external reviewers receive a lead-built code-kb evidence bundle without MCP access', () => {
+test('external reviewers receive a lead-built source evidence bundle without MCP access', () => {
   const bootstrap = read('skills/using-razorback/SKILL.md');
   const subagent = read('skills/using-razorback/references/subagent-toolchain.md');
   const canonical = read('skills/using-razorback/references/instruction-tier.md');
@@ -74,7 +74,7 @@ test('external reviewers receive a lead-built code-kb evidence bundle without MC
 
   for (const text of [bootstrap, subagent, canonical, project]) {
     assert.match(text, /external CLI reviewers/i);
-    assert.match(text, /code-kb-backed\s+evidence/i);
+    assert.match(text, /source-backed\s+evidence/i);
   }
 
   for (const text of [preMerge, claude, codex]) {
@@ -82,9 +82,9 @@ test('external reviewers receive a lead-built code-kb evidence bundle without MC
     assert.match(text, /missing evidence/i);
   }
 
-  assert.match(preMerge, /CODE_KB_EVIDENCE/);
-  assert.match(claude, /Lead code-kb evidence:\n\$CODE_KB_EVIDENCE/);
-  assert.match(codex, /\$CODE_KB_EVIDENCE/);
+  assert.match(preMerge, /SOURCE_EVIDENCE/);
+  assert.match(claude, /Lead source evidence:\n\$SOURCE_EVIDENCE/);
+  assert.match(codex, /\$SOURCE_EVIDENCE/);
   assert.match(claude, /--strict-mcp-config/);
   assert.match(claude, /--tools "Read,Grep,Glob"/);
   assert.doesNotMatch(claude, /--tools "[^"]*Bash/);

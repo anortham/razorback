@@ -12,7 +12,7 @@ Same pure module under either; only the disposable shell differs.
 ## Process
 
 1. **State the question.** One paragraph at the top of the entry file: the state model under test and the question it must answer.
-2. **Match the host project.** Its language, runtime, and task runner; no new package managers. Orient with code-kb (`codebase_outline` on the area, `file_skeleton` or `get_symbol_context` on the neighboring module) so labels use the project's domain vocabulary. The HTML shell is the one language exception; the vocabulary rule still applies.
+2. **Match the host project.** Its language, runtime, and task runner; no new package managers. Inspect neighboring source with native tools or code-kb (`codebase_outline`, `file_skeleton`, or `get_symbol_context`) so labels use the project's domain vocabulary. The HTML shell is the one language exception; the vocabulary rule still applies.
 3. **Isolate the logic in a portable module** behind a small pure interface: a reducer `(state, action) => state` for discrete events; an explicit state machine when "which actions are legal now" is the question; pure functions over plain data when there is no current state. No I/O, terminal, or DOM code inside. The shell imports it; nothing flows back. Even this module re-enters the codebase through the approved design, never by promotion.
 4. **Build the smallest interactive shell.**
    - TUI: on every action clear the screen and render one full frame: state pretty-printed one field per line, shortcuts at the bottom (`[a] add  [u] undo  [q] quit`). Read one keystroke, dispatch, re-render.

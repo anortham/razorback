@@ -114,7 +114,7 @@ Capture exact output and exit status. On failure, inspect the exact failure and 
 - Non-fast-forward: fetch and inspect both histories; reconcile only via an authorized, plan-consistent fast-forward or ordinary merge/rebase into the feature branch. Any reconciliation that changes HEAD invalidates prior evidence: rerun Step 1's affected gate, Step 2a, and the authority check before retrying.
 - History rewriting returns to the approval boundary. Never force push.
 
-Declare a blocker only after these paths are exhausted: checkpoint before the report commit (a blocker is a handoff), record the diagnostics, set `Status: Blocked`, emit the terminal pointer, exit.
+Declare a blocker only after these paths are exhausted: record the blocker and diagnostics in the report, add a checkpoint before committing if Goldfish is available, set `Status: Blocked`, emit the terminal pointer, exit.
 
 ### Step 6: Create PR
 
@@ -129,10 +129,10 @@ Walk the forge ladder; stop at the first rung that succeeds.
 
 Rungs 1–2 only. Replace `pending — filled in after PR creation` with the URL, update the digest's `PR` field when present, commit, push. Metadata-only; gate evidence holds.
 
-Write the run's final post-PR checkpoint here when Goldfish is available: the PR is the handoff. Write it after the PR exists and before the PR-URL metadata commit, and explicitly stage that checkpoint artifact with the URL report and digest in the same commit. This satisfies the SDD milestone; do not emit a duplicate checkpoint after this skill returns.
+Without Goldfish, the run report carries the handoff. Write the run's final post-PR checkpoint here when Goldfish is available: the PR is the handoff. Write it after the PR exists and before the PR-URL metadata commit, and explicitly stage that checkpoint artifact with the URL report and digest in the same commit. This satisfies the SDD milestone; do not emit a duplicate checkpoint after this skill returns.
 
 ```bash
-git add <checkpoint-path> .memories/autonomous-run-YYYY-MM-DD-<slug>.md   # plus the .html sibling when requested
+git add .memories/autonomous-run-YYYY-MM-DD-<slug>.md   # plus the .html sibling when requested, and a checkpoint when one exists
 git commit -m "docs: record PR URL in run report"
 git push
 ```

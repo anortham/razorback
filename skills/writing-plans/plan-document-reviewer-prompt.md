@@ -25,19 +25,15 @@ Dispatch a reviewer subagent:
     | Buildability | Could an engineer follow this plan without getting stuck? |
     | Verification | Does the worker red/green scope name the repo runner narrowed to the change (one test or the focused group), with the full suite only at the branch gate? |
 
-    ## Verify Buildability with code-kb
+    ## Verify Against Current Source
 
-    A plan is only buildable if the code it names is real. Verify against the
-    codebase — do not approve a path or symbol from memory:
+    Use native search and file reads, or code-kb when useful, to check the plan:
 
-    - Every file path the plan names resolves — code-kb `file_skeleton(file_path='<path>')` or `codebase_outline(path='<path>')`
-    - Every symbol the plan names exists — code-kb `get_symbol_context(symbol_name='<symbol>');`
-      escalate to `get_symbol_body` only for the symbols the plan actually rewrites
-    - Flag every API the plan invents. A function signature, config key, route, or
-      CLI flag that code-kb cannot find is a real issue — the implementer will build
-      against something that does not exist. Name the step and what is missing.
-
-    Do not read whole files to check this.
+    - Confirm that each referenced file, symbol, and existing API exists in current source.
+    - A missing index result is not proof that an API is absent. Check the actual
+      source before flagging an invented signature, config key, route, or CLI flag.
+    - Search for existing implementations before accepting proposed work as new.
+    - Read surrounding code when needed to verify constraints and dependencies.
 
     ## Calibration
 

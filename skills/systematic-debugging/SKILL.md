@@ -47,7 +47,7 @@ code-kb: `get_symbol_context(symbol_name, file_path?)` or `get_symbol_body` on t
 
 ### Phase 2: Pattern Analysis
 
-1. **Find working examples** of similar code with code-kb `search_symbols`; orient with `codebase_outline`.
+1. **Find working examples** of similar code with native search and file reads, or code-kb `search_symbols` and `codebase_outline` when useful.
 2. **Read the reference implementation completely** before applying its pattern. No skimming.
 3. **List every difference** between working and broken, however small. Do not assume "that can't matter".
 4. **Understand dependencies** with `get_symbol_context` and `find_references`: components, config, environment, assumptions.
@@ -57,7 +57,7 @@ code-kb: `get_symbol_context(symbol_name, file_path?)` or `get_symbol_body` on t
 1. **One written hypothesis:** "I think X is the root cause because Y." Specific, not vague.
 2. **Smallest change that tests it.** One variable at a time.
 3. **Worked → Phase 4. Did not → new hypothesis.** Never stack fixes.
-4. **Do not know?** Say "I don't understand X". Research with code-kb, targeted docs, and the smallest verification command. In an approved autonomous run, stop only when the uncertainty matches the blocker taxonomy; outside one, ask one specific question once research is exhausted.
+4. **Do not know?** Say "I don't understand X". Research current source with native tools or code-kb, targeted docs, and the smallest verification command. In an approved autonomous run, stop only when the uncertainty matches the blocker taxonomy; outside one, ask one specific question once research is exhausted.
 
 ### Phase 4: Implementation
 

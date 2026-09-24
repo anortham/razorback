@@ -4,7 +4,7 @@ Use this file when a refactor candidate is accepted and the deepened module's de
 
 ## Dependency Categories
 
-Classify each dependency of the module being deepened — find them with code-kb `find_references`/`blast_radius` on the modules being merged. The category dictates how the deepened module is tested across its seam.
+Classify each dependency of the module being deepened — trace current source with native tools or code-kb `find_references`/`blast_radius` on the modules being merged. The category dictates how the deepened module is tested across its seam.
 
 1. **In-process** — pure computation, in-memory state, no I/O. Always deepenable: merge the modules and test through the new interface directly. No adapter.
 2. **Local-substitutable** — the dependency has a faithful local test stand-in (PGLite for Postgres, an in-memory filesystem). Deepenable when the stand-in exists; tests run against the stand-in. The seam stays internal — no port at the caller-facing interface.

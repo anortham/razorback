@@ -30,7 +30,7 @@ Use your host's native editing tools to modify files.
 
 Restricted external CLI reviewers invoked by the pre-merge review workflow are
 the deliberate exception. They run without MCP under
-an enforced read-only allowlist. The lead supplies a sanitized code-kb-backed
+an enforced read-only allowlist. The lead supplies a sanitized source-backed
 evidence bundle, the reviewer reports missing evidence instead of claiming
 code-kb use, and the lead verifies every finding against current source.
 

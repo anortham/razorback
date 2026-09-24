@@ -26,6 +26,6 @@ Use your host's native editing tools to modify files.
 7. A missing or stale code-kb index never blocks work: use native search and file reads.
 8. Run only the verification scope your task assigns. Broader suites belong to the lead. Do not rerun any scope on an unchanged tree: capture a wide run's output to a file and read that. After a wide run fails, rerun only the failing test ids (project runner plus its own filter) until they pass, then the assigned command once.
 
-Restricted external CLI reviewers invoked by the pre-merge review workflow are the deliberate exception: they run without MCP under a read-only allowlist, read the lead's sanitized code-kb-backed evidence bundle, and report missing evidence instead of claiming they ran code-kb. The lead verifies every finding against current source.
+Restricted external CLI reviewers invoked by the pre-merge review workflow are the deliberate exception: they run without MCP under a read-only allowlist, read the lead's sanitized source-backed evidence bundle, and report missing evidence instead of claiming they ran code-kb. The lead verifies every finding against current source.
 
 **Worktree state:** report the path, branch, commit, and dirty state you worked in (`git status --short --branch`). The lead reconciles every subagent's worktree before verifying, committing, or releasing.

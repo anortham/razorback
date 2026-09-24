@@ -24,20 +24,15 @@ Dispatch a reviewer subagent:
     | Scope | Focused enough for a single plan — not covering multiple independent subsystems |
     | YAGNI | Unrequested features, over-engineering |
 
-    ## Check Scope Against Code Reality with code-kb
+    ## Verify Against Current Source
 
-    Scope and YAGNI are judgments about the actual codebase, not about the spec in
-    isolation. Verify before flagging — or approving:
+    Use native search and file reads, or code-kb when useful, to check the spec:
 
-    - Every file path or module the spec names resolves — code-kb `file_skeleton(file_path='<path>')` or `codebase_outline(path='<path>')`
-    - Every symbol the spec builds on exists — code-kb `lookup_symbol(query='<symbol>')` or `get_symbol_context(symbol_name='<symbol>')`
-    - Flag every API the spec invents. A function signature, config key, route, or
-      CLI flag that code-kb cannot find means the spec assumes code that is not there
-    - Before accepting a requirement as new work, search for it — code-kb
-      `search_symbols('<capability>')`. A capability that already exists is scope
-      creep worth flagging, not a feature to build twice
-
-    Do not read whole files to check this.
+    - Confirm that each referenced file, symbol, and existing API exists in current source.
+    - A missing index result is not proof that an API is absent. Check the actual
+      source before flagging an invented signature, config key, route, or CLI flag.
+    - Search for existing implementations before accepting proposed work as new.
+    - Read surrounding code when needed to verify constraints and dependencies.
 
     ## Calibration
 

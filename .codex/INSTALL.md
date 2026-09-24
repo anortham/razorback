@@ -5,10 +5,11 @@ Enable razorback skills in Codex CLI or the Codex desktop app with the Codex plu
 ## Prerequisites
 
 - Git
-- code-kb MCP configured in Codex
-- [Goldfish MCP Server](https://github.com/anortham/goldfish) configured in Codex
+- code-kb MCP is optional for indexed retrieval.
+- [Goldfish MCP Server](https://github.com/anortham/goldfish) is optional for persistent memory.
 
-Razorback assumes both code-kb and Goldfish are available.
+Razorback works with native search and file reads. Without Goldfish, keep useful
+decisions and handoffs in the existing plan or report.
 
 ## Installation
 

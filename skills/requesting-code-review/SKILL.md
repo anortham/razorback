@@ -11,11 +11,11 @@ description: Use when the lead needs inline-review criteria during plan executio
 
 After each implementer reports DONE in `razorback:subagent-driven-development` (or on its own work in `razorback:executing-plans`), the lead checks two things:
 
-**Spec compliance:** built what was requested, nothing missing, nothing extra. List each changed file's symbols with `code-kb` `file_skeleton`, then compare the code to the task requirements line by line.
+**Spec compliance:** built what was requested, nothing missing, nothing extra. Use native search and file reads, or code-kb when useful, then compare the changed code to the task requirements line by line.
 
 **Code quality:**
-- Inspect key modified symbols with `code-kb` `get_symbol_context(symbol_name, file_path?)`; `get_symbol_body` for symbols the change centers on.
-- Find references with `code-kb` `find_references(symbol_name, direction="callers")` to verify dependents still work.
+- Inspect key modified symbols with file reads or code-kb `get_symbol_context` / `get_symbol_body`.
+- Trace callers with native search or code-kb `find_references` to verify dependents still work.
 - Tests verify behavior, not that code runs.
 - Reject the report if it relies on symbol names, function signatures, config shapes, route names, CLI flags, or public contracts without API-shape evidence from current source (code-kb-backed API-shape evidence or file reads).
 - Compare the diff against the approved architecture, not just the symptom. When repeated findings show the same structural issue, route it through `razorback:architecture-quality` Candidate Mode instead of looping patches.
@@ -26,7 +26,7 @@ After each implementer reports DONE in `razorback:subagent-driven-development` (
 
 Standalone review is for ad-hoc or baseline review: when stuck, before a refactor, after a major feature outside an approved plan, or before merging ad-hoc work. Planned pre-merge external review uses `razorback:pre-merge-review`, which owns the branch-gate, chosen-reviewer, classification, fix, and report flow. A standalone external CLI second opinion stays in its provider skill (`razorback:codex-cli` or `razorback:claude-cli`) under the redaction and policy gate below; do not force it through a plan or clean-HEAD gate.
 
-Harness-native reviewer agents use code-kb when it helps. Restricted external reviewers in a planned pre-merge review get the lead's sanitized code-kb-backed evidence and report missing evidence without MCP.
+Harness-native reviewer agents use code-kb when it helps. Restricted external reviewers in a planned pre-merge review get the lead's sanitized source-backed evidence and report missing evidence without MCP.
 
 **1. Redact the payload.** Fill the reviewer template, write the completed dispatch message to `PAYLOAD_FILE`, and dispatch only `REDACTED_PAYLOAD_FILE`. The harness-native `spawn_agent` or `Task` call receives its contents; never interpolate the unredacted template, diff, or description.
 

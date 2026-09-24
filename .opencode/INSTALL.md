@@ -3,7 +3,8 @@
 ## Prerequisites
 
 - [OpenCode.ai](https://opencode.ai) installed
-- **code-kb MCP** configured and available — razorback uses it for code orientation and symbol-aware review, and requires it (unlike superpowers, there is no fallback to generic tools)
+- **code-kb MCP** is optional for indexed retrieval; native search and file reads are always available.
+- **Goldfish MCP** is optional for persistent memory; existing plans and reports can carry handoffs.
 
 ## Installation
 
@@ -85,7 +86,7 @@ Then restart OpenCode.
 
 ### code-kb MCP not available
 
-Razorback skills assume code-kb is present. If code-kb is not configured, many skills (exploration, editing, refs) won't function. Install and configure code-kb before using razorback.
+Use native search and file reads. Configure code-kb only when indexed retrieval helps; its absence does not block the workflow.
 
 ### Tool mapping
 

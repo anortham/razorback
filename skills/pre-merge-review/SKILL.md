@@ -5,7 +5,7 @@ description: Use after all tasks are complete and branch verification passes, be
 
 # Pre-Merge External Review
 
-The chosen reviewer (codex / claude) gets one general adversarial pass and one security pass over the full branch diff: two invocations, ever. Each pass runs once; fixes get local confirmation without a post-fix external re-review. The lead verifies every finding with code-kb, classifies it, then fixes, dismisses with a written reason, or flags it for human judgment, and emits the morning-report block.
+The chosen reviewer (codex / claude) gets one general adversarial pass and one security pass over the full branch diff: two invocations, ever. Each pass runs once; fixes get local confirmation without a post-fix external re-review. The lead verifies every finding against current source, classifies it, then fixes, dismisses with a written reason, or flags it for human judgment, and emits the morning-report block.
 
 **REQUIRED SUB-SKILL:** razorback:managing-review-campaigns.
 
@@ -41,7 +41,7 @@ A dispatch consumes its invocation even when output is unusable. A required revi
 
 ## Step 1: Build diff + review tree
 
-Use code-kb to inspect changed symbols, `find_references` for changed public APIs, and assess test impact with `blast_radius`; summarize that as `$CODE_KB_EVIDENCE`. The external reviewer does not run code-kb; it reads the bundle and the exported tree and reports missing evidence when they cannot support a conclusion.
+Inspect changed symbols, trace callers of changed public APIs, and identify relevant tests with native search and file reads, or code-kb when useful; summarize that as `$SOURCE_EVIDENCE`. The external reviewer does not run code-kb; it reads the bundle and the exported tree and reports missing evidence when they cannot support a conclusion.
 
 ```bash
 BASE=$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null)
@@ -57,7 +57,7 @@ DIFF=$(git diff "$BASE"..HEAD --no-ext-diff)
 FILE_STAT=$(git diff --stat "$BASE"..HEAD)
 COMMIT_LOG=$(git log --oneline "$BASE"..HEAD)
 PLAN_PATH="docs/plans/<YYYY-MM-DD>-<feature>.md"
-CODE_KB_EVIDENCE="<compact summary of changed symbols, public-API references, and likely tests>"
+SOURCE_EVIDENCE="<compact summary of changed symbols, public-API references, and likely tests>"
 ```
 
 `prepare-review-tree` exports tracked content of the ref only (no `.git`, no untracked files, no symlinks that escape the root) and rejects an output path inside the repo. Include a user focus only when the plan carried one. Use the CLI's default model unless one was explicitly selected.
@@ -75,7 +75,7 @@ Count calls even when parsing later fails. Never dispatch a scope twice. If a di
 
 ### Redact each pass payload
 
-Build the complete prompt (instruction, optional focus, labelled Target / File stat / Commit log / Lead code-kb evidence / Diff bundle), then filter it and apply the `review-payload.md` contract from razorback:security-review. Payloads over 128 KiB become a review artifact inside `$REVIEW_ROOT`; the prompt file then carries only the bounded static wrapper. Never load the artifact into a shell variable or positional argument.
+Build the complete prompt (instruction, optional focus, labelled Target / File stat / Commit log / Lead source evidence / Diff bundle), then filter it and apply the `review-payload.md` contract from razorback:security-review. Payloads over 128 KiB become a review artifact inside `$REVIEW_ROOT`; the prompt file then carries only the bounded static wrapper. Never load the artifact into a shell variable or positional argument.
 
 ```bash
 PAYLOAD_FILE=$(mktemp)
@@ -124,7 +124,7 @@ After both outputs are parsed (or on any failure path), run `rm -rf -- "$REVIEW_
 
 ## Step 4: Verify and classify
 
-Full protocol with examples: [`verification-protocol.md`](verification-protocol.md). Verify every finding with code-kb (`get_symbol_context`, `get_symbol_body` for the central symbol, `find_references` for public APIs) and classify:
+Full protocol with examples: [`verification-protocol.md`](verification-protocol.md). Verify every finding against current source with native tools or code-kb and classify:
 
 | Class | Action |
 |---|---|

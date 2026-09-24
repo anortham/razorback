@@ -28,7 +28,7 @@ After approval, razorback runs to completion and stops only for real blockers (`
 | | Full plan | Light plan |
 |---|---|---|
 | Use for | Async handoffs, no-delegation runs, multi-session or unfamiliar work | Same-session execution by dispatched subagents via `subagent-driven-development` |
-| Tasks | Step-by-step TDD (write test → verify fail → implement → verify pass → apply commit mode), one action per step, exact commands with expected output | What to build, exact files, approach notes, acceptance criteria; the implementer reads code with code-kb and follows TDD |
+| Tasks | Step-by-step TDD (write test → verify fail → implement → verify pass → apply commit mode), one action per step, exact commands with expected output | What to build, exact files, approach notes, acceptance criteria; the implementer reads current source and follows TDD |
 
 Both depths describe outcomes, constraints, ownership, and checks. Neither prewrites the implementation: include code only for an exact contract, schema, migration, or string the implementer must not vary. The implementer writes the code with TDD.
 

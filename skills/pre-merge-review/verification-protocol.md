@@ -1,6 +1,6 @@
 # Verification Protocol
 
-External reviewers over-report. Classify every finding against the actual code before acting. Verify with code-kb: `get_symbol_context(symbol_name, file_path?)` for the referenced symbol (`get_symbol_body` only for the symbol the finding centers on), `find_references` when a public API or shared utility is touched, `file_skeleton(file_path)` to confirm the reviewer points at the right region.
+External reviewers over-report. Classify every finding against the actual code before acting. Verify with native search and file reads, or code-kb when useful: inspect the referenced symbol, trace callers when a public API or shared utility is touched, and confirm the cited source region.
 
 ## Classifications
 

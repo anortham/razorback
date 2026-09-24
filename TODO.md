@@ -7,7 +7,8 @@ The March 2026 process-evaluation list shipped in v0.4.0. Write-up: `docs/plans/
 
 ## Default workflow reduction (2026-09-23)
 
-Local backlog from the tooling assessment; implementation has not started.
+Local backlog from the tooling assessment; the default changes are implemented locally.
+The measured workflow comparison has not started.
 Make the default a direct, proportionate development workflow, with detailed
 planning and orchestration available when the task benefits from them.
 

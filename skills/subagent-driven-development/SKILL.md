@@ -66,7 +66,7 @@ Workspace: `"$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE` prints `<repo-root>/.r
 
 ### Parallel Dispatch (Independent Tasks)
 
-One call per task in a single turn; file ownership per subagent. Coupled tasks (same files, shared state, ordering) run one at a time with the `Dependency reason` recorded. Review each task inline as it returns; never batch reviews. After a completed batch of file writes, run `code-kb scan` before the next dispatch.
+One call per task in a single turn; file ownership per subagent. Coupled tasks (same files, shared state, ordering) run one at a time with the `Dependency reason` recorded. Review each task inline as it returns; never batch reviews. After a completed batch of file writes, re-read the changed source before the next dispatch. If using code-kb, check that its results reflect those writes; use native search and file reads if its index is stale or unavailable.
 
 ### Batch Small Same-Shape Work
 

@@ -58,7 +58,7 @@ Replace placeholders with integers before dispatch: one selected external review
 
 ## Round 1 — Discovery
 
-1. Run the problem-class audit (Audit Mode for architecture). Verify the lead's findings with code-kb `find_references`/`get_symbol_body` before dispatch.
+1. Run the problem-class audit (Audit Mode for architecture). Verify the lead's findings against current source, using native tools or code-kb, before dispatch.
 2. Dispatch each selected reviewer exactly once, read-only: "Here are N verified findings: [list with file:line and evidence]. (a) Verify or refute each, naming what you checked. (b) Independently hunt for problems in the same class that this list misses. Verify and report only; do not modify any file."
 3. Increment `external_invocations` after every call (Round 1 ends at `<selected external reviewers>/<budget>`). Diff-check the worktree for unauthorized edits after each dispatch.
 4. Triage with `razorback:receiving-code-review`: verify, deduplicate, assign canonical severity, freeze the accepted set.
