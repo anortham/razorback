@@ -22,8 +22,8 @@ test('bootstrap states achievable instruction priority and capability-based exec
   assert.match(skill, /system and developer instructions/i);
   assert.match(skill, /override razorback skill defaults/);
   assert.match(skill, /delegation is available and permitted/i);
-  assert.match(skill, /including a single task/i);
-  assert.match(skill, /explicitly selects single-agent execution/i);
+  assert.match(skill, /\*\*Default:\*\* the current agent does one coherent task directly\. No plan file, no worker, no task report\./);
+  assert.doesNotMatch(skill, /including a single task/i);
   assert.doesNotMatch(skill, /\*\*2\+ tasks:\*\*/);
 });
 

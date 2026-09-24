@@ -72,18 +72,34 @@ test('every workflow commit has a Goldfish pre-commit checkpoint', () => {
   assert.doesNotMatch(executing, /per-task checkpoints are noise/i);
 });
 
-test('task routing follows delegation availability rather than task count', () => {
+test('one coherent task stays with the current agent and delegation needs a reason', () => {
   const brainstorming = read('skills/brainstorming/SKILL.md');
   const plans = read('skills/writing-plans/SKILL.md');
   const sdd = read('skills/subagent-driven-development/SKILL.md');
   const executing = read('skills/executing-plans/SKILL.md');
 
   for (const content of [brainstorming, plans, sdd, executing]) {
-    assert.match(content, /delegation is available/i);
-    assert.match(content, /no delegation/i);
+    assert.doesNotMatch(content, /including (for )?one task/i);
   }
-  assert.match(sdd, /including one task/i);
-  assert.match(sdd, /serialized/i);
-  assert.match(executing, /explicitly selected single-agent/i);
-  assert.doesNotMatch(brainstorming, /If the task is a single coherent unit:\*\* Dispatch one implementer/);
+  for (const content of [plans, sdd, executing]) {
+    assert.match(content, /independent tasks, or tasks whose separate context has a clear benefit/i);
+  }
+  assert.match(sdd, /One coherent task → the current agent does it/);
+  assert.match(sdd, /serialized lane/i);
+  assert.match(executing, /This is the default way to run a plan: the current agent does the work/);
+  assert.match(brainstorming, /the current agent does the work directly \(TDD applies\)\. No plan file, worker, or task report\./);
+});
+
+test('plan files exist for handoff, multi-session, or coordination and do not prewrite code', () => {
+  const plans = read('skills/writing-plans/SKILL.md');
+  const templates = read('skills/writing-plans/task-templates.md');
+
+  assert.match(plans, /## When to Write a Plan File/);
+  assert.match(plans, /\*\*Handoff:\*\*/);
+  assert.match(plans, /\*\*Multi-session:\*\*/);
+  assert.match(plans, /\*\*Coordination:\*\*/);
+  assert.match(plans, /Neither prewrites the implementation/);
+  assert.doesNotMatch(plans, /complete code/i);
+  assert.match(plans, /proceed without a second approval round/);
+  assert.doesNotMatch(templates, /```python/);
 });

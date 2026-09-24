@@ -1,6 +1,6 @@
 ---
 name: writing-plans
-description: Use when you have a spec or requirements for a multi-step task, before touching code
+description: Use when work needs a written plan file - a handoff to another session or agent, a multi-session effort, or parallel work that needs file ownership and ordering - before touching code. Not for one coherent task the current agent can finish.
 ---
 
 # Writing Plans
@@ -9,7 +9,17 @@ description: Use when you have a spec or requirements for a multi-step task, bef
 
 Run in the task worktree razorback:brainstorming created; if not in one, run razorback:using-git-worktrees first. Save to `docs/plans/YYYY-MM-DD-<feature-name>.md`. Copy the plan header, Verification Strategy, Parallel Execution Contract, and task templates from `task-templates.md` (this directory).
 
-**Not for:** a moderate same-session task with an agreed design (razorback:brainstorming lightweight path; the design doc is the plan) or a small local defect (razorback:fixing-small-issues).
+**Not for:** one coherent task the current agent can finish in this session (do it directly; the design in chat or the user's request is the plan) or a small local defect (razorback:fixing-small-issues).
+
+## When to Write a Plan File
+
+Write a plan file only when it carries information across a boundary:
+
+- **Handoff:** another session, agent, or person executes the work.
+- **Multi-session:** the work will not finish in this session, and the next session needs the decisions.
+- **Coordination:** parallel workers need file ownership, ordering, and shared contracts.
+
+Otherwise, do the work directly. A task list in the harness is enough to track steps.
 
 After approval, razorback runs to completion and stops only for real blockers (`razorback:using-razorback` skill's `references/blocker-taxonomy.md`).
 
@@ -18,9 +28,9 @@ After approval, razorback runs to completion and stops only for real blockers (`
 | | Full plan | Light plan |
 |---|---|---|
 | Use for | Async handoffs, no-delegation runs, multi-session or unfamiliar work | Same-session execution by dispatched subagents via `subagent-driven-development` |
-| Tasks | Step-by-step TDD (write test → verify fail → implement → verify pass → apply commit mode), one action per step, complete code, exact commands with expected output | What to build, exact files, approach notes, acceptance criteria; the implementer reads code with code-kb and follows TDD |
+| Tasks | Step-by-step TDD (write test → verify fail → implement → verify pass → apply commit mode), one action per step, exact commands with expected output | What to build, exact files, approach notes, acceptance criteria; the implementer reads code with code-kb and follows TDD |
 
-When in doubt, ask.
+Both depths describe outcomes, constraints, ownership, and checks. Neither prewrites the implementation: include code only for an exact contract, schema, migration, or string the implementer must not vary. The implementer writes the code with TDD.
 
 ## Before Writing
 
@@ -35,7 +45,7 @@ When in doubt, ask.
 - **Keep it compilable:** every task ends with the repo building and worker-scope verification green, then the worker commits (`serial-worker-commit`) or hands the diff to the lead for staging and commit after inline review (`parallel-lead-commit`).
 - **Rollback-friendly order:** a partially executed plan leaves the branch shippable or cleanly revertible.
 - **Slices are not stop points:** checkpoint and continue; stops come only from the blocker taxonomy and the final PR.
-- **No placeholders:** "TBD", "implement later", "add appropriate error handling", "write tests for the above" without test code, "similar to Task N" (repeat the code) are plan failures.
+- **No placeholders:** "TBD", "implement later", "add appropriate error handling", "write tests for the above" without naming the behavior each test proves, "similar to Task N" (state the outcome) are plan failures.
 
 ## Global Constraints
 
@@ -93,7 +103,7 @@ Fix inline. If the session can dispatch subagents, you may instead dispatch a re
 ## Execution Handoff
 
 1. **Announce and request approval.** The plan's visual digest (`<plan>.html`, sibling basename, composed per the `razorback:using-razorback` skill's `references/digest-kit.md`) is opt-in: write it only when the user asked for a digest in this session or in project instructions; never unprompted. Announce: **"Plan saved to `<path>`. Please review it and reply **approved** (with optional reviewer choice, e.g. 'approved, codex review'; omit reviewer choice for no external review) or request changes."** When a digest was requested, add "with a visual digest at `<plan>.html`".
-2. **Wait for explicit approval.** Silence, hedges ("looks ok"), questions, or partial feedback do not unblock; only "approved", "yes, go", "run it", or equivalent does. On change requests: revise, re-run the self-review, re-save, re-ask. This is the last human stop before autonomous local execution.
+2. **Wait for explicit approval.** Silence, hedges ("looks ok"), questions, or partial feedback do not unblock; only "approved", "yes, go", "run it", or equivalent does. On change requests: revise, re-run the self-review, re-save, re-ask. This is the last human stop before autonomous local execution. **Exception:** when the user already authorized the work and the plan adds no consequential choice they have not made, record that authorization in the plan and proceed without a second approval round.
 3. **Record authority.** Implementation approval does not imply publication authority. Record sources already granted in the conversation or project instructions:
    - `local_commit_authority: authorized — <implementation request/repo instruction>`
    - `push_authority: authorized | missing — <user/repo instruction>`
@@ -102,8 +112,8 @@ Fix inline. If the session can dispatch subagents, you may instead dispatch a re
    Local commits are authorized by the approved scope unless a user or host instruction prohibits them; a prohibition uses the approval/blocker boundary once the local diff and review materials are ready. Do not ask for missing push or PR authority here; `razorback:finishing-a-development-branch` asks once, later. Never infer push or PR authority from "implement it", plan approval, or permission to commit.
 4. **Capture the reviewer choice without prompting.** The default reviewer choice is `none`; set `codex` or `claude` only when the approval message or the saved spec named it. If project instructions declare an `## External model policy` block, the reviewer must appear in `Reviewer choices permitted:`; if not, surface the conflict now (`razorback:security-review` defines the block).
 5. **Invoke the execution skill immediately**, passing the plan path, reviewer choice, authority ledger, and verification strategy:
-   - Delegation is available and permitted → `razorback:subagent-driven-development`, including for one task; serialize dependent tasks.
-   - No delegation, or explicitly selected single-agent execution → `razorback:executing-plans`.
+   - Independent tasks, or tasks whose separate context has a clear benefit, and delegation is available and permitted → `razorback:subagent-driven-development`.
+   - Otherwise (one coherent task, dependent tasks, no delegation, or single-agent execution selected) → `razorback:executing-plans`; the current agent runs the plan.
 
    If the user requested a separate-session handoff before approval, tell them to open a new session in the worktree and use `razorback:executing-plans` there.
 
@@ -111,4 +121,6 @@ Fix inline. If the session can dispatch subagents, you may instead dispatch a re
 
 - Every path, symbol, and command in the plan came from code-kb or the repo's docs, never from memory.
 - Each task ends compilable, with tickable acceptance criteria and exact file ownership.
-- The self-review ran before the approval ask, and execution started only after an explicit "approved".
+- The plan file existed because of a handoff, a multi-session effort, or a coordination need.
+- The plan described outcomes and checks, not prewritten implementation code.
+- The self-review ran before the approval ask, and execution started only after an explicit "approved" or a recorded prior authorization.

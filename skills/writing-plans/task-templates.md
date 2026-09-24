@@ -7,7 +7,7 @@ Copy these blocks into the plan in this order: header, Verification Strategy, Pa
 ```markdown
 # [Feature Name] Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use razorback:subagent-driven-development whenever delegation is available and permitted, including for one task; serialize dependent tasks. Use razorback:executing-plans only when delegation is unavailable or the user/session explicitly selected single-agent execution.
+> **For agentic workers:** Use razorback:subagent-driven-development for independent tasks, or tasks whose separate context has a clear benefit, when delegation is available and permitted. Otherwise use razorback:executing-plans: the current agent runs the plan.
 
 **Goal:** [One sentence]
 
@@ -88,11 +88,7 @@ Copy these blocks into the plan in this order: header, Verification Strategy, Pa
 
 **Step 1: Write the failing test**
 
-```python
-def test_specific_behavior():
-    result = function(input)
-    assert result == expected
-```
+[The behavior the test proves, the input, and the expected result. Include test code only for an exact fixture or value the implementer must not vary.]
 
 **Step 2: Run test to verify it fails**
 
@@ -101,10 +97,7 @@ Expected: FAIL with "function not defined"
 
 **Step 3: Write minimal implementation**
 
-```python
-def function(input):
-    return expected
-```
+[The outcome and the constraints: which symbols change, which pattern to follow, which edge cases to handle. Include code only for an exact contract, schema, migration, or string.]
 
 **Step 4: Run test to verify it passes**
 

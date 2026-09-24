@@ -1,19 +1,19 @@
 ---
 name: subagent-driven-development
-description: Use when executing an approved implementation plan in the current session and the harness can launch subagents.
+description: Use when an approved implementation plan has independent tasks that can run in parallel, or tasks whose separate context has a clear benefit, and the harness can launch subagents.
 ---
 
 # Subagent-Driven Development
 
-Fresh subagent per task. Lead reviews inline (spec + quality). Independent tasks fan out in parallel; dependent tasks run serialized. Commit mode decides who commits.
+Fresh subagent per delegated task. Lead reviews inline (spec + quality). Independent tasks fan out in parallel; dependent tasks run serialized. Commit mode decides who commits.
 
 Dispatch, follow-up, and wait tool names per harness: read `references/harness-dispatch.md` before the first dispatch. Explicit Cursor/Composer delegation from another harness goes through `razorback:cursor-agent`; this lead still owns review and verification. Use the harness default model unless the user, environment, or lead selects another.
 
 ## When to Use
 
-- No plan → brainstorm / write the plan first.
+- One coherent task → the current agent does it: directly, or with `razorback:executing-plans` when a plan file exists. No worker.
 - Plan, but no delegation or explicitly selected single-agent → `razorback:executing-plans`.
-- Plan and delegation is available and permitted → this skill, including one task. 2+ independent tasks → parallel batches; otherwise serialized lanes.
+- Plan with independent tasks, or tasks whose separate context has a clear benefit (a large unfamiliar area, a context the lead should not fill), and delegation is available and permitted → this skill. 2+ independent tasks → parallel batches; a dependent task that still benefits from a separate context → a serialized lane.
 
 ## Step 1: Extract Tasks from the Plan
 

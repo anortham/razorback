@@ -167,11 +167,11 @@
           <dl class="roles">
             <div>
               <dt>You</dt>
-              <dd>Reply "approved". "Looks ok" does not start the run. This is your last stop before the agent runs the plan on its own.</dd>
+              <dd>Reply "approved". "Looks ok" does not start the run. This is your last stop before the agent runs the plan on its own. If you already authorized the work and the plan adds no new choice, the agent records that and does not ask again.</dd>
             </div>
             <div>
               <dt>Razorback</dt>
-              <dd>Writes a task-by-task plan with the files each task owns, how each task is verified, and acceptance checkboxes. It checks every path and symbol with code-kb.</dd>
+              <dd>Writes a plan file only for a handoff, a multi-session effort, or parallel work. The plan states outcomes, the files each task owns, how each task is verified, and acceptance checkboxes; it does not prewrite the code. One coherent task skips this step.</dd>
             </div>
           </dl>
         </li>
@@ -197,7 +197,7 @@
             </div>
             <div>
               <dt>Razorback</dt>
-              <dd>Gives each task to a fresh implementer subagent: in parallel when tasks are independent, one after another when they depend on each other. It does not pause between tasks.</dd>
+              <dd>Does one coherent task itself. Gives independent tasks, or tasks that benefit from a separate context, to fresh implementer subagents in parallel. It does not pause between tasks.</dd>
             </div>
           </dl>
         </li>
@@ -260,9 +260,9 @@
             <h4>Which skill runs the work</h4>
             <dl class="paths">
               <dt><a href="#skill-subagent-driven-development">subagent-driven-development</a></dt>
-              <dd>Whenever delegation is available, even for a single task. Codex needs <code>multi_agent = true</code>.</dd>
+              <dd>Independent tasks, or tasks that benefit from a separate context, when delegation is available. Codex needs <code>multi_agent = true</code>.</dd>
               <dt><a href="#skill-executing-plans">executing-plans</a></dt>
-              <dd>When delegation is unavailable, or you choose a single agent.</dd>
+              <dd>A written plan the current agent runs: dependent tasks, no delegation, or your choice of a single agent. One coherent task needs no plan at all.</dd>
               <dt><a href="#skill-dispatching-parallel-agents">dispatching-parallel-agents</a></dt>
               <dd>Ad-hoc parallel work outside a plan.</dd>
               <dt><a href="#skill-fixing-small-issues">fixing-small-issues</a></dt>
@@ -412,8 +412,8 @@
         <div class="skill-group">
           <h3>Execution</h3>
           <ul>
-            <li id="skill-subagent-driven-development"><a href="https://github.com/anortham/razorback/blob/main/skills/subagent-driven-development/SKILL.md"><code data-skill="subagent-driven-development">subagent-driven-development</code></a> The main plan runner: a fresh implementer subagent per task, with the lead reviewing each one.</li>
-            <li id="skill-executing-plans"><a href="https://github.com/anortham/razorback/blob/main/skills/executing-plans/SKILL.md"><code data-skill="executing-plans">executing-plans</code></a> Runs an approved plan in one agent when delegation is unavailable or you choose a single agent.</li>
+            <li id="skill-subagent-driven-development"><a href="https://github.com/anortham/razorback/blob/main/skills/subagent-driven-development/SKILL.md"><code data-skill="subagent-driven-development">subagent-driven-development</code></a> Runs independent plan tasks in fresh implementer subagents, with the lead reviewing each one.</li>
+            <li id="skill-executing-plans"><a href="https://github.com/anortham/razorback/blob/main/skills/executing-plans/SKILL.md"><code data-skill="executing-plans">executing-plans</code></a> The default plan runner: the current agent runs an approved plan itself.</li>
             <li id="skill-dispatching-parallel-agents"><a href="https://github.com/anortham/razorback/blob/main/skills/dispatching-parallel-agents/SKILL.md"><code data-skill="dispatching-parallel-agents">dispatching-parallel-agents</code></a> Sends two or more independent problems, such as unrelated test failures, to parallel agents.</li>
             <li id="skill-fixing-small-issues"><a href="https://github.com/anortham/razorback/blob/main/skills/fixing-small-issues/SKILL.md"><code data-skill="fixing-small-issues">fixing-small-issues</code></a> The quick-fix tier: fix on the current checkout and run only the affected tests.</li>
             <li id="skill-using-git-worktrees"><a href="https://github.com/anortham/razorback/blob/main/skills/using-git-worktrees/SKILL.md"><code data-skill="using-git-worktrees">using-git-worktrees</code></a> Lists existing worktrees and branches, then makes an isolated workspace for the task.</li>

@@ -26,7 +26,8 @@ planning and orchestration available when the task benefits from them.
   coordination needs; a file or line threshold alone is not a risk assessment.
   Acceptance: clear ordinary work proceeds directly; ambiguous requirements
   get clarification; consequential design choices still get explicit attention.
-- [ ] Make delegation and durable plans optional for ordinary work.
+- [x] Make delegation and durable plans optional for ordinary work.
+  Done on branch `workflow-reduction` (not merged; waits for the comparison).
   Update `skills/writing-plans/SKILL.md`,
   `skills/subagent-driven-development/SKILL.md`, and
   `skills/executing-plans/SKILL.md`. Default to the current agent for one coherent

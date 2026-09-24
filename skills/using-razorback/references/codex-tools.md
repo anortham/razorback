@@ -120,16 +120,13 @@ specified in the instructions above.
 
 ## Execution model on Codex
 
-On Codex, delegated plan execution uses `subagent-driven-development`: dispatch fresh implementer subagents per task, parallel when independent, lead does inline review. If the current Codex harness or session policy does not allow delegation, fall back to `executing-plans`.
+On Codex, the current agent does one coherent task directly. Delegated plan execution uses `subagent-driven-development` for independent tasks, or tasks whose separate context has a clear benefit: dispatch fresh implementer subagents, parallel when independent, lead does inline review. If the current Codex harness or session policy does not allow delegation, use `executing-plans`.
 
-| Codex session state | Execution skill |
-|--------------------|-----------------|
-| Delegation available | `subagent-driven-development` |
-| Delegation unavailable | `executing-plans` |
-
-This capability-based routing applies to one task as well as many. Dependent work
-uses serialized delegates. Use `executing-plans` only when delegation is
-unavailable or the user/session explicitly selects single-agent execution.
+| Work | Execution skill |
+|------|-----------------|
+| One coherent task | the current agent, directly (`executing-plans` when a plan file exists) |
+| Independent tasks or a clear context benefit, delegation available | `subagent-driven-development` |
+| Delegation unavailable, or single-agent execution selected | `executing-plans` |
 
 ### External model CLI waiting
 

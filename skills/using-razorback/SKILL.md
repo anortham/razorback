@@ -63,12 +63,14 @@ Skills use Claude Code tool names; substitute your platform's equivalent.
 
 ## Execution Model
 
-- **Delegation is available and permitted:** `razorback:subagent-driven-development` — fresh subagent per task, including a single task; parallel when independent, serialized when dependent. If this session cannot delegate, fall back to `razorback:executing-plans`.
-- **Delegation is unavailable, or the user/session explicitly selects single-agent execution:** `razorback:executing-plans`.
+- **Default:** the current agent does one coherent task directly. No plan file, no worker, no task report.
+- **A written plan the current agent runs** (dependent tasks, no delegation, or single-agent execution selected): `razorback:executing-plans`.
+- **Independent tasks, or tasks whose separate context has a clear benefit, and delegation is available and permitted:** `razorback:subagent-driven-development`. If this session cannot delegate, use `razorback:executing-plans`.
+- **A plan file** exists only for a handoff, a multi-session effort, or a coordination boundary: `razorback:writing-plans`.
 - **Ad-hoc parallel work:** `razorback:dispatching-parallel-agents`.
 - **Small, local, reversible fix:** `razorback:fixing-small-issues` — triage, fix on the current checkout, verify the affected scope only. No worktree, no baseline suite.
 
-The lead reviews inline (spec compliance + code quality) on every path. When a process skill (brainstorming, debugging) applies, it sets HOW and runs before domain skills. Rigid skills (TDD, debugging) are followed exactly once loaded. A bug fix still finds the root cause.
+The agent reviews its completed changes (spec compliance + code quality) on every path. When a process skill (brainstorming, debugging) applies, it sets HOW and runs before domain skills. Rigid skills (TDD, debugging) are followed exactly once loaded. A bug fix still finds the root cause.
 
 ## Your Toolchain
 

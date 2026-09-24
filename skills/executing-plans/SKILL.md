@@ -1,13 +1,13 @@
 ---
 name: executing-plans
-description: Use when executing a written implementation plan and delegation is unavailable or the user/session explicitly selected single-agent execution.
+description: Use when the current agent executes a written implementation plan itself - one coherent task, dependent tasks, no delegation available, or single-agent execution selected.
 ---
 
 # Executing Plans
 
 One agent runs the approved plan end to end with no inter-task pauses. After approval the run stops only for the blocker taxonomy and the final PR; every other judgment call is decided plan-consistently and noted in the report.
 
-Use this skill when there is no delegation or the user/session explicitly selected single-agent execution. When delegation is available and permitted, use `razorback:subagent-driven-development`, including for one task.
+This is the default way to run a plan: the current agent does the work. Use `razorback:subagent-driven-development` instead when the plan has independent tasks, or tasks whose separate context has a clear benefit, and delegation is available and permitted.
 
 **Inputs from `writing-plans`:** plan path, `reviewer_choice` (`none` / `codex` / `claude`), authority ledger (`local_commit_authority`, `push_authority`, `pr_authority`), verification strategy.
 

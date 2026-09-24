@@ -4,7 +4,7 @@
 
 > Website: [anortham.github.io/razorback](https://anortham.github.io/razorback/) — the setup path from nothing to a working install, on one page.
 
-Razorback is a skill set for coding-agent harnesses, diverged from [Superpowers](https://github.com/obra/superpowers) to add code-kb MCP for token-efficient codebase orientation. Plan execution runs through `subagent-driven-development` on harnesses that support delegation, and `executing-plans` where delegation is unavailable.
+Razorback is a skill set for coding-agent harnesses, diverged from [Superpowers](https://github.com/obra/superpowers) to add code-kb MCP for token-efficient codebase orientation. One coherent task runs directly in the current agent. A written plan runs through `executing-plans`, or through `subagent-driven-development` when its tasks are independent or benefit from a separate context.
 
 **Supported harnesses.** Claude Code, Codex CLI / ChatGPT desktop app (rebranded from Codex), OpenCode, and Antigravity get the full plugin: skills, agents, bootstrap, and delegated execution. Cursor is **frozen** — its plugin support still works and is documented below, but it receives no new work. Copilot CLI is **instruction-tier**: it picks up razorback's code-kb-first ruleset from `.github/copilot-instructions.md` and nothing else.
 
@@ -241,8 +241,9 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 
 **Execution model (primary path depends on harness):**
 - **Autonomous by default:** once a plan is approved, execution runs to completion gated only by real blockers. A blocker is real only when the agent cannot resolve it through reasonable plan-consistent judgment. An optional pre-merge external review (codex / claude) runs before branch finish. See [autonomous-execution design](docs/plans/2026-04-18-autonomous-execution-design.md) for the rationale.
-- **2+ independent tasks (any plugin-tier harness):** `subagent-driven-development` dispatches fresh implementer subagents (in parallel when tasks are independent), and the lead does inline review (spec compliance + code quality) per task.
-- **1 task, tightly sequential work, or no delegation available:** `executing-plans` runs single-agent batch execution.
+- **One coherent task:** the current agent does it directly. No plan file, worker, or task report.
+- **Independent tasks, or tasks that benefit from a separate context (any plugin-tier harness):** `subagent-driven-development` dispatches fresh implementer subagents (in parallel when tasks are independent), and the lead does inline review (spec compliance + code quality) per task.
+- **A written plan with dependent tasks, or no delegation available:** `executing-plans` runs it in the current agent.
 - **Ad-hoc parallel work (delegation available):** `dispatching-parallel-agents` for independent tasks outside plans.
 - **Small, local, reversible fixes:** `fixing-small-issues` triages against objective criteria (≤ 2 files, ~20 lines, no contract changes) and fixes on the current checkout — no worktree, no baseline suite run, affected-scope verification only. Escalates to the standard flow the moment the fix outgrows the criteria.
 
@@ -268,7 +269,7 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 | harvesting-debt | Debt ledger: collects the `razorback:` shortcut markers left by deliberate corner-cuts, flagging any that name no upgrade trigger |
 | architecture-quality | Architecture and interface quality checks for planning, review, and test surface decisions |
 | writing-plans | Implementation plans (full or light) with MCP-verified file paths |
-| executing-plans | Single-agent execution (fallback for sequential/single-task work or no-subagent harnesses) |
+| executing-plans | Default plan runner: the current agent runs a written plan |
 | test-driven-development | Red-green-refactor with MCP-powered test discovery; `writing-good-tests.md` is the test-design reference (name the break, exercise the real thing, mutation check) |
 | systematic-debugging | Root cause investigation with MCP-powered tracing |
 | diagnosing-performance | Measure-first diagnosis when the output is right but late; `bottleneck-catalog.md` names the recurring causes by layer and `measurement-playbook.md` carries the per-stack tools |
@@ -280,7 +281,7 @@ The core process: brainstorm, plan, TDD, execute, review, finish.
 | dispatching-parallel-agents | Ad-hoc parallel agent dispatch |
 | using-git-worktrees | Isolated workspace setup |
 | writing-skills | Meta-skill for creating/editing skills |
-| **subagent-driven-development** | **Primary delegated plan execution: fresh implementer subagents, parallel when independent, inline review by lead** |
+| **subagent-driven-development** | **Delegated plan execution for independent tasks: fresh implementer subagents, parallel when independent, inline review by lead** |
 | pre-merge-review | Optional external review (codex / claude) run before PR — verifies findings, dispatches fixes, emits morning-report block |
 | cross-model-convergence | Adversarial find → verify → fix loop between the lead and an external reviewer (default codex) until a double-clean round or the round cap; includes the pre-implementation Doubt Pass |
 | grounding-in-current-docs | Verify external framework/library/API behavior against current official docs when training knowledge may be stale |

@@ -55,10 +55,8 @@ Every path starts with code-kb orientation (`codebase_outline`, `file_skeleton`,
 2. **Ask clarifying questions** — one at a time, the ones that matter.
 3. **Present a short design in chat** — approach, files touched, testing.
 4. **Get agreement on open choices** — wait for the user's answer on each consequential choice their request did not settle. Presenting an open choice and starting in the same breath is skipping the gate.
-5. **Implement** — proceed with the normal development workflow (TDD applies):
-   - **Delegation is available and permitted:** `razorback:subagent-driven-development`, including for one task.
-   - **No delegation, or single-agent execution explicitly selected:** `razorback:executing-plans` (or normal TDD workflow).
-   - **Done:** `razorback:finishing-a-development-branch`.
+5. **Implement** — the current agent does the work directly (TDD applies). No plan file, worker, or task report. Delegate only an independent part, or a part whose separate context has a clear benefit (`razorback:dispatching-parallel-agents`).
+6. **Done** — verify, commit, and report in chat. Use `razorback:finishing-a-development-branch` when the branch is ready to integrate.
 
 ### Architectural Workflow
 1. **Offer the visual companion** if visual questions are likely (own message; see below).
