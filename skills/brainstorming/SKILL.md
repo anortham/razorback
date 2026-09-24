@@ -1,39 +1,44 @@
 ---
 name: brainstorming
-description: "Use when starting any creative work - creating a feature, building a component, adding functionality, or changing designed behavior - before writing code or invoking any implementation skill. Small defect repairs and tweaks triage through razorback:fixing-small-issues first."
+description: "Use when requirements are unclear, when a change makes a consequential design choice (a new subsystem, a public interface, stored data, security, or hard-to-reverse behavior), or when the user asks to brainstorm or design. Clear, ordinary work proceeds without it; small defect repairs go to razorback:fixing-small-issues."
 ---
 
 # Brainstorming Ideas Into Designs
 
-Turn an idea into a written, user-approved design before any implementation, however simple the task looks.
-
-Start by classifying how much process the request needs, then work through your path: understand the context, refine the idea, present a design, and get user approval.
+Turn an unclear or consequential idea into a design the user agrees with. Spend attention where a wrong guess is expensive, and nowhere else.
 
 <HARD-GATE>
-Do NOT invoke any implementation skill, write any code, scaffold any project, or take any implementation action until you have told the user what you intend and they have approved it. This applies to EVERY task on EVERY path below — the ceremony scales with the task; the approval gate never does.
+Do NOT write production code for a consequential design choice the user has not made or agreed to. Tell the user the choice and your recommendation, then wait for their answer. A choice the user's request already settles needs no second approval.
 </HARD-GATE>
 
 **One exception:** an empirical design question (settled only by running code) takes the razorback:prototyping off-ramp: announce the question, get a one-line go-ahead, build the throwaway instrument, return with the user's verdict. The gate still bars production code.
 
-## Triage First: Is This Design Work?
+## Triage First: How Much Process?
 
-A defect or tweak that meets the quick-fix criteria (≤ 2 source files, ~20 changed lines, no contract changes, reversible) is repair work: route it to razorback:fixing-small-issues. If it outgrows the criteria there, it escalates back here with its evidence.
+Judge the request by uncertainty, consequence, and coordination, not by size:
 
-This is a measured gate, not a judgment call. "Feels simple" is not a criterion; the Rationalizations table applies to everything that does not measurably fit the quick-fix tier.
+- **Clear and low-consequence** (the request says what to build, and a wrong detail is cheap to fix): leave this skill and do the work. A small defect or tweak goes to razorback:fixing-small-issues.
+- **Unclear** (two readings of the request give different results): ask the question that separates them, then re-triage.
+- **Consequential** (hard to reverse, or it changes a public contract, stored data, security, or other people's work): pick a path below.
+- **Needs coordination** (the work spans sessions, agents, or people): take the architectural path, whose written spec and plan give the handoff a home.
+
+A file or line count alone is not a risk assessment. A one-line change to an auth check is consequential; a wide mechanical rename may not be.
 
 ## Three Paths
 
 Before your first question, classify the request and say the classification out loud — "this looks bounded, so I'll present a short design here rather than write a spec" — so the user can override it:
 
-- **Spike** — a feasibility question ("can we...", "is it possible...", "quick and dirty is fine") whose output is an answer, not code you keep. Pairs with `razorback:prototyping`. Present the question and what you'll try in 2-3 sentences, get a nod, then find out as cheaply as correctness allows. No design doc, no spec file. Report findings as a recommendation; anything you built stays labeled throwaway.
-- **Bounded** — a well-scoped change to code that already exists in this repo: a new flag, a small endpoint, a one-file fix. Understanding the kind of app is not enough — bounded means the flow you are changing is already here to read. If there is no existing flow to change, the task is not bounded. Ask the clarifying questions that matter, present a short design in chat (approach, files touched, testing), and STOP and wait for an explicit yes. Implementation starts only after the user says yes to that design — a bounded task's approval is as hard a gate as an architectural one. No spec file, no implementation plan document.
+- **Spike** — a feasibility question ("can we...", "is it possible...", "quick and dirty is fine") whose output is an answer, not code you keep. Pairs with `razorback:prototyping`. State the question and what you'll try in 2-3 sentences, then find out as cheaply as correctness allows. No design doc, no spec file. Report findings as a recommendation; anything you built stays labeled throwaway.
+- **Bounded** — a change to code that already exists in this repo, with one or two consequential choices: a new flag, a small endpoint, a changed default. Bounded means the flow you are changing is already here to read. Ask only the clarifying questions that change the result, present a short design in chat (approach, files touched, testing), and wait for the user's answer on the choices they have not already made. No spec file, no implementation plan document.
 - **Architectural** — new projects, new subsystems, changes that restructure how components fit together or alter interfaces others depend on. Follow the full process: questions, approaches, sectioned design, written spec, then the `razorback:writing-plans` skill.
 
-When in doubt between two paths, take the heavier one. The ratchet is one-way: hidden complexity discovered mid-task upgrades the path — stop, say so, and step up. Nothing downgrades mid-task.
+Re-classify when the evidence changes. Hidden complexity discovered mid-task upgrades the path: stop, say so, and step up. A task that turns out simpler than it looked, once you understand it, takes the lighter path: say so and continue.
 
-## Anti-Pattern: "Too Simple To Need Approval"
+## Anti-Patterns
 
-Every path ends with the user approving your intent before implementation. A todo list, a single-function utility, a config change — the design may be two sentences in chat, but you MUST present it and get approval. "Simple" tasks are where unexamined assumptions cause the most wasted work. The ceremony scales with the task; the approval gate never does. What scales with simplicity is the artifact, never the approval.
+**Ceremony for clear work.** A design, spec, or approval round for a change the user already specified wastes their time and yours. Once you understand the task and the user's request settles its choices, proceed.
+
+**Silent consequential choices.** A choice that is hard to reverse or that others depend on gets named before code is written, however small the diff. "It's only a few lines" is not a reason to decide alone.
 
 ## Path Workflows
 
@@ -41,16 +46,15 @@ Every path starts with code-kb orientation (`codebase_outline`, `file_skeleton`,
 
 ### Spike Workflow
 1. **Explore project context** via code-kb enough to frame the probe.
-2. **Present question + probe plan** — 2-3 sentences.
-3. **Get approval** — a nod is enough.
-4. **Investigate** — as cheaply as correctness allows (pairs with `razorback:prototyping`).
-5. **Report findings as a recommendation**; label anything built as throwaway.
+2. **State question + probe plan** — 2-3 sentences.
+3. **Investigate** — as cheaply as correctness allows (pairs with `razorback:prototyping`).
+4. **Report findings as a recommendation**; label anything built as throwaway.
 
 ### Bounded Workflow
 1. **Explore project context** via code-kb (check files, docs, recent commits).
 2. **Ask clarifying questions** — one at a time, the ones that matter.
 3. **Present a short design in chat** — approach, files touched, testing.
-4. **Get approval** — STOP and wait for an explicit yes; presenting the design and starting in the same breath is skipping the gate.
+4. **Get agreement on open choices** — wait for the user's answer on each consequential choice their request did not settle. Presenting an open choice and starting in the same breath is skipping the gate.
 5. **Implement** — proceed with the normal development workflow (TDD applies):
    - **Delegation is available and permitted:** `razorback:subagent-driven-development`, including for one task.
    - **No delegation, or single-agent execution explicitly selected:** `razorback:executing-plans` (or normal TDD workflow).
@@ -64,7 +68,7 @@ Every path starts with code-kb orientation (`codebase_outline`, `file_skeleton`,
 5. **Present the design** in sections scaled to complexity (a few sentences up to 200-300 words): architecture, components, data flow, error handling, testing. Ask after each section whether it looks right and get user approval before moving on.
 6. **Proceed to "After the Design"**.
 
-**Terminal states are path-bound:** Architectural invokes `razorback:writing-plans`. Bounded proceeds to execution. Spike reports findings as a recommendation. No other exits.
+**Terminal states are path-bound:** Architectural invokes `razorback:writing-plans`. Bounded proceeds to execution. Spike reports findings as a recommendation. Triage, or a re-classification to a lighter path, exits to direct work. No other exits.
 
 ## Interviewing
 
@@ -98,32 +102,32 @@ A browser tool for mockups, diagrams, and visual options; not a mode. When visua
 
 | Excuse | Reality |
 |--------|---------|
-| "This is too simple to need a design" | Simple means a short design, not no design. Two sentences in chat, then approval. |
-| "I'll call it bounded and skip the spec" | Reaching for a label to skip work IS the doubt — take the heavier path. |
-| "It's bounded and the design is obvious — I'll start while they read it" | The gate is the approval, not the design's length. Present, then stop until you hear yes. |
+| "It's small, so no design choice is involved" | Size is not risk. A small change to a contract, data, or security gets its choice named first. |
+| "I'll call it bounded and skip the spec" | Bounded means the flow already exists here to read. A new subsystem is architectural. |
 | "I understand this kind of app, so it's bounded" | Bounded measures the repo, not your familiarity. A new project has no existing flow — it is architectural. |
-| "The user already told me what to build" | An instruction is not a design. Summarize it and get confirmation — that costs minutes. |
-| "I'll just scaffold while we talk" | Scaffolding is implementation. The gate bars it until approval. |
+| "The user told me what to build, so every choice is settled" | The request settles the choices it names. An open consequential choice still goes to the user. |
+| "The user told me exactly what to build, but I'll present a design anyway" | A choice the request settles needs no second approval. Proceed. |
+| "I'll just scaffold while we talk" | Scaffolding for an open consequential choice is implementation. The gate bars it until the user answers. |
 | "The spike works, so I'll keep the code" | A spike's output is an answer. Keeping the code is a new request — classify it. |
 | "It grew, but I'm almost done — no need to re-classify" | Hidden complexity upgrades the path mid-task. Stop and say so. |
-| "They approved the spike, so the follow-up change is approved too" | Each task gets its own classification and its own approval. |
+| "I classified it architectural, so I must finish the full process" | Once the task is understood and simpler than it looked, take the lighter path and say so. |
 | "A quick prototype will settle this" | Only through the razorback:prototyping off-ramp, with a one-line go-ahead. Throwaway instrument, never production code. |
-| "The design is obvious from the codebase" | Then the short design costs one message. Write it and get the yes. |
 
 ## Red Flags — STOP
 
-- Any production file write before the user approved a design
-- Presenting the design and starting in the same breath
-- Invoking writing-plans or an implementer before spec approval
+- A production file write that settles a consequential choice the user has not made
+- Presenting an open choice and starting in the same breath
+- Invoking writing-plans or an implementer before spec approval on the architectural path
 - "While you review that, I'll get started on..."
 - A design doc committed on the current branch instead of the task worktree
 
-All of these mean: stop, return to the gate, get the approval.
+All of these mean: stop, name the open choice, and wait for the user's answer.
 
 ## It's working if
 
-- The request was classified and the classification said out loud before the first question.
-- Every path ended with user approval before any implementation began.
+- Clear, low-consequence requests went straight to the work, with no design round.
+- Ambiguous requests got the one question that separates their readings.
+- Every consequential choice the user had not made was named, and code waited for their answer.
 - Bounded designs were presented directly in chat with no spec file.
 - Architectural specs landed in the task worktree as the branch's first commit, not on `main`.
 - Questions went out one at a time, each carrying a falsifiable guess.

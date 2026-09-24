@@ -65,12 +65,14 @@ test('fixing-small-issues keeps TDD and verification discipline', () => {
   assert.match(skill, /failing regression test first/);
 });
 
-test('brainstorming triages quick fixes away before choosing a path', () => {
+test('brainstorming triages by risk and sends quick fixes away before choosing a path', () => {
   const skill = read('skills/brainstorming/SKILL.md');
 
-  assert.match(skill, /## Triage First: Is This Design Work\?/);
+  assert.match(skill, /## Triage First: How Much Process\?/);
   assert.match(skill, /razorback:fixing-small-issues/);
-  assert.match(skill, /measured gate, not a judgment call/);
+  assert.match(skill, /uncertainty, consequence, and coordination/);
+  assert.match(skill, /A file or line count alone is not a risk assessment/);
+  assert.doesNotMatch(skill, /measured gate, not a judgment call/);
 });
 
 test('using-razorback routes quick fixes in the execution model', () => {

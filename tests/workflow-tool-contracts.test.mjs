@@ -27,6 +27,20 @@ test('bootstrap states achievable instruction priority and capability-based exec
   assert.doesNotMatch(skill, /\*\*2\+ tasks:\*\*/);
 });
 
+test('bootstrap chooses process from risk instead of forcing skill loads', () => {
+  const skill = read('skills/using-razorback/SKILL.md');
+
+  assert.doesNotMatch(skill, /1% chance/);
+  assert.doesNotMatch(skill, /YOU DO NOT HAVE A CHOICE/);
+  assert.doesNotMatch(skill, /before any response or action/i);
+  assert.match(skill, /Clear, ordinary work proceeds directly/);
+  assert.match(skill, /\*\*Uncertainty:\*\*/);
+  assert.match(skill, /\*\*Consequence:\*\*/);
+  assert.match(skill, /\*\*Coordination:\*\*/);
+  assert.match(skill, /A file or line count alone is not a risk assessment/);
+  assert.match(skill, /A bug fix still finds the root cause/);
+});
+
 test('Codex mapping follows live schemas and treats wait wakeups as notifications', () => {
   const mapping = read('skills/using-razorback/references/codex-tools.md');
 

@@ -14,17 +14,18 @@ test('brainstorming defines the three paths: spike, bounded, architectural', () 
   assert.match(skill, /\*\*Architectural\*\*/);
 });
 
-test('brainstorming enforces saying classification out loud and one-way ratchet', () => {
+test('brainstorming says the classification out loud and re-classifies in both directions', () => {
   assert.match(skill, /classify the request and say the classification out loud/i);
-  assert.match(skill, /When in doubt between two paths, take the heavier one/i);
-  assert.match(skill, /one-way ratchet|ratchet is one-way/i);
   assert.match(skill, /hidden complexity discovered mid-task upgrades the path/i);
+  assert.match(skill, /simpler than it looked, once you understand it, takes the lighter path/i);
+  assert.doesNotMatch(skill, /take the heavier one/i);
+  assert.doesNotMatch(skill, /one-way ratchet|ratchet is one-way|Nothing downgrades/i);
 });
 
-test('bounded path presents short design in chat without requiring plan or spec doc files', () => {
+test('bounded path presents short design in chat and waits only on open choices', () => {
   assert.match(skill, /present a short design in chat/i);
   assert.match(skill, /No spec file, no implementation plan document/i);
-  assert.match(skill, /STOP and wait for an explicit yes|STOP and wait/i);
+  assert.match(skill, /wait for the user's answer on each consequential choice their request did not settle/i);
 });
 
 test('spike path produces recommendations and pairs with prototyping', () => {
@@ -32,7 +33,11 @@ test('spike path produces recommendations and pairs with prototyping', () => {
   assert.match(skill, /throwaway/i);
 });
 
-test('approval gate holds unconditionally across all paths', () => {
-  assert.match(skill, /ceremony scales with the task;\s*the approval gate never does/i);
-  assert.match(skill, /Anti-Pattern: "Too Simple To Need Approval"/i);
+test('clear work proceeds directly while consequential choices still get attention', () => {
+  assert.match(skill, /Clear and low-consequence[\s\S]*leave this skill and do the work/);
+  assert.match(skill, /A choice the user's request already settles needs no second approval/);
+  assert.match(skill, /\*\*Silent consequential choices\.\*\*/);
+  assert.match(skill, /Unclear[\s\S]*ask the question that separates them/);
+  assert.doesNotMatch(skill, /the approval gate never does/i);
+  assert.doesNotMatch(skill, /Too Simple To Need Approval/i);
 });

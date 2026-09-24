@@ -38,7 +38,7 @@ The quick-fix tier applies only when ALL criteria hold. Project instructions may
 | Structure | No new modules or components (a new test file is fine) |
 | Reversibility | A single `git revert` cleanly undoes it |
 
-**Any criterion fails or cannot be measured → exit this skill.** Name the failed criterion and route to the standard flow (razorback:brainstorming → plan). An unknown is a failure, not a pass.
+**Any criterion fails or cannot be measured → exit this skill.** Name the failed criterion and route to razorback:brainstorming triage, which picks the process from uncertainty and consequence. An unknown is a failure, not a pass.
 
 **All pass →** announce: "Quick-fix tier: <summary> (N files, ~M lines)." No user consent is needed to proceed — the tier is pre-authorized policy, and using-git-worktrees is never invoked on this tier.
 

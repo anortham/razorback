@@ -1,34 +1,37 @@
 ---
 name: using-razorback
-description: Use when starting any conversation, before any response or action including clarifying questions.
+description: Use at session start to learn which razorback skills exist and how to choose a proportionate process for each task.
 ---
 
 <SUBAGENT-STOP>
 If you were dispatched as a subagent to execute a specific task, skip this skill.
 </SUBAGENT-STOP>
 
-## The Rule
+## Choosing Process
 
-<EXTREMELY-IMPORTANT>
-If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke that skill BEFORE any response or action — including clarifying questions.
+Match the process to the task. Clear, ordinary work proceeds directly: understand it, do it, verify it. Load a skill when the task matches the skill's description or the user names it.
 
-IF A SKILL APPLIES TO YOUR TASK, YOU DO NOT HAVE A CHOICE. YOU MUST USE IT.
-</EXTREMELY-IMPORTANT>
+Choose how much process a task needs from three questions:
 
-Announce each invocation: "Using [skill] to [purpose]". Create a task per checklist item the skill carries. Drop a skill that turns out to be wrong. Before EnterPlanMode, invoke `razorback:brainstorming` if the work has not been brainstormed.
+- **Uncertainty:** Is it unclear what to build, or could two readings of the request give different results? Ask the question that separates them, or use `razorback:brainstorming`.
+- **Consequence:** Is a choice hard to reverse, or does it change a public contract, stored data, security, or other people's work? Give that choice explicit attention and get the user's agreement unless they already made it.
+- **Coordination:** Does the work span sessions, agents, or people? Use a plan or delegation where the handoff needs one.
+
+A file or line count alone is not a risk assessment. A one-line change to an auth check is consequential; a wide mechanical rename may not be.
+
+Announce each invocation: "Using [skill] to [purpose]". Drop a skill that turns out to be wrong.
 
 ## Red Flags
 
-These thoughts mean STOP—you're rationalizing:
+These thoughts mean the process no longer fits the task:
 
 | Thought | Reality |
 |---------|---------|
-| "This is just a simple question" | Questions are tasks. Check for skills. |
-| "I need more context first" | Skill check comes BEFORE clarifying questions. |
-| "Let me explore the codebase / check git first" | Skills tell you HOW to explore. Check first. |
-| "The skill is overkill" | Simple things become complex. Use it. |
-| "I'll just do this one thing first" | Check BEFORE doing anything. |
-| "I remember this skill" | Skills evolve. Read current version. |
+| "A skill might apply, so I must load it before I answer" | Load a skill when the task matches its description. Clear work proceeds directly. |
+| "It's only a few lines, so no design choice is involved" | Size is not risk. A small change to a contract, data, or security gets explicit attention. |
+| "The request is clear enough" (two readings give different results) | Ask the one question that separates the readings. |
+| "I understood the task, but the process says to keep going" | Once the task is understood, use the lighter path it supports and say so. |
+| "I remember this skill" | Skills evolve. Read the current version when you load one. |
 
 ## Instruction Priority
 
@@ -65,7 +68,7 @@ Skills use Claude Code tool names; substitute your platform's equivalent.
 - **Ad-hoc parallel work:** `razorback:dispatching-parallel-agents`.
 - **Small, local, reversible fix:** `razorback:fixing-small-issues` — triage, fix on the current checkout, verify the affected scope only. No worktree, no baseline suite.
 
-The lead reviews inline (spec compliance + code quality) on every path. Process skills (brainstorming, debugging) set HOW and run first; domain skills second. Rigid skills (TDD, debugging) are followed exactly. User instructions say WHAT, not HOW: "Fix Y" does not mean skip workflows.
+The lead reviews inline (spec compliance + code quality) on every path. When a process skill (brainstorming, debugging) applies, it sets HOW and runs before domain skills. Rigid skills (TDD, debugging) are followed exactly once loaded. A bug fix still finds the root cause.
 
 ## Your Toolchain
 

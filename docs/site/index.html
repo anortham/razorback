@@ -154,11 +154,11 @@
           <dl class="roles">
             <div>
               <dt>You</dt>
-              <dd>Answer its questions and approve the design. If it names the wrong path, correct it.</dd>
+              <dd>Answer its questions and decide the choices it names. If it names the wrong path, correct it.</dd>
             </div>
             <div>
               <dt>Razorback</dt>
-              <dd>Names the path first: Spike, Bounded, or Architectural. It writes no code before you approve, on every path. Architectural work gets a written spec in <code>docs/plans/</code>.</dd>
+              <dd>Runs only when the request is unclear or makes a consequential choice. Names the path first: Spike, Bounded, or Architectural. It writes no code for a consequential choice you have not made. Architectural work gets a written spec in <code>docs/plans/</code>.</dd>
             </div>
           </dl>
         </li>
@@ -242,19 +242,19 @@
               <li>no new modules or components;</li>
               <li>one <code>git revert</code> undoes it.</li>
             </ul>
-            <p>It is fixed on your current checkout, with no worktree and only the affected tests. If a criterion fails or the fix grows, the agent moves to the full workflow.</p>
+            <p>It is fixed on your current checkout, with no worktree and only the affected tests. If a criterion fails or the fix grows, the agent returns to brainstorming triage.</p>
           </div>
           <div>
             <h4>Three brainstorm paths</h4>
             <dl class="paths">
               <dt>Spike</dt>
-              <dd>A feasibility question. The answer is the output, not kept code. You give a nod; there is no design doc.</dd>
+              <dd>A feasibility question. The answer is the output, not kept code. There is no design doc.</dd>
               <dt>Bounded</dt>
-              <dd>A well-scoped change to a flow that already exists. A short design in chat that needs your explicit yes. No spec file.</dd>
+              <dd>A change to a flow that already exists, with one or two consequential choices. A short design in chat; the agent waits for your answer only on choices you have not made. No spec file.</dd>
               <dt>Architectural</dt>
               <dd>A new project, subsystem, or interface change. Two or three approaches, an architecture check, a written spec you review, then a plan.</dd>
             </dl>
-            <p>When in doubt the agent takes the heavier path. A path can upgrade mid-task, never downgrade.</p>
+            <p>Clear, low-consequence work skips brainstorming. The agent judges by uncertainty and consequence, not by the size of the diff. A path upgrades when hidden complexity appears and downgrades when the task turns out simpler.</p>
           </div>
           <div>
             <h4>Which skill runs the work</h4>
@@ -394,14 +394,14 @@
         <div class="skill-group">
           <h3>Start here</h3>
           <ul>
-            <li id="skill-using-razorback"><a href="https://github.com/anortham/razorback/blob/main/skills/using-razorback/SKILL.md"><code data-skill="using-razorback">using-razorback</code></a> Loads at session start. Makes the agent check for a matching skill before every reply, picks the execution path, and holds the code-kb rules.</li>
+            <li id="skill-using-razorback"><a href="https://github.com/anortham/razorback/blob/main/skills/using-razorback/SKILL.md"><code data-skill="using-razorback">using-razorback</code></a> Loads at session start. Lists the skills, matches the process to the task by uncertainty, consequence, and coordination, and holds the code-kb rules.</li>
           </ul>
         </div>
 
         <div class="skill-group">
           <h3>Design and planning</h3>
           <ul>
-            <li id="skill-brainstorming"><a href="https://github.com/anortham/razorback/blob/main/skills/brainstorming/SKILL.md"><code data-skill="brainstorming">brainstorming</code></a> Turns a request into a design you approve before any code. Scales the ceremony to Spike, Bounded, or Architectural; never the approval.</li>
+            <li id="skill-brainstorming"><a href="https://github.com/anortham/razorback/blob/main/skills/brainstorming/SKILL.md"><code data-skill="brainstorming">brainstorming</code></a> Turns an unclear or consequential request into a design you agree with. Scales the ceremony to Spike, Bounded, or Architectural, and asks only about choices you have not made.</li>
             <li id="skill-prototyping"><a href="https://github.com/anortham/razorback/blob/main/skills/prototyping/SKILL.md"><code data-skill="prototyping">prototyping</code></a> Builds throwaway code that answers one design question you settle by hand.</li>
             <li id="skill-writing-plans"><a href="https://github.com/anortham/razorback/blob/main/skills/writing-plans/SKILL.md"><code data-skill="writing-plans">writing-plans</code></a> Turns a spec into a task-by-task plan with file ownership, verification scopes, and acceptance checkboxes.</li>
             <li id="skill-architecture-quality"><a href="https://github.com/anortham/razorback/blob/main/skills/architecture-quality/SKILL.md"><code data-skill="architecture-quality">architecture-quality</code></a> Checks module boundaries, interfaces, and coupling before a plan, for a refactor, or as a cleanup audit.</li>

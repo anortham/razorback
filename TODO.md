@@ -17,7 +17,8 @@ planning and orchestration available when the task benefits from them.
   so the current-workflow arm stays reproducible after the defaults change.
   Acceptance: the baseline tag is named in the comparison notes before the first
   skill edit lands.
-- [ ] Remove automatic process escalation from the bootstrap and brainstorming.
+- [x] Remove automatic process escalation from the bootstrap and brainstorming.
+  Done on branch `workflow-reduction` (not merged; waits for the comparison).
   Update `skills/using-razorback/SKILL.md` and
   `skills/brainstorming/SKILL.md`: remove the 1% invocation rule, mandatory skill
   loading before every response, and the rule forbidding a lighter path once

@@ -17,7 +17,7 @@ Not for: something built is misbehaving → razorback:systematic-debugging; smal
 
 ## The Brainstorming Off-Ramp
 
-This skill runs as an off-ramp from razorback:brainstorming. Its HARD-GATE holds: no implementation code before an approved design. A prototype is a disposable instrument, and this skill is the only sanctioned lane for code mid-brainstorm.
+This skill runs as an off-ramp from razorback:brainstorming. Its HARD-GATE holds: no production code for a consequential choice the user has not made. A prototype is a disposable instrument, and this skill is the only sanctioned lane for code mid-brainstorm.
 
 Before any prototype code, announce **"Prototyping to settle: <question>"** (one line) and get the user's go-ahead. When answered, return to brainstorming with the verdict; the design doc records the verdict, the question, and the prototype branch pointer. The flow continues (writing-plans or lightweight implementation).
 

@@ -10,13 +10,13 @@ function read(relativePath) {
   return readFileSync(join(root, relativePath), 'utf8');
 }
 
-test('brainstorming keeps pre-plan approval gates before implementation', () => {
+test('brainstorming keeps approval for consequential choices and architectural specs', () => {
   const skill = read('skills/brainstorming/SKILL.md');
 
   assert.match(skill, /get user approval/);
   assert.match(skill, /User reviews written spec/);
   assert.match(skill, /Only proceed once the user approves/);
-  assert.match(skill, /MUST present it and get approval/);
+  assert.match(skill, /Do NOT write production code for a consequential design choice the user has not made or agreed to/);
 });
 
 test('brainstorming can offer visual companion before the plan is approved', () => {
