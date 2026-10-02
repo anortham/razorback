@@ -291,6 +291,7 @@ The core process scales with the task. Clear, ordinary work goes straight to TDD
 | grok-cli | Invokes `grok -p` for second opinions, adversarial review, and delegation to xAI's Grok models |
 | agy-cli | Invokes `agy -p` for second opinions, adversarial review, and delegation to Google Antigravity / Gemini models |
 | security-review | Security lane: the `security-secrets` and `security-deps` branch-gate scopes, the external-model policy gate every outbound dispatch checks, and the canonical security checklist and redaction rules |
+| report-issue | Files a GitHub issue against razorback with an environment bundle, after outbound redaction and the user's approval of the exact text |
 
 ## Prompt templates and scripts
 

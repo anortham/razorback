@@ -54,7 +54,7 @@
       </p>
       <dl class="facts">
         <div><dt>Harnesses</dt><dd>Claude Code, Codex, OpenCode, Antigravity</dd></div>
-        <div><dt>Skills</dt><dd data-skill-count>29</dd></div>
+        <div><dt>Skills</dt><dd data-skill-count>30</dd></div>
         <div><dt>License</dt><dd>MIT</dd></div>
         <div><dt>Build step</dt><dd>None</dd></div>
       </dl>
@@ -377,6 +377,12 @@
           <a class="skill-ref" href="https://github.com/anortham/razorback/blob/main/skills/writing-plans/SKILL.md">writing-plans</a>
         </li>
         <li>
+          <h3>Report a razorback bug</h3>
+          <p>When a skill or hook misbehaves, ask the agent to file it. It collects the razorback version, host, model, and OS, redacts secrets, and shows you the exact text. Nothing is posted until you approve it.</p>
+          <p class="say"><span class="say-label">Say</span> <code>/report-issue</code> <code>file a razorback bug</code></p>
+          <a class="skill-ref" href="https://github.com/anortham/razorback/blob/main/skills/report-issue/SKILL.md">report-issue</a>
+        </li>
+        <li>
           <h3>Your instructions come first</h3>
           <p>User instructions override skill defaults. If you say "don't use TDD" and your host allows it, the agent follows you.</p>
           <a class="skill-ref" href="https://github.com/anortham/razorback/blob/main/skills/using-razorback/SKILL.md">using-razorback</a>
@@ -387,7 +393,7 @@
     <section id="skills" class="section" aria-labelledby="skills-title">
       <h2 id="skills-title">The skills</h2>
       <p class="intro">
-        Razorback ships <span data-skill-count>29</span> skills. The agent picks most of them from their
+        Razorback ships <span data-skill-count>30</span> skills. The agent picks most of them from their
         descriptions; you trigger the second-opinion skills by name.
       </p>
 
@@ -459,6 +465,7 @@
         <div class="skill-group">
           <h3>Extending</h3>
           <ul>
+            <li id="skill-report-issue"><a href="https://github.com/anortham/razorback/blob/main/skills/report-issue/SKILL.md"><code data-skill="report-issue">report-issue</code></a> Files a razorback issue with an environment bundle, after redaction and your approval of the exact text.</li>
             <li id="skill-writing-skills"><a href="https://github.com/anortham/razorback/blob/main/skills/writing-skills/SKILL.md"><code data-skill="writing-skills">writing-skills</code></a> Test-driven skill writing: watch subagents fail without the skill, write it, watch them pass.</li>
           </ul>
         </div>
