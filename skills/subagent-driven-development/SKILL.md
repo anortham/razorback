@@ -1,6 +1,6 @@
 ---
 name: subagent-driven-development
-description: Use when an approved implementation plan has independent tasks that can run in parallel, or tasks whose separate context has a clear benefit, and the harness can launch subagents.
+description: Runs an approved plan with a fresh implementer subagent per task, in parallel where tasks are independent, with inline review by the lead and a durable progress ledger. Use when an approved implementation plan has independent tasks that can run in parallel, or tasks whose separate context has a clear benefit, and the harness can launch subagents.
 ---
 
 # Subagent-Driven Development
@@ -17,12 +17,14 @@ Dispatch, follow-up, and wait tool names per harness: read `references/harness-d
 
 ## Step 1: Extract Tasks from the Plan
 
+`SKILL_DIR` is this skill's own directory, the base directory the host names when it loads the skill. Shell variables do not survive between tool calls, so set `SKILL_DIR=<that absolute path>` at the start of each shell command that runs a script.
+
 1. Read the plan once. `TaskCreate` per task. If the plan names a Spec, read that too: the spec is the authority the plan argues from, and conflicts inside the plan resolve against it. A plan with no reachable spec gets a ledger note saying so — rulings made without one are provisional.
 2. Read the ledger: `ws=$("$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE); cat "$ws/progress.md"`. Trust it only when its first line names this plan file; any other ledger (or a stray one at the old flat path) is another plan's — leave it, start fresh.
 3. Tasks marked complete **with a named commit** are DONE (verify with `git log`). A completion line whose SHA is missing, `pending`, or absent from `git log` is **INCOMPLETE** — the `parallel-lead-commit` crash window: `git status`, inspect the task's owned files, then re-review and commit the approved edits (Commit Mode Contract) or re-dispatch.
 4. Read the plan's areas so review can spot drift: file reads, or code-kb `codebase_outline` and `file_skeleton` on the files the plan modifies.
 5. Validate the plan's `## Parallel Execution Contract`: a safe batch with 2+ eligible tasks dispatches together. Safe = non-overlapping file ownership, no ordering dependency, `Serialization required: No`. Serialized lanes need `Serialization required: Yes` plus a `Dependency reason`. Serializing a safe batch requires a recorded dependency or tool limitation — caution is not one.
-6. **Pre-dispatch conflict scan:** Before dispatching Task 1, scan the plan once for conflicts (tasks that contradict each other or the plan's Global Constraints; requirements treated as defects; self-contradictions). The scan's output is a table, not a verdict: one row for every pair of tasks that share a file or an interface (what one produces against what the other consumes, and what you found), and one row for every task checking its own internal agreement (tests specified against code specified, files created vs touched). Write the table to the ledger. Rule on every conflict found before execution begins (the spec is the binding authority, the plan is its argument) and record each ruling in the ledger beside its row.
+6. **Pre-dispatch conflict scan:** Before dispatching Task 1, scan the plan once for conflicts (tasks that contradict each other or the plan's Global Constraints; requirements treated as defects; self-contradictions). The scan's output is a table, not a verdict: one row for every pair of tasks that share a file or an interface (what one produces against what the other consumes, and what you found), and one row for every task checking its own internal agreement (tests specified against code specified, files created vs touched). Write the table to the ledger. Rule on every conflict found before execution begins (the spec is the binding authority, the plan is its argument) and record each ruling in the ledger beside its row as a `Ruling:` line.
 
 
 ## Step 2: Dispatch Implementer Subagent
@@ -50,7 +52,7 @@ Local commits in both modes are authorized by the approved scope. If a user or h
 
 ## File Handoffs
 
-Scripts live in this skill's `scripts/` (`"$SKILL_DIR/scripts/…"`), not the target repo. `task-brief PLAN_FILE N` writes `task-N-brief.md` under the plan's workspace and prints the path. The worker writes `task-N-report.md` beside it; fix rounds append. `review-package PLAN_FILE BASE HEAD` builds a focused diff for the lead; no reviewer subagents.
+Scripts live in this skill's `scripts/` (`"$SKILL_DIR/scripts/…"`), not the target repo. They need bash, git, and Node.js on `PATH`. `task-brief PLAN_FILE N` writes `task-N-brief.md` under the plan's workspace and prints the path. The worker writes `task-N-report.md` beside it; fix rounds append. `review-package PLAN_FILE BASE HEAD` builds a focused diff for the lead; no reviewer subagents.
 
 ## Durable Progress
 
@@ -61,6 +63,7 @@ Workspace: `"$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE` prints `<repo-root>/.r
 - `Task N: fix round <R> (<X> addressed, <Y> open — <one-liners>; commits <a7>..<b7>)` (`commits none - parallel-lead-commit` in that mode).
 - `Task N: minor (deferred): <one-liner>`; non-Minor out-of-diff observations: `Task N: deferred (<Important|Critical>): <one-liner>`.
 - `Task N: cap ruling (<contested|real-but-deferred|load-bearing-stop>): <finding> — <reason>`.
+- `Ruling: <preflight conflict, parked finding, or breaker adjudication> — <decision>; cost if wrong: <one-liner>`.
 
 `git clean -fdx` deletes the ledger; recover from `git log` and plan checkboxes.
 
@@ -122,7 +125,7 @@ Reviewer choice `codex` or `claude`: ensure the ledger has a passing `branch-gat
 
 1. **Final verification:** `branch-gate` (or a passing ledger entry for this HEAD) plus required `expensive-specialist` scopes. Branch-gate includes the plan's declared Security scope commands (`security-secrets`, `security-deps` — `razorback:security-review`); `none declared` skips them and is rendered in the morning report.
 2. **Reconcile source-control state:** Check B of `razorback:using-razorback` `references/source-control-hygiene.md`. Status every worktree this run or a subagent created and every branch produced. Land stranded commits here (re-run branch-gate) or carry them as named morning-report items.
-3. **Collect rulings:** Before deleting the workspace, collect every ledger line containing `Ruling:` — preflight rulings, parked findings, breaker adjudications — into the final message under "Rulings I made", in the order made, each with what it costs if wrong.
+3. **Collect rulings:** Before deleting the workspace, collect every `Ruling:` and `cap ruling` ledger line into the final message under "Rulings I made", in the order made, each with what it costs if wrong.
 4. **Clean up:** re-resolve the workspace with `"$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE` immediately before `rm -rf <printed path>`. Never delete a remembered path or sibling plan directories.
 5. `razorback:finishing-a-development-branch`.
 

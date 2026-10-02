@@ -1,6 +1,6 @@
 ---
 name: pre-merge-review
-description: Use after all tasks are complete and branch verification passes, before finishing-a-development-branch, when a pre-merge external reviewer was chosen for the run (codex or claude).
+description: Runs the chosen external reviewer (codex or claude) on the finished branch, verifies each finding against current source, and fixes the confirmed ones before the branch is integrated. Use after all tasks are complete and branch verification passes, before finishing-a-development-branch, when a pre-merge external reviewer was chosen for the run.
 ---
 
 # Pre-Merge External Review
@@ -13,6 +13,7 @@ The chosen reviewer (codex / claude) gets one general adversarial pass and one s
 
 Called by `razorback:executing-plans` Step 3 and `razorback:subagent-driven-development` Step 4a. Skip entirely when the reviewer choice is `none`. Abort and surface the gap when any of these fails:
 
+- `git`, `tar`, `jq`, and Node.js are on `PATH` (the bundled helpers run on Node.js).
 - All plan tasks complete; the verification ledger has a passing `branch-gate` entry for HEAD (or the caller runs it now).
 - Branch not pushed, no PR.
 - Reviewer is `codex` or `claude`.
@@ -41,10 +42,12 @@ A dispatch consumes its invocation even when output is unusable. A required revi
 
 ## Step 1: Build diff + review tree
 
+`SKILL_DIR` is this skill's own directory, the base directory the host names when it loads the skill. Shell variables do not survive between tool calls, so set `SKILL_DIR=<that absolute path>` at the start of each shell command that runs a script. Run Steps 1-3 in one shell command, or carry each variable into the next.
+
 Inspect changed symbols, trace callers of changed public APIs, and identify relevant tests with native search and file reads, or code-kb when useful; summarize that as `$SOURCE_EVIDENCE`. The external reviewer does not run code-kb; it reads the bundle and the exported tree and reports missing evidence when they cannot support a conclusion.
 
 ```bash
-BASE=$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null)
+BASE=$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null) || { echo "no main or master branch: set BASE to the merge-base with the target branch" >&2; exit 1; }
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 PROJECT_DIR=$(git rev-parse --show-toplevel)
 REVIEW_REF=HEAD
@@ -75,7 +78,7 @@ Count calls even when parsing later fails. Never dispatch a scope twice. If a di
 
 ### Redact each pass payload
 
-Build the complete prompt (instruction, optional focus, labelled Target / File stat / Commit log / Lead source evidence / Diff bundle), then filter it and apply the `review-payload.md` contract from razorback:security-review. Payloads over 128 KiB become a review artifact inside `$REVIEW_ROOT`; the prompt file then carries only the bounded static wrapper. Never load the artifact into a shell variable or positional argument.
+Build the complete prompt (instruction, optional focus, labelled Target / File stat / Commit log / Lead source evidence / Diff bundle), then filter it and apply the [`review-payload.md`](../security-review/review-payload.md) contract from razorback:security-review. Payloads over 128 KiB become a review artifact inside `$REVIEW_ROOT`; the prompt file then carries only the bounded static wrapper. Never load the artifact into a shell variable or positional argument.
 
 ```bash
 PAYLOAD_FILE=$(mktemp)

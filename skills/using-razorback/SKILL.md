@@ -1,6 +1,6 @@
 ---
 name: using-razorback
-description: Use at session start to learn which razorback skills exist and how to choose a proportionate process for each task.
+description: Explains how razorback matches process to a task (direct work, a plan, or delegation) and how to load its skills and tools. Use at session start, when deciding how much process a task needs, or when choosing between razorback skills.
 ---
 
 <SUBAGENT-STOP>
@@ -40,7 +40,7 @@ System and developer instructions keep their host-defined priority. Within them,
 ## How to Access Skills
 
 <!-- harness:claude-code -->
-**In Claude Code:** Use the `Skill` tool; follow the loaded content directly. Never Read skill files.
+**In Claude Code:** Load a skill with the `Skill` tool and follow the loaded content directly; never Read a SKILL.md to load it. Read a skill's reference files when the skill points to them.
 <!-- /harness -->
 <!-- harness:cursor -->
 **In Cursor:** Use the `Skill` tool; skills auto-register via the razorback plugin.

@@ -1,16 +1,18 @@
 ---
 name: codex-cli
-description: Use when the user says "ask codex", "get codex's take", "codex review", "have codex look at this", "delegate to codex", or any variation naming Codex/OpenAI as the perspective they want. Also use for a generic "second opinion from a different model" when no other model is named.
+description: Runs Codex (OpenAI) headless for second opinions, code reviews, adversarial reviews, and delegated tasks, with outbound redaction and a validated review result. Use when the user says "ask codex", "get codex's take", "codex review", "have codex look at this", "delegate to codex", or names Codex/OpenAI as the perspective they want, or asks for a "second opinion from a different model" without naming one. Not for loops until two models agree (razorback:cross-model-convergence).
 ---
 
 # Codex CLI
 
 Second opinions, code review, adversarial review, and delegation through
-`codex exec`. Read `skills/codex-cli/references/shared-cli-review.md` before
+`codex exec`. Read [`references/shared-cli-review.md`](references/shared-cli-review.md) before
 the first call: policy gate, redaction, payload transport, completion
 contract, and evaluation rules live there. Provider for this skill: `openai`
 (policy check in razorback:security-review). Other models: razorback:claude-cli,
 razorback:grok-cli, razorback:agy-cli.
+
+**Requires:** `codex`, `git`, and Node.js on `PATH`; the bundled redaction and validation helpers run on Node.js. Check with `command -v git node`.
 
 ## Running These Recipes
 
@@ -86,7 +88,7 @@ optional `--title`, `--output-schema`, `-o`. Exec-level flags (`-C`, `-s`,
 **Unified prompt** (parity with the other reviewer skills):
 
 **Step 1**: resolve `$DIFF`, `$TARGET`, `$RANGE`, and foreground/background per
-Review Targeting.
+[`review-targeting.md`](../using-razorback/references/review-targeting.md).
 
 **Step 2: Build the prompt**
 
@@ -167,13 +169,17 @@ canonical schema with `scripts/openai-schema`; `validate-review-output`
 enforces the stripped constraints afterwards.
 
 ```bash
-SCHEMA_FILE=$(mktemp); RESULT_FILE=$(mktemp)
+SCHEMA_FILE=$(mktemp); RESULT_FILE=$(mktemp); NORMALIZED_RESULT_FILE=$(mktemp)
 "$SKILL_DIR/scripts/openai-schema" > "$SCHEMA_FILE" || { echo "schema preparation failed" >&2; exit 1; }
 trap 'rm -f "$REDACTED_PAYLOAD_FILE" "$REVIEW_PROMPT_FILE" "$RESULT_FILE" "$SCHEMA_FILE"; rm -rf "$REVIEW_ROOT"' EXIT
 cat "$REVIEW_PROMPT_FILE" | "$SKILL_DIR/scripts/codex-exec" --ephemeral --color never \
   -s read-only --skip-git-repo-check -C "$REVIEW_ROOT" --output-schema "$SCHEMA_FILE" -o "$RESULT_FILE" - 2>/dev/null
-"$SKILL_DIR/scripts/validate-review-output" "$RESULT_FILE"
+"$SKILL_DIR/scripts/validate-review-output" "$RESULT_FILE" > "$NORMALIZED_RESULT_FILE" \
+  || { echo "Codex did not return a completed review" >&2; exit 1; }
+cat "$NORMALIZED_RESULT_FILE"
 ```
+
+Accept only the normalized output.
 
 ## Delegate a Task
 
@@ -198,7 +204,7 @@ rejects the arguments before any model turn.
   `AGENTS.md` (32KB max).
 - Truly fresh reviewer: add `--ignore-user-config --ignore-rules` (auth still
   reads `CODEX_HOME`).
-- `/goal` (interactive only): see `references/follow-goals.md`.
+- `/goal` works only in interactive Codex sessions; `codex exec` has no equivalent. `codex features list | grep goals` shows whether it is enabled.
 
 ## Error Handling
 

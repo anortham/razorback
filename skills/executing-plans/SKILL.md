@@ -1,6 +1,6 @@
 ---
 name: executing-plans
-description: Use when the current agent executes a written implementation plan itself - one coherent task, dependent tasks, no delegation available, or single-agent execution selected.
+description: Runs a written implementation plan task by task in the current agent, with each task's verification, the branch gate, and the hand-off to finishing. Use when the current agent executes a written implementation plan itself (one coherent task, dependent tasks, no delegation available, or single-agent execution selected). Not for plans whose independent tasks subagents can run (razorback:subagent-driven-development).
 ---
 
 # Executing Plans
@@ -26,7 +26,7 @@ Announce: "I'm using the executing-plans skill to implement this plan."
 Per task:
 1. Mark in_progress.
 2. Read the code the task touches before coding. Find a symbol's callers before changing it. Prove API shapes (symbol names, signatures, config shapes, routes, CLI flags, public contracts) from current source. code-kb helps in an unfamiliar area: `codebase_outline`, `get_symbol_context`, `find_references`.
-3. Follow the plan's steps exactly; run the specified verifications.
+3. Follow the plan's steps exactly; run the specified verifications. When one fails, fix the cause and rerun it until it passes before step 4; a failure that does not converge is blocker taxonomy #5.
 4. `TaskUpdate` completed, then tick the task's acceptance-criteria checkboxes in the plan file (`[ ]` → `[x]`). Bookkeeping only — do not pause or ask; continue to the next task.
 5. Candidate Mode: record non-required refactor candidates in the report or ADR offer, not in the diff. Fold in only refactors required for correctness, testability, or avoiding a brittle patch.
 

@@ -2,6 +2,22 @@
 
 **Load this reference when:** creating or editing skills, before deployment, to verify they work under pressure and resist rationalization.
 
+## Contents
+
+- When to Use
+- TDD Mapping for Skill Testing
+- RED Phase: Baseline Testing (Watch It Fail)
+- GREEN Phase: Write Minimal Skill (Make It Pass)
+- VERIFY GREEN: Pressure Testing
+- REFACTOR Phase: Close Loopholes (Stay Green)
+- Red Flags - STOP
+- Meta-Testing (When GREEN Isn't Working)
+- When Skill is Bulletproof
+- Example: TDD Skill Bulletproofing
+- Testing Checklist (TDD for Skills)
+- Common Mistakes (Same as TDD)
+- The Bottom Line
+
 ## Overview
 
 **Testing skills is just TDD applied to process documentation.**
@@ -16,16 +32,13 @@ You run scenarios without the skill (RED - watch agent fail), write skill addres
 
 ## When to Use
 
-Test skills that:
+Pressure scenarios fit skills that:
 - Enforce discipline (TDD, testing requirements)
 - Have compliance costs (time, effort, rework)
 - Could be rationalized away ("just this once")
 - Contradict immediate goals (speed over quality)
 
-Don't test:
-- Pure reference skills (API docs, syntax guides)
-- Skills without rules to violate
-- Skills agents have no incentive to bypass
+Every other skill type still gets tested, with the scenarios the SKILL.md type table names: retrieval and application scenarios for reference skills, application scenarios for techniques.
 
 ## TDD Mapping for Skill Testing
 
@@ -357,17 +370,6 @@ Agents resist single pressure, break under multiple.
 Tests pass once ≠ bulletproof.
 ✅ Fix: Continue REFACTOR cycle until no new rationalizations.
 
-## Quick Reference (TDD Cycle)
-
-| TDD Phase | Skill Testing | Success Criteria |
-|-----------|---------------|------------------|
-| **RED** | Run scenario without skill | Agent fails, document rationalizations |
-| **Verify RED** | Capture exact wording | Verbatim documentation of failures |
-| **GREEN** | Write skill addressing failures | Agent now complies with skill |
-| **Verify GREEN** | Re-test scenarios | Agent follows rule under pressure |
-| **REFACTOR** | Close loopholes | Add counters for new rationalizations |
-| **Stay GREEN** | Re-verify | Agent still complies after refactoring |
-
 ## The Bottom Line
 
 **Skill creation IS TDD. Same principles, same cycle, same benefits.**
@@ -375,12 +377,3 @@ Tests pass once ≠ bulletproof.
 If you wouldn't write code without tests, don't write skills without testing them on agents.
 
 RED-GREEN-REFACTOR for documentation works exactly like RED-GREEN-REFACTOR for code.
-
-## Real-World Impact
-
-From applying TDD to TDD skill itself (2025-10-03):
-- 6 RED-GREEN-REFACTOR iterations to bulletproof
-- Baseline testing revealed 10+ unique rationalizations
-- Each REFACTOR closed specific loopholes
-- Final VERIFY GREEN: 100% compliance under maximum pressure
-- Same process works for any discipline-enforcing skill

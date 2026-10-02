@@ -1,5 +1,18 @@
 # Shared CLI Review Contract
 
+## Contents
+
+- Policy gate
+- Redact every outbound prompt
+- Review targeting
+- Review payload transport
+- Uncapped reviews
+- Completion contract
+- Adversarial prompt
+- Shared failure handling
+- After every call
+- It's working if
+
 Rules shared by razorback:codex-cli, razorback:claude-cli, razorback:grok-cli,
 razorback:agy-cli, and razorback:cursor-agent. Each SKILL.md keeps only the
 commands and failure modes specific to its CLI; read this file before the
@@ -40,14 +53,14 @@ Remove `PAYLOAD_FILE` and `REDACTED_PAYLOAD_FILE` after the call.
 
 Scope (`--scope auto|working-tree|branch`, `--base <ref>`) and the
 foreground/background sizing rule live in
-`skills/using-razorback/references/review-targeting.md`. It resolves `$DIFF`,
+[`review-targeting.md`](../../using-razorback/references/review-targeting.md). It resolves `$DIFF`,
 `$TARGET`, and `$RANGE`. `--scope`/`--base` are skill arguments, never CLI
 flags.
 
 ## Review payload transport
 
 Each reviewer skill's Code Review Step 2 builds the payload per
-`skills/security-review/review-payload.md`:
+[`review-payload.md`](../../security-review/review-payload.md):
 
 - Export the reviewed `HEAD` tree with `prepare-review-tree` into
   `$REVIEW_ROOT` (a `.git`-free workspace) and run the reviewer there.
@@ -73,7 +86,7 @@ Each reviewer skill's Code Review Step 2 builds the payload per
 ## Completion contract
 
 Run `$SKILL_DIR/../codex-cli/scripts/validate-review-output RESULT_FILE >
-normalized.json` on every structured result and accept only the normalized
+"$NORMALIZED_RESULT_FILE"` (a `mktemp` file outside `$REVIEW_ROOT`) on every structured result and accept only the normalized
 output. The validator unwraps envelopes (`.structured_output`,
 `.structuredOutput`, `.result`, `.text`; the last object when `.text` holds
 several turns) and rejects malformed, contradictory, placeholder, or

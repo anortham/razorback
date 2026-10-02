@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Bisection script to find which test creates unwanted files/state
-# Usage: ./find-polluter.sh <file_or_dir_to_check> <test_pattern>
-# Example: ./find-polluter.sh '.git' 'src/**/*.test.ts'
+# Run from the project root: find-polluter.sh <file_or_dir_to_check> <test_pattern>
+# Example: "$SKILL_DIR/find-polluter.sh" '.git' 'src/**/*.test.ts'
+# POLLUTER_TEST_CMD sets the per-file test command (default: npm test).
 
 set -e
 
@@ -13,6 +14,12 @@ fi
 
 POLLUTION_CHECK="$1"
 TEST_PATTERN="$2"
+TEST_CMD="${POLLUTER_TEST_CMD:-npm test}"
+
+if [ -e "$POLLUTION_CHECK" ]; then
+  echo "❌ $POLLUTION_CHECK already exists before any test ran. Remove it, then rerun." >&2
+  exit 2
+fi
 
 echo "🔍 Searching for test that creates: $POLLUTION_CHECK"
 echo "Test pattern: $TEST_PATTERN"
@@ -38,17 +45,15 @@ COUNT=0
 for TEST_FILE in $TEST_FILES; do
   COUNT=$((COUNT + 1))
 
-  # Skip if pollution already exists
-  if [ -e "$POLLUTION_CHECK" ]; then
-    echo "⚠️  Pollution already exists before test $COUNT/$TOTAL"
-    echo "   Skipping: $TEST_FILE"
-    continue
-  fi
-
   echo "[$COUNT/$TOTAL] Testing: $TEST_FILE"
 
-  # Run the test
-  npm test "$TEST_FILE" > /dev/null 2>&1 || true
+  STATUS=0
+  $TEST_CMD "$TEST_FILE" > /dev/null 2>&1 || STATUS=$?
+  if [ "$STATUS" -eq 127 ]; then
+    echo "❌ Test command not found: $TEST_CMD (set POLLUTER_TEST_CMD)" >&2
+    exit 2
+  fi
+  [ "$STATUS" -eq 0 ] || echo "   (test command exited $STATUS)"
 
   # Check if pollution appeared
   if [ -e "$POLLUTION_CHECK" ]; then
@@ -61,7 +66,7 @@ for TEST_FILE in $TEST_FILES; do
     ls -la "$POLLUTION_CHECK"
     echo ""
     echo "To investigate:"
-    echo "  npm test $TEST_FILE    # Run just this test"
+    echo "  $TEST_CMD $TEST_FILE    # Run just this test"
     echo "  cat $TEST_FILE         # Review test code"
     exit 1
   fi

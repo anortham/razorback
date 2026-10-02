@@ -1,6 +1,6 @@
 ---
 name: fixing-small-issues
-description: Use when a reported defect or requested tweak looks small and local — a button not disabled, a double-submit, an off-by-one, a wrong label, CSS/styling adjustments, copy changes, config value fixes — before invoking brainstorming, creating a worktree, or running any test suite.
+description: Fixes a small, local defect on the current checkout after an objective size check, and verifies only the affected scope, with no worktree and no baseline suite. Use when a reported defect or requested tweak looks small and local (a button not disabled, a double-submit, an off-by-one, a wrong label, CSS/styling adjustments, copy changes, config value fixes), before invoking brainstorming, systematic-debugging, or test-driven-development, creating a worktree, or running any test suite.
 ---
 
 # Fixing Small Issues

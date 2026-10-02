@@ -1,5 +1,16 @@
 # Interactive Mode
 
+## Contents
+
+- Step 1: Verify branch gate
+- Step 2: Determine base branch
+- Step 3: Present options
+- Step 4: Execute choice
+- Step 5: Cleanup worktree (Options 1 and 4)
+- Step 6: Reconcile remaining source-control state
+- Quick reference
+- Common mistakes
+
 Used when the user invokes the skill directly ("finish this branch").
 
 ## Step 1: Verify branch gate

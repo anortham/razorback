@@ -1,5 +1,14 @@
 # Testing CLAUDE.md Skills Documentation
 
+## Contents
+
+- Test Scenarios
+- Documentation Variants to Test
+- Testing Protocol
+- Success Criteria
+- Expected Results
+- Next Steps
+
 Testing different documentation variants to find what actually makes agents discover and use skills under pressure.
 
 ## Test Scenarios

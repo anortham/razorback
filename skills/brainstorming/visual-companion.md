@@ -8,8 +8,10 @@ The server watches `screen_dir` and serves the newest HTML file. The user clicks
 
 ## Starting a Session
 
+Run the start script from this skill's directory (`SKILL_DIR`, the base directory the host names when it loads brainstorming). It needs Node.js on `PATH`.
+
 ```bash
-scripts/start-server.sh --project-dir /path/to/project
+"$SKILL_DIR/scripts/start-server.sh" --project-dir /path/to/project
 # {"type":"server-started","port":52341,"url":"http://localhost:52341",
 #  "screen_dir":".../.razorback/brainstorm/<session>/content",
 #  "state_dir":".../.razorback/brainstorm/<session>/state"}
@@ -22,7 +24,7 @@ scripts/start-server.sh --project-dir /path/to/project
 
 ## The Loop
 
-1. Check `$STATE_DIR/server-info` exists and `$STATE_DIR/server-stopped` does not; otherwise restart (the server exits after 30 idle minutes). Write a new file in `screen_dir` with the Write tool, never cat/heredoc. Semantic names, never reused: `layout.html`, `layout-v2.html`.
+1. Check `$STATE_DIR/server-info` exists and `$STATE_DIR/server-stopped` does not; otherwise restart (the server exits after 4 idle hours by default; `--idle-timeout-minutes` changes that). Write a new file in `screen_dir` with the Write tool, never cat/heredoc. Semantic names, never reused: `layout.html`, `layout-v2.html`.
 2. End your turn: repeat the URL, summarize what is on screen, ask for terminal feedback ("Click to select an option if you'd like").
 3. Next turn: read `$STATE_DIR/events` (JSON lines, cleared on each new screen) and merge with the terminal text. Terminal text is primary; the click sequence shows exploration and hesitation. No file = no browser interaction.
 4. Iterate on the current screen until validated, then advance.
@@ -84,6 +86,4 @@ Events format: `{"type":"click","choice":"a","text":"Option A - Simple Layout","
 
 ## Cleaning Up
 
-`scripts/stop-server.sh $SESSION_DIR`. Project-dir sessions keep their mockups; only `/tmp` sessions are deleted.
-
-Reference: `scripts/frame-template.html` (CSS), `scripts/helper.js` (client).
+Run `"$SKILL_DIR/scripts/stop-server.sh" <session-dir>`, where the session directory is the parent of the `screen_dir` and `state_dir` that the start command printed. Project-dir sessions keep their mockups; only `/tmp` sessions are deleted.

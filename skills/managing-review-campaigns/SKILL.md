@@ -1,13 +1,13 @@
 ---
 name: managing-review-campaigns
-description: Use when a review may repeat after fixes, multiple reviewers or model CLIs participate, or an unattended goal requires a clean review.
+description: Caps review rounds and external reviewer calls, records a disposition for each finding, and closes the campaign as clean, capped, or blocked. Use when a review may repeat after fixes, multiple reviewers or model CLIs participate, or an unattended goal requires a clean review.
 ---
 
 # Managing Review Campaigns
 
 A reviewer invocation may run deeply, but the campaign around it must end. Rounds and total external reviewer invocations are hard-capped; the lead closes the campaign from recorded code and test evidence.
 
-**REQUIRED SUB-SKILL:** razorback:receiving-code-review to verify findings before accepting them. Apply the blocker semantics from razorback:using-razorback.
+**REQUIRED SUB-SKILL:** razorback:receiving-code-review to verify findings before accepting them. Apply the blocker taxonomy in [`blocker-taxonomy.md`](../using-razorback/references/blocker-taxonomy.md).
 
 Not for: the lead's inline review of one task during plan execution (razorback:requesting-code-review), a subagent fix loop inside razorback:subagent-driven-development (attempt limits are task mechanics), or a single ad-hoc review with no repeat and no external reviewer.
 
@@ -78,7 +78,7 @@ A sandbox startup failure creates no session and therefore cannot use the struct
 
 ## Close on Evidence
 
-Canonical severity comes from `skills/codex-cli/schemas/review-output.schema.json`: `critical`, `high`, `medium`, or `low`. For every accepted finding, record its classification and canonical severity; file:line or symbol evidence; `red-to-green test`, `existing covering test`, or `inspection-only`; and the fix, dismissal, dispute, or deferral reason. Green tests on an uncovered path are inspection-only. Majority vote may raise confidence but cannot override code evidence, scope, or the campaign budget.
+Canonical severity comes from [`review-output.schema.json`](../codex-cli/schemas/review-output.schema.json): `critical`, `high`, `medium`, or `low`. For every accepted finding, record its classification and canonical severity; file:line or symbol evidence; `red-to-green test`, `existing covering test`, or `inspection-only`; and the fix, dismissal, dispute, or deferral reason. Green tests on an uncovered path are inspection-only. Majority vote may raise confidence but cannot override code evidence, scope, or the campaign budget.
 
 Terminal states: `clean` when nothing above the floor remains open in scope; `capped` when the maximum round ends or no permitted action remains while an above-floor finding is open; `blocked` when a required discovery obligation cannot be satisfied or an unresolved critical/high finding meets the blocker taxonomy. An exhausted external budget stops external dispatch but does not prevent an already-permitted lead-only confirmation. Emit this block for every terminal state:
 

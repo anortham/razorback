@@ -17,7 +17,7 @@ const playbook = () => read('skills/diagnosing-performance/measurement-playbook.
 test('diagnosing-performance declares frontmatter that names its trigger', () => {
   const body = skill();
 
-  assert.match(body, /^---\nname: diagnosing-performance\ndescription: Use when something is slow/);
+  assert.match(body, /^---\nname: diagnosing-performance\ndescription: Finds the measured cause of slowness.* Use when something is slow/);
   assert.match(body, /before proposing any optimization, cache, index, or parallelism\.\n---/);
 });
 

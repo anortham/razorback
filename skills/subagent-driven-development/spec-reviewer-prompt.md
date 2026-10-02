@@ -24,13 +24,14 @@ Lead inline review — spec compliance for Task N:
     - Extra: anything built that was not requested, over-engineered, or "nice to have"?
     - Misread: wrong interpretation, wrong problem, right feature done the wrong way?
 
-    ## How to Review (use code-kb)
+    ## How to Review
 
-    1. `file_skeleton(file_path)` — inspect symbols before reading any file.
-    2. `find_references(symbol_name, direction="callers")` — confirm the implementation connects to the codebase.
-    3. `get_symbol_context(symbol_name, file_path?)` when behavior is unclear;
-       `get_symbol_body(symbol_name, file_path?)` only for the symbol the question centers on.
-    Read only the sections the symbol listing points to; never whole files.
+    Use native search and file reads, or code-kb when it helps:
+    1. List a file's symbols before reading it (code-kb `file_skeleton(file_path)`).
+    2. Confirm the implementation connects to the codebase by finding its callers (code-kb `find_references(symbol_name, direction="callers")`).
+    3. Inspect behavior that is unclear (code-kb `get_symbol_context(symbol_name, file_path?)`, or
+       `get_symbol_body(symbol_name, file_path?)` for the symbol the question centers on).
+    Read the sections the change touches; a missing index result is not proof.
 
     Report:
     - ✅ Spec compliant

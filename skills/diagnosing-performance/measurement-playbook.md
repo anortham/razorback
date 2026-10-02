@@ -1,5 +1,16 @@
 # Measurement Playbook
 
+## Contents
+
+- Overview
+- Workload Rules
+- Counting Beats Timing
+- Splitting the Wall Time
+- Tools by Layer
+- Recording the Baseline
+- Proving the Fix
+- Guarding the Fix
+
 ## Overview
 
 How to get a number you can trust, and how to keep it honest across the fix. Used in Phase 1

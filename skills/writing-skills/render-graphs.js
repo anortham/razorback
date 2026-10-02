@@ -67,12 +67,15 @@ ${bodies.join('\n\n')}
 }`;
 }
 
+// A combined diagram of a large skill stays well under 10 MiB of SVG; the default 1 MiB buffer is too small for it.
+const SVG_OUTPUT_LIMIT_BYTES = 10 * 1024 * 1024;
+
 function renderToSvg(dotContent) {
   try {
     return execFileSync('dot', ['-Tsvg'], {
       input: dotContent,
       encoding: 'utf-8',
-      maxBuffer: 10 * 1024 * 1024
+      maxBuffer: SVG_OUTPUT_LIMIT_BYTES
     });
   } catch (err) {
     console.error('Error running dot:', err.message);
@@ -118,6 +121,8 @@ function main() {
     process.exit(1);
   }
 
+  let failures = 0;
+
   const markdown = fs.readFileSync(skillFile, 'utf-8');
   const blocks = extractDotBlocks(markdown);
 
@@ -148,6 +153,7 @@ function main() {
       console.log(`  Source: ${skillName}_combined.dot`);
     } else {
       console.error('  Failed to render combined diagram');
+      failures++;
     }
   } else {
     // Render each separately
@@ -159,11 +165,16 @@ function main() {
         console.log(`  Rendered: ${block.name}.svg`);
       } else {
         console.error(`  Failed: ${block.name}`);
+        failures++;
       }
     }
   }
 
   console.log(`\nOutput: ${outputDir}/`);
+  if (failures > 0) {
+    console.error(`${failures} diagram(s) failed to render`);
+    process.exit(1);
+  }
 }
 
 main();

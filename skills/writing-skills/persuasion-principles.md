@@ -1,5 +1,15 @@
 # Persuasion Principles for Skill Design
 
+## Contents
+
+- Overview
+- The Seven Principles
+- Principle Combinations by Skill Type
+- Why This Works: The Psychology
+- Ethical Use
+- Research Citations
+- Quick Reference
+
 ## Overview
 
 LLMs respond to the same persuasion principles as humans. Understanding this psychology helps you design more effective skills - not to manipulate, but to ensure critical practices are followed even under pressure.

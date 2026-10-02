@@ -7,7 +7,7 @@ prompt (small) or a static transport wrapper (large).
 ## Bundle
 
 Build the complete review prompt in `PAYLOAD_FILE` before running
-`skills/security-review/scripts/redact-outbound`. Put the full review
+`scripts/redact-outbound` (in razorback:security-review's directory). Put the full review
 instruction and any user-supplied focus text in that file before the labelled
 review bundle. The redacted result must contain these labelled sections, in
 this order:

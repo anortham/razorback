@@ -1,18 +1,17 @@
-# Claude Programmatic Billing Context
+# Claude Programmatic Billing
 
-**Effective:** June 15, 2026
-**Applies to:** `claude -p`, Agent SDK, GitHub Actions, third-party harnesses
+**Applies to:** `claude -p`, Agent SDK, GitHub Actions, third-party harnesses.
 
-## The Split
+## The split
 
-Anthropic split Claude subscription usage into two pools:
+Claude subscriptions bill usage from two pools:
 
-| Usage Type | Draws From | Capped? |
+| Usage type | Draws from | Cap |
 |---|---|---|
-| Interactive (chat, `claude` in terminal without `-p`, IDE, desktop) | General subscription pool | Soft (weekly limits + 5hr rolling) |
-| Programmatic (`claude -p`, Agent SDK, GitHub Actions, third-party agents) | **Agent SDK Credits** | Hard (fixed monthly credit at API rates) |
+| Interactive (chat, `claude` in a terminal without `-p`, IDE, desktop) | General subscription pool | Soft (weekly limits + 5-hour rolling window) |
+| Programmatic (`claude -p`, Agent SDK, GitHub Actions, third-party agents) | **Agent SDK Credits** | Hard (fixed monthly credit, metered at API rates) |
 
-## Credit Amounts (monthly, non-rollover)
+## Credit amounts (monthly, no rollover)
 
 - **Pro:** $20
 - **Max 5x:** $100
@@ -20,21 +19,21 @@ Anthropic split Claude subscription usage into two pools:
 - **Team Premium:** $100/seat
 - **Enterprise Premium:** $200/seat
 
-## Key Constraints
+## Constraints
 
-- Credits are **use-it-or-lose-it** — no rollover month-to-month
-- Once exhausted, programmatic usage stops unless "extra usage" billing is enabled at standard API rates
-- Interactive usage is **not affected** — still draws from subscription pool
-- Credits are billed at API rates ($3/M input, $15/M output for Sonnet), so $200 is ~13M input tokens or ~2.6M output tokens
+- Unused credits expire at the end of each month.
+- When the credits run out, programmatic usage stops unless "extra usage" billing is enabled at standard API rates.
+- Interactive usage is not affected; it still draws from the subscription pool.
 
-## Historical Context
+## What this means for the review recipes
 
-- **April 2026:** Anthropic banned third-party harnesses (OpenClaw, Conductor)
-- **May 13, 2026:** Announced Agent SDK Credits as replacement
-- **June 15, 2026:** Change goes live
+- Every `claude -p` review draws from Agent SDK Credits at API rates.
+- `--max-budget-usd` only limits API overage on OAuth subscriptions, not subscription usage. Razorback's review recipes do not set it: a dollar cap truncates a review and costs more in missed findings than it saves.
 
-## What This Means for Skill Usage
+## Old patterns
 
-- Pre June 15: `claude -p` draws from subscription — effectively "free" within plan limits
-- Post June 15: `claude -p` draws from Agent SDK Credits — metered at API rates
-- `--max-budget-usd` only limits API overage on OAuth subscriptions, not subscription usage. Razorback's review recipes do not set it — a dollar cap truncates a review and costs more in missed findings than it saves.
+<details>
+<summary>Before the Agent SDK Credits split (live 2026-06-15)</summary>
+
+`claude -p` drew from the general subscription pool, so it cost nothing extra within plan limits.
+</details>

@@ -1,6 +1,6 @@
 ---
 name: using-git-worktrees
-description: Use when starting feature work that needs isolation from the current workspace, or before executing implementation plans
+description: Sets up an isolated git worktree for feature work after taking stock of existing worktrees and branches, and verifies a clean baseline there. Use when starting feature work that needs a separate git worktree or isolation from the current workspace, or before executing implementation plans.
 ---
 
 # Using Git Worktrees
@@ -57,18 +57,17 @@ If the harness offers a worktree tool (`EnterWorktree`, `WorktreeCreate`, a `/wo
 
 ### 1b. Git worktree fallback
 
-Directory priority (explicit user preference always wins):
+Directory priority (an explicit user preference always wins):
 
-1. A worktree directory declared in your instructions.
+1. A worktree directory declared in the agent's instructions or in CLAUDE.md (`grep -i "worktree.*director" CLAUDE.md`).
 2. Existing project-local `.worktrees/` (preferred) or `worktrees/`; `.worktrees/` wins if both exist.
 3. Existing global `~/.config/razorback/worktrees/$project` (`project=$(basename "$(git rev-parse --show-toplevel)")`).
-4. A preference in CLAUDE.md (`grep -i "worktree.*director" CLAUDE.md`).
-5. Default to `.worktrees/` at the project root. Do not stop to ask.
+4. Default to `.worktrees/` at the project root. Do not stop to ask.
 
-Project-local directories MUST be ignored before creation; global directories need no check:
+Project-local directories MUST be ignored before creation; global directories need no check. Check the directory you chose, not a sibling:
 
 ```bash
-git check-ignore -q .worktrees 2>/dev/null || git check-ignore -q worktrees 2>/dev/null
+git check-ignore -q "$WORKTREE_DIR"    # $WORKTREE_DIR = .worktrees or worktrees, the one chosen above
 ```
 
 If not ignored: add to `.gitignore`, commit, then proceed.

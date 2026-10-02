@@ -1,6 +1,6 @@
 ---
 name: requesting-code-review
-description: Use when the lead needs inline-review criteria during plan execution, or when reviewing work done outside an approved plan - ad-hoc features, baseline checks before a refactor, or when stuck. Not for planned pre-merge external review — that's razorback:pre-merge-review.
+description: Supplies the criteria for the lead's inline review, and dispatches a standalone reviewer agent for work done outside a plan. Use when the lead needs inline-review criteria during plan execution, or when reviewing work done outside an approved plan (ad-hoc features, baseline checks before a refactor, or when stuck). Not for planned pre-merge external review (razorback:pre-merge-review).
 ---
 
 # Requesting Code Review
@@ -28,7 +28,13 @@ Standalone review is for ad-hoc or baseline review: when stuck, before a refacto
 
 Harness-native reviewer agents use code-kb when it helps. Restricted external reviewers in a planned pre-merge review get the lead's sanitized source-backed evidence and report missing evidence without MCP.
 
-**1. Redact the payload.** Fill the reviewer template, write the completed dispatch message to `PAYLOAD_FILE`, and dispatch only `REDACTED_PAYLOAD_FILE`. The harness-native `spawn_agent` or `Task` call receives its contents; never interpolate the unredacted template, diff, or description.
+**1. Get the commit range:**
+```bash
+BASE_SHA=$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null) || { echo "no main or master branch: set BASE_SHA to the merge-base with the target branch" >&2; exit 1; }
+HEAD_SHA=$(git rev-parse HEAD)
+```
+
+**2. Fill and redact the payload.** Fill [`code-reviewer.md`](code-reviewer.md) (placeholders `{WHAT_WAS_IMPLEMENTED}`, `{PLAN_OR_REQUIREMENTS}`, `{BASE_SHA}`, `{HEAD_SHA}`, `{DESCRIPTION}`), write the completed dispatch message to `PAYLOAD_FILE`, and dispatch only `REDACTED_PAYLOAD_FILE`. The harness-native `spawn_agent` or `Task` call receives its contents; never interpolate the unredacted template, diff, or description. `SKILL_DIR` is this skill's own directory, the base directory the host names when it loads the skill; set it in the same shell command.
 
 ```bash
 REDACTED_PAYLOAD_FILE=$(mktemp)
@@ -39,22 +45,15 @@ if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" >
 fi
 ```
 
-**2. Get git SHAs:**
-```bash
-BASE_SHA=$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null)
-HEAD_SHA=$(git rev-parse HEAD)
-```
-If the target branch is neither main nor master, compute `BASE_SHA` against the correct base explicitly.
-
-**3. Dispatch the reviewer** with the filled template at `requesting-code-review/code-reviewer.md` (placeholders `{WHAT_WAS_IMPLEMENTED}`, `{PLAN_OR_REQUIREMENTS}`, `{BASE_SHA}`, `{HEAD_SHA}`, `{DESCRIPTION}`):
+**3. Dispatch the reviewer** with the redacted payload:
 
 | Harness | How to invoke |
 |---------|---------------|
-| Claude Code / Cursor | Dispatch the `razorback:code-reviewer` plugin agent with the filled template as its prompt |
+| Claude Code / Cursor | Dispatch the `razorback:code-reviewer` plugin agent with the redacted payload as its prompt |
 | Codex | `spawn_agent(task_name="code-review", message=<two-file message>)` |
 | OpenCode | `Task` tool with `general` subagent (two-file message) |
 
-**Two-file message (Codex / OpenCode):** concatenate the `agents/code-reviewer.md` body (frontmatter stripped) and the filled template; send that as the subagent's task message.
+**Two-file message (Codex / OpenCode):** concatenate the body of the plugin's `agents/code-reviewer.md` (at `$SKILL_DIR/../../agents/code-reviewer.md`, frontmatter stripped) and the filled template, redact the result as in step 2, and send that as the subagent's task message.
 
 **Policy gate:** before any dispatch sends the diff to an external CLI, apply the external-model policy check (**REQUIRED SUB-SKILL:** razorback:security-review) with that CLI's provider. No policy block → proceed and add the loud morning-report note. Denied provider → refuse and name an allowed alternative; on an autonomous run where the user chose it, stop per blocker taxonomy #4.
 

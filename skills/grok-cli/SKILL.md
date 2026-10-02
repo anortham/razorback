@@ -1,13 +1,13 @@
 ---
 name: grok-cli
-description: Use when the user says "ask grok", "get grok's take", "grok review", "have grok look at this", "delegate to grok", or any variation naming Grok/xAI as the perspective they want.
+description: Runs Grok (xAI) headless (grok -p) for second opinions, code reviews, adversarial reviews, and delegated tasks, with outbound redaction and a validated review result. Use when the user says "ask grok", "get grok's take", "grok review", "have grok look at this", "delegate to grok", or names Grok/xAI as the perspective they want. Not for loops until two models agree (razorback:cross-model-convergence).
 ---
 
 # Grok CLI
 
 Second opinions, code review, adversarial review, and delegation to xAI
 models through `grok -p`. Read
-`skills/codex-cli/references/shared-cli-review.md` before the first call:
+[`shared-cli-review.md`](../codex-cli/references/shared-cli-review.md) before the first call:
 policy gate, redaction, payload transport, completion contract, and evaluation
 rules live there. Provider for this skill: `xai` (policy check in
 razorback:security-review). Other models: razorback:codex-cli (default when
@@ -34,6 +34,8 @@ path. Recipes reach shared helpers through `$SKILL_DIR/..`.
 
 ## Pre-flight Check
 
+**Requires:** `grok`, `git`, `jq`, `uuidgen`, and Node.js on `PATH`; the bundled redaction and validation helpers run on Node.js. Check with `command -v git jq uuidgen node`.
+
 `grok models` is a full CLI start, not an auth status command. When the binary
 runs it always prints a model list and exits 0; the login line on stdout is
 the only auth signal. Keep stderr.
@@ -45,6 +47,8 @@ GROK_BIN=$(command -v grok || true)
 "$GROK_BIN" models
 ```
 
+When `grok` is not on `PATH`, start each recipe with the three `GROK_BIN` lines and call `"$GROK_BIN"` wherever a recipe says `grok`.
+
 | stdout / result | Meaning | What to do |
 |---|---|---|
 | `You are logged in with grok.com.` | Ready | Proceed |
@@ -55,7 +59,7 @@ GROK_BIN=$(command -v grok || true)
 
 ## Defaults
 
-- **Model / reasoning**: inherit (`grok-4.5` at time of writing); `-m, --model`
+- **Model / reasoning**: inherit; `-m, --model`
   and `--reasoning-effort` (alias `--effort`) only on explicit choice. Set
   `GROK_MODEL` / `GROK_EFFORT` and let `${VAR:+--flag "$VAR"}` add the flag.
 - **Sandbox**: `--sandbox <PROFILE>`. On Grok 1.0.13 built-in profiles are
@@ -103,7 +107,7 @@ rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ### Code Review (read-only)
 
 **Step 1**: resolve `$DIFF`, `$TARGET`, `$RANGE`, and foreground/background per
-Review Targeting.
+[`review-targeting.md`](../using-razorback/references/review-targeting.md).
 
 **Step 2: Build the prompt**
 

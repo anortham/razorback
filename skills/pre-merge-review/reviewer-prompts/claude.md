@@ -1,11 +1,20 @@
 # Reviewer Prompt: claude
 
+## Contents
+
+- Preconditions
+- Build the user prompt
+- Invocation
+- Parsing
+- Error handling
+- Security pass
+
 Invocation for `claude -p` as the pre-merge adversarial reviewer. Background: `razorback:claude-cli`. `$SKILL_DIR` is the pre-merge-review skill's own base directory, announced when the skill loads.
 
 ## Preconditions
 
-- `claude --version` succeeds; `claude auth status` exits 0 (else blocker taxonomy #1, `razorback:using-razorback` `references/blocker-taxonomy.md`).
-- Do not add `--bare`: current Claude help says bare mode skips OAuth and keychain auth reads.
+- `claude --version` succeeds; `claude auth status` exits 0 (else blocker taxonomy #1, [`blocker-taxonomy.md`](../../using-razorback/references/blocker-taxonomy.md)).
+- Do not add `--bare`: bare mode skips OAuth and keychain auth reads.
 - `$REVIEW_ROOT` (exported tree from Step 1, outside `$PROJECT_DIR`, shared by both passes) and `$DIFF`, `$FILE_STAT`, `$COMMIT_LOG`, `$SOURCE_EVIDENCE`, optional `$USER_FOCUS` exist. Never run Claude from the live worktree.
 - This reviewer does not run code-kb (`--strict-mcp-config` removes MCP) and never claims to. It works from the lead's source-backed bundle and the exported tree, and reports missing evidence when they cannot support a conclusion.
 
@@ -33,11 +42,11 @@ Diff:
 $DIFF"
 ```
 
-Append a short plan path if useful; never paste the plan. Write this to `$PAYLOAD_FILE`, filter it through `skills/security-review/scripts/redact-outbound`, and apply [`review-payload.md`](../../security-review/review-payload.md) with `prepare-review-artifact`. That yields `$REVIEW_PROMPT_FILE` and `$REVIEW_ARTIFACT`: the complete redacted review prompt at or below 128 KiB, or the bounded static wrapper `Read and follow the complete redacted review bundle at:` plus the artifact path (`.razorback-review/review-input.md` inside `$REVIEW_ROOT`), which Claude reads with `Read,Grep,Glob`. Never load the artifact into a shell variable or positional argument.
+Append a short plan path if useful; never paste the plan. Write this to `$PAYLOAD_FILE`, filter it through `$SKILL_DIR/../security-review/scripts/redact-outbound`, and apply [`review-payload.md`](../../security-review/review-payload.md) with `prepare-review-artifact`. That yields `$REVIEW_PROMPT_FILE` and `$REVIEW_ARTIFACT`: the complete redacted review prompt at or below 128 KiB, or the bounded static wrapper `Read and follow the complete redacted review bundle at:` plus the artifact path (`.razorback-review/review-input.md` inside `$REVIEW_ROOT`), which Claude reads with `Read,Grep,Glob`. Never load the artifact into a shell variable or positional argument.
 
 ## Invocation
 
-`--json-schema` takes a string; strip the `$schema` key at read time (claude 2.1.209's validator rejects it). `--system-prompt-file` points straight at claude-cli's canonical adversarial prompt.
+`--json-schema` takes a string; strip the `$schema` key at read time (the `--json-schema` validator rejects it). `--system-prompt-file` points straight at claude-cli's canonical adversarial prompt.
 
 ```bash
 SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")

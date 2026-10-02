@@ -1,6 +1,6 @@
 ---
 name: architecture-quality
-description: Use when planning or reviewing non-trivial code changes, refactoring architecture, evaluating module boundaries, repeated findings reveal coupling, tests are hard to write because interfaces are unclear, or the user asks for codebase design improvements, complexity reduction, deduplication, or cleanup of existing code.
+description: Judges the architecture of a code change by module depth, coupling, and interface design, and gives a plan gate verdict, ranked refactor candidates, or an ADR. Use when planning or reviewing non-trivial code changes, refactoring architecture, evaluating module boundaries, when repeated findings reveal coupling or tests are hard to write because interfaces are unclear, or when the user asks for codebase design improvements, complexity reduction, deduplication, or cleanup of existing code.
 ---
 
 # Architecture Quality

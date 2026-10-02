@@ -1,5 +1,13 @@
 # Plan Templates
 
+## Contents
+
+- Plan Header
+- Verification Strategy
+- Parallel Execution Contract
+- Full Plan Task Template
+- Light Plan Task Template
+
 Copy these blocks into the plan in this order: header, Verification Strategy, Parallel Execution Contract, then one task block per task. Both task templates share the same header block (Files, Interfaces, Contract inputs, File ownership, Serialization required, Dependency reason); they diverge after it.
 
 ## Plan Header

@@ -1,6 +1,6 @@
 ---
 name: prototyping
-description: Use when a design question resists discussion — a state model with more edge cases than fit in your head, a UI the user keeps flip-flopping on because nobody can picture it, or behavior only knowable by running it — before writing a design doc or implementation plan for that question.
+description: Builds a throwaway prototype (a logic harness or UI variants) to answer one design question, and keeps it on its own branch. Use when a design question resists discussion (a state model with more edge cases than discussion can hold, a UI the user keeps flip-flopping on because nobody can picture it, or behavior only knowable by running it), or when the user asks for a prototype, mockup, or side-by-side variants, before writing a design doc or implementation plan for that question.
 ---
 
 # Prototyping

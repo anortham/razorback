@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Start the brainstorm server and output connection info
-# Usage: start-server.sh [--project-dir <path>] [--host <bind-host>] [--url-host <display-host>] [--foreground] [--background]
+# Usage: start-server.sh [--project-dir <path>] [--host <bind-host>] [--url-host <display-host>]
+#        [--idle-timeout-minutes <n>] [--open] [--foreground] [--background]
+# Requires Node.js on PATH.
 #
 # Starts server on a random high port, outputs JSON with URL.
 # Each session gets its own directory to avoid conflicts.
@@ -19,6 +21,11 @@
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+if ! command -v node >/dev/null 2>&1; then
+  echo '{"error": "node not found on PATH; the brainstorm server needs Node.js"}'
+  exit 1
+fi
+
 # Parse arguments
 PROJECT_DIR=""
 FOREGROUND="false"
@@ -29,18 +36,22 @@ IDLE_TIMEOUT_MINUTES=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --project-dir)
+      [[ $# -ge 2 ]] || { echo "{\"error\": \"--project-dir needs a value\"}"; exit 1; }
       PROJECT_DIR="$2"
       shift 2
       ;;
     --host)
+      [[ $# -ge 2 ]] || { echo "{\"error\": \"--host needs a value\"}"; exit 1; }
       BIND_HOST="$2"
       shift 2
       ;;
     --url-host)
+      [[ $# -ge 2 ]] || { echo "{\"error\": \"--url-host needs a value\"}"; exit 1; }
       URL_HOST="$2"
       shift 2
       ;;
     --idle-timeout-minutes)
+      [[ $# -ge 2 ]] || { echo "{\"error\": \"--idle-timeout-minutes needs a value\"}"; exit 1; }
       IDLE_TIMEOUT_MINUTES="$2"
       shift 2
       ;;

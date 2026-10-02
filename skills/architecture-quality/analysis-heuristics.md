@@ -1,8 +1,23 @@
 # Analysis Heuristics
 
+## Contents
+
+- Pass-Through Modules
+- Duplicated Logic
+- Wrong Abstraction Level
+- Tests Reaching Past The Caller-Facing Interface
+- Speculative Seams
+- Shotgun Surgery
+- Swallowed Errors
+- Primitive Obsession
+- Over-Decomposition
+- Additive-Only Changes
+- Repeated Review Findings
+- When Not To Act
+
 Use these checks when Gate Mode finds structural relevance, when Candidate Mode is requested, or during an Audit Mode sweep. The point is not to decorate the plan. The point is to decide whether a structural change is real, useful, and local enough to justify itself.
 
-Each heuristic's `Find it` line names the code-kb calls that gather its evidence. Run those instead of grep chains or whole-file reads.
+Each heuristic's `Find it` line names code-kb calls that gather its evidence. When code-kb is missing or stale, gather the same evidence with native search and file reads; a missing index result is not proof.
 
 ## Pass-Through Modules
 

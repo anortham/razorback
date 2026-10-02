@@ -1,6 +1,6 @@
 ---
 name: claude-cli
-description: Use when the user says "ask claude", "fresh claude review", "second opinion from another claude", "have another claude look at this", "delegate to a fresh claude", or any variation naming Claude as the second perspective they want.
+description: Runs a fresh Claude Code session headless (claude -p) for read-only second opinions, code reviews, adversarial reviews, and delegated tasks, with outbound redaction and a validated review result. Use when the user says "ask claude", "fresh claude review", "second opinion from another claude", "have another claude look at this", "delegate to a fresh claude", or names Claude as the second perspective they want. Not for loops until two models agree (razorback:cross-model-convergence).
 ---
 
 # Claude CLI
@@ -8,7 +8,7 @@ description: Use when the user says "ask claude", "fresh claude review", "second
 Second opinions, code review, and adversarial review from a fresh Claude
 session through `claude -p`. The independence is the new session and prompt,
 not a different model; the reviewer may be the same build as the author and
-shares its blind spots. Read `skills/codex-cli/references/shared-cli-review.md`
+shares its blind spots. Read [`shared-cli-review.md`](../codex-cli/references/shared-cli-review.md)
 before the first call: policy gate, redaction, payload transport, completion
 contract, and evaluation rules live there. Provider for this skill:
 `anthropic` (policy check in razorback:security-review). Other models:
@@ -31,6 +31,8 @@ path. Recipes reach shared helpers through `$SKILL_DIR/..`.
 
 ## Pre-flight
 
+**Requires:** `claude`, `git`, `jq`, and Node.js on `PATH`; the bundled redaction and validation helpers run on Node.js. Check with `command -v git jq node`.
+
 ```bash
 which claude && claude --version
 claude auth status | jq '{loggedIn, authMethod, apiProvider, subscriptionType, email, orgName}'
@@ -48,8 +50,9 @@ for `claude -p`: `references/programmatic-billing.md`.
   `CLAUDE_MODEL="${RAZORBACK_CLAUDE_REVIEW_MODEL:-}"`,
   `CLAUDE_EFFORT="${RAZORBACK_CLAUDE_REVIEW_EFFORT:-}"` (`low|medium|high|xhigh|max`);
   the `${VAR:+--flag "$VAR"}` guards add the flag only when set.
-- **Fallback**: `--fallback-model <model[,model]>` (print mode only) when an
-  explicit fallback is configured.
+- **Fallback**: set `CLAUDE_FALLBACK_MODEL=<model[,model]>` only when the user
+  configured an explicit fallback; the Step 3 guard then passes
+  `--fallback-model` (print mode only).
 - **Ephemeral**: `--no-session-persistence` (parity with codex `--ephemeral`).
 - **Do not use `--bare`**: bare mode reads auth only from `ANTHROPIC_API_KEY`
   or `apiKeyHelper`, never OAuth or the keychain, so normal logins fail. Fine
@@ -94,7 +97,7 @@ Free-form text, no `--json-schema`. Name paths in the prompt to focus it.
 ## Code Review (read-only)
 
 **Step 1**: resolve `$DIFF`, `$TARGET`, `$RANGE`, and foreground/background per
-Review Targeting.
+[`review-targeting.md`](../using-razorback/references/review-targeting.md).
 
 **Step 2: Build the prompt**
 
@@ -151,11 +154,11 @@ an argument or stdin.
 **Step 3: Send with schema**
 
 `--json-schema` takes a JSON string. Strip `$schema` from the canonical file:
-claude 2.1.209 rejects it (`no schema with key or ref`).
+the `--json-schema` validator rejects it (`no schema with key or ref`).
 
 ```bash
 SCHEMA_JSON=$(jq -c 'del(."$schema")' < "$SKILL_DIR/../codex-cli/schemas/review-output.schema.json")
-RESULT_FILE=$(mktemp)
+RESULT_FILE=$(mktemp); NORMALIZED_RESULT_FILE=$(mktemp)
 cd "$REVIEW_ROOT" && claude -p \
   --no-session-persistence --dangerously-skip-permissions \
   --output-format json --json-schema "$SCHEMA_JSON" \
@@ -163,11 +166,14 @@ cd "$REVIEW_ROOT" && claude -p \
   ${CLAUDE_MODEL:+--model "$CLAUDE_MODEL"} ${CLAUDE_EFFORT:+--effort "$CLAUDE_EFFORT"} \
   ${CLAUDE_FALLBACK_MODEL:+--fallback-model "$CLAUDE_FALLBACK_MODEL"} \
   < "$REVIEW_PROMPT_FILE" 2>/dev/null > "$RESULT_FILE"
-"$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$RESULT_FILE" > normalized.json
+"$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$RESULT_FILE" > "$NORMALIZED_RESULT_FILE" \
+  || { echo "Claude did not return a completed review" >&2; exit 1; }
+cd - >/dev/null
 rm -f -- "$REDACTED_PAYLOAD_FILE" "$REVIEW_PROMPT_FILE" "$RESULT_FILE"; rm -rf -- "$REVIEW_ROOT"
+jq '.findings[]?' < "$NORMALIZED_RESULT_FILE"
 ```
 
-Accept only `normalized.json` (`jq '.findings[]?'`).
+Accept only the normalized output in `$NORMALIZED_RESULT_FILE`; it lives outside `$REVIEW_ROOT`, so the cleanup keeps it.
 
 ## Adversarial Review
 
@@ -188,8 +194,9 @@ adaptation is the REVIEW METHOD line naming `Read`, `Grep`, and `Glob`.
 
 ## Sessions and Other Projects
 
-- Persistent session: drop `--no-session-persistence`; follow up with
-  `claude -r "$REDACTED_PROMPT" < /dev/null 2>/dev/null` (redact each prompt).
+- Persistent session: drop `--no-session-persistence` and keep `--output-format json`; save the
+  result's `session_id`. Follow up with `claude -p --resume "$SESSION_ID" < "$REDACTED_PAYLOAD_FILE"`
+  (redact each follow-up prompt the same way).
 - Other project: `cd ~/source/other-project` first. The reviewer sees that
   project's `CLAUDE.md`, hooks, plugins, and MCP config (no `--bare`); weigh
   that when judging independence. Pre-merge review uses `--safe-mode` when

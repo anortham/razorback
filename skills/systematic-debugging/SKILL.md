@@ -1,6 +1,6 @@
 ---
 name: systematic-debugging
-description: Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes
+description: Finds and proves the root cause of a bug before any fix is proposed. Use when encountering any bug, error or stack trace, failing or flaky test, build failure, or unexpected behavior, before proposing fixes.
 ---
 
 # Systematic Debugging
@@ -50,7 +50,7 @@ code-kb: `get_symbol_context(symbol_name, file_path?)` or `get_symbol_body` on t
 1. **Find working examples** of similar code with native search and file reads, or code-kb `search_symbols` and `codebase_outline` when useful.
 2. **Read the reference implementation completely** before applying its pattern. No skimming.
 3. **List every difference** between working and broken, however small. Do not assume "that can't matter".
-4. **Understand dependencies** with `get_symbol_context` and `find_references`: components, config, environment, assumptions.
+4. **Understand dependencies** (components, config, environment, assumptions) with native search and file reads, or code-kb `get_symbol_context` and `find_references` when useful.
 
 ### Phase 3: Hypothesis and Testing
 
@@ -107,7 +107,7 @@ When investigation shows the issue is truly environmental, timing-dependent, or 
 
 - `root-cause-tracing.md` — trace backward through the call stack to the original trigger
 - `defense-in-depth.md` — add validation at multiple layers after finding the root cause
-- `condition-based-waiting.md` — replace arbitrary timeouts with condition polling
-- `find-polluter.sh` — bisect test ordering to find state pollution
+- `condition-based-waiting.md` — replace arbitrary timeouts with condition polling; `condition-based-waiting-example.ts` is a complete helper set to read and adapt
+- `find-polluter.sh` — run it from the project root to find the test that creates unwanted files or state (usage in `root-cause-tracing.md`)
 
 **Related skills:** razorback:diagnosing-performance (right but late); razorback:test-driven-development (Phase 4 failing test); razorback:verification-before-completion (prove the fix before claiming it); razorback:fixing-small-issues — when the root-caused fix meets the quick-fix criteria, execute it there: in place, affected-scope verification, no worktree or baseline suite.

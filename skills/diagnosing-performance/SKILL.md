@@ -1,6 +1,6 @@
 ---
 name: diagnosing-performance
-description: Use when something is slow — a slow endpoint, query, page, job, build, or test suite — or when a change may have made something slower, before proposing any optimization, cache, index, or parallelism.
+description: Finds the measured cause of slowness and proves each fix with a before and an after number. Use when something is slow (a slow endpoint, query, page, job, build, or test suite), when latency, throughput, memory, or cloud cost regresses, or when a change may have made something slower, before proposing any optimization, cache, index, or parallelism.
 ---
 
 # Diagnosing Performance

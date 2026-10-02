@@ -25,33 +25,48 @@ function setupProject() {
   return project;
 }
 
-function runPolluter(pattern) {
+function runPolluter(pattern, { prePolluted = false, env = {} } = {}) {
   const project = setupProject();
+  if (prePolluted) writeFileSync(join(project, 'pollution.marker'), '');
   const result = spawnSync('bash', [scriptUnderTest, 'pollution.marker', pattern], {
     cwd: project,
     encoding: 'utf8',
-    env: { ...process.env, PATH: `${join(project, 'bin')}${delimiter}${process.env.PATH}` },
+    env: { ...process.env, PATH: `${join(project, 'bin')}${delimiter}${process.env.PATH}`, ...env },
   });
-  return `${result.stdout}${result.stderr}`;
+  return { output: `${result.stdout}${result.stderr}`, status: result.status };
 }
 
 test('documented pattern runs tests and detects pollution', () => {
-  const output = runPolluter('src/**/*.test.ts');
+  const { output } = runPolluter('src/**/*.test.ts');
   assert.match(output, /FOUND POLLUTER/);
 });
 
 test('documented pattern matches nested and top-level test files', () => {
-  const output = runPolluter('src/**/*.test.ts');
+  const { output } = runPolluter('src/**/*.test.ts');
   assert.match(output, /Found 2 test files/);
 });
 
 test('leading ./ on the pattern is accepted', () => {
-  const output = runPolluter('./src/**/*.test.ts');
+  const { output } = runPolluter('./src/**/*.test.ts');
   assert.match(output, /Found 2 test files/);
 });
 
 test('empty result counts as 0 and exits via the clean path', () => {
-  const output = runPolluter('nomatch/**/*.test.ts');
+  const { output } = runPolluter('nomatch/**/*.test.ts');
   assert.match(output, /Found 0 test files/);
   assert.match(output, /No polluter found/);
+});
+
+test('existing pollution before any test fails instead of reporting clean', () => {
+  const { output, status } = runPolluter('src/**/*.test.ts', { prePolluted: true });
+  assert.equal(status, 2);
+  assert.match(output, /already exists before any test ran/);
+  assert.doesNotMatch(output, /No polluter found/);
+});
+
+test('a missing test command fails instead of reporting clean', () => {
+  const { output, status } = runPolluter('src/**/*.test.ts', { env: { POLLUTER_TEST_CMD: 'no-such-runner-xyz' } });
+  assert.equal(status, 2);
+  assert.match(output, /Test command not found/);
+  assert.doesNotMatch(output, /No polluter found/);
 });

@@ -1,9 +1,6 @@
 ---
 name: harvesting-debt
-description: >
-  Use when the user says "razorback debt", "harvesting-debt", "debt ledger",
-  "what did we defer", "list the shortcuts", or "what did we mark to do later" —
-  any request to account for deliberate shortcuts marked with `razorback:` comments.
+description: Builds a read-only ledger of every `razorback:` shortcut comment, with its ceiling and upgrade trigger, so deferred work stays tracked. Use when the user says "razorback debt", "harvesting-debt", "debt ledger", "what did we defer", "list the shortcuts", or "what did we mark to do later", or asks to account for deliberate shortcuts marked with `razorback:` comments.
 ---
 
 # Harvesting Debt

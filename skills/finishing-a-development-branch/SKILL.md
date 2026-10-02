@@ -1,6 +1,6 @@
 ---
 name: finishing-a-development-branch
-description: Use when implementation is complete, branch verification passes, and you need to decide how to integrate the work
+description: Integrates a finished branch, either pushing it and opening a PR with a morning report, or offering merge, PR, keep, or discard. Use when implementation is complete, branch verification passes, and any chosen pre-merge review (razorback:pre-merge-review) is done, and the integration choice is still open.
 ---
 
 # Finishing a Development Branch

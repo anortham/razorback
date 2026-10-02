@@ -1,5 +1,11 @@
 # Digest Kit
 
+## Contents
+
+- Layout contract (component patterns)
+- Kit CSS (tab toggle)
+- Authoring rules (HTML escaping, allowed links, no event handlers, CSP)
+
 The component kit for razorback's visual digest — a model-authored,
 information-dense, single-file HTML view of a plan, design doc, or morning
 report. Skills that generate digests load this file for the layout contract,

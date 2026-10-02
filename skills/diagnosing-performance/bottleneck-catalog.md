@@ -1,5 +1,18 @@
 # Bottleneck Catalog
 
+## Contents
+
+- Overview
+- 1. Database and Data Access
+- 2. Async, Concurrency, and Parallelism
+- 3. Network and Service Boundaries
+- 4. Algorithms and Data Structures
+- 5. Memory and Allocation
+- 6. Caching
+- 7. Startup, Build, and Test Suite
+- 8. Client and Rendering
+- Not in the Catalog
+
 ## Overview
 
 Recurring causes of slowness, grouped by the layer that owns the time. Reach this file in

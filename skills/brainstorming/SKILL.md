@@ -1,6 +1,6 @@
 ---
 name: brainstorming
-description: "Use when requirements are unclear, when a change makes a consequential design choice (a new subsystem, a public interface, stored data, security, or hard-to-reverse behavior), or when the user asks to brainstorm or design. Clear, ordinary work proceeds without it; small defect repairs go to razorback:fixing-small-issues."
+description: Turns an unclear or consequential request into an agreed design, sized to the risk, from a quick spike to a written spec the user approves. Use when requirements are unclear, when a change makes a consequential design choice (a new subsystem, a public interface, stored data, security, or hard-to-reverse behavior), or when the user asks to brainstorm or design. Not for clear, ordinary work or small defect repairs (razorback:fixing-small-issues).
 ---
 
 # Brainstorming Ideas Into Designs
@@ -92,7 +92,7 @@ Every path starts by reading the code the request touches (code-kb helps in an u
 
 A browser tool for mockups, diagrams, and visual options; not a mode. When visual questions are likely, offer it once:
 
-> "Some of what we're working on might be easier to explain if I can show it to you in a web browser. I can put together mockups, diagrams, comparisons, and other visuals as we go. This feature is still new and can be token-intensive. Want to try it? (Requires opening a local URL)"
+> "Some of what we're working on might be easier to explain if I can show it to you in a web browser. I can put together mockups, diagrams, comparisons, and other visuals as we go. It can be token-intensive. Want to try it? (Requires opening a local URL)"
 
 **This offer MUST be its own message** with no other content. Wait for the user's response before continuing. Declined → text only. Accepted → read `visual-companion.md` (this directory), then decide per question: browser only when seeing beats reading (mockups, layouts, diagrams, side-by-side designs); terminal for text (requirements, tradeoffs, A/B/C options, scope).
 

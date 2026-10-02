@@ -1,5 +1,15 @@
 # Condition-Based Waiting
 
+## Contents
+
+- Overview
+- When to Use
+- Core Pattern
+- Quick Patterns
+- Implementation
+- Common Mistakes
+- When Arbitrary Timeout IS Correct
+
 ## Overview
 
 Flaky tests often guess at timing with arbitrary delays. This creates race conditions where tests pass on fast machines but fail under load or in CI.
@@ -62,7 +72,7 @@ Generic polling function:
 async function waitFor<T>(
   condition: () => T | undefined | null | false,
   description: string,
-  timeoutMs = 5000
+  timeoutMs = 5000 // a ceiling for a hung condition, not a wait: polling returns as soon as the condition holds
 ): Promise<T> {
   const startTime = Date.now();
 

@@ -1,5 +1,16 @@
 # Root Cause Tracing
 
+## Contents
+
+- Overview
+- When to Use
+- The Tracing Process
+- Adding Stack Traces
+- Finding Which Test Causes Pollution
+- Real Example: Empty projectDir
+- Key Principle
+- Stack Trace Tips
+
 ## Overview
 
 Bugs often manifest deep in the call stack (git init in wrong directory, file created in wrong location, database opened with wrong path). Your instinct is to fix where the error appears, but that's treating a symptom.
@@ -107,13 +118,13 @@ grep -n 'DEBUG git init' /tmp/debug-run.log
 
 If something appears during tests but you don't know which test:
 
-Use the bisection script `find-polluter.sh` in this directory:
+Run the bisection script `find-polluter.sh` (in this skill's directory, `SKILL_DIR`) from the project root:
 
 ```bash
-./find-polluter.sh '.git' 'src/**/*.test.ts'
+"$SKILL_DIR/find-polluter.sh" '.git' 'src/**/*.test.ts'
 ```
 
-Runs tests one-by-one, stops at first polluter. See script for usage.
+It runs the test files one by one and stops at the first polluter. It runs each file with `$POLLUTER_TEST_CMD <file>`; set that to the project's per-file test command (the script falls back to npm's `test` script). It exits 2 when the pollution exists before the run or the test command is missing.
 
 ## Real Example: Empty projectDir
 

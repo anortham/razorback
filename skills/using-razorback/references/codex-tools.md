@@ -1,5 +1,13 @@
 # Codex Tool Mapping
 
+## Contents
+
+- Subagent dispatch
+- Execution model on Codex
+- code-kb MCP
+- Goldfish MCP
+- Environment detection for worktrees
+
 Skills in razorback use Claude Code tool names. When you see these in a skill body, use the Codex equivalent:
 
 | Skill references | Codex equivalent |
@@ -28,8 +36,8 @@ Razorback's parallel execution skills (`subagent-driven-development`, `dispatchi
 
 Razorback's subagent prompts live in the skills themselves:
 
-- `skills/subagent-driven-development/implementer-prompt.md`
-- `skills/subagent-driven-development/fix-prompt.md`
+- [`implementer-prompt.md`](../../subagent-driven-development/implementer-prompt.md)
+- [`fix-prompt.md`](../../subagent-driven-development/fix-prompt.md)
 
 (`spec-reviewer-prompt.md` and `code-quality-reviewer-prompt.md` in the same
 directory are checklists the lead applies during inline review — they are never

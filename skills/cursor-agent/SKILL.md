@@ -1,6 +1,6 @@
 ---
 name: cursor-agent
-description: Use when the user explicitly asks to use Cursor Agent, Cursor CLI, Composer, Composer 2.5, or to delegate implementation work to Cursor from another harness.
+description: Runs Cursor Agent (cursor-agent -p, Composer) headless as a bounded implementation worker whose diff the lead reviews and verifies. Use when the user explicitly asks to use Cursor Agent, Cursor CLI, Composer, or Composer 2.5, or to delegate implementation work to Cursor from another harness.
 ---
 
 # Cursor Agent
@@ -10,7 +10,7 @@ for Cursor/Composer by name; otherwise use
 `razorback:subagent-driven-development`. The dispatching agent stays the lead:
 it plans, scopes ownership, reviews the diff, routes fixes, and owns final
 verification. Cursor Agent is the implementer. Read
-`skills/codex-cli/references/shared-cli-review.md` for the policy gate and
+[`shared-cli-review.md`](../codex-cli/references/shared-cli-review.md) for the policy gate and
 redaction rules. Provider for this skill: `cursor` (policy check in
 razorback:security-review).
 
@@ -50,6 +50,8 @@ path. Recipes reach shared helpers through `$SKILL_DIR/..`.
   no edits outside assigned files.
 
 ## Preflight
+
+**Requires:** `cursor-agent` and Node.js on `PATH`; the bundled redaction helper runs on Node.js. Check with `command -v node`.
 
 `cursor-agent --version` (the installer also creates an `agent` alias). If
 missing, STOP and give the user the install command; never run the installer
@@ -118,10 +120,10 @@ the bare name and `Get-Content -Raw`:
 
 ```powershell
 $Workspace = "C:\path\to\project"
-$SkillDir = "C:\path\to\razorback\skills\cursor-agent"
+$SkillDir = "C:/path/to/razorback/skills/cursor-agent"
 $PromptFile = "$env:TEMP\cursor-task.md"
 $RedactedPromptFile = [IO.Path]::GetTempFileName()
-$redact = Start-Process node -ArgumentList @("$SkillDir\..\security-review\scripts\redact-outbound") `
+$redact = Start-Process node -ArgumentList @("$SkillDir/../security-review/scripts/redact-outbound") `
   -RedirectStandardInput $PromptFile -RedirectStandardOutput $RedactedPromptFile `
   -NoNewWindow -Wait -PassThru
 if ($redact.ExitCode -ne 0) {

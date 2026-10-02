@@ -1,6 +1,6 @@
 ---
 name: writing-plans
-description: Use when work needs a written plan file - a handoff to another session or agent, a multi-session effort, or parallel work that needs file ownership and ordering - before touching code. Not for one coherent task the current agent can finish.
+description: Writes an implementation plan file with tasks, file ownership, ordering, and verification for work that crosses sessions, agents, or people. Use when work needs a written implementation plan file (a handoff to another session or agent, a multi-session effort, or parallel work that needs file ownership and ordering), before touching code. Not for one coherent task the current agent can finish.
 ---
 
 # Writing Plans

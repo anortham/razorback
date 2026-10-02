@@ -31,8 +31,7 @@ Dispatch one implementer subagent:
     Re-read the brief and Contract inputs, then check current source with native tools or code-kb. If still
     ambiguous, pick the plan-consistent option and note it in your report (file:line + reason).
 
-    Stop and report BLOCKED only for the blocker taxonomy
-    (`skills/using-razorback/references/blocker-taxonomy.md`): broken credentials/env with no
+    Stop and report BLOCKED only for the blocker taxonomy: broken credentials/env with no
     plan recovery; a destructive action the plan does not authorize; code state contradicting
     a load-bearing plan assumption; safety-critical ambiguity (security, data integrity,
     billing, auth) with no plan answer; test failures that do not converge.

@@ -14,7 +14,7 @@ test('campaign setup is immutable and budgets external invocations separately fr
   const skill = read('skills/managing-review-campaigns/SKILL.md');
 
   assert.match(skill, /^---\nname: managing-review-campaigns\n/m);
-  assert.match(skill, /description: Use when .*review.*repeat.*multiple reviewers.*clean review/is);
+  assert.match(skill, /description: .*Use when .*review.*repeat.*multiple reviewers.*clean review/is);
   assert.match(skill, /REVIEW CAMPAIGN\nscope: <problem class and change range>\nworkflow: ordinary \| pre-merge \| convergence\nparticipants: <lead and selected reviewers>\nrequired_reviewers: <names or none>\nevidence_target: lead-only \| fresh-session \| external-reviewed \| cross-model-reviewed\nseverity_floor: <default medium>\ndiscovery_scopes: <named scopes>\nexternal_invocation_budget: <integer>\nmax_rounds: <1-3>\nround: 0\/<max>\nexternal_invocations: 0\/<budget>/);
   assert.match(skill, /participants and budgets cannot grow mid-campaign/i);
   assert.match(skill, /setup fields.*immutable.*counters.*only increase/is);
@@ -76,7 +76,7 @@ test('closure uses canonical severity, evidence, and finite terminal states', ()
   const skill = read('skills/managing-review-campaigns/SKILL.md');
 
   assert.match(skill, /critical.*high.*medium.*low/is);
-  assert.match(skill, /skills\/codex-cli\/schemas\/review-output\.schema\.json/);
+  assert.match(skill, /codex-cli\/schemas\/review-output\.schema\.json/);
   for (const evidence of ['red-to-green test', 'existing covering test', 'inspection-only']) {
     assert.match(skill, new RegExp(`\\b${evidence}\\b`));
   }

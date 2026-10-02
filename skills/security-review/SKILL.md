@@ -1,6 +1,6 @@
 ---
 name: security-review
-description: Use when running a security review, a secrets scan, or a dependency/CVE audit, when the branch gate needs its security scopes, when checking or declaring the external-model policy, or when asking "can I send this diff to codex/claude/grok/cursor".
+description: Runs razorback's security scopes (secrets scan, dependency/CVE audit, outbound redaction) and checks the external-model policy before a diff leaves the machine. Use when the branch gate needs its security scopes, when running a secrets scan or a dependency/CVE audit, when checking or declaring the external-model policy, or when asking "can I send this diff to codex/claude/grok/cursor".
 ---
 
 # Security Review
@@ -65,7 +65,7 @@ Run at every enforcement point, every time, before repo content leaves the machi
 
 ## Outbound Payload Redaction
 
-`skills/security-review/scripts/redact-outbound` reads the fully constructed prompt, diff, or report on stdin and writes the same shape with sensitive matches replaced by `<REDACTED>`; it never prints matched material. Every enforcement point runs it immediately before dispatch and sends only the redacted artifact. A nonzero status is a failed dispatch: remove temporary artifacts, report the generic failure, and stop before invoking the provider. The stderr line names the cause, such as the environment variable whose short value appears in the payload, but never the value itself. Do not log the original payload or any matched value.
+`scripts/redact-outbound` (in this skill's directory, Node.js required) reads the fully constructed prompt, diff, or report on stdin and writes the same shape with sensitive matches replaced by `<REDACTED>`; it never prints matched material. Every enforcement point runs it immediately before dispatch and sends only the redacted artifact. A nonzero status is a failed dispatch: remove temporary artifacts, report the generic failure, and stop before invoking the provider. The stderr line names the cause, such as the environment variable whose short value appears in the payload, but never the value itself. Do not log the original payload or any matched value. In the block below, `SKILL_DIR` is the calling skill's own directory (the base directory the host names when it loads that skill); every razorback skill sits beside security-review, so `$SKILL_DIR/..` reaches this script.
 
 ```bash
 PAYLOAD_FILE=$(mktemp)

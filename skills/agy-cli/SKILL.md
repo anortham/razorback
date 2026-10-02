@@ -1,14 +1,13 @@
 ---
 name: agy-cli
-description: >-
-  Use when the user says "ask agy", "get agy's take", "agy review", "have agy look at this", "delegate to agy", or any variation naming Antigravity, AGY, or Google/Gemini as the perspective they want.
+description: Runs Antigravity (agy, Google Gemini) headless for second opinions, code reviews, adversarial reviews, and delegated tasks, with outbound redaction and a validated review result. Use when the user says "ask agy", "get agy's take", "agy review", "have agy look at this", "delegate to agy", or names Antigravity, AGY, or Google/Gemini as the perspective they want. Not for loops until two models agree (razorback:cross-model-convergence).
 ---
 
 # Antigravity CLI
 
 Second opinions, code review, adversarial review, and delegation to Google
 Gemini models through `agy`. Read
-`skills/codex-cli/references/shared-cli-review.md` before the first call:
+[`shared-cli-review.md`](../codex-cli/references/shared-cli-review.md) before the first call:
 policy gate, redaction, payload transport, completion contract, and evaluation
 rules live there. Provider for this skill: `google` (policy check in
 razorback:security-review). Other models: razorback:codex-cli (default when
@@ -30,13 +29,15 @@ path. Recipes reach shared helpers through `$SKILL_DIR/..`.
 
 ## Pre-flight
 
+**Requires:** `agy`, `git`, `jq`, and Node.js on `PATH`; the bundled redaction and validation helpers run on Node.js. Check with `command -v git jq node`.
+
 `agy models` (keep stderr). Model list and exit 0: ready. Exit 127: install
 `agy` on `PATH`. Other non-zero or network error: run `agy` interactively to
 refresh credentials (session lives in `~/.gemini/antigravity-cli/`).
 
 ## Defaults
 
-- **Model / effort**: inherit (`gemini-3.8-flash-high` at time of writing);
+- **Model / effort**: inherit;
   `--model <MODEL>` and `--effort low|medium|high` only on explicit choice.
   Set `AGY_MODEL` / `AGY_EFFORT` and let `${VAR:+--flag "$VAR"}` add the flag.
 - **Prompt**: `-p, --print <PROMPT>` (alias `--prompt`) for a string argument.
@@ -82,7 +83,7 @@ rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
 ## Code Review (read-only)
 
 **Step 1**: resolve `$DIFF`, `$TARGET`, `$RANGE`, and foreground/background per
-Review Targeting.
+[`review-targeting.md`](../using-razorback/references/review-targeting.md).
 
 **Step 2: Build the prompt**
 

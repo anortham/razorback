@@ -1,17 +1,17 @@
 ---
 name: grounding-in-current-docs
-description: Use when writing code against an external framework, library, or API — especially a version or feature newer than your training data, an unfamiliar dependency, or behavior that may have changed (new directives, breaking changes, renamed options, deprecations, changed defaults).
+description: Checks how the repo already uses an external framework, library, or API, then verifies the current official docs before code depends on it. Use when writing code against an external framework, library, or API, especially a version or feature newer than the model's training data, an unfamiliar dependency, or behavior that may have changed (new directives, breaking changes, renamed options, deprecations, changed defaults).
 ---
 
 # Grounding in Current Docs
 
-code-kb is the source of truth inside the repo. This skill covers truth outside it: external framework, library, and API behavior, where memory goes stale and plausible code that compiles is still semantically wrong.
+The repo's own source is the truth inside the repo. This skill covers truth outside it: external framework, library, and API behavior, where memory goes stale and plausible code that compiles is still semantically wrong.
 
 ## The Rule
 
-Before coding against an external API where your knowledge could be stale:
+Before coding against an external API where the model's knowledge could be stale:
 
-1. **Check the repo first.** code-kb `search_symbols` or `lookup_symbol` for existing usage. Working code in the repo is the cheapest ground truth, and repo conventions win over docs.
+1. **Check the repo first** for existing usage, with native search and file reads, or code-kb `search_symbols` when it helps. Working code in the repo is the cheapest ground truth, and repo conventions win over docs.
 2. **Fetch the current official docs** for the specific feature with your harness's web tool (WebFetch on Claude Code, web search on Codex; prefer a token-efficient fetcher when available). Official source, not blog posts.
 3. **Verify the exact surface:** name, signature/options, semantics, version gates, deprecations. When verified behavior differs from common knowledge, cite the doc URL in the task notes or commit message.
 4. **Verify once per feature per session.** Record it (Goldfish checkpoint or plan note) instead of re-fetching.

@@ -16,7 +16,7 @@ Read `$SKILL_DIR/../codex-cli/adversarial-prompt.txt` and substitute:
 - `{{USER_FOCUS}}` ← `$USER_FOCUS` or `"none specified"`.
 - `{{REVIEW_INPUT}}` ← `$FILE_STAT`, `$COMMIT_LOG`, `$SOURCE_EVIDENCE`, `$DIFF` under the labelled `Target:`, `File stat:`, `Commit log:`, `Lead source evidence:`, `Diff:` headings.
 
-Write the rendered prompt to `$PAYLOAD_FILE`, filter it through `skills/security-review/scripts/redact-outbound`, and apply [`review-payload.md`](../../security-review/review-payload.md) with `prepare-review-artifact`. That yields `$REVIEW_PROMPT_FILE` and `$REVIEW_ARTIFACT`: the complete redacted review prompt at or below 128 KiB, or the bounded static wrapper `Read and follow the complete redacted review bundle at:` plus the artifact path (`.razorback-review/review-input.md` inside `$REVIEW_ROOT`) above it. Codex reads the artifact with its read-only tools; never pass the large payload through `echo`, stdin, or a positional argument.
+Write the rendered prompt to `$PAYLOAD_FILE`, filter it through `$SKILL_DIR/../security-review/scripts/redact-outbound`, and apply [`review-payload.md`](../../security-review/review-payload.md) with `prepare-review-artifact`. That yields `$REVIEW_PROMPT_FILE` and `$REVIEW_ARTIFACT`: the complete redacted review prompt at or below 128 KiB, or the bounded static wrapper `Read and follow the complete redacted review bundle at:` plus the artifact path (`.razorback-review/review-input.md` inside `$REVIEW_ROOT`) above it. Codex reads the artifact with its read-only tools; never pass the large payload through `echo`, stdin, or a positional argument.
 
 ## Invocation
 

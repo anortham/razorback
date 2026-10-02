@@ -1,7 +1,6 @@
 ---
 name: cross-model-convergence
-description: >-
-  Use when the user wants two models to check each other's work until clean — "have codex verify my findings and find more", "go back and forth until clean", "loop until you both agree there are no problems left" — when an audit should run to convergence under /loop or another goal-driven runner, or when a design decision needs adversarial challenge before building: "doubt this", "challenge this decision", or architecture risk rated medium/high.
+description: Runs a bounded campaign (at most three rounds) where a second model verifies findings and adds new ones until both agree it is clean, or challenges a design decision before it is built. Use when the user wants two models to check each other until clean ("have codex verify my findings and find more", "go back and forth until clean"), when an audit runs to convergence under /loop, or a design decision needs challenge ("doubt this", "challenge this decision", architecture risk medium/high).
 ---
 
 # Cross-Model Convergence
@@ -20,7 +19,7 @@ Every participating model's provider must pass the external-model policy check i
 
 ## Outbound Payload Redaction
 
-Immediately before each reviewer dispatch, write the fully constructed campaign prompt to `PAYLOAD_FILE`, filter it, and send only `REDACTED_PAYLOAD_FILE` to the reviewer channel; never pass raw findings, diff, or prompt directly.
+Immediately before each reviewer dispatch, write the fully constructed campaign prompt to `PAYLOAD_FILE`, filter it, and send only `REDACTED_PAYLOAD_FILE` to the reviewer channel; never pass raw findings, diff, or prompt directly. `SKILL_DIR` is this skill's own directory, the base directory the host names when it loads the skill. Shell variables do not survive between tool calls, so set `SKILL_DIR=<that absolute path>` at the start of each shell command that runs a script.
 
 ```bash
 REDACTED_PAYLOAD_FILE=$(mktemp)

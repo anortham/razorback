@@ -1,6 +1,6 @@
 ---
 name: receiving-code-review
-description: Use when receiving code review feedback, before implementing suggestions, especially if feedback seems unclear or technically questionable
+description: Checks each review comment against the code before acting, pushes back with technical reasons when a comment is wrong, and fixes accepted items one at a time with a covering test. Use when receiving code review feedback, PR review comments, or external reviewer findings, before implementing suggestions, especially when feedback seems unclear or technically questionable.
 ---
 
 # Code Review Reception
@@ -90,7 +90,7 @@ Wrong pushback: "You were right - I checked [X] and it does [Y]. Implementing no
 
 ## GitHub Thread Replies
 
-Reply to inline review comments in the comment thread (`gh api repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies`), not as a top-level PR comment.
+Reply to inline review comments in the comment thread (`gh api --method POST repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies -f body='<reply>'`), not as a top-level PR comment.
 
 ## Rationalizations
 

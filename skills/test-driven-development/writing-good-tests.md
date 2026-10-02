@@ -1,5 +1,15 @@
 # Writing Good Tests
 
+## Contents
+
+- Overview
+- Principle 1: Name the Break
+- Principle 2: Exercise the Real Thing
+- Tests Ship With the Implementation
+- The Mutation Check
+- Quick Reference
+- Warning Signs
+
 **Load this reference when:** writing or changing tests, adding mocks, or
 adding cleanup/helper methods for tests.
 
@@ -48,8 +58,7 @@ retried 5 times and the 6th attempt never happens."
 contains an exact line proves only that the source is the source. Run
 scripts against controlled inputs and assert outputs, side effects, or
 exit codes. Documents that instruct agents are tested by the consuming
-agent's behavior — razorback:writing-skills covers this discipline in
-`skills/writing-skills/testing-skills-with-subagents.md`; prose for
+agent's behavior — razorback:writing-skills covers this discipline; prose for
 humans earns no test at all.
 
 **Your code, not the framework.** Test the contract your code makes at
