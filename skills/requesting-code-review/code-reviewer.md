@@ -25,7 +25,7 @@ You are reviewing code changes for production readiness.
 **Review approach — evidence first, targeted diff second**:
 
 1. `git diff --stat {BASE_SHA}..{HEAD_SHA}` for the overview
-2. Read the changed files and the symbols the change centers on (file reads, or code-kb `file_skeleton(file_path='<file>')` and `get_symbol_context(symbol_name='<symbol>', file_path='<file>')`)
+2. Read the changed files and the symbols the change centers on (code-kb `file_skeleton(file_path='<file>')` and `get_symbol_context(symbol_name='<symbol>', file_path='<file>')` first, then file reads for the changed lines)
 3. Find the callers of changed public APIs (code-kb `find_references(symbol_name='<symbol>', direction='callers')` or a search)
 4. Verify API shapes (symbol names, function signatures, config shapes, route names, CLI flags, public contracts) against current source, not memory
 5. Only then `git diff {BASE_SHA}..{HEAD_SHA} -- <specific-file>` for line-level review

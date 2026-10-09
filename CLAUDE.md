@@ -1,6 +1,6 @@
 # Razorback — Project Instructions
 
-Razorback is a skill set for Claude Code, Codex CLI / ChatGPT desktop app, and OpenCode that diverged from [Superpowers](https://github.com/obra/superpowers). It matches process to each task: clear, ordinary work proceeds directly in the current agent, and planning or delegation is used when a task benefits from it. code-kb MCP is an optional retrieval aid; Goldfish MCP is optional memory. A written plan runs through `executing-plans`, or through `subagent-driven-development` when its tasks are independent or benefit from a separate context.
+Razorback is a skill set for Claude Code, Codex CLI / ChatGPT desktop app, and OpenCode that diverged from [Superpowers](https://github.com/obra/superpowers). It matches process to each task: clear, ordinary work proceeds directly in the current agent, and planning or delegation is used when a task benefits from it. code-kb MCP is the first route for code structure when it is available; Goldfish MCP is optional memory. A written plan runs through `executing-plans`, or through `subagent-driven-development` when its tasks are independent or benefit from a separate context.
 
 ## External model policy
 Allowed providers: anthropic, openai, xai, google
@@ -84,7 +84,7 @@ The ChatGPT desktop app was rebranded from Codex; both share the Codex plugin pa
 
 ## code-kb MCP Integration Pattern
 
-Razorback treats code-kb as an optional retrieval aid. Agents use the retrieval method that supplies sufficient current evidence; native search and file reads are always allowed, and a missing or stale index never blocks work. Skills reference code-kb by **capability** first, and then by the concrete code-kb tool name. Legacy predecessor tool names should appear only as migration/compatibility notes, not as the default workflow.
+Razorback treats code-kb as the first route for code structure: a symbol's definition, a file's interface, callers and callees, and the tests a change affects. Native search and file reads are the first route for literal text and small whole files, and the check after a code-kb answer that is empty, capped, heuristic, or in conflict. A missing or stale index never blocks work. Do not reword this as "optional" or "the smallest source": code-kb's 2026-10 tests showed that Claude agents then skip it entirely. Skills reference code-kb by **capability** first, and then by the concrete code-kb tool name. Legacy predecessor tool names should appear only as migration/compatibility notes, not as the default workflow.
 
 When modifying skills, name code-kb at exploration/investigation points where it helps, by capability:
 
@@ -160,7 +160,7 @@ The `.version-bump.json` config drives the script. `.memories/` and `docs/plans/
 - Outcome checks: root-cause investigation, test-first changes, review of completed changes, and truthful completion claims backed by fresh verification
 - Anti-rationalization tables in skills (their rows guard both directions: ceremony for clear work, and silent consequential choices)
 - Two-pass review of completed changes (spec compliance + code quality, done by the lead or current agent, not separate agents)
-- Evidence-first exploration: the smallest sufficient evidence source, with code-kb optional and native search always allowed
+- Evidence-first exploration: code-kb first for code structure, native search first for literal text
 - Safeguards: explicit file ownership for parallel edits, source-control hygiene, secret scanning, and approval before push, publish, or release
 - Single-repo marketplace layout (Claude Code reads `.claude-plugin/marketplace.json` from this repo; Codex reads `.agents/plugins/marketplace.json`)
 - Autonomous-by-default execution (blocker-gated, not task-gated) with optional pre-merge external review

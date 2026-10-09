@@ -101,7 +101,7 @@
           <tr>
             <th scope="row">Exploring code</th>
             <td data-label="A bare agent">Searches with grep and reads whole files until it finds what it needs.</td>
-            <td data-label="With razorback">Uses the smallest source of evidence that is enough: a search or a file read for a named file or error, and code-kb for an unfamiliar module. It finds a function's callers before it changes the function.</td>
+            <td data-label="With razorback">Uses code-kb first for code structure (symbols, file interfaces, callers, affected tests), and a search or a file read for literal text or a small file. It finds a function's callers before it changes the function.</td>
           </tr>
           <tr>
             <th scope="row">Subagents</th>

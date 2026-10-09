@@ -36,8 +36,8 @@ const COPIES = [
 
 // Load-bearing rules that must appear verbatim in EVERY invariant source below.
 const INVARIANTS = [
-  'code-kb is an optional retrieval aid',
-  'Use the retrieval method that supplies sufficient current evidence',
+  'it is the first route for code structure',
+  'Use code-kb first for code structure',
   'Read the code a change touches before you edit it',
   "Find a symbol's callers before changing it",
   'Do not infer or invent API shapes',

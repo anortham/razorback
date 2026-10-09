@@ -13,7 +13,7 @@ centers on: file reads, or code-kb `file_skeleton(file_path)` and
 public APIs (`find_references(symbol_name, direction="callers")` or a search). Do not start
 by dumping the full diff.
 
-This contract is for a harness-native reviewer agent; code-kb is optional.
+This contract is for a harness-native reviewer agent; use code-kb first for code structure when it is available.
 Restricted external CLI reviewers use `razorback:pre-merge-review`: the lead
 supplies a sanitized source-backed evidence bundle, and the external reviewer
 reports missing evidence without MCP access.

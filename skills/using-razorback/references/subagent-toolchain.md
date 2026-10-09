@@ -1,8 +1,8 @@
 # Subagent Toolchain
 
-You are a dispatched subagent. code-kb is an optional retrieval aid. Use the retrieval method that supplies sufficient current evidence: native search and file reads are always allowed.
+You are a dispatched subagent. When code-kb is available, it is the first route for code structure: a symbol's definition, a file's interface, callers and callees, and the tests a change affects. Native search and file reads are the first route for literal text and for a small file read or edited as a whole.
 
-| Capability — use code-kb when it helps | code-kb tool |
+| Capability — use code-kb first | code-kb tool |
 |---|---|
 | **Orient** — top-level directory layout & architecture outline | `codebase_outline(path?, depth?)` |
 | **List a file's symbols** before reading the whole file | `file_skeleton(file_path)` |
@@ -17,7 +17,7 @@ You are a dispatched subagent. code-kb is an optional retrieval aid. Use the ret
 Use your host's native editing tools to modify files.
 
 **Rules:**
-1. Choose the smallest sufficient evidence source. A task that names a file, an error, or a literal string can go straight to search or a file read. code-kb helps with an unfamiliar large module, a symbol's callers, and likely tests.
+1. Use code-kb first for code structure: `lookup_symbol`, then `get_symbol_body` or `get_symbol_context`, for a symbol by name; `file_skeleton` before a full read of a file that is not small; `find_references` for callers; `search_symbols` for a concept with an unknown name; `blast_radius` for the tests a change affects. Use native search and file reads first for literal text (strings, errors, comments, config values), a small file read or edited as a whole, and the code around a symbol after the skeleton shows where to look. When a code-kb answer is empty, capped, marked heuristic, or in conflict with other evidence, check it with native tools after the code-kb call.
 2. Read the code a change touches before you edit it.
 3. Find a symbol's callers before changing it, to check impact.
 4. Do not infer or invent API shapes. Confirm symbol names, function signatures, config shapes, route names, CLI flags, or public contracts from current source before relying on them.

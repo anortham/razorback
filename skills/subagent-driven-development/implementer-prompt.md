@@ -28,7 +28,7 @@ Dispatch one implementer subagent:
 
     ## Ambiguity
 
-    Re-read the brief and Contract inputs, then check current source with native tools or code-kb. If still
+    Re-read the brief and Contract inputs, then check current source with code-kb or native tools. If still
     ambiguous, pick the plan-consistent option and note it in your report (file:line + reason).
 
     Stop and report BLOCKED only for the blocker taxonomy: broken credentials/env with no
@@ -38,11 +38,13 @@ Dispatch one implementer subagent:
 
     ## Codebase Orientation
 
-    Read the code the change touches before writing code. Use the smallest sufficient
-    evidence source: a search or file read for a named file, error, or string; code-kb for
-    an unfamiliar module (`codebase_outline(path?, depth?)`, `file_skeleton(file_path)`,
-    `get_symbol_context(symbol_name, file_path?)`). Find a symbol's callers before changing
-    it (`find_references(symbol_name, direction="callers")` or a search). If code-kb is
+    Read the code the change touches before writing code. Use code-kb first for code
+    structure: `file_skeleton(file_path)` before a full read of a file that is not small,
+    `get_symbol_context(symbol_name, file_path?)` for a symbol you change, and
+    `codebase_outline(path?, depth?)` for an unfamiliar module. Use a search or file read
+    first for a literal error or string and for a small file you edit as a whole. Find a symbol's callers before changing
+    it (`find_references(symbol_name, direction="callers")`, then a search if the answer is
+    empty or marked heuristic). If code-kb is
     missing or its index is stale, use native search and file reads.
 
     ## API Shape Evidence

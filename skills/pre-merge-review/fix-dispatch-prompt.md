@@ -21,7 +21,7 @@ Fresh implementer dispatch (delegation available):
 
     ## Symbol target
 
-    [The symbol or code region this finding touches, plus one short note if public API impact matters. No raw inspect/trace output; inspect current source with native tools or code-kb before editing.]
+    [The symbol or code region this finding touches, plus one short note if public API impact matters. No raw inspect/trace output; inspect current source with code-kb or native tools before editing.]
 
     ## Plan context
 
@@ -38,9 +38,10 @@ Fresh implementer dispatch (delegation available):
 
     ## Orientation (REQUIRED before coding)
 
-    1. Read the code the finding touches: a file read, or code-kb `file_skeleton(file_path)`.
+    1. Read the code the finding touches: code-kb `file_skeleton(file_path)` first, then a file
+       read for the lines you edit.
     2. Inspect the symbol, its callers and callees: code-kb
-       `get_symbol_context(symbol_name, file_path?)`, or file reads and a search.
+       `get_symbol_context(symbol_name, file_path?)`; file reads and a search only to check it.
     3. Find the callers (code-kb `find_references(symbol_name, direction="callers")` or a search)
        if your fix changes caller-visible behavior.
 

@@ -64,7 +64,7 @@ Codex CLI and the Codex desktop app share native skill discovery. With the prefe
 The `using-razorback` skill is discovered automatically and enforces skill usage discipline. No additional Codex hook setup is required for this plugin path or for the fallback symlink.
 
 **Note:** On Codex, one coherent task runs directly in the lead session. Delegated plan execution routes through `subagent-driven-development` for independent tasks, which dispatches fresh implementer subagents in parallel. If the current session cannot delegate, use `executing-plans`.
-The evidence rules apply to the lead session and every spawned worker: use the smallest source of evidence that is enough. code-kb is optional; native search and file reads are always allowed.
+The evidence rules apply to the lead session and every spawned worker: code-kb is the first route for code structure, and native search and file reads are the first route for literal text and small whole files.
 
 **Desktop note:** The same Codex agent lifecycle applies in desktop sessions that expose `spawn_agent`, `send_input`, `wait_agent`, and `close_agent`. The separate `razorback:codex-cli` skill is for launching an external Codex CLI reviewer or delegate, not for the desktop app's built-in tools.
 

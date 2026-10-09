@@ -26,7 +26,7 @@ After each implementer reports DONE in `razorback:subagent-driven-development` (
 
 Standalone review is for ad-hoc or baseline review: when stuck, before a refactor, after a major feature outside an approved plan, or before merging ad-hoc work. Planned pre-merge external review uses `razorback:pre-merge-review`, which owns the branch-gate, chosen-reviewer, classification, fix, and report flow. A standalone external CLI second opinion stays in its provider skill (`razorback:codex-cli` or `razorback:claude-cli`) under the redaction and policy gate below; do not force it through a plan or clean-HEAD gate.
 
-Harness-native reviewer agents use code-kb when it helps. Restricted external reviewers in a planned pre-merge review get the lead's sanitized source-backed evidence and report missing evidence without MCP.
+Harness-native reviewer agents use code-kb first for code structure. Restricted external reviewers in a planned pre-merge review get the lead's sanitized source-backed evidence and report missing evidence without MCP.
 
 **1. Get the commit range:**
 ```bash

@@ -35,11 +35,14 @@ test('subagent-start emits the Claude Code SubagentStart hookSpecificOutput shap
   assert.deepEqual(Object.keys(parsed), ['hookSpecificOutput']);
 });
 
-test('subagent-start injects the retrieval ruleset with code-kb as an optional aid', () => {
+test('subagent-start injects the retrieval ruleset with code-kb first for code structure', () => {
   const { additionalContext } = JSON.parse(runSubagentStart()).hookSpecificOutput;
 
-  assert.match(additionalContext, /code-kb is an optional retrieval aid\./);
-  assert.match(additionalContext, /native search and file reads are always allowed/);
+  assert.match(additionalContext, /it is the first route for code structure/);
+  assert.match(additionalContext, /Use code-kb first for code structure/);
+  assert.match(additionalContext, /`file_skeleton` before a full read of a file that is not small/);
+  assert.doesNotMatch(additionalContext, /optional retrieval aid/);
+  assert.doesNotMatch(additionalContext, /smallest sufficient evidence/);
   assert.doesNotMatch(additionalContext, /MUST be used/);
   assert.doesNotMatch(additionalContext, /Do NOT fall back to Glob/);
   assert.match(additionalContext, /Read the code a change touches before you edit it\./);

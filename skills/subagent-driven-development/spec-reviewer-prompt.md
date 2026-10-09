@@ -26,7 +26,7 @@ Lead inline review — spec compliance for Task N:
 
     ## How to Review
 
-    Use native search and file reads, or code-kb when it helps:
+    Use code-kb first for code structure, and native search for literal text:
     1. List a file's symbols before reading it (code-kb `file_skeleton(file_path)`).
     2. Confirm the implementation connects to the codebase by finding its callers (code-kb `find_references(symbol_name, direction="callers")`).
     3. Inspect behavior that is unclear (code-kb `get_symbol_context(symbol_name, file_path?)`, or

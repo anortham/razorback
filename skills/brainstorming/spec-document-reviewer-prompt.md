@@ -26,7 +26,7 @@ Dispatch a reviewer subagent:
 
     ## Verify Against Current Source
 
-    Use native search and file reads, or code-kb when useful, to check the spec:
+    Use code-kb first for the code the spec names (symbols, file interfaces, callers), and native search and file reads for literal text and to check a code-kb miss, to check the spec:
 
     - Confirm that each referenced file, symbol, and existing API exists in current source.
     - A missing index result is not proof that an API is absent. Check the actual
