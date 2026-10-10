@@ -21,6 +21,7 @@ For review-loop caps, the canonical three-way cap contract is in `razorback:suba
 - Non-safety-critical ambiguity — pick the plan-consistent option
 - A failing review iteration — retry with reframed context; if still failing, flag the task and continue with others
 - An adjacent bug on the path — fix if small, flag if not
+- A better approach than the plan's Approach — take it when it keeps the binding parts (acceptance criteria, Interfaces, Contract inputs, file ownership, Global Constraints, approved architecture) and changes no behavior outside the task (other callers, error cases), and log it; when it would change a binding part, follow the plan and propose the alternative in the report
 - An external reviewer finding the lead judges as false positive — dismiss with reason in the report
 - Any situation where a reasonable plan-consistent path exists once the agent reads the code, checks the plan, and makes the call
 

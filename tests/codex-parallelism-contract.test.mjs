@@ -16,11 +16,11 @@ test('writing-plans requires the parallel execution contract header and fields',
   assert.match(skill, /\*\*Dependency reason:\*\*/);
 });
 
-test('writing-plans documents the compact single-task full-plan form', () => {
+test('writing-plans documents the compact single-task form', () => {
   const skill = read('skills/writing-plans/SKILL.md');
 
-  assert.match(skill, /## Compact Single-Task Full-Plan Form/);
-  const compact = section(skill, '## Compact Single-Task Full-Plan Form');
+  assert.match(skill, /## Compact Single-Task Form/);
+  const compact = section(skill, '## Compact Single-Task Form');
   assert.match(compact, /Not applicable - single task\./);
 });
 
@@ -135,8 +135,8 @@ test('parallel-lead-commit includes plan progress in the lead commit', () => {
 });
 
 // The four contract fields must live inside EACH plan form, not just somewhere
-// in the file — otherwise deleting them from the light or compact form passes.
-test('light and compact plan forms each carry the parallel-contract task fields', () => {
+// in the file — otherwise deleting them from the task template or compact form passes.
+test('task template and compact plan form each carry the parallel-contract task fields', () => {
   const skill = read('skills/writing-plans/SKILL.md');
   const fields = [
     /\*\*Contract inputs:\*\*/,
@@ -146,11 +146,11 @@ test('light and compact plan forms each carry the parallel-contract task fields'
   ];
 
   const templates = read('skills/writing-plans/task-templates.md');
-  const lightPlan = section(templates, '## Light Plan Task Template');
-  const compact = section(skill, '## Compact Single-Task Full-Plan Form');
+  const taskTemplate = section(templates, '## Task Template');
+  const compact = section(skill, '## Compact Single-Task Form');
 
   for (const field of fields) {
-    assert.match(lightPlan, field);
+    assert.match(taskTemplate, field);
     assert.match(compact, field);
   }
 });

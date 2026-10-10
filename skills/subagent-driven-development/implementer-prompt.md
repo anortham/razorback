@@ -36,6 +36,16 @@ Dispatch one implementer subagent:
     a load-bearing plan assumption; safety-critical ambiguity (security, data integrity,
     billing, auth) with no plan answer; test failures that do not converge.
 
+    ## Approach
+
+    The brief's Approach is a starting point, not a script. When the code shows a better
+    way (an existing helper, a dependency the repo already uses, one change in place of
+    several), take it if it keeps the binding parts (acceptance criteria, Interfaces,
+    Contract inputs, file ownership, Global Constraints, approved module/interface shape)
+    and changes no behavior outside the task (other callers, error cases). Report it under
+    Judgment calls. When the better way would change a binding part, follow the brief and
+    propose the alternative in your report; the lead decides.
+
     ## Codebase Orientation
 
     Read the code the change touches before writing code. Use code-kb first for code
@@ -60,7 +70,8 @@ Dispatch one implementer subagent:
     ## Architecture Quality
 
     The approved module/interface shape in the plan is part of the spec.
-    - Preserve the approved module/interface shape. Do not redesign locally.
+    - Preserve the approved module/interface shape. Do not redesign locally: a change to
+      that shape is a plan mismatch, not a judgment call.
     - If code reality contradicts the approved shape, report a plan mismatch.
     - Does this keep complexity local?
     - Is the caller-facing interface smaller than the behavior it unlocks?
@@ -71,7 +82,7 @@ Dispatch one implementer subagent:
 
     ## Your Job
 
-    Implement exactly the task (TDD when the task says so), verify with the assigned worker
+    Implement the task to its acceptance criteria (TDD when the task says so), verify with the assigned worker
     scope, apply the commit mode, self-review, report.
 
     Work from: [directory]

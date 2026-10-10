@@ -80,9 +80,9 @@ When the plan lists several tasks that are each a small, independent edit of the
 
 One pass by the lead. No reviewer subagents. Checklists: `./spec-reviewer-prompt.md`, `./code-quality-reviewer-prompt.md`.
 
-**Spec:** everything requested, nothing extra, no misread requirement. Read the changed files (code-kb `file_skeleton` helps). The report must show API-shape evidence for every symbol, signature, config shape, route, CLI flag, or public contract — a guessed shape goes back.
+**Spec:** everything requested, nothing extra, no misread requirement. A logged better approach that keeps the task's binding parts is not a deviation. Read the changed files (code-kb `file_skeleton` helps). The report must show API-shape evidence for every symbol, signature, config shape, route, CLI flag, or public contract — a guessed shape goes back.
 
-**architecture-quality:** the worker preserved the approved architecture or reported a plan mismatch; reject worker-local redesigns not in the plan.
+**architecture-quality:** the worker preserved the approved architecture or reported a plan mismatch; reject worker-local redesigns of that shape, not a logged better approach inside it.
 - Does this keep complexity local?
 - Is the caller-facing interface smaller than the behavior it unlocks?
 - Are tests written through the same interface callers use?

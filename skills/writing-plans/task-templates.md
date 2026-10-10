@@ -5,10 +5,9 @@
 - Plan Header
 - Verification Strategy
 - Parallel Execution Contract
-- Full Plan Task Template
-- Light Plan Task Template
+- Task Template
 
-Copy these blocks into the plan in this order: header, Verification Strategy, Parallel Execution Contract, then one task block per task. Both task templates share the same header block (Files, Interfaces, Contract inputs, File ownership, Serialization required, Dependency reason); they diverge after it.
+Copy these blocks into the plan in this order: header, Verification Strategy, Parallel Execution Contract, then one task block per task.
 
 ## Plan Header
 
@@ -72,59 +71,7 @@ Copy these blocks into the plan in this order: header, Verification Strategy, Pa
 | Task 1: [name] | [Batch A / None - serial] | [Exact create/modify/test ownership] | [No / Yes / Not applicable - single task.] | [Blocking dependency or tool limitation; `None - safe parallel batch.`; or `Not applicable - single task.`] |
 ```
 
-## Full Plan Task Template
-
-````markdown
-### Task N: [Slice or component name]
-
-**Files:**
-- Create: `exact/path/to/file.py`
-- Modify: `exact/path/to/existing.py:123-145`
-- Test: `tests/exact/path/to/test.py`
-
-**Interfaces:**
-- Consumes: [what this task uses from earlier tasks — exact symbols, signatures, data shape, or user-facing contract]
-- Produces: [what later tasks rely on — exact function names, parameter and return types, file formats, CLI flags, routes, or events. A task's implementer sees only their own task; this block is how they learn neighboring contracts.]
-
-**Contract inputs:** [Exact shared constraints, prior-task outputs, fixtures, tool contracts, or public strings this task may rely on]
-
-**File ownership:** [Copy the ownership entry from `## Parallel Execution Contract` verbatim]
-
-**Serialization required:** [No / Yes / Not applicable - single task.]
-
-**Dependency reason:** [Required reason from `## Parallel Execution Contract`]
-
-**Step 1: Write the failing test**
-
-[The behavior the test proves, the input, and the expected result. Include test code only for an exact fixture or value the implementer must not vary.]
-
-**Step 2: Run test to verify it fails**
-
-Run: `<project-defined worker red/green command for this behavior>`
-Expected: FAIL with "function not defined"
-
-**Step 3: Write minimal implementation**
-
-[The outcome and the constraints: which symbols change, which pattern to follow, which edge cases to handle. Include code only for an exact contract, schema, migration, or string.]
-
-**Step 4: Run test to verify it passes**
-
-Run: `<project-defined worker red/green command for this behavior>`
-Expected: PASS
-
-**Step 5: Apply commit mode**
-
-- `serial-worker-commit`: after assigned verification passes, create the owned-file
-  worker commit and record the resulting SHA.
-- `parallel-lead-commit`: do not commit from the worker lane. Hand the verified
-  change to the lead for staging and commit after inline review.
-
-**Acceptance criteria:**
-- [ ] [Specific, testable requirement for this task]
-- [ ] Worker-scope verification passes and the change is either committed by the worker or handed to the lead per commit mode
-````
-
-## Light Plan Task Template
+## Task Template
 
 ````markdown
 ### Task N: [Slice or component name]
@@ -148,7 +95,7 @@ Expected: PASS
 
 **What to build:** [2-3 sentences describing the feature/change and why]
 
-**Approach:** [Key decisions — which pattern to follow, what to call things, edge cases to handle]
+**Approach:** [Starting point, not binding: the pattern to follow and the edge cases to handle. The executor may take a better path that keeps the binding fields. Anything it must not vary goes in Interfaces, Contract inputs, or acceptance criteria.]
 
 **Acceptance criteria:**
 - [ ] [Specific, testable requirement]

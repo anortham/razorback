@@ -125,7 +125,7 @@ Use evidence-first language in lead-facing skills: "read the code a change touch
 
 **Shared across all plugin-tier harnesses:**
 - **A written plan the current agent runs** (dependent tasks, no delegation, or single-agent selected): `executing-plans`
-- **A plan file** only for a handoff, a multi-session effort, or a coordination boundary: `writing-plans`. Plans describe outcomes, constraints, ownership, and checks, not prewritten code.
+- **A plan file** only for a handoff, a multi-session effort, or a coordination boundary: `writing-plans`. Plans describe outcomes, constraints, ownership, and checks, not prewritten code or steps; a task's Approach is a starting point the executor may improve on within the plan's contracts.
 - **Ad-hoc parallel:** `dispatching-parallel-agents` (independent agent dispatch outside plans)
 - **Small, local, reversible fixes:** `fixing-small-issues` (quick-fix tier: objective triage criteria, fix on current checkout, affected-scope verification; no worktree, no baseline suite run; returns to brainstorming triage when the fix outgrows the criteria)
 - The agent reviews its completed changes (spec compliance + code quality) — no separate reviewer subagents

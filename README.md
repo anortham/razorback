@@ -268,7 +268,7 @@ The core process scales with the task. Clear, ordinary work goes straight to TDD
 | fixing-small-issues | Quick-fix tier: triage small defects/tweaks by objective criteria, fix in place, affected-scope verification |
 | harvesting-debt | Debt ledger: collects the `razorback:` shortcut markers left by deliberate corner-cuts, flagging any that name no upgrade trigger |
 | architecture-quality | Architecture and interface quality checks for planning, review, and test surface decisions |
-| writing-plans | Implementation plans (full or light) with MCP-verified file paths |
+| writing-plans | Implementation plans that bind outcomes and contracts, not steps, with MCP-verified file paths |
 | executing-plans | Default plan runner: the current agent runs a written plan |
 | test-driven-development | Red-green-refactor with MCP-powered test discovery; `writing-good-tests.md` is the test-design reference (name the break, exercise the real thing, mutation check) |
 | systematic-debugging | Root cause investigation with MCP-powered tracing |

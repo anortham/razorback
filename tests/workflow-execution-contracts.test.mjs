@@ -96,6 +96,21 @@ test('one coherent task stays with the current agent and delegation needs a reas
   assert.match(brainstorming, /the current agent does the work directly \(TDD applies\)\. No plan file, worker, or task report\./);
 });
 
+test('a plan binds outcomes and contracts, and a better approach inside them is taken and logged', () => {
+  const plans = read('skills/writing-plans/SKILL.md');
+  const executing = read('skills/executing-plans/SKILL.md');
+  const implementer = read('skills/subagent-driven-development/implementer-prompt.md');
+  const taxonomy = read('skills/using-razorback/references/blocker-taxonomy.md');
+
+  assert.match(plans, /A plan binds outcomes and contracts, not steps/);
+  assert.doesNotMatch(plans, /Full plan/);
+  assert.doesNotMatch(executing, /steps exactly/);
+  assert.match(executing, /The Approach is a starting point/);
+  assert.match(implementer, /The brief's Approach is a starting point, not a script/);
+  assert.doesNotMatch(implementer, /Implement exactly the task/);
+  assert.match(taxonomy, /A better approach than the plan's Approach/);
+});
+
 test('plan files exist for handoff, multi-session, or coordination and do not prewrite code', () => {
   const plans = read('skills/writing-plans/SKILL.md');
   const templates = read('skills/writing-plans/task-templates.md');
@@ -104,7 +119,7 @@ test('plan files exist for handoff, multi-session, or coordination and do not pr
   assert.match(plans, /\*\*Handoff:\*\*/);
   assert.match(plans, /\*\*Multi-session:\*\*/);
   assert.match(plans, /\*\*Coordination:\*\*/);
-  assert.match(plans, /Neither prewrites the implementation/);
+  assert.match(plans, /Do not prewrite the implementation/);
   assert.doesNotMatch(plans, /complete code/i);
   assert.match(plans, /proceed without a second approval round/);
   assert.doesNotMatch(templates, /```python/);

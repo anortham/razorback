@@ -7,7 +7,7 @@ description: Writes an implementation plan file with tasks, file ownership, orde
 
 **Announce:** "I'm using the writing-plans skill to create the implementation plan."
 
-Run in the task worktree razorback:brainstorming created; if not in one, run razorback:using-git-worktrees first. Save to `docs/plans/YYYY-MM-DD-<feature-name>.md`. Copy the plan header, Verification Strategy, Parallel Execution Contract, and task templates from `task-templates.md` (this directory).
+Run in the task worktree razorback:brainstorming created; if not in one, run razorback:using-git-worktrees first. Save to `docs/plans/YYYY-MM-DD-<feature-name>.md`. Copy the plan header, Verification Strategy, Parallel Execution Contract, and task template from `task-templates.md` (this directory).
 
 **Not for:** one coherent task the current agent can finish in this session (do it directly; the design in chat or the user's request is the plan) or a small local defect (razorback:fixing-small-issues).
 
@@ -23,14 +23,14 @@ Otherwise, do the work directly. A task list in the harness is enough to track s
 
 After approval, razorback runs to completion and stops only for real blockers (`razorback:using-razorback` skill's `references/blocker-taxonomy.md`).
 
-## Plan Depth
+## What a Plan Binds
 
-| | Full plan | Light plan |
-|---|---|---|
-| Use for | Async handoffs, no-delegation runs, multi-session or unfamiliar work | Same-session execution by dispatched subagents via `subagent-driven-development` |
-| Tasks | Step-by-step TDD (write test → verify fail → implement → verify pass → apply commit mode), one action per step, exact commands with expected output | What to build, exact files, approach notes, acceptance criteria; the implementer reads current source and follows TDD |
+A plan binds outcomes and contracts, not steps. The executor reads current source and finds the path.
 
-Both depths describe outcomes, constraints, ownership, and checks. Neither prewrites the implementation: include code only for an exact contract, schema, migration, or string the implementer must not vary. The implementer writes the code with TDD.
+- **Binding:** the Goal and each task's acceptance criteria, Interfaces, Contract inputs, file ownership, Global Constraints, and approved architecture.
+- **Not binding:** a task's Approach. It is a starting point. When the code shows a better way that keeps every binding part and changes no behavior outside the task, the executor takes it and logs the choice (`razorback:using-razorback` `references/blocker-taxonomy.md`).
+
+Put anything the executor must not vary in a binding field, not only in the Approach. Do not prewrite the implementation: include code only for an exact contract, schema, migration, or string. The executor writes the code test-first (razorback:test-driven-development).
 
 ## Before Writing
 
@@ -80,13 +80,13 @@ Commit mode: `serial-worker-commit` = after assigned verification passes, the wo
 
 ## Task Structure
 
-Both plan types share the header block — Files, Interfaces, **Contract inputs:**, **File ownership:**, **Serialization required:**, **Dependency reason:** — then diverge: full tasks choreograph TDD (test code, verify-fail run, implementation code, verify-pass run, "Apply commit mode"); light tasks give **What to build** and **Approach**. Every task ends with tickable `- [ ]` acceptance criteria; execution flips them to `[x]`.
+Every task has the header block — Files, Interfaces, **Contract inputs:**, **File ownership:**, **Serialization required:**, **Dependency reason:** — then **What to build**, **Approach**, and tickable `- [ ]` acceptance criteria; execution flips them to `[x]`. The last criterion is worker-scope verification plus Apply commit mode: the worker commits (`serial-worker-commit`) or hands the diff to the lead (`parallel-lead-commit`).
 
 Always: exact file paths; reference skills as `razorback:<name>` (never `@` links, which force-load content); DRY, YAGNI, TDD.
 
-## Compact Single-Task Full-Plan Form
+## Compact Single-Task Form
 
-When a full plan has exactly one task, use the full-plan task template unchanged. Only two things differ:
+When a plan has exactly one task, use the task template unchanged. Only two things differ:
 
 - Collapse `## Parallel Execution Contract` to one row: `Parallel batch` is `None - serial`, `File ownership` carries the task's exact ownership, and both `Serialization required` and `Dependency reason` read `Not applicable - single task.`
 - In the task body, **Contract inputs:** and **File ownership:** carry their normal exact values, while **Serialization required:** and **Dependency reason:** both read `Not applicable - single task.`
@@ -95,8 +95,9 @@ When a full plan has exactly one task, use the full-plan task template unchanged
 
 1. Placeholder scan: TODOs, "TBD", steps too vague to act on.
 2. Spec alignment: every requirement covered, no scope creep.
-3. Task decomposition: clear boundaries, actionable steps, correct dependency order.
-4. Buildability: every path and symbol is real — check it in current source (a file read, or code-kb `lookup_symbol(query='<symbol>')`). Fix any invented API.
+3. Task decomposition: clear boundaries, testable acceptance criteria, correct dependency order.
+4. Binding parts: every requirement the executor must not vary sits in a binding field, not only in an Approach.
+5. Buildability: every path and symbol is real — check it in current source (a file read, or code-kb `lookup_symbol(query='<symbol>')`). Fix any invented API.
 
 Fix inline. If the session can dispatch subagents, you may instead dispatch a reviewer with `plan-document-reviewer-prompt.md` (this directory).
 

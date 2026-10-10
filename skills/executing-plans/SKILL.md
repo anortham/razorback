@@ -26,9 +26,9 @@ Announce: "I'm using the executing-plans skill to implement this plan."
 Per task:
 1. Mark in_progress.
 2. Read the code the task touches before coding. Find a symbol's callers before changing it. Prove API shapes (symbol names, signatures, config shapes, routes, CLI flags, public contracts) from current source. code-kb helps in an unfamiliar area: `codebase_outline`, `get_symbol_context`, `find_references`.
-3. Follow the plan's steps exactly; run the specified verifications. When one fails, fix the cause and rerun it until it passes before step 4; a failure that does not converge is blocker taxonomy #5.
+3. Meet the task's acceptance criteria and run the specified verifications. The Approach is a starting point: when the code shows a better way that keeps the binding parts (acceptance criteria, Interfaces, Contract inputs, file ownership, Global Constraints, approved architecture) and changes no behavior outside the task (other callers, error cases), take it and log it (`file:line - chose X over the plan's Y because Z`). When the better way would change a binding part, follow the plan and propose the alternative in the report for the user to decide. When one fails, fix the cause and rerun it until it passes before step 4; a failure that does not converge is blocker taxonomy #5.
 4. `TaskUpdate` completed, then tick the task's acceptance-criteria checkboxes in the plan file (`[ ]` → `[x]`). Bookkeeping only — do not pause or ask; continue to the next task.
-5. Candidate Mode: record non-required refactor candidates in the report or ADR offer, not in the diff. Fold in only refactors required for correctness, testability, or avoiding a brittle patch.
+5. Candidate Mode: record non-required refactor candidates (changes beyond what the task needs) in the report or ADR offer, not in the diff. How the task's own change is built is not a refactor candidate. Fold in only refactors required for correctness, testability, or avoiding a brittle patch.
 
 Return to Step 1 review only when new codebase evidence contradicts the plan: re-check the current source; if the plan fails, that is blocker #3.
 
@@ -85,7 +85,7 @@ On a resumed run, orient before continuing:
 
 ## Remember
 
-- Review the plan critically first; then follow its steps exactly and run every verification.
+- Review the plan critically first; then meet each task's acceptance criteria within its binding parts and run every verification.
 - Stop only for real blockers; otherwise take the plan-consistent path and note the choice.
 - Never start on main/master without explicit user consent.
 - Never declare the plan complete while a worktree this run created holds unnamed uncommitted or unmerged work.
