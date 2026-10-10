@@ -33,6 +33,7 @@ Before any status claim or expression of satisfaction:
 | Linter clean | Linter output: 0 errors | Partial check | Read the output |
 | Build succeeds | Build exit 0 | Linter passing, logs look good | Long logs: capture to file, then search or read a bounded slice |
 | Bug fixed | Original symptom passes at worker scope | Code changed, assumed fixed | Re-run the original repro |
+| Feature works | Behavior observed in the running code: command output, or a screenshot compared with the request | Unit tests with the boundary that matters mocked | Run the change for real; build the loop when none exists (razorback:building-feedback-loops) |
 | Regression test works | Red-green cycle verified | Test passes once | Revert the fix, watch it fail, restore |
 | Agent completed | VCS diff shows changes | Agent reports "success" | Read the diff |
 | Requirements met | Line-by-line checklist against the plan or spec | Tests passing alone | Read each symbol the requirement names (file read, or code-kb `get_symbol_context`) |

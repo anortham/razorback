@@ -277,6 +277,7 @@ The core process scales with the task. Clear, ordinary work goes straight to TDD
 | receiving-code-review | Process for acting on review feedback |
 | managing-review-campaigns | Canonical bounded-review contract for repeated, multi-reviewer, and clean-only campaigns |
 | verification-before-completion | Evidence-before-claims verification |
+| building-feedback-loops | Self-validation: runs the changed behavior for real (browser, CLI, TUI, local fake upstream) and commits the loop when the repo has none |
 | finishing-a-development-branch | Branch gate, then autonomous push + PR with the morning report and its opt-in digest (forge-ladder fallback, never merges), or the interactive 4-option menu plus worktree cleanup |
 | dispatching-parallel-agents | Ad-hoc parallel agent dispatch |
 | using-git-worktrees | Isolated workspace setup |
