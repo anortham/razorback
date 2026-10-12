@@ -273,6 +273,7 @@ The core process scales with the task. Clear, ordinary work goes straight to TDD
 | test-driven-development | Red-green-refactor with MCP-powered test discovery; `writing-good-tests.md` is the test-design reference (name the break, exercise the real thing, mutation check) |
 | systematic-debugging | Root cause investigation with MCP-powered tracing |
 | diagnosing-performance | Measure-first diagnosis when the output is right but late; `bottleneck-catalog.md` names the recurring causes by layer and `measurement-playbook.md` carries the per-stack tools |
+| refactoring-test-suites | Cuts a slow, bloated suite's time and test count while it keeps every bug the suite catches: speed fixes first, duplicates merged across layers, a planted bug for each deleted test, and the repo rules that grow the suite |
 | requesting-code-review | Inline review (during plan execution) or standalone review (ad-hoc) with per-harness dispatch |
 | receiving-code-review | Process for acting on review feedback |
 | managing-review-campaigns | Canonical bounded-review contract for repeated, multi-reviewer, and clean-only campaigns |
