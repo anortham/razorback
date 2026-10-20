@@ -134,15 +134,14 @@ test('unknown-platform fallback injects SKILL.md verbatim, markers included', ()
 
 test('every branch carries the full code-kb toolchain table', () => {
   const tableRows = [
-    /\| \*\*Orient\*\* .* \| `codebase_outline\(path\?, depth\?\)` \|/,
+    /\| \*\*Orient\*\* .* \| `file_skeleton\(file_path=<folder>\)` \|/,
     /\| `file_skeleton\(file_path\)` \|/,
-    /\| `lookup_symbol\(query, path\?\)` \|/,
-    /\| `search_symbols\(query, path\?\)` \|/,
+    /\| `lookup_symbol\(query, path\?, kind\?\)` \|/,
     /\| `get_symbol_body\(symbol_name, file_path\?\)` \|/,
     /\| `get_symbol_context\(symbol_name, file_path\?\)` \|/,
     /`find_references\(symbol_name, direction="callers"\|"callees"\)`/,
     /\| `blast_radius\(symbol\?, file\?, depth\?\)` \|/,
-    /\| `find_structural_facts\(category\?\)` \|/,
+    /\| `check_edit\(base\?\)` \|/,
   ];
 
   for (const [branch, payload] of Object.entries(payloadOf)) {

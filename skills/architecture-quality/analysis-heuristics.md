@@ -35,7 +35,7 @@ Tests: wrapper-only tests are weak. Prefer tests through the caller-facing inter
 
 Smell: the same policy, parsing, or validation shows up in multiple files.
 
-Find it: `search_symbols('<rule or validation concept>')` across candidate symbols, then inspect implementations with `get_symbol_body` or `get_symbol_context` — hits across multiple files are the evidence.
+Find it: `lookup_symbol('<rule or validation concept>')` across candidate symbols, then inspect implementations with `get_symbol_body` or `get_symbol_context` — hits across multiple files are the evidence.
 
 Evidence: the same bug fix, rule, or fallback keeps appearing in different places.
 
@@ -95,7 +95,7 @@ Tests: shotgun surgery is often a sign that the test surface or module boundary 
 
 Smell: a catch block, fallback, or guard hides failure and the code keeps going as if nothing happened.
 
-Find it: `search_symbols('<catch / fallback / default keywords>', path='<area>')` scoped to the area under review.
+Find it: `lookup_symbol('<catch / fallback / default keywords>', path='<area>')` scoped to the area under review.
 
 Evidence: the failure is logged, ignored, or converted into a default value without a clear recovery path.
 
@@ -107,7 +107,7 @@ Tests: assert the error path or explicit fallback. Silent failure is usually a b
 
 Smell: raw strings, numbers, and flags carry hidden invariants that are repeated everywhere.
 
-Find it: `search_symbols('<validation or parsing snippet>')` — the same guard repeated across callers.
+Find it: `lookup_symbol('<validation or parsing snippet>')` — the same guard repeated across callers.
 
 Evidence: the same validation or parsing appears in multiple callers.
 
@@ -131,7 +131,7 @@ Tests: if the module is shallow, end-to-end interface tests usually matter more 
 
 Smell: new code gets added without integrating with or removing the old path.
 
-Find it: `find_references('<old symbol>', direction='callers')` — zero remaining callers means a dead path; `search_symbols` both paths to confirm the overlap.
+Find it: `find_references('<old symbol>', direction='callers')` — zero remaining callers means a dead path; `lookup_symbol` both paths to confirm the overlap.
 
 Evidence: two paths now do the same thing, or dead code remains next to the new path.
 

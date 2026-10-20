@@ -157,16 +157,16 @@ code-kb MCP is optional. Use native search and file reads when they supply the n
 
 Use these code-kb tools by capability:
 
-- Orient: `codebase_outline(path?, depth?)`
+- Orient on a folder: `file_skeleton(file_path=<folder>)`
 - List a file's symbols / skeleton: `file_skeleton(file_path)`
-- Exact/prefix symbol lookup: `lookup_symbol(query, path?)`
-- Concept / BM25 search: `search_symbols(query, path?)`
+- Symbol lookup by name, prefix, `Owner.member`, or concept words: `lookup_symbol(query, path?, kind?)`
 - Inspect symbol body: `get_symbol_body(symbol_name, file_path?)`
 - Surgical context slice: `get_symbol_context(symbol_name, file_path?)`
-- Find callers/callees: `find_references(symbol_name, direction="callers"|"callees")`
+- Find callers (labeled proven, likely, unresolved, or excluded) or callees: `find_references(symbol_name, direction="callers"|"callees")`
 - Assess blast radius / test impact: `blast_radius(symbol?, file?, depth?)`
-- Code-shape facts (routes, queries, models, config keys): `find_structural_facts(category?)`
-- Tool usage & token savings summary: `telemetry_summary(time_window?, workspace_only?)`
+- Check an edit for callers and tests the diff did not reach: `check_edit(base?)`
+
+Every code-kb call takes `project_root`: the absolute path of the project or git worktree you work in. Change it when you move to another worktree. Structural facts (routes, queries, models, config keys) are CLI-only: `code-kb facts [category]`.
 
 See the capability → tool mapping table in `using-razorback`'s "Your Toolchain" section. CLI 1:1 commands are `code-kb lookup <query>`, `code-kb context <symbol>`, and `code-kb stats` (or `code-kb telemetry`). Install and configure code-kb only when its indexed retrieval is useful.
 

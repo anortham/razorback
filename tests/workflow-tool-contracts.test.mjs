@@ -58,7 +58,7 @@ test('debt audit stays code-kb-only and reports incomplete evidence honestly', (
 
   assert.doesNotMatch(skill, /grep -rn/);
   assert.doesNotMatch(skill, /\*\*Grep fallback\*\*/);
-  assert.match(skill, /search_symbols/);
+  assert.match(skill, /lookup_symbol/);
   assert.match(skill, /incomplete audit/i);
   assert.match(skill, /evidence gap/i);
 });
@@ -91,14 +91,12 @@ test('external reviewers receive a lead-built source evidence bundle without MCP
   assert.match(codex, /-s read-only/);
 });
 
-test('active files do not reference legacy code-kb tool names find_symbol, get_context_slice, or code_kb_stats', () => {
-  const result = activeMatches('(find_symbol|get_context_slice|code_kb_stats)');
-
-  assert.equal(
-    result,
-    '',
-    `Active repository files must not name find_symbol, get_context_slice, or code_kb_stats:\n${result}`
+test('active files do not reference removed code-kb tool names', () => {
+  const result = activeMatches(
+    '(find_symbol|get_context_slice|code_kb_stats|codebase_outline|search_symbols|find_structural_facts|telemetry_summary)'
   );
+
+  assert.equal(result, '', `Active repository files must not name a removed code-kb tool:\n${result}`);
 });
 
 test('active guidance uses native editing tools instead of code-kb edit tools', () => {

@@ -21,7 +21,7 @@ No worktree, no project setup, no baseline or full-suite run until the change ta
 
 ## Step 1: Investigate (no infrastructure)
 
-- Locate the target: a search for the symptom or error text, a file read, or code-kb (`search_symbols`, `get_symbol_body`, `find_references` if it might be shared).
+- Locate the target: a search for the symptom or error text, a file read, or code-kb (`lookup_symbol`, `get_symbol_body`, `find_references` if it might be shared).
 - Defects: razorback:systematic-debugging Phase 1 — reproduce, find root cause.
 - Tweaks: confirm the exact target (selector, constant, string) in current source.
 

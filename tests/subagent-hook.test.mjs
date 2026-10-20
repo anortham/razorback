@@ -51,15 +51,15 @@ test('subagent-start injects the retrieval ruleset with code-kb first for code s
   assert.match(additionalContext, /When the evidence cannot prove a shape/);
   assert.match(additionalContext, /A missing or stale code-kb index never blocks work/);
   // Capability table entries.
-  assert.match(additionalContext, /codebase_outline\(path\?, depth\?\)/);
+  assert.match(additionalContext, /file_skeleton\(file_path=<folder>\)/);
   assert.match(additionalContext, /file_skeleton\(file_path\)/);
-  assert.match(additionalContext, /lookup_symbol\(query, path\?\)/);
-  assert.match(additionalContext, /search_symbols\(query, path\?\)/);
+  assert.match(additionalContext, /lookup_symbol\(query, path\?, kind\?\)/);
   assert.match(additionalContext, /get_symbol_body\(symbol_name, file_path\?\)/);
   assert.match(additionalContext, /get_symbol_context\(symbol_name, file_path\?\)/);
   assert.match(additionalContext, /find_references\(symbol_name, direction="callers"\|"callees"\)/);
   assert.match(additionalContext, /blast_radius\(symbol\?, file\?, depth\?\)/);
-  assert.match(additionalContext, /find_structural_facts\(category\?\)/);
+  assert.match(additionalContext, /check_edit\(base\?\)/);
+  assert.match(additionalContext, /Every code-kb call takes `project_root`/);
   assert.match(additionalContext, /Use your host's native editing tools to modify files\./);
   // Subagent-specific worktree-state reporting requirement.
   assert.match(additionalContext, /worktree/i);
