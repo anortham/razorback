@@ -2,7 +2,7 @@
   "name": "razorback",
   "displayName": "Razorback",
   "description": "code-kb-powered development workflow with subagent-driven execution, inline review, and code-kb-first codebase orientation.",
-  "version": "0.48.5",
+  "version": "0.48.6",
   "author": {
     "name": "Alan Northam"
   },
