@@ -36,14 +36,14 @@ function runHelper(payload, name) {
   const workspace = mkdtempSync(join(testRoot, `${name}-workspace-`));
   const payloadFile = join(testRoot, `${name}.md`);
   writeFileSync(payloadFile, payload, { mode: 0o600 });
-  const result = spawnSync(helper, [workspace, payloadFile], {
+  const result = spawnSync(process.execPath, [helper, workspace, payloadFile], {
     encoding: 'utf8',
   });
   return { payloadFile, result, workspace };
 }
 
 function redact(payload) {
-  const result = spawnSync(redactor, [], { encoding: 'utf8', input: payload });
+  const result = spawnSync(process.execPath, [redactor], { encoding: 'utf8', input: payload });
   assert.equal(result.status, 0, result.stderr);
   return result.stdout;
 }
@@ -57,8 +57,10 @@ test('large redacted review bundles are stored in the reviewer workspace', () =>
   assert.ok(artifact, 'large payloads must return an artifact path');
   assert.equal(relative(workspace, artifact).startsWith('..'), false);
   assert.equal(readFileSync(artifact, 'utf8'), payload);
-  assert.equal(statSync(artifact).mode & 0o777, 0o600);
-  assert.equal(statSync(dirname(artifact)).mode & 0o777, 0o700);
+  if (process.platform !== 'win32') {
+    assert.equal(statSync(artifact).mode & 0o777, 0o600);
+    assert.equal(statSync(dirname(artifact)).mode & 0o777, 0o700);
+  }
   assert.ok(artifact.length < 4096, 'the artifact path must be safe to put in a prompt');
   const prompt = `Review the complete bundle at ${artifact}. Return only the required completion schema.`;
   assert.ok(Buffer.byteLength(prompt) < 4096, 'large-review prompt must remain bounded');
@@ -134,7 +136,7 @@ test('review artifacts cannot be placed in a workspace with live Git metadata', 
   const { result, workspace, payloadFile } = runHelper(payload, 'git-root');
   writeFileSync(join(workspace, '.git'), 'live metadata marker\n');
 
-  const retry = spawnSync(helper, [workspace, payloadFile], { encoding: 'utf8' });
+  const retry = spawnSync(process.execPath, [helper, workspace, payloadFile], { encoding: 'utf8' });
 
   assert.equal(result.status, 0, result.stderr);
   assert.notEqual(retry.status, 0);

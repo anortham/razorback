@@ -45,6 +45,7 @@ function createRepository() {
   const repo = join(caseRoot, 'repo');
   mkdirSync(repo, { recursive: true });
   git(caseRoot, 'init', '-q', '-b', 'main', repo);
+  git(repo, 'config', 'core.autocrlf', 'false');
   writeFileSync(join(repo, 'tracked.txt'), 'tracked\n');
   git(repo, 'add', 'tracked.txt');
   git(repo, ...gitIdentity, 'commit', '-qm', 'tracked baseline');
@@ -146,6 +147,25 @@ test('neutralizes a tracked symlink that resolves outside the exported tree', ()
   assert.equal(readFileSync(join(outside, 'marker.txt'), 'utf8'), 'outside\n');
 });
 
+test('keeps tracked symlinks that resolve inside the exported tree', () => {
+  const { caseRoot, repo } = createRepository();
+  mkdirSync(join(repo, 'zdir'));
+  writeFileSync(join(repo, 'zdir', 'nested.txt'), 'nested\n');
+  writeFileSync(join(repo, 'z-later.txt'), 'later\n');
+  symlinkSync('z-later.txt', join(repo, 'a-file-link'));
+  symlinkSync('zdir', join(repo, 'a-dir-link'));
+  git(repo, 'add', '.');
+  git(repo, ...gitIdentity, 'commit', '-qm', 'tracked inside symlinks');
+  const output = join(caseRoot, 'review-tree');
+
+  const result = runScript(repo, 'HEAD', output);
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(lstatSync(join(output, 'a-file-link')).isSymbolicLink(), true);
+  assert.equal(readFileSync(join(output, 'a-file-link'), 'utf8'), 'later\n');
+  assert.equal(readFileSync(join(output, 'a-dir-link', 'nested.txt'), 'utf8'), 'nested\n');
+});
+
 test('rejects an output directory inside the source repository', () => {
   const { repo } = createRepository();
   const output = join(repo, 'review-tree');
@@ -169,7 +189,9 @@ test('leaves cleanup to the caller after the export process exits', () => {
   assert.equal(existsSync(output), false);
 });
 
-test('exports without external realpath or GNU-only tar flags', () => {
+test('exports without external realpath or GNU-only tar flags', {
+  skip: process.platform === 'win32' && 'the extensionless PATH shims need a POSIX command lookup',
+}, () => {
   const { caseRoot, repo } = createRepository();
   const output = join(caseRoot, 'review-tree');
   const env = { ...process.env, PATH: portablePath() };

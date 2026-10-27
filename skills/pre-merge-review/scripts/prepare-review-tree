@@ -4,9 +4,11 @@ set -euo pipefail
 exec node --input-type=module - "$@" <<'NODE'
 import { execFileSync } from 'node:child_process';
 import {
+  closeSync,
   lstatSync,
   mkdirSync,
   mkdtempSync,
+  openSync,
   readlinkSync,
   readdirSync,
   realpathSync,
@@ -22,7 +24,8 @@ function fail(message) {
 function physicalPath(pathName) {
   const absolutePath = resolve(pathName);
   try {
-    return realpathSync(absolutePath);
+    // The native form expands Windows 8.3 short names, so paths compare equal to Git's long-name output.
+    return realpathSync.native(absolutePath);
   } catch (error) {
     if (error.code !== 'ENOENT') throw error;
     return join(physicalPath(dirname(absolutePath)), basename(absolutePath));
@@ -109,7 +112,19 @@ function main() {
       ['-C', sourceRoot, 'archive', '--format=tar', '--output', archivePath, reviewRef],
       { stdio: 'ignore' },
     );
-    execFileSync('tar', ['-xf', archivePath, '-C', outputRoot], { stdio: 'inherit' });
+    // MSYS GNU tar misreads Windows paths (C:\... as a remote host), so tar gets no path arguments.
+    const archive = openSync(archivePath, 'r');
+    try {
+      execFileSync('tar', ['-xf', '-'], {
+        cwd: outputRoot,
+        // By default MSYS tar copies a symlink's target, which would carry files from outside the tree past the
+        // symlink check below. nativestrict makes real links, or fails closed when the user cannot create them.
+        env: { ...process.env, MSYS: `${process.env.MSYS ?? ''} winsymlinks:nativestrict`.trim() },
+        stdio: [archive, 'inherit', 'inherit'],
+      });
+    } finally {
+      closeSync(archive);
+    }
   } finally {
     rmSync(archiveDirectory, { recursive: true, force: true });
   }

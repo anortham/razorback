@@ -85,7 +85,10 @@ function main() {
   if (!isInside(canonicalRoot, artifactPath)) fail('artifact path escaped the review root');
   writeFileSync(artifactPath, payload, { mode: 0o600, flag: 'wx' });
   chmodSync(artifactPath, 0o600);
-  if ((statSync(artifactPath).mode & 0o777) !== 0o600) fail('artifact file permissions are not restrictive');
+  // Windows has no POSIX mode bits (stat always reports 0666); the per-user temp directory's ACL protects it there.
+  if (process.platform !== 'win32' && (statSync(artifactPath).mode & 0o777) !== 0o600) {
+    fail('artifact file permissions are not restrictive');
+  }
   process.stdout.write(`${artifactPath}\n`);
 }
 
