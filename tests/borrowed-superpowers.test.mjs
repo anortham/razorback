@@ -101,7 +101,7 @@ test('subagent-driven-development keeps SDD artifacts self-ignored and worktree-
     run('git', ['add', 'plan.md'], { cwd: repo });
     run('git', [...gitIdentity, 'commit', '-qm', 'c1'], { cwd: repo });
 
-    const dir = run(workspaceScript, ['plan.md'], { cwd: repo }).trim();
+    const dir = run('bash', [workspaceScript, 'plan.md'], { cwd: repo }).trim();
     assert.equal(dir, path.join(repo, '.razorback', 'sdd', 'plan-0bbe5bc4573b'));
     assert.equal(fs.readFileSync(path.join(repo, '.razorback', 'sdd', '.gitignore'), 'utf8'), '*\n');
 
@@ -110,22 +110,22 @@ test('subagent-driven-development keeps SDD artifacts self-ignored and worktree-
     run('git', ['add', '-A'], { cwd: repo });
     assert.equal(run('git', ['diff', '--cached', '--name-only'], { cwd: repo }), '');
 
-    const briefOutput = run(taskBriefScript, ['plan.md', '1'], { cwd: repo });
+    const briefOutput = run('bash', [taskBriefScript, 'plan.md', '1'], { cwd: repo });
     const briefPath = briefOutput.match(/^wrote (.*): \d+ lines$/m)?.[1];
-    assert.ok(briefPath?.startsWith(dir + path.sep), `brief path should be under ${dir}`);
+    assert.ok(briefPath && path.normalize(briefPath).startsWith(dir + path.sep), `brief path should be under ${dir}`);
 
     fs.writeFileSync(path.join(repo, 'f'), 'y\n');
     run('git', ['add', 'f'], { cwd: repo });
     run('git', [...gitIdentity, 'commit', '-qm', 'c2'], { cwd: repo });
 
-    const reviewOutput = run(reviewPackageScript, ['plan.md', 'HEAD~1', 'HEAD'], { cwd: repo });
+    const reviewOutput = run('bash', [reviewPackageScript, 'plan.md', 'HEAD~1', 'HEAD'], { cwd: repo });
     const reviewPath = reviewOutput.match(/^wrote (.*): \d+.*$/m)?.[1];
-    assert.ok(reviewPath?.startsWith(dir + path.sep), `review path should be under ${dir}`);
+    assert.ok(reviewPath && path.normalize(reviewPath).startsWith(dir + path.sep), `review path should be under ${dir}`);
 
     const worktree = path.join(testRoot, 'wt');
     run('git', ['worktree', 'add', '-q', worktree, '-b', 'wt-feature'], { cwd: repo });
     const worktreeRoot = run('git', ['rev-parse', '--show-toplevel'], { cwd: worktree }).trim();
-    const worktreeDir = run(workspaceScript, ['plan.md'], { cwd: worktree }).trim();
+    const worktreeDir = run('bash', [workspaceScript, 'plan.md'], { cwd: worktree }).trim();
 
     assert.equal(worktreeDir, path.join(worktreeRoot, '.razorback', 'sdd', 'plan-0bbe5bc4573b'));
     assert.notEqual(worktreeDir, dir);

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -162,7 +162,7 @@ test('task-brief writes the brief into its plan directory', () => {
   const result = runScript(repo, 'task-brief', 'plan-a.md', '1');
   assert.equal(result.status, 0, result.stderr);
   const briefPath = result.stdout.match(/^wrote (.*): \d+ lines$/m)?.[1];
-  assert.equal(briefPath, join(sddBase, 'plan-a-622bfa9a0830', 'task-1-brief.md'));
+  assert.equal(normalize(briefPath), join(sddBase, 'plan-a-622bfa9a0830', 'task-1-brief.md'));
   assert.match(readFileSync(briefPath, 'utf8'), /## Task 1: First thing/);
 });
 

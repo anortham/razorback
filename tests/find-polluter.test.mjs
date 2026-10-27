@@ -31,7 +31,12 @@ function runPolluter(pattern, { prePolluted = false, env = {} } = {}) {
   const result = spawnSync('bash', [scriptUnderTest, 'pollution.marker', pattern], {
     cwd: project,
     encoding: 'utf8',
-    env: { ...process.env, PATH: `${join(project, 'bin')}${delimiter}${process.env.PATH}`, ...env },
+    env: {
+      ...process.env,
+      MSYS: `${process.env.MSYS ?? ''} noglob`.trim(),
+      PATH: `${join(project, 'bin')}${delimiter}${process.env.PATH}`,
+      ...env,
+    },
   });
   return { output: `${result.stdout}${result.stderr}`, status: result.status };
 }

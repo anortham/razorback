@@ -19,7 +19,7 @@ const providerTokens = [
 ].map(([prefix, value]) => prefix + value);
 
 function runRedactor(input, environment = {}) {
-  return spawnSync(script, {
+  return spawnSync(process.execPath, [script], {
     cwd: root,
     env: { ...process.env, ...environment },
     input,

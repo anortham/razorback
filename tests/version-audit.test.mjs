@@ -28,7 +28,7 @@ function makeFixture() {
 }
 
 function run(dir, ...args) {
-  return spawnSync(path.join(dir, 'scripts/bump-version.sh'), args, {
+  return spawnSync('bash', [path.join(dir, 'scripts/bump-version.sh'), ...args], {
     cwd: dir,
     encoding: 'utf8',
   });

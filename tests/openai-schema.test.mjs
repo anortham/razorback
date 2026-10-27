@@ -26,7 +26,7 @@ const REJECTED_BY_OPENAI = [
   'propertyNames',
 ];
 
-const run = (...args) => spawnSync(script, args, { encoding: 'utf8' });
+const run = (...args) => spawnSync(process.execPath, [script, ...args], { encoding: 'utf8' });
 
 function keysIn(value, found = new Set()) {
   if (Array.isArray(value)) {

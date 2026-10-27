@@ -130,7 +130,11 @@ function extractArchive(format, archivePath, destDir) {
 
 function createFixture() {
   assert.equal(fs.existsSync(sourceScript), true, 'scripts/package-codex-plugin.sh should exist');
-  assert.ok(fs.statSync(sourceScript).mode & 0o111, 'scripts/package-codex-plugin.sh should be executable');
+  assert.match(
+    run('git', ['-C', root, 'ls-files', '-s', '--', 'scripts/package-codex-plugin.sh']),
+    /^100755 /,
+    'scripts/package-codex-plugin.sh should be tracked as executable'
+  );
 
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'razorback-codex-package-'));
   const repo = path.join(tempRoot, 'repo');
@@ -142,6 +146,7 @@ function createFixture() {
   run('git', ['-C', repo, 'config', 'user.email', 't@example.com']);
   run('git', ['-C', repo, 'config', 'user.name', 't']);
   run('git', ['-C', repo, 'config', 'commit.gpgsign', 'false']);
+  run('git', ['-C', repo, 'config', 'core.autocrlf', 'false']);
 
   fs.mkdirSync(path.dirname(scriptPath), { recursive: true });
   fs.copyFileSync(sourceScript, scriptPath);
@@ -209,6 +214,10 @@ function createFixture() {
   writeFile(path.join(repo, 'package.json'), '{ "name": "fixture" }\n');
 
   run('git', ['-C', repo, 'add', '.']);
+  const sourceExecutables = listExecutableTrackedSkillFiles(root);
+  if (sourceExecutables.length > 0) {
+    run('git', ['-C', repo, 'update-index', '--chmod=+x', '--', ...sourceExecutables]);
+  }
   run('git', ['-C', repo, 'commit', '-qm', 'fixture']);
 
   return {
@@ -236,8 +245,8 @@ test('packages a rootless Codex-only archive with every skill and no manifest ho
   const tarArchive = path.join(fixture.tempRoot, 'razorback-codex.tar.gz');
 
   try {
-    const zipOutput = run(fixture.scriptPath, ['--output', zipArchive, '--format', 'zip'], { cwd: fixture.repo });
-    const tarOutput = run(fixture.scriptPath, ['--output', tarArchive, '--format', 'tar.gz'], { cwd: fixture.repo });
+    const zipOutput = run('bash', [fixture.scriptPath, '--output', zipArchive, '--format', 'zip'], { cwd: fixture.repo });
+    const tarOutput = run('bash', [fixture.scriptPath, '--output', tarArchive, '--format', 'tar.gz'], { cwd: fixture.repo });
 
     assertOutput(zipOutput, zipArchive, 'zip');
     assertOutput(tarOutput, tarArchive, 'tar.gz');
@@ -294,9 +303,17 @@ test('packages a rootless Codex-only archive with every skill and no manifest ho
       ensureFrontmatter(fs.readFileSync(path.join(unzipDir, relativePath), 'utf8'), relativePath);
     }
 
+    const tarModes = new Map(
+      run('tar', ['-tvzf', tarArchive])
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => [line.trim().split(/\s+/).at(-1).replace(/^\.\//, ''), line.trim().split(/\s+/)[0]])
+    );
+    assert.ok(expectedExecutableSkillFiles.length > 0, 'the fixture should track executable skill files');
     for (const relativePath of expectedExecutableSkillFiles) {
-      assert.ok(
-        fs.statSync(path.join(tarDir, relativePath)).mode & 0o111,
+      assert.match(
+        tarModes.get(relativePath) ?? '',
+        /^-..x/,
         `${relativePath} should preserve an executable bit in the tar.gz archive`
       );
     }
@@ -312,15 +329,15 @@ test('refuses dirty fixtures by default and --allow-dirty still packages committ
   try {
     fs.writeFileSync(path.join(fixture.repo, 'README.md'), `${fixture.readmeAtCommit}\ndirty working tree\n`);
 
-    const failure = runResult(fixture.scriptPath, ['--output', archivePath, '--format', 'zip'], {
+    const failure = runResult('bash', [fixture.scriptPath, '--output', archivePath, '--format', 'zip'], {
       cwd: fixture.repo
     });
     assert.notEqual(failure.status, 0, 'dirty fixtures should be rejected by default');
     assert.match(`${failure.stderr}${failure.stdout}`, /dirty/i);
 
     const output = run(
-      fixture.scriptPath,
-      ['--output', archivePath, '--format', 'zip', '--allow-dirty'],
+      'bash',
+      [fixture.scriptPath, '--output', archivePath, '--format', 'zip', '--allow-dirty'],
       { cwd: fixture.repo }
     );
     assertOutput(output, archivePath, 'zip');
@@ -344,8 +361,8 @@ test('supports --ref and --keep-stage against committed fixture history', { skip
     run('git', ['-C', fixture.repo, 'commit', '-qm', 'second']);
 
     const output = run(
-      fixture.scriptPath,
-      ['--output', archivePath, '--format', 'tar.gz', '--ref', 'HEAD~1', '--keep-stage'],
+      'bash',
+      [fixture.scriptPath, '--output', archivePath, '--format', 'tar.gz', '--ref', 'HEAD~1', '--keep-stage'],
       { cwd: fixture.repo }
     );
     const stagePath = assertOutput(output, archivePath, 'tar.gz', { expectStage: true });

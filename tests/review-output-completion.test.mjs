@@ -20,7 +20,7 @@ test.after(() => rmSync(testRoot, { recursive: true, force: true }));
 function runValidator(value, name) {
   const resultFile = join(testRoot, name);
   writeFileSync(resultFile, JSON.stringify(value));
-  const result = spawnSync(validator, [resultFile], { encoding: 'utf8' });
+  const result = spawnSync(process.execPath, [validator, resultFile], { encoding: 'utf8' });
   return { ...result, diagnostic: result.stderr || result.error?.message || '' };
 }
 

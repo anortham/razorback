@@ -19,7 +19,7 @@ function git(dir, ...args) {
 }
 
 function bump(dir, ...args) {
-  return spawnSync(path.join(dir, 'scripts/bump-version.sh'), args, { cwd: dir, encoding: 'utf8' });
+  return spawnSync('bash', [path.join(dir, 'scripts/bump-version.sh'), ...args], { cwd: dir, encoding: 'utf8' });
 }
 
 function release(dir, version, extra = { body: '', bullets: [] }) {
@@ -189,7 +189,7 @@ test('--release rejects an unknown flag', (t) => {
 });
 
 test('--help documents the release step', () => {
-  const result = spawnSync(path.join(root, 'scripts/bump-version.sh'), ['--help'], {
+  const result = spawnSync('bash', [path.join(root, 'scripts/bump-version.sh'), '--help'], {
     cwd: root,
     encoding: 'utf8',
   });
