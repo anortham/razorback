@@ -180,7 +180,7 @@ test('file and stdin transport preserve a 276 KiB review payload without one pos
     const artifactResult = spawnSync(process.execPath, [reviewArtifactHelper, workspace, bundle], { encoding: 'utf8' });
     assert.equal(artifactResult.status, 0, artifactResult.stderr);
     const artifact = artifactResult.stdout.trim();
-    assert.match(artifact, /\.razorback-review\/review-input\.md$/);
+    assert.match(artifact, /\.razorback-review[\\/]review-input\.md$/);
     assert.equal(readFileSync(artifact, 'utf8'), payload);
     if (process.platform !== 'win32') assert.equal(statSync(artifact).mode & 0o777, 0o600);
     const prompt = `Read the complete redacted review bundle at: ${artifact}`;

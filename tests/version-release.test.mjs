@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 
 const root = path.join(import.meta.dirname, '..');
+const requiresJq = { skip: spawnSync('sh', ['-c', 'command -v jq']).status !== 0 && 'bump-version.sh needs jq on PATH' };
 const config = JSON.parse(fs.readFileSync(path.join(root, '.version-bump.json'), 'utf8'));
 
 function git(dir, ...args) {
@@ -63,7 +64,7 @@ function makeFixture() {
   return dir;
 }
 
-test('--release --dry-run titles the release from the release commit subject', (t) => {
+test('--release --dry-run titles the release from the release commit subject', requiresJq, (t) => {
   const dir = makeFixture();
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
 
@@ -72,7 +73,7 @@ test('--release --dry-run titles the release from the release commit subject', (
   assert.match(result.stdout, /title:\s+v1\.1\.0 — second release/);
 });
 
-test('--release --dry-run publishes nothing', (t) => {
+test('--release --dry-run publishes nothing', requiresJq, (t) => {
   const dir = makeFixture();
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
 
@@ -80,7 +81,7 @@ test('--release --dry-run publishes nothing', (t) => {
   assert.match(result.stdout, /DRY RUN — nothing published/);
 });
 
-test('--release notes carry the release commit body without its trailers', (t) => {
+test('--release notes carry the release commit body without its trailers', requiresJq, (t) => {
   const dir = makeFixture();
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
 
@@ -90,7 +91,7 @@ test('--release notes carry the release commit body without its trailers', (t) =
   assert.doesNotMatch(result.stdout, /Co-Authored-By:/);
 });
 
-test('--release notes list the commits since the previous tag, oldest first', (t) => {
+test('--release notes list the commits since the previous tag, oldest first', requiresJq, (t) => {
   const dir = makeFixture();
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
 
@@ -102,7 +103,7 @@ test('--release notes list the commits since the previous tag, oldest first', (t
   assert.ok(feature < fix, `commits must run oldest first; stdout:\n${result.stdout}`);
 });
 
-test('--release notes drop the release commit and the configured noise subjects', (t) => {
+test('--release notes drop the release commit and the configured noise subjects', requiresJq, (t) => {
   const dir = makeFixture();
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
 
@@ -111,7 +112,7 @@ test('--release notes drop the release commit and the configured noise subjects'
   assert.doesNotMatch(result.stdout, /- chore: record checkpoint/);
 });
 
-test('--release notes stop at the previous tag', (t) => {
+test('--release notes stop at the previous tag', requiresJq, (t) => {
   const dir = makeFixture();
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
 
@@ -120,7 +121,7 @@ test('--release notes stop at the previous tag', (t) => {
   assert.doesNotMatch(result.stdout, /first release/);
 });
 
-test('--release defaults to the version the manifests declare', (t) => {
+test('--release defaults to the version the manifests declare', requiresJq, (t) => {
   const dir = makeFixture();
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
 
@@ -129,7 +130,7 @@ test('--release defaults to the version the manifests declare', (t) => {
   assert.match(result.stdout, /tag:\s+v1\.1\.0/);
 });
 
-test('--release exits non-zero when the tag does not exist', (t) => {
+test('--release exits non-zero when the tag does not exist', requiresJq, (t) => {
   const dir = makeFixture();
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
 
@@ -140,7 +141,7 @@ test('--release exits non-zero when the tag does not exist', (t) => {
 
 // The guard reads the manifests inside the tag, not the working tree, so a
 // stale-but-consistent checkout cannot be released under someone else's tag.
-test('--release exits non-zero when the tagged commit declares another version', (t) => {
+test('--release exits non-zero when the tagged commit declares another version', requiresJq, (t) => {
   const dir = makeFixture();
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
 
@@ -151,7 +152,7 @@ test('--release exits non-zero when the tagged commit declares another version',
   assert.match(result.stderr, /does not declare version 2\.0\.0/);
 });
 
-test('--release --notes-file publishes the given notes verbatim', (t) => {
+test('--release --notes-file publishes the given notes verbatim', requiresJq, (t) => {
   const dir = makeFixture();
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
 
@@ -165,7 +166,7 @@ test('--release --notes-file publishes the given notes verbatim', (t) => {
   assert.equal(fs.existsSync(notes), true, 'a supplied notes file must survive the run');
 });
 
-test('--release works when the config declares no excluded subjects', (t) => {
+test('--release works when the config declares no excluded subjects', requiresJq, (t) => {
   const dir = makeFixture();
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
 
@@ -179,7 +180,7 @@ test('--release works when the config declares no excluded subjects', (t) => {
   assert.match(result.stdout, /- chore: record checkpoint/);
 });
 
-test('--release rejects an unknown flag', (t) => {
+test('--release rejects an unknown flag', requiresJq, (t) => {
   const dir = makeFixture();
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
 

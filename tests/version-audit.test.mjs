@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 
 const root = path.join(import.meta.dirname, '..');
+const requiresJq = { skip: spawnSync('sh', ['-c', 'command -v jq']).status !== 0 && 'bump-version.sh needs jq on PATH' };
 const config = JSON.parse(fs.readFileSync(path.join(root, '.version-bump.json'), 'utf8'));
 
 // Build a minimal fixture repo containing only the script, its config, and the
@@ -48,7 +49,7 @@ function driftManifest(dir, relativePath, field, value) {
   fs.writeFileSync(file, `${JSON.stringify(json, null, 2)}\n`);
 }
 
-test('--audit exits 0 on a clean fixture', (t) => {
+test('--audit exits 0 on a clean fixture', requiresJq, (t) => {
   const dir = makeFixture();
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
 
@@ -57,7 +58,7 @@ test('--audit exits 0 on a clean fixture', (t) => {
   assert.match(result.stdout, /All declared files are in sync/);
 });
 
-test('--audit exits non-zero when a declared manifest has drifted', (t) => {
+test('--audit exits non-zero when a declared manifest has drifted', requiresJq, (t) => {
   const dir = makeFixture();
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
 
@@ -72,7 +73,7 @@ test('--audit exits non-zero when a declared manifest has drifted', (t) => {
   assert.match(result.stdout, /DRIFT DETECTED/);
 });
 
-test('--check exits non-zero when a declared manifest has drifted', (t) => {
+test('--check exits non-zero when a declared manifest has drifted', requiresJq, (t) => {
   const dir = makeFixture();
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
 
@@ -83,7 +84,7 @@ test('--check exits non-zero when a declared manifest has drifted', (t) => {
   assert.match(result.stdout, /DRIFT DETECTED/);
 });
 
-test('--check with no expected version exits 0 on a clean fixture', (t) => {
+test('--check with no expected version exits 0 on a clean fixture', requiresJq, (t) => {
   const dir = makeFixture();
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
 
@@ -92,7 +93,7 @@ test('--check with no expected version exits 0 on a clean fixture', (t) => {
   assert.match(result.stdout, /All declared files are in sync/);
 });
 
-test('--check exits 0 when the declared manifests match the expected version', (t) => {
+test('--check exits 0 when the declared manifests match the expected version', requiresJq, (t) => {
   const dir = makeFixture();
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
 
@@ -106,7 +107,7 @@ test('--check exits 0 when the declared manifests match the expected version', (
   );
 });
 
-test('--check exits non-zero when the manifests agree on a version other than the expected one', (t) => {
+test('--check exits non-zero when the manifests agree on a version other than the expected one', requiresJq, (t) => {
   const dir = makeFixture();
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
 
@@ -127,7 +128,7 @@ test('--check exits non-zero when the manifests agree on a version other than th
   );
 });
 
-test('--audit keeps undeclared version references advisory (exit 0)', (t) => {
+test('--audit keeps undeclared version references advisory (exit 0)', requiresJq, (t) => {
   const dir = makeFixture();
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
 

@@ -1,4 +1,5 @@
 import childProcess from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -24,7 +25,6 @@ function commandAvailable(cmd) {
 
 const hasZip = commandAvailable('zip') && commandAvailable('unzip');
 const hasTarGz = commandAvailable('tar') && commandAvailable('gzip');
-const hasShasum = commandAvailable('shasum');
 
 function writeFile(filePath, content) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -91,10 +91,8 @@ function assertOutput(stdout, archivePath, format, { expectStage = false } = {})
   const shaMatch = stdout.match(/^SHA-256:\s+([a-f0-9]{64})$/im);
   assert.ok(shaMatch, 'script output should print a SHA-256 digest');
 
-  if (hasShasum) {
-    const actualSha = run('shasum', ['-a', '256', archivePath]).trim().split(/\s+/)[0];
-    assert.equal(shaMatch[1], actualSha);
-  }
+  const actualSha = crypto.createHash('sha256').update(fs.readFileSync(archivePath)).digest('hex');
+  assert.equal(shaMatch[1], actualSha);
 
   if (!expectStage) {
     return null;
@@ -109,7 +107,7 @@ function listArchiveEntries(format, archivePath) {
   const output =
     format === 'zip'
       ? run('unzip', ['-Z1', archivePath])
-      : run('tar', ['-tzf', archivePath]);
+      : run('tar', ['-tzf', '-'], { input: fs.readFileSync(archivePath) });
 
   return output
     .split('\n')
@@ -125,7 +123,7 @@ function extractArchive(format, archivePath, destDir) {
     run('unzip', ['-q', archivePath, '-d', destDir]);
     return;
   }
-  run('tar', ['-xzf', archivePath, '-C', destDir]);
+  run('tar', ['-xzf', '-'], { cwd: destDir, input: fs.readFileSync(archivePath) });
 }
 
 function createFixture() {
@@ -291,8 +289,6 @@ test('packages a rootless Codex-only archive with every skill and no manifest ho
 
     const unzipDir = path.join(fixture.tempRoot, 'zip-out');
     extractArchive('zip', zipArchive, unzipDir);
-    const tarDir = path.join(fixture.tempRoot, 'tar-out');
-    extractArchive('tar.gz', tarArchive, tarDir);
 
     const manifest = JSON.parse(
       fs.readFileSync(path.join(unzipDir, '.codex-plugin', 'plugin.json'), 'utf8')
@@ -304,10 +300,11 @@ test('packages a rootless Codex-only archive with every skill and no manifest ho
     }
 
     const tarModes = new Map(
-      run('tar', ['-tvzf', tarArchive])
+      run('tar', ['-tvzf', '-'], { input: fs.readFileSync(tarArchive) })
         .split('\n')
         .filter(Boolean)
-        .map((line) => [line.trim().split(/\s+/).at(-1).replace(/^\.\//, ''), line.trim().split(/\s+/)[0]])
+        .map((line) => line.trim().split(/\s+/))
+        .map((fields) => [fields.at(-1).replace(/^\.\//, ''), fields[0]])
     );
     assert.ok(expectedExecutableSkillFiles.length > 0, 'the fixture should track executable skill files');
     for (const relativePath of expectedExecutableSkillFiles) {
@@ -365,7 +362,10 @@ test('supports --ref and --keep-stage against committed fixture history', { skip
       [fixture.scriptPath, '--output', archivePath, '--format', 'tar.gz', '--ref', 'HEAD~1', '--keep-stage'],
       { cwd: fixture.repo }
     );
-    const stagePath = assertOutput(output, archivePath, 'tar.gz', { expectStage: true });
+    const printedStagePath = assertOutput(output, archivePath, 'tar.gz', { expectStage: true });
+    const stagePath = process.platform === 'win32' && printedStagePath?.startsWith('/')
+      ? run('cygpath', ['-w', printedStagePath]).trim()
+      : printedStagePath;
 
     assert.ok(stagePath);
     assert.equal(fs.existsSync(stagePath), true, 'stage directory should be preserved with --keep-stage');

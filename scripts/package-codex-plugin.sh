@@ -49,6 +49,10 @@ make_abs_path() {
     printf '%s\n' "$value"
     return
   fi
+  if [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* ]] && [[ "$value" =~ ^[A-Za-z]:[\\/] ]]; then
+    printf '%s\n' "$value"
+    return
+  fi
   printf '%s/%s\n' "$CALLER_PWD" "$value"
 }
 
@@ -70,16 +74,17 @@ tree_has_entries_in_ref() {
 
 compute_sha256() {
   local file_path="$1"
+  # The tools read stdin because sha256sum puts a backslash before the digest of a file name that has one.
   if command -v shasum >/dev/null 2>&1; then
-    shasum -a 256 "$file_path" | awk '{print $1}'
+    shasum -a 256 < "$file_path" | awk '{print $1}'
     return
   fi
   if command -v sha256sum >/dev/null 2>&1; then
-    sha256sum "$file_path" | awk '{print $1}'
+    sha256sum < "$file_path" | awk '{print $1}'
     return
   fi
   if command -v openssl >/dev/null 2>&1; then
-    openssl dgst -sha256 -r "$file_path" | awk '{print $1}'
+    openssl dgst -sha256 -r < "$file_path" | awk '{print $1}'
     return
   fi
   die "no SHA-256 tool found (tried shasum, sha256sum, openssl)"
@@ -97,7 +102,8 @@ extract_stage() {
       ;;
     tar.gz)
       require_command tar
-      tar -xzf "$archive_path" -C "$STAGE_DIR"
+      # MSYS GNU tar reads a C:\ archive path as a remote host, so the archive goes on stdin.
+      tar -xzf - -C "$STAGE_DIR" < "$archive_path"
       ;;
     *)
       die "unsupported stage extraction format: $format"
