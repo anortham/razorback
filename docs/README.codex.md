@@ -18,8 +18,8 @@ The preferred path is the Codex plugin install flow from this repository's `.age
 
 - OpenAI Codex CLI or Codex desktop app
 - Git
-- code-kb MCP configured in Codex
-- [Goldfish MCP Server](https://github.com/anortham/goldfish) configured in Codex
+- code-kb MCP configured in Codex (optional)
+- [Goldfish MCP Server](https://github.com/anortham/goldfish) configured in Codex (optional)
 
 ### Steps
 
@@ -77,11 +77,11 @@ Skills are discovered automatically. Codex activates them when:
 
 ### code-kb MCP
 
-Razorback skills assume code-kb is configured. Without it, the exploration directives in skill bodies will fail. Use code-kb by capability: `file_skeleton` on a folder to orient or on a file to list its symbols, `lookup_symbol` to locate symbols by name or concept, `get_symbol_body` and `get_symbol_context` to inspect implementations, `find_references` to track callers/callees, `blast_radius` to assess impact, and `check_edit` to check an edit for callers and tests the diff did not reach. Use your host's native editing tools to modify files. Install and configure code-kb before relying on razorback for real work.
+code-kb is optional. When it is configured, skills use it first for code structure. Without it, they use native search and file reads. Use code-kb by capability: `file_skeleton` on a folder to orient or on a file to list its symbols, `lookup_symbol` to locate symbols by name or concept, `get_symbol_body` and `get_symbol_context` to inspect implementations, `find_references` to track callers/callees, `blast_radius` to assess impact, and `check_edit` to check an edit for callers and tests the diff did not reach. Use your host's native editing tools to modify files.
 
 ### Goldfish MCP
 
-Razorback's long-running autonomous flow also assumes Goldfish is configured for checkpoints, recall, and recovery. Install Goldfish before relying on overnight or resumed runs: https://github.com/anortham/goldfish
+Goldfish is optional. When it is configured, the long-running autonomous flow uses it for checkpoints, recall, and recovery. Without it, the plan, the ledger, and git state carry recovery. Install Goldfish: https://github.com/anortham/goldfish
 
 ### Personal Skills
 

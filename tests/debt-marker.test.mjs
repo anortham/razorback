@@ -54,7 +54,7 @@ test('harvesting-debt searches marker text, uses code-kb optionally, and reports
   assert.match(skill, /rg -n 'razorback:'/);
   assert.doesNotMatch(skill, /Do not fall back to shell search/);
   assert.match(skill, /lookup_symbol\(query='razorback:'\)/);
-  assert.match(skill, /code-kb scan/);
+  assert.doesNotMatch(skill, /code-kb scan/);
   assert.match(skill, /incomplete audit/i);
   assert.match(skill, /evidence gap/i);
   assert.match(skill, /truncated|omitted|continuation/i);

@@ -7,7 +7,7 @@ For the bare-minimum quick install, see [`.opencode/INSTALL.md`](../.opencode/IN
 ## Prerequisites
 
 - [opencode.ai](https://opencode.ai) installed
-- **code-kb MCP** configured and available. Razorback skills depend on it for code orientation and symbol-aware review, with no fallback to generic tools.
+- **code-kb MCP** (optional): the first route for code structure when configured. Without it, skills use native search and file reads.
 
 ## Installation
 

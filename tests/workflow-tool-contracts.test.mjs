@@ -53,7 +53,7 @@ test('Codex mapping follows live schemas and treats wait wakeups as notification
   assert.match(mapping, /durable plan, checklist, or execution ledger/i);
 });
 
-test('debt audit stays code-kb-only and reports incomplete evidence honestly', () => {
+test('debt audit uses no grep fallback, names lookup_symbol, and reports incomplete evidence honestly', () => {
   const skill = read('skills/harvesting-debt/SKILL.md');
 
   assert.doesNotMatch(skill, /grep -rn/);

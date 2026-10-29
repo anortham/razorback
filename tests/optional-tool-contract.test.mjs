@@ -5,7 +5,7 @@ import test from 'node:test';
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
 test('installation and Codex guidance allow native tools without MCP dependencies', () => {
-  for (const path of ['.codex/INSTALL.md', '.opencode/INSTALL.md', 'skills/using-razorback/references/codex-tools.md']) {
+  for (const path of ['.codex/INSTALL.md', '.opencode/INSTALL.md', 'skills/using-razorback/references/codex-tools.md', 'docs/README.codex.md', 'docs/README.opencode.md']) {
     const text = read(path);
     assert.match(text, /code-kb[^\n]*optional/i, path);
     assert.match(text, /native search and file reads/i, path);

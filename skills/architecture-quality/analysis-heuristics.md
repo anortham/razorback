@@ -95,7 +95,7 @@ Tests: shotgun surgery is often a sign that the test surface or module boundary 
 
 Smell: a catch block, fallback, or guard hides failure and the code keeps going as if nothing happened.
 
-Find it: `lookup_symbol('<catch / fallback / default keywords>', path='<area>')` scoped to the area under review.
+Find it: a text search for `catch`, `except`, or `|| default` patterns scoped to the area (for example `rg -n 'catch|except' <area>`), then `get_symbol_body` on each hit's enclosing symbol. `lookup_symbol` does not search function bodies.
 
 Evidence: the failure is logged, ignored, or converted into a default value without a clear recovery path.
 
@@ -107,7 +107,7 @@ Tests: assert the error path or explicit fallback. Silent failure is usually a b
 
 Smell: raw strings, numbers, and flags carry hidden invariants that are repeated everywhere.
 
-Find it: `lookup_symbol('<validation or parsing snippet>')` — the same guard repeated across callers.
+Find it: a text search for the validation or parsing snippet (for example `rg -n '<snippet>'`); then `find_references` on a shared parser; the text-search hits missing from its caller list skip the parser.
 
 Evidence: the same validation or parsing appears in multiple callers.
 

@@ -153,7 +153,7 @@ verification results after the command exits.
 
 ## code-kb MCP
 
-code-kb MCP is optional. Use native search and file reads when they supply the needed evidence or when the index is unavailable.
+code-kb MCP is optional to install. When it is available, it is the first route for code structure; native search and file reads are the first route for literal text and the fallback when the index is unavailable.
 
 Use these code-kb tools by capability:
 
@@ -168,7 +168,7 @@ Use these code-kb tools by capability:
 
 Every code-kb call takes `project_root`: the absolute path of the project or git worktree you work in. Change it when you move to another worktree. Structural facts (routes, queries, models, config keys) are CLI-only: `code-kb facts [category]`.
 
-See the capability → tool mapping table in `using-razorback`'s "Your Toolchain" section. CLI 1:1 commands are `code-kb lookup <query>`, `code-kb context <symbol>`, and `code-kb stats` (or `code-kb telemetry`). Install and configure code-kb only when its indexed retrieval is useful.
+See the capability → tool mapping table in `using-razorback`'s "Your Toolchain" section. CLI 1:1 commands: `code-kb skeleton`, `lookup`, `body`, `context`, `refs`, `blast-radius` (alias `impact`), and `check`. The CLI-only commands `outline`, `search`, `facts`, and `stats` (alias `telemetry`) have no MCP tool. Install and configure code-kb only when its indexed retrieval is useful.
 
 ## Goldfish MCP
 

@@ -18,7 +18,7 @@ Collects every deliberate-shortcut marker into one read-only ledger so a deferra
 Markers are comments, so search their literal text:
 
 1. The host's text search over tracked source, for example `rg -n 'razorback:'`, excluding vendored, generated, and tool-state directories.
-2. Optional: code-kb `lookup_symbol(query='razorback:')` adds markers that sit in indexed docstrings. Run `code-kb scan` first if the index is stale.
+2. Optional: code-kb `lookup_symbol(query='razorback:')` adds markers that sit in indexed docstrings.
 
 **Coverage.** Results are bounded. On truncated or omitted results, a continuation, or a result cap: exhaust the continuation or narrow the query by path until every in-scope result is accounted for. If coverage still cannot be established for a relevant file or scope, stop discovery and report an **incomplete audit**: name the exact evidence gap and the scopes that completed. Never claim a comprehensive or clean ledger while any result or scope remains omitted.
 

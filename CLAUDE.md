@@ -84,7 +84,7 @@ The ChatGPT desktop app was rebranded from Codex; both share the Codex plugin pa
 
 ## code-kb MCP Integration Pattern
 
-Razorback treats code-kb as the first route for code structure: a symbol's definition, a file's interface, callers and callees, and the tests a change affects. Native search and file reads are the first route for literal text and small whole files, and the check after a code-kb answer that is empty, capped, heuristic, or in conflict. A missing or stale index never blocks work. Do not reword this as "optional" or "the smallest source": code-kb's 2026-10 tests showed that Claude agents then skip it entirely. Skills reference code-kb by **capability** first, and then by the concrete code-kb tool name. Legacy predecessor tool names should appear only as migration/compatibility notes, not as the default workflow.
+Razorback treats code-kb as the first route for code structure: a symbol's definition, a file's interface, callers and callees, and the tests a change affects. Native search and file reads are the first route for literal text and small whole files, and the check after a code-kb answer that is empty, capped, heuristic, or in conflict. A missing or stale index never blocks work. Do not reword this as "optional" or "the smallest source": code-kb's 2026-10 tests showed that Claude agents then skip it entirely. Skills reference code-kb by **capability** first, and then by the concrete code-kb tool name. Removed code-kb tool names must not appear in active files; `tests/workflow-tool-contracts.test.mjs` lists them and enforces this.
 
 When modifying skills, name code-kb at exploration/investigation points where it helps, by capability:
 
@@ -103,7 +103,7 @@ Every code-kb call takes `project_root`: the absolute path of the project or git
 
 Use your host's native editing tools to modify files.
 
-code-kb indexes symbols, signatures, docstrings, references, and structural facts across the workspace with zero config (`code-kb scan`). Structural facts (routes, queries, models, config keys) are CLI-only: `code-kb facts [category]`. CLI 1:1 commands: `code-kb lookup <query>` (exact/prefix symbol lookup) and `code-kb context <symbol>` (symbol context before edits). CLI tool aliases include `code-kb blast-radius` / `code-kb impact` and `code-kb stats` / `code-kb telemetry`.
+code-kb indexes symbols, signatures, docstrings, references, and structural facts across the workspace. It builds and refreshes its index automatically, with no config and no manual scan. Structural facts (routes, queries, models, config keys) are CLI-only: `code-kb facts [category]`. CLI 1:1 commands: `code-kb skeleton`, `lookup` (name, prefix, or concept), `body`, `context`, `refs`, `blast-radius` (alias `impact`), and `check`. The CLI-only commands `outline`, `search`, `facts`, and `stats` (alias `telemetry`) have no MCP tool.
 
 The evidence rules apply to the lead and every native implementer, reviewer, and fix worker: read the code a change touches, find callers before changing a symbol, and prove API shapes from current source. Restricted external CLI reviewers invoked by `pre-merge-review` run without MCP under an enforced read-only allowlist. The lead supplies a sanitized source-backed evidence bundle, the reviewer reports missing evidence instead of claiming code-kb use, and the lead verifies every finding against current source.
 
