@@ -40,7 +40,7 @@ test('subagent-start injects the retrieval ruleset with code-kb first for code s
 
   assert.match(additionalContext, /it is the first route for code structure/);
   assert.match(additionalContext, /Use code-kb first for code structure/);
-  assert.match(additionalContext, /`file_skeleton` on a folder or a file you do not know yet, to orient/);
+  assert.match(additionalContext, /`file_skeleton` on a folder or a file you do not know, to orient/);
   assert.match(additionalContext, /`get_symbol_context` before you change a symbol: it carries the body, callers, tests to run, and types/);
   assert.match(additionalContext, /Read the file you will edit, since the editor needs it\./);
   assert.doesNotMatch(additionalContext, /`file_skeleton` before a full read/);

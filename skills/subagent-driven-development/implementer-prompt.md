@@ -49,7 +49,7 @@ Dispatch one implementer subagent:
     ## Codebase Orientation
 
     Read the code the change touches before writing code. Use code-kb first for code
-    structure: `file_skeleton(file_path)` on a folder or a file you do not know yet, and
+    structure: `file_skeleton(file_path)` on a folder or a file you do not know, and
     `get_symbol_context(symbol_name, file_path?)` for a symbol you change; it carries the
     body, callers, tests to run, and types. Read the file you will edit, since the editor
     needs it. Use a search or file read first for a literal error or string and for a small

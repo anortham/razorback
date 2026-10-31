@@ -158,7 +158,7 @@ code-kb MCP is optional to install. When it is available, it is the first route 
 Use these code-kb tools by capability:
 
 - Orient on a folder: `file_skeleton(file_path=<folder>)`
-- List the symbols of a file you do not know yet, without bodies (`public_only` keeps the public surface): `file_skeleton(file_path, public_only?)`
+- List the symbols of a file you do not know, without bodies (`public_only` keeps the public surface): `file_skeleton(file_path, public_only?)`
 - Symbol lookup by name, prefix, `Owner.member`, concept words, or a route or config key; a query that names one short definition also shows its body: `lookup_symbol(query, path?, kind?)`
 - Inspect symbol body: `get_symbol_body(symbol_name, file_path?)`
 - Prepare to change a symbol (body, return type, callers, tests to run, dependencies, types, and open ends in one answer): `get_symbol_context(symbol_name, file_path?)`
@@ -166,7 +166,7 @@ Use these code-kb tools by capability:
 - The full list of tests a change affects, or with no target the tests of the whole diff: `blast_radius(symbol?, file?, depth?)`
 - Check an edit for callers and tests the diff did not reach: `check_edit(base?)`
 
-The order: `file_skeleton` to orient in a folder or a file you do not know yet, `get_symbol_context` for the symbol you will change, then read the file you will edit, since the editor needs it. `find_references` and `blast_radius` are drill-downs for the full list, not required steps after `get_symbol_context`. After you edit, run `check_edit`.
+The order: `file_skeleton` to orient in a folder or a file you do not know, `get_symbol_context` for the symbol you will change, then read the file you will edit, since the editor needs it. `find_references` and `blast_radius` are drill-downs for the full list, not required steps after `get_symbol_context`. After you edit, run `check_edit`.
 
 Every code-kb call takes `project_root`: the absolute path of the project or git worktree you work in. Change it when you move to another worktree. `lookup_symbol` lists the routes and config keys that match a query with `/`, `.`, `{`, or `:`; the full set of structural facts (routes, queries, models, config keys) is CLI-only: `code-kb facts [category]`.
 

@@ -91,7 +91,7 @@ When modifying skills, name code-kb at exploration/investigation points where it
 | Capability | code-kb tool |
 |---|---|
 | Orient — a folder's files and their top-level symbols | `file_skeleton(file_path=<folder>)` |
-| List the symbols of a file you do not know yet, without bodies (`public_only` keeps the public surface) | `file_skeleton(file_path, public_only?)` |
+| List the symbols of a file you do not know, without bodies (`public_only` keeps the public surface) | `file_skeleton(file_path, public_only?)` |
 | Find a symbol by name, prefix, or `Owner.member`, by concept words (ranked matches follow when no name matches), or a route or config key (a query with `/`, `.`, `{`, or `:`); a query that names one short definition also shows its body | `lookup_symbol(query, path?, kind?)` |
 | Inspect a symbol — full implementation body | `get_symbol_body(symbol_name, file_path?)` |
 | Prepare to change a symbol — body, return type, callers, tests to run, dependencies, types, and open ends in one answer | `get_symbol_context(symbol_name, file_path?)` |
@@ -99,7 +99,7 @@ When modifying skills, name code-kb at exploration/investigation points where it
 | Assess impact / blast radius — the full list of tests a change affects, or with no target the tests of the whole diff | `blast_radius(symbol?, file?, depth?)` |
 | Check an edit — callers and tests the diff did not reach, after you edit | `check_edit(base?)` |
 
-The order matches code-kb's routing block: `file_skeleton` to orient in a folder or a file you do not know yet, `get_symbol_context` for the symbol you will change, then read the file you will edit, since the editor needs it. `find_references` and `blast_radius` are drill-downs for the full list, not required steps after `get_symbol_context`. `check_edit` runs after every edit. `tests/code-kb-routing.test.mjs` fails when an active file puts `file_skeleton` ahead of every read or chains those drill-downs after `get_symbol_context`.
+The order matches code-kb's routing block: `file_skeleton` to orient in a folder or a file you do not know, `get_symbol_context` for the symbol you will change, then read the file you will edit, since the editor needs it. `find_references` and `blast_radius` are drill-downs for the full list, not required steps after `get_symbol_context`. `check_edit` runs after every edit. `tests/code-kb-routing.test.mjs` fails when an active file puts `file_skeleton` ahead of every read or chains those drill-downs after `get_symbol_context`.
 
 Every code-kb call takes `project_root`: the absolute path of the project or git worktree you work in. Change it when you move to another worktree.
 

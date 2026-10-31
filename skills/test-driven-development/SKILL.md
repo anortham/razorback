@@ -26,7 +26,7 @@ Wrote code before the test? Delete it. Not as "reference", not "adapted" while w
 
 ## Red-Green-Refactor
 
-**Understand before testing.** Inspect the function, its callers, and nearby tests with native search and file reads, or code-kb when useful (`get_symbol_context`, which carries the callers and tests to run; `file_skeleton` on a file you do not know yet). Skip only if you just wrote the code.
+**Understand before testing.** Inspect the function, its callers, and nearby tests with native search and file reads, or code-kb when useful (`get_symbol_context`, which carries the callers and tests to run; `file_skeleton` on a file you do not know). Skip only if you just wrote the code.
 
 ### RED — one minimal failing test
 

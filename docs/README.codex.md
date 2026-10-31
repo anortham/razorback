@@ -77,7 +77,7 @@ Skills are discovered automatically. Codex activates them when:
 
 ### code-kb MCP
 
-code-kb is optional. When it is configured, skills use it first for code structure. Without it, they use native search and file reads. Use code-kb by capability: `file_skeleton` on a folder or a file you do not know yet, to orient; `lookup_symbol` to locate symbols by name or concept, and routes or config keys (one short definition comes with its body); `get_symbol_context` before you change a symbol, since it carries the body, callers, tests to run, and types; and `check_edit` after you edit, to check for callers and tests the diff did not reach. Read the file you will edit, since the editor needs it. `get_symbol_body`, `find_references`, and `blast_radius` give a full body, the full list of callers or callees, and the full list of tests. Use your host's native editing tools to modify files.
+code-kb is optional. When it is configured, skills use it first for code structure. Without it, they use native search and file reads. Use code-kb by capability: `file_skeleton` on a folder or a file you do not know, to orient; `lookup_symbol` to locate symbols by name or concept, and routes or config keys (one short definition comes with its body); `get_symbol_context` before you change a symbol, since it carries the body, callers, tests to run, and types; and `check_edit` after you edit, to check for callers and tests the diff did not reach. Read the file you will edit, since the editor needs it. `get_symbol_body`, `find_references`, and `blast_radius` give a full body, the full list of callers or callees, and the full list of tests. Use your host's native editing tools to modify files.
 
 ### Goldfish MCP
 

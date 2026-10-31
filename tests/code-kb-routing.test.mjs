@@ -104,9 +104,9 @@ test('the routing guard flags the code-kb 2.11 wording', () => {
 
 test('the routing guard accepts the code-kb 2.12 wording', () => {
   const current = [
-    '1. Use code-kb first for code structure: `file_skeleton` on a folder or a file you do not know yet, to orient; `get_symbol_context` before you change a symbol: it carries the body, callers, tests to run, and types; `find_references` and `blast_radius` give the full list when that summary is not enough.',
+    '1. Use code-kb first for code structure: `file_skeleton` on a folder or a file you do not know, to orient; `get_symbol_context` before you change a symbol: it carries the body, callers, tests to run, and types; `find_references` and `blast_radius` give the full list when that summary is not enough.',
     '- **Read the file you will edit**, since the editor needs it.',
-    '| **Orient** — a folder, or a file you do not know yet | `file_skeleton(file_path, public_only?)` |',
+    '| **Orient** — a folder, or a file you do not know | `file_skeleton(file_path, public_only?)` |',
     '- **code-kb MCP (optional)** adds purpose-built tools — `file_skeleton`, `lookup_symbol`, `get_symbol_body`, `get_symbol_context`, `find_references`, `blast_radius`, and `check_edit` — for unfamiliar modules.',
   ];
   for (const line of current) {
