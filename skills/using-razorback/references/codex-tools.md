@@ -161,8 +161,8 @@ Use these code-kb tools by capability:
 - List the symbols of a file you do not know, without bodies (`public_only` keeps the public surface): `file_skeleton(file_path, public_only?)`
 - Symbol lookup by name, prefix, `Owner.member`, concept words, or a route or config key; a query that names one short definition also shows its body: `lookup_symbol(query, path?, kind?)`
 - Inspect symbol body: `get_symbol_body(symbol_name, file_path?)`
-- Prepare to change a symbol (body, return type, callers, tests to run, dependencies, types, and open ends in one answer): `get_symbol_context(symbol_name, file_path?)`
-- The full list of callers (labeled proven, likely, unresolved, or excluded) or callees: `find_references(symbol_name, direction="callers"|"callees")`
+- Prepare to change a symbol (body, return type, callers, tests to run, sibling conventions, dependencies, types, and open ends in one answer): `get_symbol_context(symbol_name, file_path?)`
+- The full list of callers (labeled proven, likely, unresolved, or excluded; writes first for a field or variable) or callees: `find_references(symbol_name, direction="callers"|"callees")`
 - The full list of tests a change affects, or with no target the tests of the whole diff: `blast_radius(symbol?, file?, depth?)`
 - Check an edit for callers and tests the diff did not reach: `check_edit(base?)`
 

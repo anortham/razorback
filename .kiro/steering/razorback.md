@@ -15,8 +15,8 @@ code-kb capabilities:
 | **List the symbols of a file you do not know**, without bodies (`public_only` keeps the public surface) | `file_skeleton(file_path, public_only?)` |
 | **Find a symbol** by name, prefix, or `Owner.member`, by concept words (ranked matches follow when no name matches), or a route or config key (a query with `/`, `.`, `{`, or `:`); a query that names one short definition also shows its body | `lookup_symbol(query, path?, kind?)` |
 | **Inspect a symbol** — full implementation body | `get_symbol_body(symbol_name, file_path?)` |
-| **Prepare to change a symbol** — body, return type, callers, tests to run, dependencies, types, and open ends in one answer | `get_symbol_context(symbol_name, file_path?)` |
-| **Find references** — the full list of callers (labeled proven, likely, unresolved, or excluded) or callees, when the callers in `get_symbol_context` are not enough | `find_references(symbol_name, direction="callers"|"callees")` |
+| **Prepare to change a symbol** — body, return type, callers, tests to run, sibling conventions, dependencies, types, and open ends in one answer | `get_symbol_context(symbol_name, file_path?)` |
+| **Find references** — the full list of callers (labeled proven, likely, unresolved, or excluded; writes first for a field or variable) or callees, when the callers in `get_symbol_context` are not enough | `find_references(symbol_name, direction="callers"|"callees")` |
 | **Assess impact / blast radius** — the full list of tests a change affects, or with no target the tests of the whole diff | `blast_radius(symbol?, file?, depth?)` |
 | **Check an edit** — callers and tests the diff did not reach, after you edit | `check_edit(base?)` |
 
