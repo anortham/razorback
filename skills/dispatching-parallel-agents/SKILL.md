@@ -22,7 +22,7 @@ For plan execution use `razorback:subagent-driven-development` instead — it ad
    - Constraints: do not change other code
    - Gate invariant: what each assigned failing test, replay, metric, or acceptance gate proves
    - Expected output: summary of root cause and changes
-   - Evidence directives: read the code before changing it; find the callers before changing anything callers see (code-kb `find_references(symbol_name='<symbol>', direction='callers')` or a search); prove API shapes (symbol names, signatures, config shapes, routes, CLI flags, public contracts) from current source. code-kb helps in an unfamiliar area.
+   - Evidence directives: read the code before changing it; find the callers before changing anything callers see (code-kb `get_symbol_context(symbol_name='<symbol>')`, which carries its callers, `find_references` for the full list, or a search); prove API shapes (symbol names, signatures, config shapes, routes, CLI flags, public contracts) from current source. code-kb helps in an unfamiliar area.
 3. **Dispatch all calls in one turn** using the per-harness dispatch, follow-up, and wait table in razorback:subagent-driven-development's [`references/harness-dispatch.md`](../subagent-driven-development/references/harness-dispatch.md). Cursor dispatches with the `Agent` tool like Claude Code. Harness default model unless the user or environment overrides. Keep a lane in the lead session when it has hidden invariants, shared lifecycle, weak tests, gate interpretation, or repeated failures.
 4. **Review and integrate:** read each summary, check for conflicting edits, run the project's integration or branch verification scope so the fixes are verified together, spot-check the code — summaries can hide systematic errors.
 

@@ -43,7 +43,7 @@ Complete each phase before the next.
 
 5. **Trace data flow** when the error is deep in the call stack: where does the bad value originate, what called this with it, keep going up to the source. Fix at the source. Read `root-cause-tracing.md` in this directory for the full backward-tracing technique.
 
-code-kb: `get_symbol_context(symbol_name, file_path?)` or `get_symbol_body` on the buggy function; `find_references(symbol_name, direction="callers")` for call sites that can trigger it; `file_skeleton` on a folder to orient on the subsystem.
+code-kb: `file_skeleton` on a folder to orient on the subsystem; `get_symbol_context(symbol_name, file_path?)` on the buggy function, which carries its body, callers, and tests to run. For the full list of call sites that can trigger it, `find_references(symbol_name, direction="callers")`.
 
 ### Phase 2: Pattern Analysis
 
@@ -62,7 +62,7 @@ code-kb: `get_symbol_context(symbol_name, file_path?)` or `get_symbol_body` on t
 ### Phase 4: Implementation
 
 1. **Failing test first** — simplest reproduction, automated when possible. **REQUIRED SUB-SKILL:** razorback:test-driven-development.
-2. **Single fix** — run code-kb `blast_radius(symbol='<symbol being changed>')` first for impacted symbols and likely tests. ONE change; no "while I'm here" improvements, no bundled refactoring.
+2. **Single fix** — check the impacted callers and likely tests first: the callers, tests to run, and open ends in code-kb `get_symbol_context(symbol_name='<symbol being changed>')`, and `blast_radius` for the full list. ONE change; no "while I'm here" improvements, no bundled refactoring.
 3. **Verify** — rerun only the failing test ids until they pass, then the affected scope once; issue actually resolved. If a wider command failed, rerun that command once, on the changed tree, after every listed id passes; new failures → step 1 with the new ids. Only that final run is completion evidence.
 4. **Fix failed?** STOP. Count attempts. Under 3 → Phase 1 with the new information. **3 or more → question the architecture. Do not attempt fix #4.**
 5. **3+ failures = architectural problem**, not a failed hypothesis. Signs: each fix reveals new shared state or coupling elsewhere, fixes need "massive refactoring", each fix creates new symptoms. In an approved autonomous run, route through the blocker taxonomy: take a plan-consistent architecture fix and log the decision, or stop as a real blocker when the plan is contradicted or tests are unresolvable. Outside a run, discuss the architecture before more fixes. Use razorback:architecture-quality.

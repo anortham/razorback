@@ -38,6 +38,8 @@ const COPIES = [
 const INVARIANTS = [
   'it is the first route for code structure',
   'Use code-kb first for code structure',
+  '`get_symbol_context` before you change a symbol: it carries the body, callers, tests to run, and types', // code-kb 2.12 routing
+  'Read the file you will edit, since the editor needs it',
   'Read the code a change touches before you edit it',
   "Find a symbol's callers before changing it",
   'Do not infer or invent API shapes',

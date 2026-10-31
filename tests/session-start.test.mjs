@@ -43,8 +43,8 @@ const ACCESS_TEXT = {
   opencode: /\*\*In OpenCode:\*\*/,
 };
 
-test('check-rule-copies exposes exactly the ten rule invariants this hook must carry', () => {
-  assert.equal(RULE_INVARIANTS.length, 10, `parsed invariants: ${JSON.stringify(RULE_INVARIANTS)}`);
+test('check-rule-copies exposes exactly the twelve rule invariants this hook must carry', () => {
+  assert.equal(RULE_INVARIANTS.length, 12, `parsed invariants: ${JSON.stringify(RULE_INVARIANTS)}`);
 });
 
 test('session-start emits the Claude Code SessionStart hookSpecificOutput shape', () => {
@@ -135,7 +135,7 @@ test('unknown-platform fallback injects SKILL.md verbatim, markers included', ()
 test('every branch carries the full code-kb toolchain table', () => {
   const tableRows = [
     /\| \*\*Orient\*\* .* \| `file_skeleton\(file_path=<folder>\)` \|/,
-    /\| `file_skeleton\(file_path\)` \|/,
+    /\| `file_skeleton\(file_path, public_only\?\)` \|/,
     /\| `lookup_symbol\(query, path\?, kind\?\)` \|/,
     /\| `get_symbol_body\(symbol_name, file_path\?\)` \|/,
     /\| `get_symbol_context\(symbol_name, file_path\?\)` \|/,
@@ -154,7 +154,7 @@ test('every branch carries the full code-kb toolchain table', () => {
   }
 });
 
-test('every branch carries all ten check-rule-copies invariants', () => {
+test('every branch carries all twelve check-rule-copies invariants', () => {
   for (const [branch, payload] of Object.entries(payloadOf)) {
     const text = payload();
     for (const phrase of RULE_INVARIANTS) {

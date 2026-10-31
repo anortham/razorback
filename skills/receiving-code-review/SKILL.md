@@ -41,8 +41,8 @@ BEFORE implementing:
   3. Reason for the current implementation?
   4. Works on all platforms/versions?
   5. Does the reviewer have the full context?
-  6. Inspect the symbol with native search and file reads, or code-kb `get_symbol_context` / `get_symbol_body`
-  7. Trace callers with native search or code-kb `find_references` to check impact
+  6. Inspect the symbol with native search and file reads, or code-kb `get_symbol_context`, which carries its callers and tests to run
+  7. Trace callers with native search or code-kb (`find_references` for the full list) to check impact
 
 IF suggestion seems wrong: push back with technical reasoning
 IF can't easily verify:

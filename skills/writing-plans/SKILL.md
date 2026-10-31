@@ -35,7 +35,7 @@ Put anything the executor must not vary in a binding field, not only in the Appr
 ## Before Writing
 
 1. **Scope check:** a spec covering several independent subsystems becomes one plan per subsystem, each producing working software alone.
-2. **Read the code the plan touches:** file reads and searches, or code-kb (`file_skeleton` on a folder, `get_symbol_context`, `blast_radius` for likely tests, `find_references` before changing a public API). Do NOT guess file paths, line numbers, symbol names, function signatures, config shapes, route names, CLI flags, or public contracts.
+2. **Read the code the plan touches:** file reads and searches, or code-kb (`file_skeleton` on a folder, and `get_symbol_context` on a symbol the plan changes, which carries its callers and tests to run; `find_references` and `blast_radius` for the full list of callers or tests). Do NOT guess file paths, line numbers, symbol names, function signatures, config shapes, route names, CLI flags, or public contracts.
 3. **External API staleness:** where training knowledge may be stale, apply razorback:grounding-in-current-docs and record the verified surface or doc URL in the task.
 4. **File structure:** map created and modified files, one responsibility each. Follow existing patterns; split an unwieldy file only when the plan already modifies it.
 

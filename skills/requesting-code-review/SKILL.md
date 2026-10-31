@@ -14,8 +14,8 @@ After each implementer reports DONE in `razorback:subagent-driven-development` (
 **Spec compliance:** built what was requested, nothing missing, nothing extra. Use native search and file reads, or code-kb when useful, then compare the changed code to the task requirements line by line.
 
 **Code quality:**
-- Inspect key modified symbols with file reads or code-kb `get_symbol_context` / `get_symbol_body`.
-- Trace callers with native search or code-kb `find_references` to verify dependents still work.
+- Inspect key modified symbols with file reads or code-kb `get_symbol_context`, which carries their callers and tests to run.
+- Trace callers with native search or the callers in code-kb `get_symbol_context` (`find_references` for the full list) to verify dependents still work.
 - Tests verify behavior, not that code runs.
 - Reject the report if it relies on symbol names, function signatures, config shapes, route names, CLI flags, or public contracts without API-shape evidence from current source (code-kb-backed API-shape evidence or file reads).
 - Compare the diff against the approved architecture, not just the symptom. When repeated findings show the same structural issue, route it through `razorback:architecture-quality` Candidate Mode instead of looping patches.

@@ -91,19 +91,21 @@ When modifying skills, name code-kb at exploration/investigation points where it
 | Capability | code-kb tool |
 |---|---|
 | Orient — a folder's files and their top-level symbols | `file_skeleton(file_path=<folder>)` |
-| List a file's symbols before you read it, in full or by line range | `file_skeleton(file_path)` |
-| Find a symbol by name, prefix, or `Owner.member`, or by concept words (ranked matches follow when no name matches) | `lookup_symbol(query, path?, kind?)` |
+| List the symbols of a file you do not know yet, without bodies (`public_only` keeps the public surface) | `file_skeleton(file_path, public_only?)` |
+| Find a symbol by name, prefix, or `Owner.member`, by concept words (ranked matches follow when no name matches), or a route or config key (a query with `/`, `.`, `{`, or `:`); a query that names one short definition also shows its body | `lookup_symbol(query, path?, kind?)` |
 | Inspect a symbol — full implementation body | `get_symbol_body(symbol_name, file_path?)` |
-| Surgical context slice — body + callee signatures + types + tests | `get_symbol_context(symbol_name, file_path?)` |
-| Find references before changing a public API (callers labeled proven, likely, unresolved, or excluded; or callees) | `find_references(symbol_name, direction="callers"|"callees")` |
-| Assess impact / blast radius — the tests a change affects | `blast_radius(symbol?, file?, depth?)` |
+| Prepare to change a symbol — body, return type, callers, tests to run, dependencies, types, and open ends in one answer | `get_symbol_context(symbol_name, file_path?)` |
+| Find references — the full list of callers (labeled proven, likely, unresolved, or excluded) or callees, when the callers in `get_symbol_context` are not enough | `find_references(symbol_name, direction="callers"|"callees")` |
+| Assess impact / blast radius — the full list of tests a change affects, or with no target the tests of the whole diff | `blast_radius(symbol?, file?, depth?)` |
 | Check an edit — callers and tests the diff did not reach, after you edit | `check_edit(base?)` |
+
+The order matches code-kb's routing block: `file_skeleton` to orient in a folder or a file you do not know yet, `get_symbol_context` for the symbol you will change, then read the file you will edit, since the editor needs it. `find_references` and `blast_radius` are drill-downs for the full list, not required steps after `get_symbol_context`. `check_edit` runs after every edit. `tests/code-kb-routing.test.mjs` fails when an active file puts `file_skeleton` ahead of every read or chains those drill-downs after `get_symbol_context`.
 
 Every code-kb call takes `project_root`: the absolute path of the project or git worktree you work in. Change it when you move to another worktree.
 
 Use your host's native editing tools to modify files.
 
-code-kb indexes symbols, signatures, docstrings, references, and structural facts across the workspace. It builds and refreshes its index automatically, with no config and no manual scan. Structural facts (routes, queries, models, config keys) are CLI-only: `code-kb facts [category]`. CLI 1:1 commands: `code-kb skeleton`, `lookup` (name, prefix, or concept), `body`, `context`, `refs`, `blast-radius` (alias `impact`), and `check`. The CLI-only commands `outline`, `search`, `facts`, and `stats` (alias `telemetry`) have no MCP tool.
+code-kb indexes symbols, signatures, docstrings, references, and structural facts across the workspace. It builds and refreshes its index automatically, with no config and no manual scan. `lookup_symbol` lists the routes and config keys that match a query with `/`, `.`, `{`, or `:`; the full set of structural facts (routes, queries, models, config keys) is CLI-only: `code-kb facts [category]`. CLI 1:1 commands: `code-kb skeleton`, `lookup` (name, prefix, or concept), `body`, `context`, `refs`, `blast-radius` (alias `impact`), and `check`. The CLI-only commands `outline`, `search`, `facts`, and `stats` (alias `telemetry`) have no MCP tool.
 
 The evidence rules apply to the lead and every native implementer, reviewer, and fix worker: read the code a change touches, find callers before changing a symbol, and prove API shapes from current source. Restricted external CLI reviewers invoked by `pre-merge-review` run without MCP under an enforced read-only allowlist. The lead supplies a sanitized source-backed evidence bundle, the reviewer reports missing evidence instead of claiming code-kb use, and the lead verifies every finding against current source.
 

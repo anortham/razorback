@@ -4,7 +4,7 @@ The lead applies this checklist directly during inline review, after spec compli
 
 **Purpose:** the implementation is clean, tested, maintainable.
 
-code-kb: `get_symbol_context(symbol_name, file_path?)` on modified symbols (`get_symbol_body` for the change's core); `find_references(symbol_name, direction="callers")` to check dependents; `file_skeleton(file_path)` to review structure without reading whole files.
+code-kb: `get_symbol_context(symbol_name, file_path?)` on modified symbols, which carries their callers and tests to run; `find_references(symbol_name, direction="callers")` for the full list of dependents; `file_skeleton(file_path)` to review structure without reading whole files.
 
 **Test quality:**
 - Run the mutation check: mentally mutate the production code; a test should fail for each realistic mutation.

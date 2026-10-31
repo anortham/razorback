@@ -48,7 +48,7 @@ Measure the layer before you guess the line.
 3. **Profile, do not stare.** Cost inside app compute → flame graph or sampled stacks.
 4. **Latency vs queueing.** A latency cliff — fine up to a rate, then sharp rise with flat CPU — is saturation (waiting on a worker, connection, or lock). Optimizing the work will not fix it.
 
-code-kb: `get_symbol_context` or `get_symbol_body` on the slow function; `find_references(symbol_name, direction="callers")` for every call site reaching the hot path; `file_skeleton` on a folder to orient; `blast_radius` before the fix.
+code-kb: `file_skeleton` on a folder to orient; `get_symbol_context` on the slow function, which carries its body, callers, and tests to run. For every call site that reaches the hot path, `find_references(symbol_name, direction="callers")` gives the full list; `blast_radius` gives the full list of tests before the fix.
 
 ### Phase 3: Name the Cause
 

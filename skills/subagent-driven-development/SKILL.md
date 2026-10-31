@@ -22,7 +22,7 @@ Dispatch, follow-up, and wait tool names per harness: read `references/harness-d
 1. Read the plan once. `TaskCreate` per task. If the plan names a Spec, read that too: the spec is the authority the plan argues from, and conflicts inside the plan resolve against it. A plan with no reachable spec gets a ledger note saying so — rulings made without one are provisional.
 2. Read the ledger: `ws=$("$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE); cat "$ws/progress.md"`. Trust it only when its first line names this plan file; any other ledger (or a stray one at the old flat path) is another plan's — leave it, start fresh.
 3. Tasks marked complete **with a named commit** are DONE (verify with `git log`). A completion line whose SHA is missing, `pending`, or absent from `git log` is **INCOMPLETE** — the `parallel-lead-commit` crash window: `git status`, inspect the task's owned files, then re-review and commit the approved edits (Commit Mode Contract) or re-dispatch.
-4. Read the plan's areas so review can spot drift: file reads, or code-kb `file_skeleton` on the folders and files the plan modifies.
+4. Read the plan's areas so review can spot drift: file reads, or code-kb `file_skeleton` on the folders the plan modifies.
 5. Validate the plan's `## Parallel Execution Contract`: a safe batch with 2+ eligible tasks dispatches together. Safe = non-overlapping file ownership, no ordering dependency, `Serialization required: No`. Serialized lanes need `Serialization required: Yes` plus a `Dependency reason`. Serializing a safe batch requires a recorded dependency or tool limitation — caution is not one.
 6. **Pre-dispatch conflict scan:** Before dispatching Task 1, scan the plan once for conflicts (tasks that contradict each other or the plan's Global Constraints; requirements treated as defects; self-contradictions). The scan's output is a table, not a verdict: one row for every pair of tasks that share a file or an interface (what one produces against what the other consumes, and what you found), and one row for every task checking its own internal agreement (tests specified against code specified, files created vs touched). Write the table to the ledger. Rule on every conflict found before execution begins (the spec is the binding authority, the plan is its argument) and record each ruling in the ledger beside its row as a `Ruling:` line.
 
@@ -80,7 +80,7 @@ When the plan lists several tasks that are each a small, independent edit of the
 
 One pass by the lead. No reviewer subagents. Checklists: `./spec-reviewer-prompt.md`, `./code-quality-reviewer-prompt.md`.
 
-**Spec:** everything requested, nothing extra, no misread requirement. A logged better approach that keeps the task's binding parts is not a deviation. Read the changed files (code-kb `file_skeleton` helps). The report must show API-shape evidence for every symbol, signature, config shape, route, CLI flag, or public contract — a guessed shape goes back.
+**Spec:** everything requested, nothing extra, no misread requirement. A logged better approach that keeps the task's binding parts is not a deviation. Read the changed files. The report must show API-shape evidence for every symbol, signature, config shape, route, CLI flag, or public contract — a guessed shape goes back.
 
 **architecture-quality:** the worker preserved the approved architecture or reported a plan mismatch; reject worker-local redesigns of that shape, not a logged better approach inside it.
 - Does this keep complexity local?
@@ -90,7 +90,7 @@ One pass by the lead. No reviewer subagents. Checklists: `./spec-reviewer-prompt
 - Did this avoid speculative extensibility?
 - Did it fix the structural cause, not only the symptom?
 
-**Quality:** tests assert meaningful values; no duplication, tight coupling, unclear names, missing error paths. code-kb `get_symbol_context` on key symbols (`get_symbol_body` for the task's core), `find_references` on changed APIs. Do not ask a reviewer or yourself to re-run tests the implementer already ran on the same code — the implementer's report carries the test evidence. Reviewers will not re-run tests for you; if evidence is missing or illegible, re-read the report or bounce it back to the worker to provide pristine test output rather than rerunning full test suites. Concrete plans get a quality-focused pass; ambiguous or safety-sensitive tasks get the full pass.
+**Quality:** tests assert meaningful values; no duplication, tight coupling, unclear names, missing error paths. code-kb `get_symbol_context` on key symbols, which carries their callers and tests to run; `find_references` for the full list of callers of a changed API. Do not ask a reviewer or yourself to re-run tests the implementer already ran on the same code — the implementer's report carries the test evidence. Reviewers will not re-run tests for you; if evidence is missing or illegible, re-read the report or bounce it back to the worker to provide pristine test output rather than rerunning full test suites. Concrete plans get a quality-focused pass; ambiguous or safety-sensitive tasks get the full pass.
 
 **Severity:** only Critical and Important enter the fix loop (Step 4). Minor → `minor (deferred)` ledger line for Step 4a.
 

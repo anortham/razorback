@@ -21,7 +21,7 @@ No worktree, no project setup, no baseline or full-suite run until the change ta
 
 ## Step 1: Investigate (no infrastructure)
 
-- Locate the target: a search for the symptom or error text, a file read, or code-kb (`lookup_symbol`, `get_symbol_body`, `find_references` if it might be shared).
+- Locate the target: a search for the symptom or error text, a file read, or code-kb (`lookup_symbol`, which shows the body of one short definition, and `get_symbol_context` if it might be shared, which carries its callers).
 - Defects: razorback:systematic-debugging Phase 1 — reproduce, find root cause.
 - Tweaks: confirm the exact target (selector, constant, string) in current source.
 
@@ -51,7 +51,7 @@ The quick-fix tier applies only when ALL criteria hold. Project instructions may
 
 ## Step 4: Verify the affected scope only
 
-- Identify affected callers and tests with native search and file reads, or code-kb `blast_radius` when useful. Its predictions can be incomplete; verify coverage against current source and reconfirm the symptom is gone. A failing test iterates on its own id until it passes; the impacted set runs once after (razorback:systematic-debugging Phase 4). razorback:verification-before-completion applies in full.
+- Identify affected callers and tests with native search and file reads, or code-kb (the tests to run in `get_symbol_context`, and `blast_radius` for the full list) when useful. Its predictions can be incomplete; verify coverage against current source and reconfirm the symptom is gone. A failing test iterates on its own id until it passes; the impacted set runs once after (razorback:systematic-debugging Phase 4). razorback:verification-before-completion applies in full.
 - The full suite is NOT part of this tier; the full suite runs at the branch gate (CI or pre-merge).
 - Commit with a clear message; open a PR where the project is branch-gated.
 - In the closing summary, list any `# razorback:` markers left (`<file>:<line>` + ceiling), or say "no markers left."

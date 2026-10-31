@@ -38,12 +38,11 @@ Fresh implementer dispatch (delegation available):
 
     ## Orientation (REQUIRED before coding)
 
-    1. Read the code the finding touches: code-kb `file_skeleton(file_path)` first, then a file
-       read for the lines you edit.
-    2. Inspect the symbol, its callers and callees: code-kb
+    1. Inspect the symbol the finding touches, its callers, callees, and tests to run: code-kb
        `get_symbol_context(symbol_name, file_path?)`; file reads and a search only to check it.
-    3. Find the callers (code-kb `find_references(symbol_name, direction="callers")` or a search)
-       if your fix changes caller-visible behavior.
+    2. Read the file you will edit, since the editor needs it.
+    3. Find every caller (code-kb `find_references(symbol_name, direction="callers")` for the
+       full list, or a search) if your fix changes caller-visible behavior.
 
     Do not infer or invent API shapes: confirm symbol names, function
     signatures, config shapes, route names, CLI flags, and public contracts from

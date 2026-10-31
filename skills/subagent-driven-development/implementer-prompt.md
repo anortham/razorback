@@ -49,13 +49,14 @@ Dispatch one implementer subagent:
     ## Codebase Orientation
 
     Read the code the change touches before writing code. Use code-kb first for code
-    structure: `file_skeleton(file_path)` before a full read of a file that is not small,
-    `get_symbol_context(symbol_name, file_path?)` for a symbol you change, and
-    `file_skeleton(file_path=<folder>)` for an unfamiliar module. Use a search or file read
-    first for a literal error or string and for a small file you edit as a whole. Find a symbol's callers before changing
-    it (`find_references(symbol_name, direction="callers")`, then a search if the answer is
-    empty or marked heuristic). After your edits, run `check_edit` and handle each caller
-    or test it lists outside your diff. If code-kb is
+    structure: `file_skeleton(file_path)` on a folder or a file you do not know yet, and
+    `get_symbol_context(symbol_name, file_path?)` for a symbol you change; it carries the
+    body, callers, tests to run, and types. Read the file you will edit, since the editor
+    needs it. Use a search or file read first for a literal error or string and for a small
+    file you edit as a whole. Find a symbol's callers before changing it (the callers in
+    `get_symbol_context`, `find_references(symbol_name, direction="callers")` for the full
+    list, then a search if the answer is empty or marked heuristic). After your edits, run
+    `check_edit` and handle each caller or test it lists outside your diff. If code-kb is
     missing or its index is stale, use native search and file reads.
 
     ## API Shape Evidence

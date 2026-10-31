@@ -40,7 +40,10 @@ test('subagent-start injects the retrieval ruleset with code-kb first for code s
 
   assert.match(additionalContext, /it is the first route for code structure/);
   assert.match(additionalContext, /Use code-kb first for code structure/);
-  assert.match(additionalContext, /`file_skeleton` before a full read of a file that is not small/);
+  assert.match(additionalContext, /`file_skeleton` on a folder or a file you do not know yet, to orient/);
+  assert.match(additionalContext, /`get_symbol_context` before you change a symbol: it carries the body, callers, tests to run, and types/);
+  assert.match(additionalContext, /Read the file you will edit, since the editor needs it\./);
+  assert.doesNotMatch(additionalContext, /`file_skeleton` before a full read/);
   assert.doesNotMatch(additionalContext, /optional retrieval aid/);
   assert.doesNotMatch(additionalContext, /smallest sufficient evidence/);
   assert.doesNotMatch(additionalContext, /MUST be used/);
@@ -52,7 +55,7 @@ test('subagent-start injects the retrieval ruleset with code-kb first for code s
   assert.match(additionalContext, /A missing or stale code-kb index never blocks work/);
   // Capability table entries.
   assert.match(additionalContext, /file_skeleton\(file_path=<folder>\)/);
-  assert.match(additionalContext, /file_skeleton\(file_path\)/);
+  assert.match(additionalContext, /file_skeleton\(file_path, public_only\?\)/);
   assert.match(additionalContext, /lookup_symbol\(query, path\?, kind\?\)/);
   assert.match(additionalContext, /get_symbol_body\(symbol_name, file_path\?\)/);
   assert.match(additionalContext, /get_symbol_context\(symbol_name, file_path\?\)/);

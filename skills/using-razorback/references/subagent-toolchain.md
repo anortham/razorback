@@ -5,12 +5,12 @@ You are a dispatched subagent. When code-kb is available, it is the first route 
 | Capability — use code-kb first | code-kb tool |
 |---|---|
 | **Orient** — a folder's files and their top-level symbols | `file_skeleton(file_path=<folder>)` |
-| **List a file's symbols** before you read it, in full or by line range | `file_skeleton(file_path)` |
-| **Find a symbol** by name, prefix, or `Owner.member`, or by concept words (ranked matches follow when no name matches) | `lookup_symbol(query, path?, kind?)` |
+| **List the symbols of a file you do not know yet**, without bodies (`public_only` keeps the public surface) | `file_skeleton(file_path, public_only?)` |
+| **Find a symbol** by name, prefix, or `Owner.member`, by concept words (ranked matches follow when no name matches), or a route or config key (a query with `/`, `.`, `{`, or `:`); a query that names one short definition also shows its body | `lookup_symbol(query, path?, kind?)` |
 | **Inspect a symbol** — full implementation body | `get_symbol_body(symbol_name, file_path?)` |
-| **Surgical context slice** — body + callee signatures + types + tests | `get_symbol_context(symbol_name, file_path?)` |
-| **Find references** before changing a public API (callers labeled proven, likely, unresolved, or excluded; or callees) | `find_references(symbol_name, direction="callers"|"callees")` |
-| **Assess impact / blast radius** — the tests a change affects | `blast_radius(symbol?, file?, depth?)` |
+| **Prepare to change a symbol** — body, return type, callers, tests to run, dependencies, types, and open ends in one answer | `get_symbol_context(symbol_name, file_path?)` |
+| **Find references** — the full list of callers (labeled proven, likely, unresolved, or excluded) or callees, when the callers in `get_symbol_context` are not enough | `find_references(symbol_name, direction="callers"|"callees")` |
+| **Assess impact / blast radius** — the full list of tests a change affects, or with no target the tests of the whole diff | `blast_radius(symbol?, file?, depth?)` |
 | **Check an edit** — callers and tests the diff did not reach, after you edit | `check_edit(base?)` |
 
 Every code-kb call takes `project_root`: the absolute path of the project or git worktree you work in. Change it when you move to another worktree.
@@ -18,7 +18,7 @@ Every code-kb call takes `project_root`: the absolute path of the project or git
 Use your host's native editing tools to modify files.
 
 **Rules:**
-1. Use code-kb first for code structure: `lookup_symbol`, then `get_symbol_body` or `get_symbol_context`, for a symbol by name; `file_skeleton` before a full read of a file that is not small, and before a line-range read (`sed -n`, `head`) of a source file; `find_references` for callers, not `grep` or `rg` on the name; `lookup_symbol` with a few words for a concept with an unknown name; `blast_radius` for the tests a change affects; `check_edit` after you edit, before you say the change is done. Use native search and file reads first for literal text (strings, errors, comments, config values), a small file read or edited as a whole, and the code around a symbol after the skeleton shows where to look. When a code-kb answer is empty, capped, marked heuristic, or in conflict with other evidence, check it with native tools after the code-kb call.
+1. Use code-kb first for code structure: `file_skeleton` on a folder or a file you do not know yet, to orient; `lookup_symbol` for a symbol by name, or with a few words for a concept with an unknown name; `get_symbol_context` before you change a symbol: it carries the body, callers, tests to run, and types; `find_references` for callers, not `grep` or `rg` on the name; `check_edit` after you edit, before you say the change is done. Read the file you will edit, since the editor needs it. `find_references` and `blast_radius` give the full list when a summary is not enough, and `blast_radius()` lists the tests of the whole diff. Use native search and file reads first for literal text (strings, errors, comments, config values), a small file read or edited as a whole, and the code around a symbol after code-kb shows where to look. When a code-kb answer is empty, capped, marked heuristic, or in conflict with other evidence, check it with native tools after the code-kb call.
 2. Read the code a change touches before you edit it.
 3. Find a symbol's callers before changing it, to check impact.
 4. Do not infer or invent API shapes. Confirm symbol names, function signatures, config shapes, route names, CLI flags, or public contracts from current source before relying on them.
