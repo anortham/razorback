@@ -179,6 +179,8 @@ On detecting a resumed run (post-compaction note, mismatch between expected and 
 7. Reconcile `parallel-lead-commit` gaps: re-read this plan's ledger and run Step 1's completion-line check — a missing, `pending`, or unverifiable SHA means inspect the owned files, then commit approved edits per the Commit Mode Contract or re-dispatch. Do not trust a completion record that has no verifiable commit.
 8. Identify the next incomplete task and resume execution.
 
+Name the next action explicitly, even if it is to keep waiting for publication authority, before continuing.
+
 This sequence runs only on resumed runs. A fresh run enters at Step 1. Subagent IDs from the prior session cannot be resumed post-compaction — treat any needed fix as a fresh dispatch with prior-commit context.
 
 ## Rationalizations

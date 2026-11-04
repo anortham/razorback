@@ -183,6 +183,47 @@ test('toolkit fallback cases grade evidence boundaries without arbitrary termina
     .some((reason) => reason.includes('continue_task must occur after report_evidence_gaps')));
 });
 
+test('grade accepts source-required checks while preserving the approval checkpoint requirement', () => {
+  const packets = prepare(join(testRoot, 'source-required-checks.json'));
+  const answers = materializeValidAnswers(packets);
+  const scenario = (id) => answers.cases.find((answer) => answer.id === id);
+  scenario('approval').actions.unshift('verify_publication_authority', 'inspect_worktree_state');
+  scenario('single_task').actions.splice(1, 0, 'run_focused_tests');
+  scenario('interrupted_run').actions.push('identify_next_action', 'continue_task');
+  scenario('duplicate_installations').actions.push('report_evidence_gaps');
+  const recovery = scenario('approval_pause_recovery').actions;
+  recovery.splice(recovery.indexOf('inspect_live_git') + 1, 0, 'verify_live_worktree_commit');
+
+  assert.equal(grade(packets, answers).result.status, 0);
+
+  const approval = scenario('approval');
+  approval.actions.splice(approval.actions.indexOf('checkpoint_precommit'), 1);
+  const rejected = grade(packets, answers);
+  assert.equal(rejected.result.status, 1);
+  assert.ok(rejected.report.cases.find(({ id }) => id === 'approval').reasons
+    .includes('missing required action checkpoint_precommit'));
+});
+
+test('grade accepts equivalent fallback evidence without waiving callers or focused reproduction', () => {
+  const packets = prepare(join(testRoot, 'equivalent-fallback-evidence.json'));
+  const answers = materializeValidAnswers(packets);
+  const fallback = answers.cases.find(({ id }) => id === 'missing_tool_fallback');
+  fallback.actions = ['reproduce_focused_failure', 'read_source_file', 'search_callers_natively', 'report_coverage_gap', 'continue_task'];
+  const audit = answers.cases.find(({ id }) => id === 'missing_code_kb');
+  audit.actions[audit.actions.indexOf('report_evidence_gaps')] = 'report_coverage_gap';
+
+  assert.equal(grade(packets, answers).result.status, 0);
+
+  fallback.actions.splice(fallback.actions.indexOf('search_callers_natively'), 1);
+  const noCallers = grade(packets, answers);
+  assert.equal(noCallers.result.status, 1);
+  assert.ok(noCallers.report.cases.find(({ id }) => id === 'missing_tool_fallback').reasons
+    .includes('missing required action search_callers_natively'));
+  fallback.actions.unshift('search_callers_natively');
+  fallback.actions.splice(fallback.actions.indexOf('reproduce_focused_failure'), 1);
+  assert.equal(grade(packets, answers).result.status, 1);
+});
+
 test('prepare reads an explicit git ref separately from working-tree content', () => {
   const repo = mkdtempSync(join(testRoot, 'repo-'));
   mkdirSync(join(repo, 'fixtures'), { recursive: true });

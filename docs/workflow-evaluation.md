@@ -69,6 +69,8 @@ Do not edit a generated packet between preparation and collection. A changed sou
 
 Give each fresh agent the unchanged packet bundle, or one case plus the bundle's `source`, `action_vocabulary`, and `answer_schema`. Tell it to return structured JSON only. Run baseline and revised packets in separate fresh sessions so earlier answers cannot influence later decisions.
 
+List the complete sequence through the stated boundary. Represent each distinct prerequisite and intermediate decision explicitly; do not hide it inside a later action. Equivalent test or gap-reporting labels may describe the same evidence and do not require duplicate execution. Use only actions supported by the supplied facts and workflow.
+
 The answer file must contain exactly one case for every packet case:
 
 ```json

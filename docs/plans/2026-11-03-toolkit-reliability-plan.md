@@ -267,3 +267,21 @@ R1–R3 may run together with `parallel-lead-commit`; each worker owns only its 
 - R4 runner construction started against stable contracts before R3 finished. Shared package edits remained serialized until R3 was committed. Final combined acceptance still waits for Goldfish G1 and the code-kb K3/K4 selection.
 
 - R4 affected scope passed 41 tests with one explicit external skip after the `/tmp` quota recovery. The real-service baseline smoke passed with Goldfish `431f40c`, code-kb `f290fdc`, and the patched development-only client 2.4.0. Final combined acceptance remains pending code-kb selection. The lead added `.github/workflows/test.yml` dependency installation and isolated Git setup in the new tests. SDK install advisories were resolved before committing; `npm audit --audit-level=high` reports zero vulnerabilities.
+
+
+### Behavioral gate follow-up
+
+The first two actual fresh `gpt-6-sol`/high native sessions each scored 8/15 under the original frozen oracle; only worktree switching and unsupported-coverage fallback passed among the five new cases. Original packets, protocols, outputs, and reports are preserved unchanged. No retrospective regrade is used as agent success evidence.
+
+A selective read-only Astra planning review separated source-required actions incorrectly rejected by the oracle from actual omissions. The lead applied these corrections and retained all publication, source-evidence, and authority boundaries:
+
+| Surface | Source-backed correction |
+|---|---|
+| Approval | Permit authority/worktree checks required by finishing Steps 0/2a; still require a precommit checkpoint before requesting authority. |
+| Single task | Permit focused tests required by TDD before review. |
+| Interrupted run | Permit next-action selection and continuation after reconciliation and any actual commit record. |
+| Approval-pause recovery | Permit live-commit verification, but retain explicit next-action identification and forbid another checkpoint or publication. |
+| Duplicate installations | Permit reporting uncertainty required by the static doctor's unknown-runtime contract. |
+| Missing tools | Accept focused reproduction or focused tests, and equivalent gap-reporting labels. Caller search itself supplies native text-search evidence; still require source reads, callers, focused evidence, gap reporting, and continuation. |
+
+The pre-approval checkpoint reminder is now prominent in authority routing, and both Recovery sections explicitly require naming the next action. Three covering assertions failed before these changes and passed afterward. Collection instructions now uniformly require complete sequences and explicit intermediate decisions; no case-specific grading hints are supplied. One additional two-session batch on the same pinned harness/model will use newly generated packets and a frozen bundle/protocol hash. Its scores are not a causal comparison with the corrected original oracle. Any remaining failure stays recorded as incomplete behavioral acceptance.

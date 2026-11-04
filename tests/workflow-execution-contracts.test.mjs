@@ -67,6 +67,18 @@ test('publication approval wait checkpoints the report and authority state befor
   assert.match(waitStep, /unchanged resume does not create a duplicate checkpoint/i);
 });
 
+test('approval routing makes the checkpoint obligation visible before the long execution sequence', () => {
+  const finishing = read('skills/finishing-a-development-branch/SKILL.md');
+  const routing = finishing.slice(finishing.indexOf('### Step 0:'), finishing.indexOf('### Step 1:'));
+
+  assert.match(routing, /approval pause is unfinished work/i);
+  assert.match(routing, /checkpoint pointer/i);
+  assert.match(routing, /commit them together/i);
+  for (const path of ['skills/executing-plans/SKILL.md', 'skills/subagent-driven-development/SKILL.md']) {
+    assert.match(read(path), /Name the next action explicitly, even if it is to keep waiting for publication authority/);
+  }
+});
+
 test('post-PR checkpoint records the changed handoff in the report commit', () => {
   const finishing = read('skills/finishing-a-development-branch/SKILL.md');
   const postPrStep = finishing.slice(

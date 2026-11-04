@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "kind": "frozen-workflow-evaluation-protocol",
+  "source": {
+    "kind": "git-ref",
+    "requested": "HEAD",
+    "revision": "6dcd2d548573fdccb1a5239ea754ba01122cec83",
+    "source_set_hash": "ba04f664693536290cd478abf89edf4de73752052052b8d7233b5810402eb496"
+  },
+  "packet_file": "packets.json",
+  "packet_sha256": "0cae5e63998ccb642d523041ddd7467a3a4644ad0644d9212d0c6f319223fc93",
+  "expectations_sha256": "eaeb2f31bd4fbecb4c757c31d718ae81488b676168f8246a19db90a268983261",
+  "frozen_at": "2026-11-04T01:52:26.143016+00:00",
+  "harness": "Codex native collaboration spawn_agent",
+  "harness_version": "not exposed by native API",
+  "model": "gpt-6-sol",
+  "reasoning_effort": "high",
+  "model_backend_revision": "not exposed by native API",
+  "fresh_sessions": 2,
+  "isolation": "fork_turns=none; only blind input and deduplicated unchanged workflow text; no oracle access",
+  "case_ids": [
+    "approval",
+    "push_recovery",
+    "checkpoint",
+    "single_task",
+    "missing_code_kb",
+    "restricted_reviewer",
+    "live_tools",
+    "instruction_priority",
+    "interrupted_run",
+    "parallel_commit",
+    "worktree_switch",
+    "approval_pause_recovery",
+    "missing_tool_fallback",
+    "duplicate_installations",
+    "unsupported_structural_coverage"
+  ],
+  "required_toolkit_cases": [
+    "worktree_switch",
+    "approval_pause_recovery",
+    "missing_tool_fallback",
+    "duplicate_installations",
+    "unsupported_structural_coverage"
+  ],
+  "repeats_per_case": 2,
+  "metrics": "unavailable unless native harness supplies measurements; none provided",
+  "stop_rule": "Preserve both attempts unchanged; evaluate with frozen trusted oracle. Failures require guidance diagnosis and a new content-bound packet before another run."
+}

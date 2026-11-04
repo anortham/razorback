@@ -86,6 +86,8 @@ On a resumed run, orient before continuing:
 6. `git log --oneline <base>..HEAD` — verify what is actually committed.
 7. Identify the next incomplete task and resume execution.
 
+Name the next action explicitly, even if it is to keep waiting for publication authority, before continuing.
+
 ## Remember
 
 - Review the plan critically first; then meet each task's acceptance criteria within its binding parts and run every verification.

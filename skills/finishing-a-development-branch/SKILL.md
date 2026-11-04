@@ -25,6 +25,8 @@ No options menu. With recorded authority: commit, push, open a PR with the morni
 
 Read the handoff's authority ledger and preserve its cited sources: `local_commit_authority` (authorized by implementation scope unless explicitly prohibited), `push_authority`, `pr_authority`. Implementation approval grants local commits, not push or PR. Record missing push/PR entries without prompting here; Step 4a owns the single request after Steps 1–4 prepare the materials. If commits are explicitly prohibited, use the approval/blocker boundary once the local diff and review materials are ready.
 
+An approval pause is unfinished work. Before asking for publication authority, prepare the run report, save a checkpoint pointer when Goldfish is available, and commit them together. A report alone is not retrieved by Goldfish recall.
+
 ### Step 1: Verify branch gate
 
 Run the plan's `branch-gate` scope, or reuse a passing verification-ledger entry for current HEAD. Add required `expensive-specialist` scopes. Running the branch gate includes running the plan's declared Security scope commands (`security-secrets`, `security-deps` — `razorback:security-review`); `none declared` skips them and the report says so.
@@ -131,7 +133,7 @@ Walk the forge ladder; stop at the first rung that succeeds.
 
 Rungs 1–2 only. Replace `pending — filled in after PR creation` with the URL, update the digest's `PR` field when present, commit, push. Metadata-only; gate evidence holds.
 
-The PR changes the run's handoff state. When Goldfish is available, save the post-PR checkpoint after the PR exists and before the PR-URL metadata commit only when the latest checkpoint does not already capture this PR and report state. Use the Step 4 checkpoint contents with the PR URL and current authority state, and set `next` to PR review. Stage the checkpoint artifact with the URL report and digest in the same commit. Without Goldfish, the report and git state carry the handoff. This satisfies the SDD milestone; do not emit a duplicate checkpoint after this skill returns. An unchanged resume does not create a duplicate checkpoint.
+The PR changes the run's handoff state. When Goldfish is available, save the post-PR checkpoint after the PR exists and before the PR-URL metadata commit only when the latest checkpoint does not already capture this PR and report state. Use the Step 4 checkpoint contents with the PR URL and current authority state, and set `next` to PR review. Stage the checkpoint artifact with the URL report and digest in the same commit. Without Goldfish, the run report carries the handoff together with git state. This satisfies the SDD milestone; do not emit a duplicate checkpoint after this skill returns. An unchanged resume does not create a duplicate checkpoint.
 
 ```bash
 git add .memories/autonomous-run-YYYY-MM-DD-<slug>.md   # plus the .html sibling when requested, and a checkpoint when one exists
