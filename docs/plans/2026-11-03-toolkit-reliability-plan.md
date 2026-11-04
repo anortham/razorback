@@ -1,6 +1,6 @@
 # Toolkit Reliability Implementation Plan
 
-> **Status:** Implementation authorized on 2026-11-03. User requested implementation, useful subagents, verification, and local commits; no push or release. R1–R3 and the R4 source are implemented; verification details are in `.memories/autonomous-run-2026-11-04-toolkit-reliability.md`. Goldfish G1 is ready; final combined acceptance still requires the code-kb K3/K4 selection.
+> **Status:** Implementation authorized on 2026-11-03. User requested implementation, useful subagents, verification, and local commits; no push or release. R1–R4 are complete locally. The final selected-revision combined gate passed on 2026-11-04 at 19:52 UTC. Verification and limits are in `.memories/autonomous-run-2026-11-04-toolkit-reliability.md` and `.memories/toolkit-reliability-evidence/final-integration.json`.
 >
 > **For agentic workers:** After implementation approval, use `razorback:subagent-driven-development` for independent tasks when delegation is available and permitted. Otherwise use `razorback:executing-plans`.
 
@@ -243,7 +243,7 @@ R1–R3 may run together with `parallel-lead-commit`; each worker owns only its 
 - [x] Ordinary `npm test` emits an explicit skip reason when integration config is absent; `npm run test:integration -- --config /absolute/test-config.json` fails when required config or binaries are missing. This command is new.
 - [x] Integration subprocesses use temporary home/project/index paths, scrub inherited sensitive environment values, and leave the real Goldfish home and host installation untouched.
 - [x] Blind packets cover all five requested decision cases; their grading expectations stay outside packets and fixture answers are labeled `deterministic-fixture`.
-- [ ] `node --test tests/workflow-eval.test.mjs tests/toolkit-integration.test.mjs` passes; the explicit integration command passes against the selected local services.
+- [x] `node --test tests/workflow-eval.test.mjs tests/toolkit-integration.test.mjs` passes; the explicit integration command passes against the selected local services.
 - [x] Each of the five new scenarios has at least two actual fresh-agent runs on the same pinned harness/model after deterministic checks; reports use `agent-run` only for actual runs and record missing measurements as unavailable. No model calls are part of `npm test` or the integration command.
 - [x] Actual agent-run outputs satisfy the trusted expected actions, order, and authority boundaries for all five scenarios. Preserve failing attempts; fix the responsible guidance before any new content-bound packet run, and never relabel fixture answers as successful agent evidence.
 - [x] If fresh-agent access is unavailable, report behavioral acceptance as blocked/limited with the missing prerequisite; do not mark R4 complete.
@@ -251,7 +251,7 @@ R1–R3 may run together with `parallel-lead-commit`; each worker owns only its 
 
 ## Handoff and approval
 
-- **Implementation status:** R1–R3 complete; R4 source implemented and local checks recorded in the run report. R4 remains incomplete until the selected code-kb K3/K4 revision passes combined acceptance. Fresh-agent and final local-suite results are recorded in the report, which remains the live evidence ledger.
+- **Implementation status:** R1–R4 complete locally. The final combined gate passed at 19:52 UTC against Goldfish `431f40c` and code-kb `571e7fa` with the retained, verified baseline runtime. Earlier pending entries below describe their original collection time and are superseded by the final result.
 - **Implementation approval:** User explicitly authorized this plan on 2026-11-03: "Implement docs/plans/2026-11-03-toolkit-reliability-plan.md. Use subagents where useful, verify, and commit locally. Don’t push or release." Coordination and prerequisite plans were read; live source states were checked.
 - **Reviewer choice:** `none` unless the implementation approval or a later spec names `codex` or `claude`.
 - **Local commit authority:** Authorized by the implementation request; lead stages reviewed paths and commits locally.
@@ -299,3 +299,9 @@ The original two protocols and all four outputs/reports stay immutable and faile
 Batch three is closed with frozen results 11/15 and 12/15. It still contains genuine omitted checkpoint/gap steps, plus rejected recovery inspections that the shared Recovery source permits. Those remaining oracle contradictions were fixed with red/green regressions; no mandatory checkpoint, commit, evidence, or authority gate was removed.
 
 The documented collection method permits one case plus the bundle source, vocabulary, and schema. The remaining verification therefore uses two fresh contexts per required toolkit case, without the ten unrelated legacy scenarios in each context. All six earlier bundled outputs remain unchanged and are not reclassified as passing. This changes collection granularity, not the grader or its full-case-set requirement. The original full packet bundle stays immutable. The grader's complete reports will retain the ten intentional out-of-scope missing-case errors; a separate scoped result can pass only if all five required cases pass and those are the only missing cases. No fixture answers or retagged historical answers are supplied. This scope is exactly the five new cases required by R4, and no full-bundle agent success will be claimed.
+
+## Final combined acceptance, 2026-11-04 19:52 UTC
+
+The coordinating Goldfish session closed the remaining gate after code-kb selected its restored baseline. New explicit ignored config, task-local TMPDIR, real stdio servers, and isolated fixtures were used. `npm run test:integration -- --config <absolute-config>` exited 0 against Razorback runner `78c1a07`, Goldfish source `431f40c`, and code-kb source `571e7fa`. The retained code-kb 2.12.0 binary hash is `d3f913db2025339a3496f85017eeaee98542f78afa2f654aacbdf2cc108221d2`; its runtime sources/dependencies match `f290fdc`. Julie is 3.11.0. The separate Julie 3.12 integration branch is not selected in this run.
+
+Committed evidence: `.memories/toolkit-reliability-evidence/final-integration.json`. All discovery/root-schema, report recovery, worktree isolation, coverage fallback, and duplicate-fixture checks passed. The coordinator independently verified the final local-suite log hash, ten answer/report hashes, and the current packet source-set hash against behavior acceptance. No full 15-case model success is claimed. No runtime source changed during this closure; this update is plan/report/checkpoint/evidence metadata only. Local completion does not authorize merge, push, release, PR creation or registration cleanup.

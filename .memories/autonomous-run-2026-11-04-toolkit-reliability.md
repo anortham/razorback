@@ -1,6 +1,6 @@
 # Toolkit reliability run report
 
-Status: Razorback implementation and local verification complete. R4 final combined acceptance remains pending code-kb's K3/K4 selection. Nothing was pushed or released.
+Status: R1–R4 implementation and local verification complete. The final selected-revision combined gate passed at 2026-11-04 19:52 UTC. Nothing was merged, pushed or released. Earlier pending-dependency text below records the original overnight handoff; see the final closure at the end.
 
 ## Scope and authority
 
@@ -88,3 +88,11 @@ The original Razorback main checkout remains clean at `7d87064`, one planning co
 An unexpected `/tmp` user quota caused `EDQUOT` despite available filesystem space. Failing test IDs passed with task-local TMPDIR, then the affected wider scope passed. Later verification consistently used task-local TMPDIR; no other session's files were deleted. Earlier smoke and command logs remain ignored scratch evidence; the final raw results and all agent attempts are committed here.
 
 A final Goldfish checkpoint points to this report and records the tested source, plan/task, branch/worktree, user authority source, and remaining next action before its metadata commit. On resume, recall it using this exact worktree as workspace, read this report, and verify current Git state, tested evidence, authority, and external disposition before acting. An unchanged resume needs no new checkpoint. Push/release remain prohibited unless the user later changes that instruction.
+
+## Final combined gate closed, 2026-11-04 19:52 UTC
+
+The coordinating Goldfish session selected clean Goldfish `431f40c` and code-kb `571e7fa` after the frozen experiment rejected and restored its candidate. The retained code-kb binary is the verified current 2.12.0 runtime from source `f290fdc`, hash `d3f913db2025339a3496f85017eeaee98542f78afa2f654aacbdf2cc108221d2`; Julie remains 3.11.0. Native Git comparison confirmed the final efficiency branch has unchanged runtime sources and dependency manifests.
+
+With runner `78c1a07`, a fresh explicit ignored config and task-local TMPDIR, `npm run test:integration -- --config <absolute-config>` passed all five real-service/structural checks. The report is committed as `toolkit-reliability-evidence/final-integration.json`. Current packet source-set hash `cee06cf461b8b531ebb102bd9e5733256514d35485385ea67918e46700eb5556`, all ten answer/report hashes, and the 505-pass local-test log hash were independently verified. Existing scoped agent evidence remains valid; no new model trials were dispatched.
+
+This closes R4. Preserve earlier failed outputs, limits and the old smoke config as historical evidence. Do not rerun the unchanged final gate merely because the earlier section says pending. Only metadata changes follow this tested runner revision. The remaining operations are authorization to integrate/publish/install and any specific registration cleanup. The separate Julie 3.12 branch requires its own selection and acceptance if included in a rollout. Full assessment: `/home/murphy/source/goldfish/.worktrees/toolkit-hardening/docs/reviews/2026-11-04-toolkit-plan-evaluation.md`.
