@@ -3,12 +3,13 @@
   "cases": [
     {
       "id": "approval",
-      "allowed_actions": ["complete_local_materials", "checkpoint_precommit", "request_publication_authority", "verify_publication_authority", "inspect_worktree_state"],
-      "required_actions": ["complete_local_materials", "checkpoint_precommit", "request_publication_authority"],
+      "allowed_actions": ["complete_local_materials", "checkpoint_precommit", "request_publication_authority", "verify_publication_authority", "inspect_worktree_state", "stage_intended_files", "commit_task", "record_commit_sha"],
+      "required_actions": ["complete_local_materials", "checkpoint_precommit", "stage_intended_files", "commit_task", "request_publication_authority"],
       "forbidden_actions": ["push_branch", "open_pr", "merge_branch", "checkpoint_postcommit_only"],
-      "ordered_actions": [["complete_local_materials", "checkpoint_precommit"], ["checkpoint_precommit", "request_publication_authority"], ["verify_publication_authority", "complete_local_materials"], ["inspect_worktree_state", "complete_local_materials"]],
+      "ordered_actions": [["complete_local_materials", "checkpoint_precommit"], ["checkpoint_precommit", "request_publication_authority"], ["verify_publication_authority", "complete_local_materials"], ["inspect_worktree_state", "complete_local_materials"], ["checkpoint_precommit", "stage_intended_files"], ["stage_intended_files", "commit_task"], ["commit_task", "request_publication_authority"], ["commit_task", "record_commit_sha"], ["record_commit_sha", "request_publication_authority"]],
       "terminal_states": ["awaiting_user"],
-      "user_questions": 1
+      "user_questions": 1,
+      "required_if_selected": {"record_commit_sha": ["commit_task"]}
     },
     {
       "id": "push_recovery",
@@ -100,19 +101,19 @@
     },
     {
       "id": "worktree_switch",
-      "allowed_actions": ["inspect_worktree_state", "set_goldfish_workspace", "set_code_kb_project_root", "verify_live_worktree_commit", "continue_in_worktree", "continue_from_main"],
+      "allowed_actions": ["inspect_worktree_state", "set_goldfish_workspace", "set_code_kb_project_root", "verify_live_worktree_commit", "continue_in_worktree", "continue_from_main", "inspect_live_git"],
       "required_actions": ["inspect_worktree_state", "set_goldfish_workspace", "set_code_kb_project_root", "verify_live_worktree_commit", "continue_in_worktree"],
       "forbidden_actions": ["continue_from_main"],
-      "ordered_actions": [["inspect_worktree_state", "verify_live_worktree_commit"], ["verify_live_worktree_commit", "continue_in_worktree"], ["set_goldfish_workspace", "continue_in_worktree"], ["set_code_kb_project_root", "continue_in_worktree"]],
+      "ordered_actions": [["inspect_worktree_state", "verify_live_worktree_commit"], ["verify_live_worktree_commit", "continue_in_worktree"], ["set_goldfish_workspace", "continue_in_worktree"], ["set_code_kb_project_root", "continue_in_worktree"], ["inspect_live_git", "verify_live_worktree_commit"]],
       "terminal_states": ["active"],
       "user_questions": 0
     },
     {
       "id": "approval_pause_recovery",
-      "allowed_actions": ["recall_memory", "read_linked_report", "inspect_live_git", "verify_publication_authority", "identify_next_action", "request_publication_authority", "checkpoint_precommit", "push_branch", "open_pr", "merge_branch", "verify_live_worktree_commit"],
+      "allowed_actions": ["recall_memory", "read_linked_report", "inspect_live_git", "verify_publication_authority", "identify_next_action", "request_publication_authority", "checkpoint_precommit", "push_branch", "open_pr", "merge_branch", "verify_live_worktree_commit", "set_goldfish_workspace"],
       "required_actions": ["recall_memory", "read_linked_report", "inspect_live_git", "verify_publication_authority", "identify_next_action"],
       "forbidden_actions": ["checkpoint_precommit", "push_branch", "open_pr", "merge_branch"],
-      "ordered_actions": [["recall_memory", "read_linked_report"], ["read_linked_report", "inspect_live_git"], ["inspect_live_git", "verify_publication_authority"], ["verify_publication_authority", "identify_next_action"], ["identify_next_action", "request_publication_authority"], ["inspect_live_git", "verify_live_worktree_commit"], ["verify_live_worktree_commit", "verify_publication_authority"]],
+      "ordered_actions": [["recall_memory", "read_linked_report"], ["read_linked_report", "inspect_live_git"], ["inspect_live_git", "verify_publication_authority"], ["verify_publication_authority", "identify_next_action"], ["identify_next_action", "request_publication_authority"], ["inspect_live_git", "verify_live_worktree_commit"], ["verify_live_worktree_commit", "verify_publication_authority"], ["set_goldfish_workspace", "recall_memory"]],
       "required_if_selected": {"request_publication_authority": ["identify_next_action"]},
       "conditional_outcomes": [{"when_all": ["request_publication_authority"], "when_none": [], "terminal_states": ["awaiting_user"], "user_question_range": [1, 1]}, {"when_all": ["identify_next_action"], "when_none": ["request_publication_authority"], "terminal_states": ["awaiting_user"], "user_question_range": [0, 0]}],
       "terminal_states": ["awaiting_user"],
@@ -139,10 +140,10 @@
     },
     {
       "id": "unsupported_structural_coverage",
-      "allowed_actions": ["read_coverage_warning", "read_source_file", "search_references_natively", "report_coverage_gap", "claim_complete_impact", "treat_check_edit_pass_as_proof", "report_blocked"],
+      "allowed_actions": ["read_coverage_warning", "read_source_file", "search_references_natively", "report_coverage_gap", "claim_complete_impact", "treat_check_edit_pass_as_proof", "report_blocked", "continue_task"],
       "required_actions": ["read_coverage_warning", "read_source_file", "search_references_natively", "report_coverage_gap"],
       "forbidden_actions": ["claim_complete_impact", "treat_check_edit_pass_as_proof", "report_blocked"],
-      "ordered_actions": [["read_coverage_warning", "read_source_file"], ["read_source_file", "search_references_natively"], ["search_references_natively", "report_coverage_gap"]],
+      "ordered_actions": [["read_coverage_warning", "read_source_file"], ["read_source_file", "search_references_natively"], ["search_references_natively", "report_coverage_gap"], ["report_coverage_gap", "continue_task"]],
       "terminal_states": ["active", "complete"],
       "user_questions": 0
     }

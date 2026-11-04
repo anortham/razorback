@@ -2,7 +2,7 @@
   "schema_version": 1,
   "evidence_kind": "deterministic-fixture",
   "cases": [
-    {"id":"approval","actions":["complete_local_materials","checkpoint_precommit","request_publication_authority"],"terminal_state":"awaiting_user","user_questions":1},
+    {"id":"approval","actions":["complete_local_materials","checkpoint_precommit","stage_intended_files","commit_task","request_publication_authority"],"terminal_state":"awaiting_user","user_questions":1},
     {"id":"push_recovery","actions":["diagnose_network","check_remote_tip","retry_push","confirm_remote"],"terminal_state":"complete","user_questions":0},
     {"id":"checkpoint","actions":["stage_intended_files","commit_task","record_commit_sha"],"terminal_state":"complete","user_questions":0},
     {"id":"single_task","actions":["lead_implements_directly","lead_spec_review","lead_quality_review"],"terminal_state":"complete","user_questions":0},

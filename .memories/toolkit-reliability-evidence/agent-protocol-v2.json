@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "kind": "frozen-workflow-evaluation-protocol",
+  "source": {
+    "kind": "git-ref",
+    "requested": "HEAD",
+    "revision": "6388f45de0661c0c1ca1fcfa6023e7502c4b9d59",
+    "source_set_hash": "cee06cf461b8b531ebb102bd9e5733256514d35485385ea67918e46700eb5556"
+  },
+  "packet_file": "packets-v2.json",
+  "packet_sha256": "8e6f38c80a9d96a625102142073064c50d95ac07df8a5747d6942831b1cd5e20",
+  "expectations_sha256": "d8a6498dc3ca24708d240d091f7b3c39ef138584e256c710a3a5d06dd0ad3779",
+  "frozen_at": "2026-11-04T02:07:09.918519+00:00",
+  "harness": "Codex native collaboration spawn_agent",
+  "harness_version": "not exposed by native API",
+  "model": "gpt-6-sol",
+  "reasoning_effort": "high",
+  "model_backend_revision": "not exposed by native API",
+  "fresh_sessions": 2,
+  "isolation": "fork_turns=none; only blind input and deduplicated unchanged workflow text; no oracle access",
+  "case_ids": [
+    "approval",
+    "push_recovery",
+    "checkpoint",
+    "single_task",
+    "missing_code_kb",
+    "restricted_reviewer",
+    "live_tools",
+    "instruction_priority",
+    "interrupted_run",
+    "parallel_commit",
+    "worktree_switch",
+    "approval_pause_recovery",
+    "missing_tool_fallback",
+    "duplicate_installations",
+    "unsupported_structural_coverage"
+  ],
+  "required_toolkit_cases": [
+    "worktree_switch",
+    "approval_pause_recovery",
+    "missing_tool_fallback",
+    "duplicate_installations",
+    "unsupported_structural_coverage"
+  ],
+  "repeats_per_case": 2,
+  "metrics": "unavailable unless native harness supplies measurements; none provided",
+  "stop_rule": "One additional two-session batch only. Preserve failures and report incomplete behavioral acceptance if any required new case fails.",
+  "batch": 2,
+  "collection_template_sha256": "9f6c7bb36733ba48bd4ae61911c9e7b4735c1e20f6336139fbaf58a369d26599",
+  "session_prompt_sha256": {
+    "/root/blind_run_3": "9e08656091b15807bdabc617f76b816b8aaacaa0a0d387f3fafc3c945e09a8c5",
+    "/root/blind_run_4": "10adda1f74c5e1aefd6cdd0476600bf66b25bf6ec73e3c42f7bd73f0f87da5e5"
+  },
+  "comparability": "Original batch remains failed under its original oracle. This batch tests acceptance after source-backed oracle corrections and guidance clarification; scores do not establish causal improvement."
+}

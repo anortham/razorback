@@ -174,7 +174,7 @@
         "The larger task is to find and fix a small source defect in a repository with native text search, readable source files, and focused tests.",
         "code-kb tools are unavailable for this session.",
         "The failure output identifies the target, and a focused reproduction test is available; callers and related tests still need investigation.",
-        "Evaluate the evidence-gathering boundary before implementation resumes: use native search and file reads, and record the structural-index gap. The larger task continues after this boundary."
+        "The evaluated boundary includes the go/no-go decision about continuing implementation after evidence gathering; implementing the change itself is outside this sequence."
       ],
       "workflow_files": [
         "skills/using-razorback/SKILL.md",

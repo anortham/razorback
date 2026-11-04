@@ -151,6 +151,8 @@ test('approval decisions require a recoverable checkpoint before asking for publ
   assert.deepEqual(approval.actions, [
     'complete_local_materials',
     'checkpoint_precommit',
+    'stage_intended_files',
+    'commit_task',
     'request_publication_authority',
   ]);
   assert.equal(grade(packets, answers).report.cases.find(({ id }) => id === 'approval').passed, true);
@@ -222,6 +224,24 @@ test('grade accepts equivalent fallback evidence without waiving callers or focu
   fallback.actions.unshift('search_callers_natively');
   fallback.actions.splice(fallback.actions.indexOf('reproduce_focused_failure'), 1);
   assert.equal(grade(packets, answers).result.status, 1);
+});
+
+test('grade accepts explicit root binding and post-evidence continuation while enforcing co-commit order', () => {
+  const packets = prepare(join(testRoot, 'explicit-workflow-prerequisites.json'));
+  const answers = materializeValidAnswers(packets);
+  const scenario = (id) => answers.cases.find((answer) => answer.id === id);
+  scenario('worktree_switch').actions.unshift('inspect_live_git');
+  scenario('approval_pause_recovery').actions.unshift('set_goldfish_workspace');
+  scenario('unsupported_structural_coverage').actions.push('continue_task');
+
+  assert.equal(grade(packets, answers).result.status, 0);
+
+  const approval = scenario('approval');
+  approval.actions.splice(approval.actions.indexOf('commit_task'), 1);
+  const noCommit = grade(packets, answers);
+  assert.equal(noCommit.result.status, 1);
+  assert.ok(noCommit.report.cases.find(({ id }) => id === 'approval').reasons
+    .includes('missing required action commit_task'));
 });
 
 test('prepare reads an explicit git ref separately from working-tree content', () => {
