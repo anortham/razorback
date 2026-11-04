@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "agent-run",
+  "cases": [
+    {
+      "id": "worktree_switch",
+      "packet_id": "cc77745351ad602512914b6c0e5c407eaf0f80295cf2e0af581093ecae1409c6",
+      "actions": [
+        "inspect_live_git",
+        "inspect_worktree_state",
+        "verify_live_worktree_commit",
+        "inspect_plan",
+        "reconcile_uncommitted",
+        "set_goldfish_workspace",
+        "set_code_kb_project_root",
+        "continue_in_worktree"
+      ],
+      "terminal_state": "active",
+      "user_questions": 0
+    }
+  ]
+}

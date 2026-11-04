@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "tested_source_commit": "f4d7433be110335c4753c5125673067b45acaf0a",
+  "command": "TMPDIR=<task-worktree>/.razorback/test-tmp npm test",
+  "scope": "final local branch gate",
+  "timestamp_utc": "2026-11-04T02:42:47.804340+00:00",
+  "exit_code": 0,
+  "tests": 506,
+  "passed": 505,
+  "failed": 0,
+  "skipped": 1,
+  "skip_reason": "RAZORBACK_TOOLKIT_INTEGRATION_CONFIG absent; external selected services are explicit prerequisites",
+  "raw_log": "npm-test-final.log",
+  "raw_log_sha256": "7e27b09c4f3c1d395c90e0e19ad222e50e2ab4f8c743c974f68524148ad2a87b",
+  "scope_limits": "Local suite excludes actual model calls and configured real-service final acceptance."
+}

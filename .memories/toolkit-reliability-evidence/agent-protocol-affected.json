@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "kind": "frozen-affected-case-workflow-protocol",
+  "source": {
+    "kind": "git-ref",
+    "requested": "HEAD",
+    "revision": "f4d7433be110335c4753c5125673067b45acaf0a",
+    "source_set_hash": "cee06cf461b8b531ebb102bd9e5733256514d35485385ea67918e46700eb5556"
+  },
+  "packet_file": "packets-affected.json",
+  "packet_sha256": "39ccb8813ebc93f865374ada3eca584836acabf76776c10c3ae5d93f21cae6bb",
+  "expectations_sha256": "e783da61003b097790e00da03d593fd23e820d0fae67de1f4879b806232214d4",
+  "frozen_at": "2026-11-04T02:42:01.187408+00:00",
+  "harness": "Codex native collaboration spawn_agent",
+  "harness_version": "not exposed by native API",
+  "model": "gpt-6-sol",
+  "reasoning_effort": "high",
+  "model_backend_revision": "not exposed by native API",
+  "fresh_sessions": 6,
+  "repeats_per_case": 2,
+  "required_case_ids": [
+    "worktree_switch",
+    "approval_pause_recovery",
+    "duplicate_installations"
+  ],
+  "out_of_scope_case_ids": [
+    "approval",
+    "push_recovery",
+    "checkpoint",
+    "single_task",
+    "missing_code_kb",
+    "restricted_reviewer",
+    "live_tools",
+    "instruction_priority",
+    "interrupted_run",
+    "parallel_commit",
+    "missing_tool_fallback",
+    "unsupported_structural_coverage"
+  ],
+  "sessions": {
+    "affected_1_1": {
+      "case": "worktree_switch",
+      "repeat": 1,
+      "prompt_sha256": "6f1adbdec98428512eb0d6f7b7bfc0efbdd1129acb0e87a9fc76b663b221bdd1",
+      "view_sha256": "35e0b2fd0ca09e6f911a2b3235decb8ba90e511152f849f0adb4edc5a69328ab",
+      "answer": ".memories/toolkit-reliability-evidence/case-runs-affected/worktree_switch-1.json"
+    },
+    "affected_1_2": {
+      "case": "worktree_switch",
+      "repeat": 2,
+      "prompt_sha256": "901784e7a6b3befbae9f756335eb2be4d02236eb5fe8b1aa05731d496048be75",
+      "view_sha256": "35e0b2fd0ca09e6f911a2b3235decb8ba90e511152f849f0adb4edc5a69328ab",
+      "answer": ".memories/toolkit-reliability-evidence/case-runs-affected/worktree_switch-2.json"
+    },
+    "affected_2_1": {
+      "case": "approval_pause_recovery",
+      "repeat": 1,
+      "prompt_sha256": "74dfc5094eafcc005c9131ef855e9f8791956f7fc9712407d3cfd859d55b7e42",
+      "view_sha256": "21aaa0a83eb5943091d1373d55cd70adb1ca09026b823a7150e27e3b65a58908",
+      "answer": ".memories/toolkit-reliability-evidence/case-runs-affected/approval_pause_recovery-1.json"
+    },
+    "affected_2_2": {
+      "case": "approval_pause_recovery",
+      "repeat": 2,
+      "prompt_sha256": "3b21d0e80dd8bc75502e9ee8360c2b53296d427ae888daf394e831fb083a7aee",
+      "view_sha256": "21aaa0a83eb5943091d1373d55cd70adb1ca09026b823a7150e27e3b65a58908",
+      "answer": ".memories/toolkit-reliability-evidence/case-runs-affected/approval_pause_recovery-2.json"
+    },
+    "affected_3_1": {
+      "case": "duplicate_installations",
+      "repeat": 1,
+      "prompt_sha256": "229a72f173d2cbcb346b78c5d680cff1c23ab1b255ab20f3c93ff29fc20d9dd7",
+      "view_sha256": "ab9606ace88ee95a1ea82c8d64081cd2c5802edcfecc93d9fd0c773ce26931e2",
+      "answer": ".memories/toolkit-reliability-evidence/case-runs-affected/duplicate_installations-1.json"
+    },
+    "affected_3_2": {
+      "case": "duplicate_installations",
+      "repeat": 2,
+      "prompt_sha256": "62b307adfa094977d32c71b0bbcfbba6f9075eb2b666753f448fb609dc57dd80",
+      "view_sha256": "ab9606ace88ee95a1ea82c8d64081cd2c5802edcfecc93d9fd0c773ce26931e2",
+      "answer": ".memories/toolkit-reliability-evidence/case-runs-affected/duplicate_installations-2.json"
+    }
+  },
+  "grading": "Use original full bundle and unchanged trusted grader. Scoped acceptance requires all three requested cases passing with exactly the twelve intentional missing-case errors. No full-bundle success is claimed.",
+  "metrics": "unavailable",
+  "stop_rule": "Two fresh sessions per required case on this frozen source. Preserve outputs and raw grader errors. Do not retrospectively count historical decisions as passing.",
+  "reason": "Rerun only the three changed expectation contracts; preserve every prior report and carry forward two unchanged passing case contracts.",
+  "carry_forward": {
+    "case_ids": [
+      "missing_tool_fallback",
+      "unsupported_structural_coverage"
+    ],
+    "protocol": "agent-protocol-case-final.json",
+    "expectation_entries_equal": true,
+    "agent_facing_source_set_equal": true,
+    "reports": [
+      "agent-final-report-1.json",
+      "agent-final-report-2.json"
+    ]
+  }
+}

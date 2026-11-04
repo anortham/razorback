@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "scope": "five toolkit workflow decision cases only",
+  "evidence_kind": "agent-run",
+  "tested_source_commit": "f4d7433be110335c4753c5125673067b45acaf0a",
+  "agent_facing_source_set_hash": "cee06cf461b8b531ebb102bd9e5733256514d35485385ea67918e46700eb5556",
+  "full_bundle_success": false,
+  "cases": [
+    {
+      "id": "worktree_switch",
+      "source": {
+        "kind": "git-ref",
+        "requested": "HEAD",
+        "revision": "f4d7433be110335c4753c5125673067b45acaf0a",
+        "source_set_hash": "cee06cf461b8b531ebb102bd9e5733256514d35485385ea67918e46700eb5556"
+      },
+      "fresh_passing_observations": 2,
+      "expectation_unchanged_since_observations": false,
+      "reports": [
+        {
+          "repeat": 1,
+          "report": "agent-affected-report-1.json",
+          "report_sha256": "74e40b5adba90750c9dc2fd8e966f238e636e5c61c450e4063d92bd001ed09c1",
+          "answer": ".memories/toolkit-reliability-evidence/case-runs-affected/worktree_switch-1.json",
+          "answer_sha256": "2ee8a2ce078a4f3fbf654b69bf9895ba617058693e580a36f849a82e59796b13",
+          "passed": true
+        },
+        {
+          "repeat": 2,
+          "report": "agent-affected-report-2.json",
+          "report_sha256": "74e40b5adba90750c9dc2fd8e966f238e636e5c61c450e4063d92bd001ed09c1",
+          "answer": ".memories/toolkit-reliability-evidence/case-runs-affected/worktree_switch-2.json",
+          "answer_sha256": "f29c85d2af290d69c82aa51e7950a506bf0bf04892e6a48038cf487cc3bb574a",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "id": "approval_pause_recovery",
+      "source": {
+        "kind": "git-ref",
+        "requested": "HEAD",
+        "revision": "f4d7433be110335c4753c5125673067b45acaf0a",
+        "source_set_hash": "cee06cf461b8b531ebb102bd9e5733256514d35485385ea67918e46700eb5556"
+      },
+      "fresh_passing_observations": 2,
+      "expectation_unchanged_since_observations": false,
+      "reports": [
+        {
+          "repeat": 1,
+          "report": "agent-affected-report-1.json",
+          "report_sha256": "74e40b5adba90750c9dc2fd8e966f238e636e5c61c450e4063d92bd001ed09c1",
+          "answer": ".memories/toolkit-reliability-evidence/case-runs-affected/approval_pause_recovery-1.json",
+          "answer_sha256": "e5105a28be13446e2790fbdca8bd4e29d3519b38cf189662d6152947919053d7",
+          "passed": true
+        },
+        {
+          "repeat": 2,
+          "report": "agent-affected-report-2.json",
+          "report_sha256": "74e40b5adba90750c9dc2fd8e966f238e636e5c61c450e4063d92bd001ed09c1",
+          "answer": ".memories/toolkit-reliability-evidence/case-runs-affected/approval_pause_recovery-2.json",
+          "answer_sha256": "ffe58565d2ff4acc1c88e83ef6d13596a3963bd40d069744cf177ec98d4512fe",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "id": "missing_tool_fallback",
+      "source": {
+        "kind": "git-ref",
+        "requested": "HEAD",
+        "revision": "d058cf3c20164d4525bd2c58e57684b52871bfe4",
+        "source_set_hash": "cee06cf461b8b531ebb102bd9e5733256514d35485385ea67918e46700eb5556"
+      },
+      "fresh_passing_observations": 2,
+      "expectation_unchanged_since_observations": true,
+      "reports": [
+        {
+          "repeat": 1,
+          "report": "agent-final-report-1.json",
+          "report_sha256": "2b2c2b72400b3dd02e520d84bcd72b0dab33b7fbd96674c79d124facf8ea8020",
+          "answer": ".memories/toolkit-reliability-evidence/case-runs-final/missing_tool_fallback-1.json",
+          "answer_sha256": "883027bf6126ac138274fa8fad3c73a5dc1ae3d9c3e9ef65c006bb53384d95c1",
+          "passed": true
+        },
+        {
+          "repeat": 2,
+          "report": "agent-final-report-2.json",
+          "report_sha256": "9b3a1d168b034a5094736196678af51414a244f47b95dbbbbad1f5282fe5c84a",
+          "answer": ".memories/toolkit-reliability-evidence/case-runs-final/missing_tool_fallback-2.json",
+          "answer_sha256": "3508548ade48a956f5591052c9b925d6f19af7300fe8215e9441c9b2ac450a88",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "id": "duplicate_installations",
+      "source": {
+        "kind": "git-ref",
+        "requested": "HEAD",
+        "revision": "f4d7433be110335c4753c5125673067b45acaf0a",
+        "source_set_hash": "cee06cf461b8b531ebb102bd9e5733256514d35485385ea67918e46700eb5556"
+      },
+      "fresh_passing_observations": 2,
+      "expectation_unchanged_since_observations": false,
+      "reports": [
+        {
+          "repeat": 1,
+          "report": "agent-affected-report-1.json",
+          "report_sha256": "74e40b5adba90750c9dc2fd8e966f238e636e5c61c450e4063d92bd001ed09c1",
+          "answer": ".memories/toolkit-reliability-evidence/case-runs-affected/duplicate_installations-1.json",
+          "answer_sha256": "2fbf2edc9480ed8815f2babcc321d2325b50dfbacb29d4f927e7f481f538d96b",
+          "passed": true
+        },
+        {
+          "repeat": 2,
+          "report": "agent-affected-report-2.json",
+          "report_sha256": "74e40b5adba90750c9dc2fd8e966f238e636e5c61c450e4063d92bd001ed09c1",
+          "answer": ".memories/toolkit-reliability-evidence/case-runs-affected/duplicate_installations-2.json",
+          "answer_sha256": "2fbf2edc9480ed8815f2babcc321d2325b50dfbacb29d4f927e7f481f538d96b",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "id": "unsupported_structural_coverage",
+      "source": {
+        "kind": "git-ref",
+        "requested": "HEAD",
+        "revision": "d058cf3c20164d4525bd2c58e57684b52871bfe4",
+        "source_set_hash": "cee06cf461b8b531ebb102bd9e5733256514d35485385ea67918e46700eb5556"
+      },
+      "fresh_passing_observations": 2,
+      "expectation_unchanged_since_observations": true,
+      "reports": [
+        {
+          "repeat": 1,
+          "report": "agent-final-report-1.json",
+          "report_sha256": "2b2c2b72400b3dd02e520d84bcd72b0dab33b7fbd96674c79d124facf8ea8020",
+          "answer": ".memories/toolkit-reliability-evidence/case-runs-final/unsupported_structural_coverage-1.json",
+          "answer_sha256": "1187063b896a5304f82b69e084ffd08938616ad5b3f6df1a92a43f5bd084491b",
+          "passed": true
+        },
+        {
+          "repeat": 2,
+          "report": "agent-final-report-2.json",
+          "report_sha256": "9b3a1d168b034a5094736196678af51414a244f47b95dbbbbad1f5282fe5c84a",
+          "answer": ".memories/toolkit-reliability-evidence/case-runs-final/unsupported_structural_coverage-2.json",
+          "answer_sha256": "1187063b896a5304f82b69e084ffd08938616ad5b3f6df1a92a43f5bd084491b",
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "harness": "Codex native collaboration spawn_agent",
+  "model": "gpt-6-sol",
+  "reasoning_effort": "high",
+  "harness_version": "not exposed by native API",
+  "model_backend_revision": "not exposed by native API",
+  "measurements": "unavailable",
+  "preservation": "All earlier completed outputs and grading reports remain unchanged, including failed batches. No fixture answers or prior failed answers are counted here.",
+  "expected_incomplete_full_reports": "Full trusted reports intentionally retain missing out-of-scope cases: ten for the five-case collection; twelve for the three-case rerun. Scope acceptance requires those exact missing-case errors and zero failures among selected cases."
+}

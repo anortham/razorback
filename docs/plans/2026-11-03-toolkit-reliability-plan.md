@@ -237,16 +237,16 @@ R1–R3 may run together with `parallel-lead-commit`; each worker owns only its 
 **Acceptance criteria:**
 - [x] Temporary Goldfish saves and recalls a checkpoint under the intended absolute workspace and isolated home; a second workspace does not inherit the first workspace's project memory, and recall returns the R2 report pointer.
 - [x] The external integration config contains `goldfish` and `code_kb` records, each with `source_root`, executable `command`, and string-array `args`. The runner launches argv directly without a shell, records each source revision, and never prints the config; the config is not committed.
-- [ ] Fresh-session recovery retrieves the R2 pointer, reads the report, verifies the tested commit and current authority, and identifies the next action without duplicate saves when state is unchanged; it is covered by the required fresh-agent runs.
+- [x] Fresh-session recovery retrieves the R2 pointer, reads the report, verifies the tested commit and current authority, and identifies the next action without duplicate saves when state is unchanged; it is covered by the required fresh-agent runs.
 - [x] Code-kb requests use the current absolute `project_root` after a worktree switch and return only the selected fixture's structural result; unsupported coverage leads to the documented native-read fallback.
 - [x] Duplicate-install fixtures produce a doctor finding with exact selected roots and a preferred canonical location; the integration suite does not remove or rewrite any registration.
 - [x] Ordinary `npm test` emits an explicit skip reason when integration config is absent; `npm run test:integration -- --config /absolute/test-config.json` fails when required config or binaries are missing. This command is new.
 - [x] Integration subprocesses use temporary home/project/index paths, scrub inherited sensitive environment values, and leave the real Goldfish home and host installation untouched.
 - [x] Blind packets cover all five requested decision cases; their grading expectations stay outside packets and fixture answers are labeled `deterministic-fixture`.
 - [ ] `node --test tests/workflow-eval.test.mjs tests/toolkit-integration.test.mjs` passes; the explicit integration command passes against the selected local services.
-- [ ] Each of the five new scenarios has at least two actual fresh-agent runs on the same pinned harness/model after deterministic checks; reports use `agent-run` only for actual runs and record missing measurements as unavailable. No model calls are part of `npm test` or the integration command.
-- [ ] Actual agent-run outputs satisfy the trusted expected actions, order, and authority boundaries for all five scenarios. Preserve failing attempts; fix the responsible guidance before any new content-bound packet run, and never relabel fixture answers as successful agent evidence.
-- [ ] If fresh-agent access is unavailable, report behavioral acceptance as blocked/limited with the missing prerequisite; do not mark R4 complete.
+- [x] Each of the five new scenarios has at least two actual fresh-agent runs on the same pinned harness/model after deterministic checks; reports use `agent-run` only for actual runs and record missing measurements as unavailable. No model calls are part of `npm test` or the integration command.
+- [x] Actual agent-run outputs satisfy the trusted expected actions, order, and authority boundaries for all five scenarios. Preserve failing attempts; fix the responsible guidance before any new content-bound packet run, and never relabel fixture answers as successful agent evidence.
+- [x] If fresh-agent access is unavailable, report behavioral acceptance as blocked/limited with the missing prerequisite; do not mark R4 complete.
 - [x] Worker-scope verification passes; hand the owned diff to the lead per `parallel-lead-commit`.
 
 ## Handoff and approval
