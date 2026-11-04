@@ -225,6 +225,14 @@ cmd_bump() {
     printf "  %-45s  %s -> %s\n" "$path ($field)" "$old_ver" "$new_version"
   done < <(declared_files)
 
+  local npm_lock="$REPO_ROOT/package-lock.json"
+  if [[ -f "$npm_lock" ]]; then
+    write_json_field "$npm_lock" "version" "$new_version"
+    if jq -e '.packages[""]' "$npm_lock" >/dev/null; then
+      write_json_field "$npm_lock" 'packages[""].version' "$new_version"
+    fi
+  fi
+
   echo ""
   echo "Done. Running audit to check for missed files..."
   echo ""

@@ -144,3 +144,28 @@ test('--audit keeps undeclared version references advisory (exit 0)', requiresJq
   assert.match(result.stdout, /UNDECLARED files containing/);
   assert.match(result.stdout, /NOTES\.md/);
 });
+
+test('version bumps keep npm lock metadata synchronized without changing dependencies', requiresJq, (t) => {
+  const dir = makeFixture();
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const lockPath = path.join(dir, 'package-lock.json');
+  const lock = {
+    name: 'razorback',
+    version: fixtureVersion(dir),
+    lockfileVersion: 3,
+    packages: {
+      '': { name: 'razorback', version: fixtureVersion(dir), devDependencies: { example: '1.2.3' } },
+      'node_modules/example': { version: '1.2.3', integrity: 'fixture-integrity', dev: true },
+    },
+  };
+  fs.writeFileSync(lockPath, JSON.stringify(lock));
+
+  const result = run(dir, '9.8.7');
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(fs.readFileSync(lockPath, 'utf8')), {
+    ...lock,
+    version: '9.8.7',
+    packages: { ...lock.packages, '': { ...lock.packages[''], version: '9.8.7' } },
+  });
+});

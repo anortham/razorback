@@ -12,6 +12,7 @@
       "plans",
       "RELEASE-NOTES.md",
       "node_modules",
+      "package-lock.json",
       ".git",
       ".razorback",
       ".miller",

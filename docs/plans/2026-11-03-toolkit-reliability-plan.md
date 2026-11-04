@@ -257,3 +257,11 @@ R1–R3 may run together with `parallel-lead-commit`; each worker owns only its 
 - **Local commit authority:** Authorized by the implementation request; lead stages reviewed paths and commits locally.
 - **Push / PR / release / installation cleanup:** Not authorized. The user explicitly prohibited push and release; keep this work local without requesting publication authority.
 - **Recommended start after approval:** Start R1–R3 as one disjoint batch; review and integrate their exact diffs, then build R4 against the stable contracts. Its final combined gate waits for Goldfish G1 and the selected code-kb revision after K3/K4. Run Razorback's `npm test` once at its final local branch gate, then run the explicitly configured three-tool integration command and record all selected revisions.
+
+
+## Execution notes
+
+- R1 committed as `117c761`; R2 as `e2110fd`; R3 as `97bf9dd`, after lead review and focused gates.
+- R3's live diagnostic found 32 duplicate skills through the two selected symlinks and cached plugin. Exact proposed registration-only cleanup is recorded in `.memories/autonomous-run-2026-11-04-toolkit-reliability.md`; it awaits separate authority.
+- R4 introduces a generated npm lockfile. The lead additionally owns `.version-bump.json`, `scripts/bump-version.sh`, and `tests/version-audit.test.mjs` so future bumps keep its two root metadata versions synchronized without changing dependency pins. The five authoritative manifests remain the source of truth; generated lock metadata is excluded from the advisory undeclared-reference audit. The new regression failed before the fix and passed afterward; all 22 focused version checks passed. No project version was bumped.
+- R4 runner construction started against stable contracts before R3 finished. Shared package edits remained serialized until R3 was committed. Final combined acceptance still waits for Goldfish G1 and the code-kb K3/K4 selection.
