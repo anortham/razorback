@@ -248,6 +248,23 @@ test('grade accepts explicit root binding and post-evidence continuation while e
     .includes('missing required action commit_task'));
 });
 
+test('grade allows native fallback with sufficient evidence and safe toolkit follow-through', () => {
+  const packets = prepare(join(testRoot, 'sufficient-native-evidence.json'));
+  const answers = materializeValidAnswers(packets);
+  const scenario = (id) => answers.cases.find((answer) => answer.id === id);
+  const worktree = scenario('worktree_switch').actions;
+  worktree.splice(worktree.indexOf('continue_in_worktree'), 0, 'reconcile_uncommitted');
+  worktree.push('continue_task');
+  scenario('approval_pause_recovery').actions.push('preserve_evidence');
+  scenario('missing_tool_fallback').actions = ['reproduce_focused_failure', 'inspect_git', 'read_source_file', 'search_callers_natively', 'identify_next_action', 'continue_task'];
+  scenario('duplicate_installations').actions.push('report_coverage_gap');
+
+  assert.equal(grade(packets, answers).result.status, 0);
+
+  scenario('missing_tool_fallback').actions.splice(2, 0, 'claim_code_kb_checked');
+  assert.equal(grade(packets, answers).result.status, 1);
+});
+
 test('prepare reads an explicit git ref separately from working-tree content', () => {
   const repo = mkdtempSync(join(testRoot, 'repo-'));
   mkdirSync(join(repo, 'fixtures'), { recursive: true });

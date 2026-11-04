@@ -101,16 +101,17 @@
     },
     {
       "id": "worktree_switch",
-      "allowed_actions": ["inspect_worktree_state", "set_goldfish_workspace", "set_code_kb_project_root", "verify_live_worktree_commit", "continue_in_worktree", "continue_from_main", "inspect_live_git"],
+      "allowed_actions": ["inspect_worktree_state", "set_goldfish_workspace", "set_code_kb_project_root", "verify_live_worktree_commit", "continue_in_worktree", "continue_from_main", "inspect_live_git", "reconcile_uncommitted", "continue_task"],
       "required_actions": ["inspect_worktree_state", "set_goldfish_workspace", "set_code_kb_project_root", "verify_live_worktree_commit", "continue_in_worktree"],
       "forbidden_actions": ["continue_from_main"],
-      "ordered_actions": [["inspect_worktree_state", "verify_live_worktree_commit"], ["verify_live_worktree_commit", "continue_in_worktree"], ["set_goldfish_workspace", "continue_in_worktree"], ["set_code_kb_project_root", "continue_in_worktree"], ["inspect_live_git", "verify_live_worktree_commit"]],
+      "ordered_actions": [["inspect_worktree_state", "verify_live_worktree_commit"], ["verify_live_worktree_commit", "continue_in_worktree"], ["set_goldfish_workspace", "continue_in_worktree"], ["set_code_kb_project_root", "continue_in_worktree"], ["inspect_live_git", "verify_live_worktree_commit"], ["verify_live_worktree_commit", "reconcile_uncommitted"], ["reconcile_uncommitted", "continue_in_worktree"], ["continue_in_worktree", "continue_task"]],
+      "required_if_selected": {"continue_task": ["continue_in_worktree"]},
       "terminal_states": ["active"],
       "user_questions": 0
     },
     {
       "id": "approval_pause_recovery",
-      "allowed_actions": ["recall_memory", "read_linked_report", "inspect_live_git", "verify_publication_authority", "identify_next_action", "request_publication_authority", "checkpoint_precommit", "push_branch", "open_pr", "merge_branch", "verify_live_worktree_commit", "set_goldfish_workspace", "inspect_plan", "inspect_ledger"],
+      "allowed_actions": ["recall_memory", "read_linked_report", "inspect_live_git", "verify_publication_authority", "identify_next_action", "request_publication_authority", "checkpoint_precommit", "push_branch", "open_pr", "merge_branch", "verify_live_worktree_commit", "set_goldfish_workspace", "inspect_plan", "inspect_ledger", "preserve_evidence"],
       "required_actions": ["recall_memory", "read_linked_report", "inspect_live_git", "verify_publication_authority", "identify_next_action"],
       "forbidden_actions": ["checkpoint_precommit", "push_branch", "open_pr", "merge_branch"],
       "ordered_actions": [["recall_memory", "read_linked_report"], ["read_linked_report", "inspect_live_git"], ["inspect_live_git", "verify_publication_authority"], ["verify_publication_authority", "identify_next_action"], ["identify_next_action", "request_publication_authority"], ["inspect_live_git", "verify_live_worktree_commit"], ["verify_live_worktree_commit", "verify_publication_authority"], ["set_goldfish_workspace", "recall_memory"], ["read_linked_report", "inspect_plan"], ["read_linked_report", "inspect_ledger"], ["inspect_plan", "identify_next_action"], ["inspect_ledger", "identify_next_action"]],
@@ -121,20 +122,20 @@
     },
     {
       "id": "missing_tool_fallback",
-      "allowed_actions": ["reproduce_focused_failure", "native_text_search", "read_source_file", "search_callers_natively", "run_focused_tests", "report_evidence_gaps", "continue_task", "request_code_kb_enablement", "claim_code_kb_checked", "report_coverage_gap", "search_references_natively"],
+      "allowed_actions": ["reproduce_focused_failure", "native_text_search", "read_source_file", "search_callers_natively", "run_focused_tests", "report_evidence_gaps", "continue_task", "request_code_kb_enablement", "claim_code_kb_checked", "report_coverage_gap", "search_references_natively", "inspect_git", "identify_next_action"],
       "required_actions": ["read_source_file", "search_callers_natively", "continue_task"],
       "forbidden_actions": ["request_code_kb_enablement", "claim_code_kb_checked"],
-      "ordered_actions": [["native_text_search", "continue_task"], ["read_source_file", "continue_task"], ["search_callers_natively", "continue_task"], ["run_focused_tests", "continue_task"], ["report_evidence_gaps", "continue_task"], ["reproduce_focused_failure", "continue_task"], ["report_coverage_gap", "continue_task"], ["search_references_natively", "continue_task"]],
+      "ordered_actions": [["native_text_search", "continue_task"], ["read_source_file", "continue_task"], ["search_callers_natively", "continue_task"], ["run_focused_tests", "continue_task"], ["report_evidence_gaps", "continue_task"], ["reproduce_focused_failure", "continue_task"], ["report_coverage_gap", "continue_task"], ["search_references_natively", "continue_task"], ["inspect_git", "continue_task"], ["read_source_file", "identify_next_action"], ["search_callers_natively", "identify_next_action"], ["identify_next_action", "continue_task"]],
       "terminal_states": ["active", "complete"],
       "user_questions": 0,
-      "any_of_actions": [["run_focused_tests", "reproduce_focused_failure"], ["report_evidence_gaps", "report_coverage_gap"]]
+      "any_of_actions": [["run_focused_tests", "reproduce_focused_failure"]]
     },
     {
       "id": "duplicate_installations",
-      "allowed_actions": ["inspect_selected_install_roots", "compare_skill_copies", "report_exact_redundant_registration", "name_canonical_source", "remove_duplicate_registration", "delete_installation_tree", "scan_unselected_home", "claim_runtime_verified", "report_evidence_gaps"],
+      "allowed_actions": ["inspect_selected_install_roots", "compare_skill_copies", "report_exact_redundant_registration", "name_canonical_source", "remove_duplicate_registration", "delete_installation_tree", "scan_unselected_home", "claim_runtime_verified", "report_evidence_gaps", "report_coverage_gap"],
       "required_actions": ["inspect_selected_install_roots", "compare_skill_copies", "report_exact_redundant_registration", "name_canonical_source"],
       "forbidden_actions": ["remove_duplicate_registration", "delete_installation_tree", "scan_unselected_home", "claim_runtime_verified"],
-      "ordered_actions": [["inspect_selected_install_roots", "compare_skill_copies"], ["compare_skill_copies", "report_exact_redundant_registration"], ["compare_skill_copies", "name_canonical_source"], ["compare_skill_copies", "report_evidence_gaps"]],
+      "ordered_actions": [["inspect_selected_install_roots", "compare_skill_copies"], ["compare_skill_copies", "report_exact_redundant_registration"], ["compare_skill_copies", "name_canonical_source"], ["compare_skill_copies", "report_evidence_gaps"], ["compare_skill_copies", "report_coverage_gap"]],
       "terminal_states": ["complete"],
       "user_questions": 0
     },

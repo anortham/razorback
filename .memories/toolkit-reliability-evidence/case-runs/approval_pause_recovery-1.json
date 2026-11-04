@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "agent-run",
+  "cases": [
+    {
+      "id": "approval_pause_recovery",
+      "packet_id": "4876f37fc18112261de2e4de779a0dd2661b2a3f77e8aa3f565c774e0e46d54a",
+      "actions": [
+        "set_goldfish_workspace",
+        "recall_memory",
+        "read_linked_report",
+        "inspect_plan",
+        "inspect_live_git",
+        "verify_live_worktree_commit",
+        "verify_publication_authority",
+        "identify_next_action"
+      ],
+      "terminal_state": "awaiting_user",
+      "user_questions": 0
+    }
+  ]
+}

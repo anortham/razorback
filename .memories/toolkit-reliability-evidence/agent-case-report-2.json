@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "success": false,
+  "evidence_kind": "agent-run",
+  "expectation_manifest_hash": "e4ce02378b118bd7ba430fe21c89f2da526bd2b86618d20b10a81f91760e2a72",
+  "packet_source": {
+    "kind": "git-ref",
+    "requested": "HEAD",
+    "revision": "1cae8dffe3db78b00a54b85ea662c7a76c2a1e93",
+    "source_set_hash": "cee06cf461b8b531ebb102bd9e5733256514d35485385ea67918e46700eb5556"
+  },
+  "summary": {
+    "total": 15,
+    "passed": 1,
+    "failed": 14
+  },
+  "measurements": {
+    "latency_ms": "unavailable",
+    "input_tokens": "unavailable",
+    "output_tokens": "unavailable"
+  },
+  "errors": [
+    "missing case approval",
+    "missing case push_recovery",
+    "missing case checkpoint",
+    "missing case single_task",
+    "missing case missing_code_kb",
+    "missing case restricted_reviewer",
+    "missing case live_tools",
+    "missing case instruction_priority",
+    "missing case interrupted_run",
+    "missing case parallel_commit"
+  ],
+  "cases": [
+    {
+      "id": "approval",
+      "passed": false,
+      "reasons": [
+        "answer is missing"
+      ]
+    },
+    {
+      "id": "push_recovery",
+      "passed": false,
+      "reasons": [
+        "answer is missing"
+      ]
+    },
+    {
+      "id": "checkpoint",
+      "passed": false,
+      "reasons": [
+        "answer is missing"
+      ]
+    },
+    {
+      "id": "single_task",
+      "passed": false,
+      "reasons": [
+        "answer is missing"
+      ]
+    },
+    {
+      "id": "missing_code_kb",
+      "passed": false,
+      "reasons": [
+        "answer is missing"
+      ]
+    },
+    {
+      "id": "restricted_reviewer",
+      "passed": false,
+      "reasons": [
+        "answer is missing"
+      ]
+    },
+    {
+      "id": "live_tools",
+      "passed": false,
+      "reasons": [
+        "answer is missing"
+      ]
+    },
+    {
+      "id": "instruction_priority",
+      "passed": false,
+      "reasons": [
+        "answer is missing"
+      ]
+    },
+    {
+      "id": "interrupted_run",
+      "passed": false,
+      "reasons": [
+        "answer is missing"
+      ]
+    },
+    {
+      "id": "parallel_commit",
+      "passed": false,
+      "reasons": [
+        "answer is missing"
+      ]
+    },
+    {
+      "id": "worktree_switch",
+      "passed": false,
+      "reasons": [
+        "action reconcile_uncommitted is not allowed for scenario",
+        "action continue_task is not allowed for scenario"
+      ]
+    },
+    {
+      "id": "approval_pause_recovery",
+      "passed": false,
+      "reasons": [
+        "action preserve_evidence is not allowed for scenario"
+      ]
+    },
+    {
+      "id": "missing_tool_fallback",
+      "passed": false,
+      "reasons": [
+        "requires one of report_evidence_gaps, report_coverage_gap",
+        "action inspect_git is not allowed for scenario",
+        "action identify_next_action is not allowed for scenario"
+      ]
+    },
+    {
+      "id": "duplicate_installations",
+      "passed": false,
+      "reasons": [
+        "action report_coverage_gap is not allowed for scenario"
+      ]
+    },
+    {
+      "id": "unsupported_structural_coverage",
+      "passed": true,
+      "reasons": []
+    }
+  ]
+}

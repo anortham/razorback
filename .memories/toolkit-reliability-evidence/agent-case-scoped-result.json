@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "status": "failed",
+  "evidence_kind": "agent-run",
+  "protocol": "agent-protocol-case-scoped.json",
+  "source": {
+    "kind": "git-ref",
+    "requested": "HEAD",
+    "revision": "1cae8dffe3db78b00a54b85ea662c7a76c2a1e93",
+    "source_set_hash": "cee06cf461b8b531ebb102bd9e5733256514d35485385ea67918e46700eb5556"
+  },
+  "scope": [
+    "worktree_switch",
+    "approval_pause_recovery",
+    "missing_tool_fallback",
+    "duplicate_installations",
+    "unsupported_structural_coverage"
+  ],
+  "full_bundle_success": false,
+  "runs": [
+    {
+      "repeat": 1,
+      "report": "agent-case-report-1.json",
+      "expected_missing_legacy_cases_only": true,
+      "passed": 2,
+      "total": 5,
+      "cases": [
+        {
+          "id": "worktree_switch",
+          "passed": false,
+          "reasons": [
+            "action reconcile_uncommitted is not allowed for scenario",
+            "action continue_task is not allowed for scenario"
+          ]
+        },
+        {
+          "id": "approval_pause_recovery",
+          "passed": true,
+          "reasons": []
+        },
+        {
+          "id": "missing_tool_fallback",
+          "passed": false,
+          "reasons": [
+            "requires one of report_evidence_gaps, report_coverage_gap",
+            "action inspect_git is not allowed for scenario",
+            "action identify_next_action is not allowed for scenario"
+          ]
+        },
+        {
+          "id": "duplicate_installations",
+          "passed": false,
+          "reasons": [
+            "action report_coverage_gap is not allowed for scenario"
+          ]
+        },
+        {
+          "id": "unsupported_structural_coverage",
+          "passed": true,
+          "reasons": []
+        }
+      ]
+    },
+    {
+      "repeat": 2,
+      "report": "agent-case-report-2.json",
+      "expected_missing_legacy_cases_only": true,
+      "passed": 1,
+      "total": 5,
+      "cases": [
+        {
+          "id": "worktree_switch",
+          "passed": false,
+          "reasons": [
+            "action reconcile_uncommitted is not allowed for scenario",
+            "action continue_task is not allowed for scenario"
+          ]
+        },
+        {
+          "id": "approval_pause_recovery",
+          "passed": false,
+          "reasons": [
+            "action preserve_evidence is not allowed for scenario"
+          ]
+        },
+        {
+          "id": "missing_tool_fallback",
+          "passed": false,
+          "reasons": [
+            "requires one of report_evidence_gaps, report_coverage_gap",
+            "action inspect_git is not allowed for scenario",
+            "action identify_next_action is not allowed for scenario"
+          ]
+        },
+        {
+          "id": "duplicate_installations",
+          "passed": false,
+          "reasons": [
+            "action report_coverage_gap is not allowed for scenario"
+          ]
+        },
+        {
+          "id": "unsupported_structural_coverage",
+          "passed": true,
+          "reasons": []
+        }
+      ]
+    }
+  ],
+  "measurements": "unavailable",
+  "interpretation": "Original frozen reports remain failed. Source review found remaining oracle contradictions; these outputs are not regraded or counted as behavioral acceptance.",
+  "sha256": {
+    "agent-case-repeat-1.json": "b70648388c1f3b24a27392632f19f9b094021a24c56a7c38b88689e91a9f4d74",
+    "agent-case-repeat-2.json": "86d7dbc8242d3110b264f41f0a1e6bd53005c06953c4c09a40385d130f0dfaeb",
+    "agent-case-report-1.json": "cd71aeb5b74e9815925ba3eb5b35214d7d6ee67b71803735073623fe8a62839f",
+    "agent-case-report-2.json": "488f256ef717f73aacd3c0131769e23f0bdbc57bae1dc88bca9889e60048fd5a",
+    "agent-protocol-case-scoped.json": "4156f2da40d0d5aa76b406975069bdaae52d10314435bd918453a68c03941c10",
+    "case-runs/approval_pause_recovery-1.json": "6635d674d292bbb2c941bf4c4daad60b388a2b5d590f242c99489c321bbb7e97",
+    "case-runs/approval_pause_recovery-2.json": "a1a468875718d18e2b38bd1dbe10747648504d76a4d43de8aaeaa7dd155dc55a",
+    "case-runs/duplicate_installations-1.json": "79d0f93e1f57ba59df1ab22168052a9119eccbc86e91ee4af0548d8127fcd78b",
+    "case-runs/duplicate_installations-2.json": "79d0f93e1f57ba59df1ab22168052a9119eccbc86e91ee4af0548d8127fcd78b",
+    "case-runs/missing_tool_fallback-1.json": "b2002cf664130f1d1b86f1265714ed735cc7f114c73638761db32bc20ea4fec9",
+    "case-runs/missing_tool_fallback-2.json": "b2002cf664130f1d1b86f1265714ed735cc7f114c73638761db32bc20ea4fec9",
+    "case-runs/unsupported_structural_coverage-1.json": "c1ad505d14a31ce2c1c28398c35472bc80f83df2ebf0eb71df27776aff065f49",
+    "case-runs/unsupported_structural_coverage-2.json": "03f120e37d3b8e765897e95936fd770c7fc1699ee99016e74489fe118ad39e7e",
+    "case-runs/worktree_switch-1.json": "62bd020310403e7aa11ce00ea4075c8f8d603fecd1818f97f1e731996aee9a74",
+    "case-runs/worktree_switch-2.json": "60e5da94a0e95eb2c7e9cced2e1361e64625c628da2df2a448b536a1c4e59501",
+    "expectations-case-scoped.json": "e4ce02378b118bd7ba430fe21c89f2da526bd2b86618d20b10a81f91760e2a72",
+    "packets-case-scoped.json": "70d83ec1083c9c7a9951e4929d47d24683151e60e5845a7d33935dc73031d565"
+  }
+}
