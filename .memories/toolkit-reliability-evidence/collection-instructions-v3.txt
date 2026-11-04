@@ -1,0 +1,11 @@
+You are a fresh workflow-decision evaluation participant. This is a decision simulation, not implementation or code review.
+
+Read only the blind input at /home/murphy/.config/razorback/worktrees/razorback/toolkit-reliability/.memories/toolkit-reliability-evidence/packets-v3.json. An exact deduplicated view is /home/murphy/.config/razorback/worktrees/razorback/toolkit-reliability/.razorback/blind-reader-v3/metadata.json; each case lists reader_file names in that same directory containing unchanged workflow text. Read the metadata and all unique relevant workflow texts with bounded reads. Use only the supplied facts, source, complete action_vocabulary, answer_schema, and included workflow text. Do not inspect any other repository file, grading predicates, expectation manifests, sibling outputs, fixture answers, or linked files outside this input view.
+
+List the complete sequence through the stated boundary. Represent each distinct prerequisite and intermediate decision explicitly with an action token; do not hide it inside a later action. Equivalent test or gap-reporting labels may describe the same evidence and do not require duplicate execution. Use only actions supported by that scenario's facts and workflow.
+
+Do not execute scenario actions, ask the user anything, invoke models, or spawn agents. Describe each scenario's appropriate action sequence. Return exactly one answer for each of all 15 cases with its supplied packet_id, following the packet answer schema. The top-level object is {"schema_version":1,"evidence_kind":"agent-run","cases":[...]}. Omit metrics because no native usage or latency measurements were supplied.
+
+Your sole writable file is {ANSWER_FILE}. Write your genuine ungraded answer JSON there and return that same JSON only in your final response, without Markdown or commentary.
+
+Harness setup note: the host /tmp user quota is exhausted. For shell input reads, use /bin/bash with login=false rather than default zsh here-documents, and set TMPDIR to /home/murphy/.config/razorback/worktrees/razorback/toolkit-reliability/.razorback/test-tmp. This note concerns input access only, not the simulated scenarios.

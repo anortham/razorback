@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "kind": "frozen-workflow-evaluation-protocol",
+  "source": {
+    "kind": "git-ref",
+    "requested": "HEAD",
+    "revision": "7fcad6a80b721e8ee89e4f47ad734f3e3d8120a6",
+    "source_set_hash": "cee06cf461b8b531ebb102bd9e5733256514d35485385ea67918e46700eb5556"
+  },
+  "packet_file": "packets-v3.json",
+  "packet_sha256": "5265d78e2a9f5962ce38efb33f467153fd577e8aa5a19e64218cc3e78a937e73",
+  "expectations_sha256": "74fbaebdbd062d6827522d26a464384a8b5d40c9e69053b267f3a1128e979f12",
+  "frozen_at": "2026-11-04T02:18:00.454600+00:00",
+  "harness": "Codex native collaboration spawn_agent",
+  "harness_version": "not exposed by native API",
+  "model": "gpt-6-sol",
+  "reasoning_effort": "high",
+  "model_backend_revision": "not exposed by native API",
+  "fresh_sessions": 2,
+  "isolation": "fork_turns=none; only blind input and deduplicated unchanged workflow text; no oracle access",
+  "case_ids": [
+    "approval",
+    "push_recovery",
+    "checkpoint",
+    "single_task",
+    "missing_code_kb",
+    "restricted_reviewer",
+    "live_tools",
+    "instruction_priority",
+    "interrupted_run",
+    "parallel_commit",
+    "worktree_switch",
+    "approval_pause_recovery",
+    "missing_tool_fallback",
+    "duplicate_installations",
+    "unsupported_structural_coverage"
+  ],
+  "required_toolkit_cases": [
+    "worktree_switch",
+    "approval_pause_recovery",
+    "missing_tool_fallback",
+    "duplicate_installations",
+    "unsupported_structural_coverage"
+  ],
+  "repeats_per_case": 2,
+  "metrics": "unavailable unless native harness supplies measurements; none provided",
+  "stop_rule": "Two fresh sessions against this corrected contract. Preserve all outputs and report actual acceptance; no further calibration batch in this implementation run.",
+  "batch": 3,
+  "collection_template_sha256": "e764f6fce8e16ee819d74663a7c6e253ada6d284e2c454c4f3eff2e6d9c2f783",
+  "session_prompt_sha256": {
+    "/root/blind_run_5": "ddd34341d36840636848abd751da84b5eea368276caa2491ef9f9df6d8485290",
+    "/root/blind_run_6": "97ba9875397f7b61b29c16625497e1db04b3dc52ca0c51dc3b190c8374d221e7"
+  },
+  "comparability": "Separate post-fix verification after further source contradictions invalidated the prior stop assumption. Prior closed batches remain failed under their original frozen oracles; no retrospective regrade or comparative score claim."
+}

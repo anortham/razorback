@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "batch": 3,
+  "status": "closed-failed-frozen-oracle",
+  "records": [
+    {
+      "task": "/root/blind_run_5",
+      "answers": "agent-run-5.json",
+      "answers_sha256": "9bd66656e166e7d715f5f41e40f72e730483f84c344dc1f7514b7091ee36b995",
+      "report": "agent-report-5.json",
+      "report_sha256": "2118e55212383fd31d38c9f8c37e6cadf8db8408908cf103c3bf98e37bb37565",
+      "summary": {
+        "total": 15,
+        "passed": 11,
+        "failed": 4
+      },
+      "new_case_passes": [
+        "worktree_switch",
+        "duplicate_installations",
+        "unsupported_structural_coverage"
+      ]
+    },
+    {
+      "task": "/root/blind_run_6",
+      "answers": "agent-run-6.json",
+      "answers_sha256": "8081c6dfe14ec1575d52bfc14e5966945209e6c04bf49195d54d731d4bd442b4",
+      "report": "agent-report-6.json",
+      "report_sha256": "8c1748e34ca75581c312cee8cf567729874ea81fa9f7db1a04cd7950a2afb17b",
+      "summary": {
+        "total": 15,
+        "passed": 12,
+        "failed": 3
+      },
+      "new_case_passes": [
+        "worktree_switch",
+        "duplicate_installations",
+        "unsupported_structural_coverage"
+      ]
+    }
+  ],
+  "metrics": "unavailable"
+}

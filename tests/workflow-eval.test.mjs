@@ -192,9 +192,13 @@ test('grade accepts source-required checks while preserving the approval checkpo
   scenario('approval').actions.unshift('verify_publication_authority', 'inspect_worktree_state');
   scenario('single_task').actions.splice(1, 0, 'run_focused_tests');
   scenario('interrupted_run').actions.push('identify_next_action', 'continue_task');
+  const interrupted = scenario('interrupted_run').actions;
+  interrupted.unshift('set_goldfish_workspace', 'recall_memory', 'inspect_worktree_state');
+  interrupted.splice(interrupted.indexOf('mark_task_complete'), 0, 'lead_spec_review', 'lead_quality_review');
   scenario('duplicate_installations').actions.push('report_evidence_gaps');
   const recovery = scenario('approval_pause_recovery').actions;
   recovery.splice(recovery.indexOf('inspect_live_git') + 1, 0, 'verify_live_worktree_commit');
+  recovery.splice(recovery.indexOf('read_linked_report') + 1, 0, 'inspect_plan', 'inspect_ledger');
 
   assert.equal(grade(packets, answers).result.status, 0);
 
@@ -210,7 +214,7 @@ test('grade accepts equivalent fallback evidence without waiving callers or focu
   const packets = prepare(join(testRoot, 'equivalent-fallback-evidence.json'));
   const answers = materializeValidAnswers(packets);
   const fallback = answers.cases.find(({ id }) => id === 'missing_tool_fallback');
-  fallback.actions = ['reproduce_focused_failure', 'read_source_file', 'search_callers_natively', 'report_coverage_gap', 'continue_task'];
+  fallback.actions = ['reproduce_focused_failure', 'read_source_file', 'search_callers_natively', 'search_references_natively', 'report_coverage_gap', 'continue_task'];
   const audit = answers.cases.find(({ id }) => id === 'missing_code_kb');
   audit.actions[audit.actions.indexOf('report_evidence_gaps')] = 'report_coverage_gap';
 
