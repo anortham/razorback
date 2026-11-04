@@ -144,6 +144,22 @@ Once loaded, razorback works automatically. The bootstrap path varies by harness
 
 No configuration needed beyond plugin installation.
 
+## Toolkit doctor
+
+Run the read-only doctor when you want to inspect selected Razorback installs:
+
+```bash
+npm run doctor -- --project-root /absolute/path/to/project --host codex \
+  --install-root /absolute/path/to/razorback \
+  --install-root /absolute/path/to/plugin-cache --json
+```
+
+Choose `claude` or `codex` and pass every installation root to inspect. The command does not infer paths from the machine, scan beyond those roots, contact MCP servers, or change plugin files or host configuration. It reports plugin versions, skill roots and duplicates, required Claude hook assets, and whether known static files match the selected host. JSON uses schema version 1 with per-check `pass`, `warning`, `unknown`, or `fail` status. The command exits 0 when every check passes, 1 when it finds a warning, unknown, or failure, and 2 when its arguments or roots are invalid.
+
+An `unknown` result means the selected host contract or a link target cannot be established from the supplied files. Static files cannot prove that the live host has loaded an install, that workspace root binding is active, or that MCP tools are connected. A symlink is followed only when its target is inside one of the selected roots. Output includes selected paths and safe version/skill identifiers, never full configuration files or credential values.
+
+When the doctor finds duplicate skill registrations, it reports the selected paths and recommends a preferred plugin root only when the checked metadata identifies one. The doctor never removes registrations. Removing a duplicate requires separate approval, and cleanup should remove only the selected registration before checking the host's fresh skill inventory.
+
 ## Project Policy
 
 Razorback does not need a separate project-policy file. Use the active project

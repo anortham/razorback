@@ -195,15 +195,15 @@ R1–R3 may run together with `parallel-lead-commit`; each worker owns only its 
 **Approach:** Derive supported Claude/Codex metadata from current manifests, install docs, and plugin code. Use temporary fixture roots for tests; include a secret sentinel in fixture config and prove it never appears in output. Resolve symlinks only when the target lies inside one of the selected roots; otherwise report unknown without reading it. Do not probe live MCP servers or infer unknown runtime state from static files. The report identifies a preferred canonical install and exact redundant registration when evidence supports them. Cleanup is a separate authorized operation: remove only the selected redundant registration, then capture a fresh host skill inventory; never delete whole source/cache trees.
 
 **Acceptance criteria:**
-- [ ] The command requires an explicit project root, at least one repeatable installation root, and `claude` or `codex`; it refuses paths outside selected roots and never silently scans a real home directory.
-- [ ] A symlink target is read only when its resolved path is contained by one of the selected roots; otherwise output reports unknown.
-- [ ] Text and JSON outputs cover version, duplicate, binding, hook-asset, and capability checks; unsupported facts are `unknown`, not reported as healthy.
-- [ ] Neither output, stdout/stderr diagnostics, nor tests expose secret values or whole config contents.
-- [ ] The command performs no network, MCP invocation, install/uninstall, config write, or cache deletion.
-- [ ] The README documents invocation, output meanings, limitations, and that deleting a duplicate requires separate approval.
-- [ ] For the observed workstation duplicates, record the exact proposed redundant registration changes and canonical source. After separate approval, remove only those registrations and verify a fresh host inventory; otherwise record cleanup as awaiting authority, not completed by the diagnostic.
-- [ ] `node --test tests/toolkit-doctor.test.mjs` passes, including invalid-root, duplicate-install, unknown-host-shape, and redaction cases.
-- [ ] Worker-scope verification passes; hand the owned diff to the lead per `parallel-lead-commit`.
+- [x] The command requires an explicit project root, at least one repeatable installation root, and `claude` or `codex`; it refuses paths outside selected roots and never silently scans a real home directory.
+- [x] A symlink target is read only when its resolved path is contained by one of the selected roots; otherwise output reports unknown.
+- [x] Text and JSON outputs cover version, duplicate, binding, hook-asset, and capability checks; unsupported facts are `unknown`, not reported as healthy.
+- [x] Neither output, stdout/stderr diagnostics, nor tests expose secret values or whole config contents.
+- [x] The command performs no network, MCP invocation, install/uninstall, config write, or cache deletion.
+- [x] The README documents invocation, output meanings, limitations, and that deleting a duplicate requires separate approval.
+- [x] For the observed workstation duplicates, record the exact proposed redundant registration changes and canonical source. After separate approval, remove only those registrations and verify a fresh host inventory; otherwise record cleanup as awaiting authority, not completed by the diagnostic.
+- [x] `node --test tests/toolkit-doctor.test.mjs` passes, including invalid-root, duplicate-install, unknown-host-shape, and redaction cases.
+- [x] Worker-scope verification passes; hand the owned diff to the lead per `parallel-lead-commit`.
 
 ## Task R4: Verify real integrations and expand behavioral scenarios
 
