@@ -67,6 +67,8 @@ Write a `goldfish:checkpoint` only when it carries information a later session n
 
 In a long run, unfinished work before a likely context loss is a handoff: checkpoint the current task, the decisions made, and the next step. Before external review, capture the immutable REVIEW CAMPAIGN setup and current counters; after review, capture the terminal `REVIEW CAMPAIGN STATUS` block.
 
+Save another checkpoint only when durable task state changes; an unchanged resume does not create a duplicate checkpoint. Examples include entering a publication-approval wait or recording a created PR.
+
 A checkpoint is a fast, non-blocking memory write. It is **not** a stop, a review gate, or a reason to ask the user anything — write it and immediately continue. A phase boundary is not a stop: finishing a phase never means pausing for confirmation. Never make a checkpoint-only follow-up commit, which would recurse.
 
 ## Recovery
@@ -75,7 +77,8 @@ This sequence runs **only on a resumed run** — a post-compaction note, a misma
 
 On a resumed run, orient before continuing:
 
-1. If Goldfish is available, `goldfish:recall` — retrieve the active brief and recent checkpoints. Without it, the plan file, the TaskList, and git state below are enough.
+1. If Goldfish is available, call `goldfish:recall` with `workspace` set to the absolute current project/worktree root to retrieve the active brief and recent checkpoints. Without it, use the run report, plan file, TaskList, and git state below.
+   Read the report linked by the checkpoint before choosing the next task. Verify the current branch, worktree, commit (HEAD), tested source commit, verification evidence, and publication authority against live state and the authority's recorded source. A checkpoint records prior user-granted authority; it does not grant publication authority. If authority cannot be verified from its cited source, treat it as missing; implementation approval alone never grants push or PR authority. Without Goldfish, recover from the report and git state.
 2. Restore any immutable REVIEW CAMPAIGN setup and current counters from the checkpoint. Counters only increase; participants and budgets never change after resume.
 3. If recalled `REVIEW CAMPAIGN STATUS` contains `campaign_closed: yes`, treat it as terminal and do not dispatch another reviewer, even when the state is `capped` or `blocked`.
 4. Read the plan file, noting which acceptance-criteria checkboxes are already `[x]`.

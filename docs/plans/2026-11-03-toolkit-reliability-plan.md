@@ -163,12 +163,12 @@ R1–R3 may run together with `parallel-lead-commit`; each worker owns only its 
 **Approach:** Keep the report as the full record and the checkpoint as a compact retrieval pointer. Record the tested source commit separately from later report-only metadata commits. Define state transitions that warrant a checkpoint and ensure an unchanged resume does not save a duplicate. Preserve the no-Goldfish report/git fallback.
 
 **Acceptance criteria:**
-- [ ] The pre-approval stop writes one checkpoint whose body satisfies Goldfish's existing quality format and includes the report path, plan/task, branch/worktree, tested commit, authority source/state, and next action.
-- [ ] Both `## Recovery` sections recall the checkpoint, read the linked report before choosing a task, and verify live git, verification, and authority state; the checkpoint itself never grants missing publication authority.
-- [ ] Post-PR state is captured only as a changed handoff, and resuming without a meaningful state change creates no duplicate checkpoint.
-- [ ] Goldfish absence leaves an explicit report/git recovery path and does not block the workflow.
-- [ ] `node --test tests/workflow-execution-contracts.test.mjs tests/twin-sections.test.mjs` passes.
-- [ ] Worker-scope verification passes; hand the owned diff to the lead per `parallel-lead-commit`.
+- [x] The pre-approval stop writes one checkpoint whose body satisfies Goldfish's existing quality format and includes the report path, plan/task, branch/worktree, tested commit, authority source/state, and next action.
+- [x] Both `## Recovery` sections recall the checkpoint, read the linked report before choosing a task, and verify live git, verification, and authority state; the checkpoint itself never grants missing publication authority.
+- [x] Post-PR state is captured only as a changed handoff, and resuming without a meaningful state change creates no duplicate checkpoint.
+- [x] Goldfish absence leaves an explicit report/git recovery path and does not block the workflow.
+- [x] `node --test tests/workflow-execution-contracts.test.mjs tests/twin-sections.test.mjs` passes.
+- [x] Worker-scope verification passes; hand the owned diff to the lead per `parallel-lead-commit`.
 
 ## Task R3: Add a scoped, read-only toolkit doctor
 
