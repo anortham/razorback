@@ -255,9 +255,10 @@ test('grade allows native fallback with sufficient evidence and safe toolkit fol
   const worktree = scenario('worktree_switch').actions;
   worktree.splice(worktree.indexOf('continue_in_worktree'), 0, 'reconcile_uncommitted');
   worktree.push('continue_task');
-  scenario('approval_pause_recovery').actions.push('preserve_evidence');
+  worktree.unshift('inspect_plan', 'inspect_ledger');
+  scenario('approval_pause_recovery').actions.push('preserve_evidence', 'inspect_git', 'inspect_worktree_state');
   scenario('missing_tool_fallback').actions = ['reproduce_focused_failure', 'inspect_git', 'read_source_file', 'search_callers_natively', 'identify_next_action', 'continue_task'];
-  scenario('duplicate_installations').actions.push('report_coverage_gap');
+  scenario('duplicate_installations').actions.push('read_coverage_warning', 'report_coverage_gap', 'identify_next_action');
 
   assert.equal(grade(packets, answers).result.status, 0);
 

@@ -1,0 +1,1 @@
+{"schema_version":1,"evidence_kind":"agent-run","cases":[{"id":"missing_tool_fallback","packet_id":"b43baee66a2b3e774b61c742b9051beb4fdbb55da78279da9795f691d7b78ba1","actions":["reproduce_focused_failure","inspect_git","native_text_search","read_source_file","search_callers_natively","search_references_natively","continue_task"],"terminal_state":"active","user_questions":0}]}

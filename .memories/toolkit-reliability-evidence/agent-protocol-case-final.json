@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "kind": "frozen-prospective-case-workflow-protocol",
+  "source": {
+    "kind": "git-ref",
+    "requested": "HEAD",
+    "revision": "d058cf3c20164d4525bd2c58e57684b52871bfe4",
+    "source_set_hash": "cee06cf461b8b531ebb102bd9e5733256514d35485385ea67918e46700eb5556"
+  },
+  "packet_file": "packets-case-final.json",
+  "packet_sha256": "19195f562f95b76a2f0d4cf1aa0feb312e4d0e67c81b010793076d20fbd869b5",
+  "expectations_sha256": "aa0c5c83748640aa34f8281100a0f7c0146d67d50f460ed855a394fae5d1ac73",
+  "frozen_at": "2026-11-04T02:38:22.477276+00:00",
+  "harness": "Codex native collaboration spawn_agent",
+  "harness_version": "not exposed by native API",
+  "model": "gpt-6-sol",
+  "reasoning_effort": "high",
+  "model_backend_revision": "not exposed by native API",
+  "fresh_sessions": 10,
+  "repeats_per_case": 2,
+  "required_case_ids": [
+    "worktree_switch",
+    "approval_pause_recovery",
+    "missing_tool_fallback",
+    "duplicate_installations",
+    "unsupported_structural_coverage"
+  ],
+  "out_of_scope_case_ids": [
+    "approval",
+    "push_recovery",
+    "checkpoint",
+    "single_task",
+    "missing_code_kb",
+    "restricted_reviewer",
+    "live_tools",
+    "instruction_priority",
+    "interrupted_run",
+    "parallel_commit"
+  ],
+  "sessions": {
+    "final_case_1_1": {
+      "case": "worktree_switch",
+      "repeat": 1,
+      "prompt_sha256": "1aaf01b1c55aaede1ce2f0b02c1a84e4a81c23aac54ae90e661e14a48ab53dc1",
+      "view_sha256": "b946801198cdc361f1a9c135e41ca4aac9a9a868bb268c88aef78a55eba6386a",
+      "answer": ".memories/toolkit-reliability-evidence/case-runs-final/worktree_switch-1.json"
+    },
+    "final_case_1_2": {
+      "case": "worktree_switch",
+      "repeat": 2,
+      "prompt_sha256": "8d6232e4a5818d22f53bee0eeaef9dd038cd6a82b7e6b600a6a411349d521df3",
+      "view_sha256": "b946801198cdc361f1a9c135e41ca4aac9a9a868bb268c88aef78a55eba6386a",
+      "answer": ".memories/toolkit-reliability-evidence/case-runs-final/worktree_switch-2.json"
+    },
+    "final_case_2_1": {
+      "case": "approval_pause_recovery",
+      "repeat": 1,
+      "prompt_sha256": "b741f7f2a968efbd617c1da23e47fb2cddfe1757e55bfc4d3edd4c3065091f36",
+      "view_sha256": "bfdfb02cadd2af602bb88b9c10cff319e9f31c214c29ab9055feb6338a281209",
+      "answer": ".memories/toolkit-reliability-evidence/case-runs-final/approval_pause_recovery-1.json"
+    },
+    "final_case_2_2": {
+      "case": "approval_pause_recovery",
+      "repeat": 2,
+      "prompt_sha256": "cd417e75c507400e66a20f95faddac04ce8dc045f6fa77f599726f6c01cda2e7",
+      "view_sha256": "bfdfb02cadd2af602bb88b9c10cff319e9f31c214c29ab9055feb6338a281209",
+      "answer": ".memories/toolkit-reliability-evidence/case-runs-final/approval_pause_recovery-2.json"
+    },
+    "final_case_3_1": {
+      "case": "missing_tool_fallback",
+      "repeat": 1,
+      "prompt_sha256": "ddc1c806efd44d3ede46256546efb2a405a3127d53e5f2d6a1b8c3625d57276f",
+      "view_sha256": "574e7eda61a4c0a1ce96e4dd942d7c1459d7f5a166c23da627c220ec333f0429",
+      "answer": ".memories/toolkit-reliability-evidence/case-runs-final/missing_tool_fallback-1.json"
+    },
+    "final_case_3_2": {
+      "case": "missing_tool_fallback",
+      "repeat": 2,
+      "prompt_sha256": "6617f5c77cc830be8955774956f69fdc9e6c8e002e22d6d370fb24cc43d254da",
+      "view_sha256": "574e7eda61a4c0a1ce96e4dd942d7c1459d7f5a166c23da627c220ec333f0429",
+      "answer": ".memories/toolkit-reliability-evidence/case-runs-final/missing_tool_fallback-2.json"
+    },
+    "final_case_4_1": {
+      "case": "duplicate_installations",
+      "repeat": 1,
+      "prompt_sha256": "f2493671b605bd97ee38fa91b03ad458a88472d0fafb6383687b34be77ba986c",
+      "view_sha256": "8827c8196daf49b2187940752aa6c9d30d3f71b462b8448e924b121b778990a5",
+      "answer": ".memories/toolkit-reliability-evidence/case-runs-final/duplicate_installations-1.json"
+    },
+    "final_case_4_2": {
+      "case": "duplicate_installations",
+      "repeat": 2,
+      "prompt_sha256": "452a11de606150c2ba7ee237b80fab0400cf1af630d013778c9db2fc40dfefc0",
+      "view_sha256": "8827c8196daf49b2187940752aa6c9d30d3f71b462b8448e924b121b778990a5",
+      "answer": ".memories/toolkit-reliability-evidence/case-runs-final/duplicate_installations-2.json"
+    },
+    "final_case_5_1": {
+      "case": "unsupported_structural_coverage",
+      "repeat": 1,
+      "prompt_sha256": "050441305545e3d982694c30bf4704d2742317a213c10bf80c545a897a826fd8",
+      "view_sha256": "4118f6bfc65762024fb26938b36219e4df014d2464d953a94d819c452efc0b6a",
+      "answer": ".memories/toolkit-reliability-evidence/case-runs-final/unsupported_structural_coverage-1.json"
+    },
+    "final_case_5_2": {
+      "case": "unsupported_structural_coverage",
+      "repeat": 2,
+      "prompt_sha256": "fd7d89345bf4b83e18b24f055c0fffadca017ae9c88b69dffc41d8c8b765ff19",
+      "view_sha256": "4118f6bfc65762024fb26938b36219e4df014d2464d953a94d819c452efc0b6a",
+      "answer": ".memories/toolkit-reliability-evidence/case-runs-final/unsupported_structural_coverage-2.json"
+    }
+  },
+  "grading": "Use original full bundle and trusted grader; retain expected missing legacy-case errors. Scoped acceptance requires all five requested cases passing with only those exact missing-case errors; never claim full-bundle success or pad with fixtures.",
+  "metrics": "unavailable",
+  "stop_rule": "Two fresh sessions per required case on this frozen source. Preserve outputs and raw grader errors. Do not retrospectively count historical decisions as passing.",
+  "reason": "Separate prospective verification after source-backed oracle repairs; all earlier completed slots remain immutable under their original protocols."
+}

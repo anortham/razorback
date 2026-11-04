@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "status": "failed",
+  "protocol": "agent-protocol-case-final.json",
+  "source": {
+    "kind": "git-ref",
+    "requested": "HEAD",
+    "revision": "d058cf3c20164d4525bd2c58e57684b52871bfe4",
+    "source_set_hash": "cee06cf461b8b531ebb102bd9e5733256514d35485385ea67918e46700eb5556"
+  },
+  "scope": [
+    "worktree_switch",
+    "approval_pause_recovery",
+    "missing_tool_fallback",
+    "duplicate_installations",
+    "unsupported_structural_coverage"
+  ],
+  "full_bundle_success": false,
+  "runs": [
+    {
+      "repeat": 1,
+      "passed": 2,
+      "total": 5,
+      "cases": [
+        {
+          "id": "worktree_switch",
+          "passed": false,
+          "reasons": [
+            "action inspect_plan is not allowed for scenario"
+          ]
+        },
+        {
+          "id": "approval_pause_recovery",
+          "passed": false,
+          "reasons": [
+            "action inspect_git is not allowed for scenario"
+          ]
+        },
+        {
+          "id": "missing_tool_fallback",
+          "passed": true,
+          "reasons": []
+        },
+        {
+          "id": "duplicate_installations",
+          "passed": false,
+          "reasons": [
+            "action read_coverage_warning is not allowed for scenario"
+          ]
+        },
+        {
+          "id": "unsupported_structural_coverage",
+          "passed": true,
+          "reasons": []
+        }
+      ]
+    },
+    {
+      "repeat": 2,
+      "passed": 4,
+      "total": 5,
+      "cases": [
+        {
+          "id": "worktree_switch",
+          "passed": true,
+          "reasons": []
+        },
+        {
+          "id": "approval_pause_recovery",
+          "passed": true,
+          "reasons": []
+        },
+        {
+          "id": "missing_tool_fallback",
+          "passed": true,
+          "reasons": []
+        },
+        {
+          "id": "duplicate_installations",
+          "passed": false,
+          "reasons": [
+            "action identify_next_action is not allowed for scenario"
+          ]
+        },
+        {
+          "id": "unsupported_structural_coverage",
+          "passed": true,
+          "reasons": []
+        }
+      ]
+    }
+  ],
+  "interpretation": "Original results are immutable. Only the three changed expectations require prospective reruns; the two unchanged cases retain their passing evidence.",
+  "sha256": {
+    "agent-final-repeat-1.json": "2b0c43e9d2df85c372a3cee4802841677445a36e637fb8ec41d618cc70c9a15b",
+    "agent-final-repeat-2.json": "3eac2e8759836d7d3f701d248e7e6f002906ffe67cb02b96d5c53793a07cecb9",
+    "agent-final-report-1.json": "2b2c2b72400b3dd02e520d84bcd72b0dab33b7fbd96674c79d124facf8ea8020",
+    "agent-final-report-2.json": "9b3a1d168b034a5094736196678af51414a244f47b95dbbbbad1f5282fe5c84a",
+    "agent-protocol-case-final.json": "a3a7558b264b19aab452f6e1a75c76e2169aa96daf1a81593c0b6a52f688cfee",
+    "case-runs-final/approval_pause_recovery-1.json": "c147b6df575a9696384971adab99d49bb4a0642c4bcae8b1fc02b70220fafff6",
+    "case-runs-final/approval_pause_recovery-2.json": "9f3014b021c5d37fe248398133bcb4d298b5549b92e533b6f0a9a4d91090c9f4",
+    "case-runs-final/duplicate_installations-1.json": "48234e44b6c2a187dbc37b1f710b396d4a82e3cd601e69ce8687f5271844eed6",
+    "case-runs-final/duplicate_installations-2.json": "033924966d471d827aa56bbdd8158bd79644646e21e3d2afd441bc471bb2f337",
+    "case-runs-final/missing_tool_fallback-1.json": "883027bf6126ac138274fa8fad3c73a5dc1ae3d9c3e9ef65c006bb53384d95c1",
+    "case-runs-final/missing_tool_fallback-2.json": "3508548ade48a956f5591052c9b925d6f19af7300fe8215e9441c9b2ac450a88",
+    "case-runs-final/unsupported_structural_coverage-1.json": "1187063b896a5304f82b69e084ffd08938616ad5b3f6df1a92a43f5bd084491b",
+    "case-runs-final/unsupported_structural_coverage-2.json": "1187063b896a5304f82b69e084ffd08938616ad5b3f6df1a92a43f5bd084491b",
+    "case-runs-final/worktree_switch-1.json": "b0bb269dc09d8ba9dcf8366000f31d3438e91b36963d06e47f0303718a95d8f6",
+    "case-runs-final/worktree_switch-2.json": "0be4aad15a3402e461b7edc4deac060168709fb3714173164f314d293cb2a211",
+    "expectations-case-final.json": "aa0c5c83748640aa34f8281100a0f7c0146d67d50f460ed855a394fae5d1ac73",
+    "packets-case-final.json": "19195f562f95b76a2f0d4cf1aa0feb312e4d0e67c81b010793076d20fbd869b5"
+  }
+}
