@@ -16,10 +16,12 @@ Write the test first. Watch it fail. Write minimal code to pass.
 
 **Planned exceptions (explicit in the user request or plan, and logged):** throwaway prototypes, generated code, configuration files. "Skip TDD just this once" is rationalization.
 
+**No-test-surface exception:** TDD remains the default for features, bug fixes, refactoring, and behavior changes. A missing existing test is not an exception. Create a suitable automated test surface when one can cover the behavior. Only when automation is unsuitable for the observable behavior, not merely absent from the current test suite, may you check it manually; record why automation is unsuitable and a concrete observable before-and-after result. Stricter project instructions can prohibit this exception. It does not waive tests for other behavior in the same change.
+
 ## The Iron Law
 
 ```
-NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST
+NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST WHEN AUTOMATION IS SUITABLE
 ```
 
 Wrote code before the test? Delete it. Not as "reference", not "adapted" while writing tests. Implement fresh from tests.
@@ -93,7 +95,7 @@ Remove duplication, improve names, extract helpers. Keep the test surface on the
 | "TDD will slow me down" | TDD faster than debugging. Pragmatic = test-first. |
 | "Manual test faster" | Manual doesn't prove edge cases. You'll re-test every change. |
 | "Run the whole scope after every edit to be safe" | The edit's test is the inner loop. The scope runs once when it passes; the full suite once at the branch gate. |
-| "Existing code has no tests" | You're improving it. Add tests for existing code. |
+| "Existing code has no tests" | A missing test is not an exception. Add a test for the behavior. |
 
 ## Red Flags - STOP and Start Over
 
@@ -120,10 +122,10 @@ Can't check all boxes? You skipped TDD. Start over.
 | Test setup huge | Extract helpers. Still complex? Simplify design. |
 | Don't know existing patterns | Read nearby tests, or use code-kb `file_skeleton` for their organization |
 
-**Bug found?** Root-cause it with razorback:systematic-debugging, then write the failing reproduction test and follow the cycle. Never fix bugs without a test.
+**Bug found?** Root-cause it with razorback:systematic-debugging, then write the failing reproduction test and follow the cycle when automation can cover the behavior. If no suitable automated test surface exists, use the no-test-surface exception and record its required evidence.
 
 **Writing or changing any test?** Read [writing-good-tests.md](writing-good-tests.md): name the production change that would fail the test; derive expected values by hand, never with the code under test; assert behavior, never the mock; finish with the mutation check.
 
 ## Final Rule
 
-Production code requires a test that existed and failed first. Exceptions are only the planned exceptions above: explicit in the user request or approved plan, and logged. Missing exception language is not a mid-run permission stop; follow TDD or classify the issue under the blocker taxonomy.
+Production code requires a test that existed and failed first when automation is suitable. Other exceptions must be explicit in the user request or approved plan and logged. The no-test-surface exception requires its stated evidence and yields to stricter project instructions. Missing exception language is not a mid-run permission stop; follow TDD or classify the issue under the blocker taxonomy.

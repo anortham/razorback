@@ -65,6 +65,25 @@ test('fixing-small-issues keeps TDD and verification discipline', () => {
   assert.match(skill, /failing regression test first/);
 });
 
+test('no-test-surface exception requires unsuitable automation and recorded observations', () => {
+  const quickFix = read('skills/fixing-small-issues/SKILL.md');
+  const tdd = read('skills/test-driven-development/SKILL.md');
+
+  for (const guidance of [quickFix, tdd]) {
+    assert.match(guidance, /No suitable automated test surface/i);
+    assert.match(guidance, /why automation is unsuitable/i);
+    assert.match(guidance, /observable before-and-after/i);
+    assert.match(guidance, /stricter project instructions/i);
+    assert.match(guidance, /does not waive tests for other behavior/i);
+  }
+
+  assert.match(quickFix, /TDD applies when suitable automation can test the behavior/);
+  assert.match(quickFix, /A missing test is not an exception/);
+  assert.match(quickFix, /not merely absent from the current test suite/);
+  assert.match(tdd, /Create a suitable automated test surface when one can cover the behavior/);
+  assert.match(tdd, /\*\*Always:\*\* new features, bug fixes, refactoring, behavior changes/);
+});
+
 test('brainstorming triages by risk and sends quick fixes away before choosing a path', () => {
   const skill = read('skills/brainstorming/SKILL.md');
 

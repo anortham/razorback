@@ -1,6 +1,6 @@
 # Toolkit Reliability Implementation Plan
 
-> **Status:** Proposed handoff. The user requested plan documents and intends to switch models or implement in separate sessions. Plan writing is authorized. Implementation is deliberately deferred until the user gives a separate implementation go-ahead.
+> **Status:** Implementation authorized on 2026-11-03. User requested implementation, useful subagents, verification, and local commits; no push or release. Final combined acceptance still requires the selected Goldfish G1 and code-kb K3/K4 revisions.
 >
 > **For agentic workers:** After implementation approval, use `razorback:subagent-driven-development` for independent tasks when delegation is available and permitted. Otherwise use `razorback:executing-plans`.
 
@@ -131,11 +131,11 @@ R1–R3 may run together with `parallel-lead-commit`; each worker owns only its 
 **Approach:** Update focused assertions first to cover a recoverable baseline, an unrelated failure with an isolated affected check, an unresolvable failure, a missing-but-addable test, a justified no-test-surface case, and stricter project policy. Then update the skills and run the focused tests.
 
 **Acceptance criteria:**
-- [ ] Baseline guidance distinguishes safe relevant recovery, an unrelated failure with valid isolated evidence, and a failure that blocks reliable verification; it does not call the first failure unrecoverable.
-- [ ] TDD remains the default; lack of an existing test is not an exception, and a no-test-surface exception requires a reason automation is unsuitable plus observable before/after evidence.
-- [ ] Stricter project instructions can prohibit the exception, and neither rule weakens feature/bugfix tests or quick-fix escalation criteria.
-- [ ] `node --test tests/autonomous-process-gates.test.mjs tests/quick-fix-tier.test.mjs` passes.
-- [ ] Worker-scope verification passes; hand the owned diff to the lead per `parallel-lead-commit`.
+- [x] Baseline guidance distinguishes safe relevant recovery, an unrelated failure with valid isolated evidence, and a failure that blocks reliable verification; it does not call the first failure unrecoverable.
+- [x] TDD remains the default; lack of an existing test is not an exception, and a no-test-surface exception requires a reason automation is unsuitable plus observable before/after evidence.
+- [x] Stricter project instructions can prohibit the exception, and neither rule weakens feature/bugfix tests or quick-fix escalation criteria.
+- [x] `node --test tests/autonomous-process-gates.test.mjs tests/quick-fix-tier.test.mjs` passes.
+- [x] Worker-scope verification passes; hand the owned diff to the lead per `parallel-lead-commit`.
 
 ## Task R2: Make publication pauses recoverable through Goldfish
 
@@ -251,9 +251,9 @@ R1–R3 may run together with `parallel-lead-commit`; each worker owns only its 
 
 ## Handoff and approval
 
-- **Implementation status:** Deferred. This plan-writing request authorizes documentation only; it does not authorize implementation in this session.
-- **Implementation approval:** Missing. Request or use the user's separate implementation go-ahead before dispatching R1–R4. Read the coordination plan and the prerequisite Goldfish/code-kb plans, then re-check current paths, branches, commits, dirty state, and worktrees.
+- **Implementation status:** In progress in the isolated `feat/toolkit-reliability` worktree.
+- **Implementation approval:** User explicitly authorized this plan on 2026-11-03: "Implement docs/plans/2026-11-03-toolkit-reliability-plan.md. Use subagents where useful, verify, and commit locally. Don’t push or release." Coordination and prerequisite plans were read; live source states were checked.
 - **Reviewer choice:** `none` unless the implementation approval or a later spec names `codex` or `claude`.
-- **Local commit authority:** Plan artifacts may be committed by the coordinating lead after review. Implementation commits are authorized only after implementation scope is approved and subject to each repository's instructions.
-- **Push / PR / release / installation cleanup:** Not authorized by this plan-writing request.
+- **Local commit authority:** Authorized by the implementation request; lead stages reviewed paths and commits locally.
+- **Push / PR / release / installation cleanup:** Not authorized. The user explicitly prohibited push and release; keep this work local without requesting publication authority.
 - **Recommended start after approval:** Start R1–R3 as one disjoint batch; review and integrate their exact diffs, then build R4 against the stable contracts. Its final combined gate waits for Goldfish G1 and the selected code-kb revision after K3/K4. Run Razorback's `npm test` once at its final local branch gate, then run the explicitly configured three-tool integration command and record all selected revisions.

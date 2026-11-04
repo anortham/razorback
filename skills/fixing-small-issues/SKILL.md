@@ -45,7 +45,7 @@ The quick-fix tier applies only when ALL criteria hold. Project instructions may
 ## Step 3: Fix in place
 
 - Work on the current checkout. Protected branch → plain feature branch, never a worktree.
-- TDD applies where a harness covers the behavior: failing regression test first, then the minimal fix (razorback:test-driven-development). No test surface → verify by observing the actual result, and say so.
+- TDD applies when suitable automation can test the behavior: add a failing regression test first, then the minimal fix (razorback:test-driven-development). A missing test is not an exception. Only when there is no suitable automated test surface because automation is unsuitable for the behavior, not merely absent from the current test suite, may you use a manual check; record why automation is unsuitable and a concrete observable before-and-after result. Stricter project instructions can prohibit this exception, and it does not waive tests for other behavior in the same change.
 - One fix at a time. No while-I'm-here improvements.
 - If the fix cuts a real corner with a known ceiling, mark it: `# razorback: <ceiling>, <upgrade trigger>` (`//` in C-family languages), e.g. `# razorback: global lock, per-account locks if throughput matters`. razorback:harvesting-debt collects markers into a ledger later; an unmarked shortcut rots.
 

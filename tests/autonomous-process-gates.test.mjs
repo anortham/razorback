@@ -64,6 +64,22 @@ test('worktree setup uses deterministic defaults instead of asking mid-flow', ()
   assert.match(skill, /do not proceed/i);
 });
 
+test('worktree baseline failures are investigated before they block execution', () => {
+  const skill = read('skills/using-git-worktrees/SKILL.md');
+  const taxonomy = read('skills/using-razorback/references/blocker-taxonomy.md');
+
+  for (const guidance of [skill, taxonomy]) {
+    assert.match(guidance, /failed baseline is evidence to investigate/i);
+    assert.match(guidance, /repair a relevant, recoverable failure/i);
+    assert.match(guidance, /unrelated failure/i);
+    assert.match(guidance, /isolated affected-change check/i);
+    assert.match(guidance, /unresolvable/i);
+    assert.match(guidance, /required branch gate/i);
+  }
+
+  assert.doesNotMatch(skill, /Fails → real blocker unless the plan explicitly allows a failing baseline/);
+});
+
 test('supporting skills route autonomous uncertainty through blocker taxonomy', () => {
   const receivingReview = read('skills/receiving-code-review/SKILL.md');
   const debugging = read('skills/systematic-debugging/SKILL.md');

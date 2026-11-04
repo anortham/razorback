@@ -87,7 +87,9 @@ Run the project-documented setup command (repo docs, scripts, CI metadata, manif
 
 Run the project-defined baseline or smoke scope.
 
-- Fails → real blocker unless the plan explicitly allows a failing baseline. Report the command and a short output summary; do not proceed on a broken baseline by default.
+- A failed baseline is evidence to investigate, not an automatic blocker. Diagnose it first. Repair a relevant, recoverable failure when the approved task safely covers it, then rerun the baseline.
+- If the failure is unrelated and cannot be repaired within scope, record its command and evidence. Continue only when an isolated affected-change check proves the task; otherwise stop under the blocker taxonomy. An isolated check does not waive a required branch gate. Do not proceed to publication with a failing required gate.
+- Treat the failure as unresolvable only after reasonable recovery paths are exhausted. Do not call the first failure unrecoverable.
 - No automated suite (docs, skills, config-only repos) → skip; report "manual-verify-only" and list the checks a reviewer would run instead.
 - Passes → report:
 
@@ -107,7 +109,7 @@ Ready to implement <feature-name>
 | Native worktree tool available | Use it (Step 1a) |
 | Directory not ignored | Add to .gitignore + commit (Step 1b) |
 | Permission error on create | Sandbox fallback, work in place |
-| Baseline fails | Report blocker; do not proceed unless plan allows |
+| Baseline fails | Diagnose and recover; record unrelated failures and prove the affected change in isolation, or stop if reliable verification remains blocked |
 
 ## Red Flags
 
@@ -120,14 +122,15 @@ Ready to implement <feature-name>
 - Use `git worktree add` when you have a native worktree tool (e.g., `EnterWorktree`). This is the #1 mistake — if you have it, use it.
 - Create worktree without verifying it's ignored (project-local)
 - Skip baseline verification
-- Proceed with failing baseline unless the plan explicitly allows it
+- Skip diagnosis or recovery of a failed baseline
+- Treat an isolated affected-change check as permission to publish with a failing required branch gate
 - Stop to ask for a worktree directory preference (default to `.worktrees/`)
 
 ## It's working if
 
 - Step 0 and Step 0b ran before anything was created, and the report names the choice (continuation / sibling / reuse).
 - The worktree came from the native tool wherever one exists.
-- Baseline passed, or the report says manual-verify-only and why, before implementation started.
+- Baseline passed after any relevant recovery, or an unrelated failure is recorded with a passing isolated affected-change check. If no automated suite exists, report manual-verify-only and why. Preserve the required branch-gate publication boundary.
 
 ## Integration
 

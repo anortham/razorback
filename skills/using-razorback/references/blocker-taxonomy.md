@@ -4,6 +4,10 @@ Reference for autonomous execution with or without a goal runner: what counts as
 
 A blocker is real only when the agent cannot resolve it through reasonable plan-consistent judgment. For recoverable failures, diagnose, repair, and rerun while a safe path remains; classify a blocker only after those paths are exhausted. If a reasonable path exists, take it and log the choice.
 
+## Baseline failures
+
+A failed baseline is evidence to investigate, not an automatic blocker. Repair a relevant, recoverable failure when the approved task safely covers it, then rerun the baseline. If an unrelated failure cannot be repaired within scope, record its command and evidence and continue only when an isolated affected-change check proves the task. Otherwise stop when the failure is unresolvable and reliable verification cannot continue. An isolated affected-change check does not waive a required branch gate or permit publication while that gate fails. Do not classify the first failed run as unrecoverable.
+
 ## Real blockers (stop and report)
 
 1. **Credentials / auth / env broken** — a required command fails on environmental grounds (missing token, unreachable service, wrong toolchain version) and the plan doesn't say how to recover.
