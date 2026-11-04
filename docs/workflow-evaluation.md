@@ -1,8 +1,47 @@
 # Workflow decision evaluation
 
-The workflow evaluator measures whether a fresh agent chooses safe, useful actions in ten conflict-prone situations. It is provider-neutral: preparation and grading are local Node.js commands, while any native agent harness can answer the blind packets.
+The workflow evaluator measures whether a fresh agent chooses safe, useful actions in fifteen conflict-prone situations. It is provider-neutral: preparation and grading are local Node.js commands, while any native agent harness can answer the blind packets.
 
 The checked-in scenario manifest contains facts and relevant workflow file paths. Preparation reads those files from either an explicit git revision or the working tree, records their SHA-256 hashes, and creates a content-bound `packet_id` for each case. The generated packet includes the complete action vocabulary and answer schema but excludes all grading predicates.
+
+The five toolkit cases check worktree switching and explicit tool roots, approval-pause recovery, native fallback when code-kb is unavailable, duplicate installation reporting, and code-kb's unsupported structural coverage fallback. Use one pinned harness and model for the new cases. Run each case at least twice in separate fresh sessions. The checked-in `deterministic-fixture` answers test grading only; they do not count as agent results.
+
+## Run isolated local tool integration
+
+Install development dependencies before local checks:
+
+```sh
+npm ci --ignore-scripts
+```
+
+The ordinary `npm test` suite reports the external integration case as skipped when `RAZORBACK_TOOLKIT_INTEGRATION_CONFIG` is unset; a skip is not a passing integration result. The explicit runner always requires a config and exits with a prerequisite error when it is missing, malformed, or names an unavailable source root, executable, or MCP server. The MCP client is a development-only dependency and is imported only after the explicit config and source checks pass.
+
+Create a local JSON config outside the repository. It contains only `goldfish` and `code_kb` records, each with a clean repository `source_root`, an absolute executable `command`, and a string-array `args` value. For example:
+
+```json
+{
+  "goldfish": {
+    "source_root": "/absolute/path/to/goldfish",
+    "command": "/absolute/path/to/bun",
+    "args": ["run", "/absolute/path/to/goldfish/src/server.ts"]
+  },
+  "code_kb": {
+    "source_root": "/absolute/path/to/code-kb",
+    "command": "/absolute/path/to/code-kb-binary",
+    "args": ["serve"]
+  }
+}
+```
+
+Run the explicit check with the config's absolute path:
+
+```sh
+npm run test:integration -- --config /absolute/path/to/toolkit-integration.json
+```
+
+The runner records each source revision and executable SHA-256, then confirms both source trees remain clean and unchanged. It launches argv directly with no shell, drains but does not print server stderr, and gives each child a scrubbed environment with temporary home, Goldfish, code-kb, XDG, and Git config paths. Projects, Goldfish memories, linked code-kb worktrees, indexes, and logs stay under a per-run temporary directory. It checks Goldfish checkpoint recovery through a fresh client, code-kb root switching and Markdown coverage fallback, and the toolkit doctor's duplicate-registration report without modifying the fixture. The runner retries only code-kb's documented indexing-in-progress response, with a bounded wait; a placeholder response never counts as a successful structural result.
+
+The local config is test input and must not be committed. Do not put credentials in it; the runner does not echo its contents or server stderr. This deterministic integration evidence does not count as an agent decision run and makes no model calls.
 
 ## Prepare baseline and revised packets
 

@@ -84,7 +84,7 @@ function collectKeys(value, keys = new Set()) {
   return keys;
 }
 
-test('prepare emits ten blind, source-linked scenario packets', () => {
+test('prepare emits fifteen blind, source-linked scenario packets', () => {
   const output = join(testRoot, 'blind-packets.json');
   const packets = prepare(output);
 
@@ -99,6 +99,11 @@ test('prepare emits ten blind, source-linked scenario packets', () => {
     'instruction_priority',
     'interrupted_run',
     'parallel_commit',
+    'worktree_switch',
+    'approval_pause_recovery',
+    'missing_tool_fallback',
+    'duplicate_installations',
+    'unsupported_structural_coverage',
   ]);
   assert.equal(packets.source.kind, 'working-tree');
   assert.match(packets.source.revision, /^[0-9a-f]{40}$/);
@@ -120,6 +125,62 @@ test('prepare emits ten blind, source-linked scenario packets', () => {
   for (const oracleKey of ['allowed_actions', 'required_actions', 'forbidden_actions', 'ordered_actions', 'terminal_states']) {
     assert.equal(keys.has(oracleKey), false, `blind packet exposed ${oracleKey}`);
   }
+});
+
+test('prepare emits five blind toolkit-reliability scenario packets', () => {
+  const packets = prepare(join(testRoot, 'toolkit-packets.json'));
+  const toolkitCases = packets.cases.slice(-5);
+
+  assert.deepEqual(toolkitCases.map(({ id }) => id), [
+    'worktree_switch',
+    'approval_pause_recovery',
+    'missing_tool_fallback',
+    'duplicate_installations',
+    'unsupported_structural_coverage',
+  ]);
+  assert.ok(toolkitCases.every(({ facts, workflow }) => facts.length > 0 && workflow.length > 0));
+  assert.ok(toolkitCases.every(({ workflow }) => workflow.every(({ sha256 }) => /^[0-9a-f]{64}$/.test(sha256))));
+  assert.equal(packets.evidence_kind, undefined);
+});
+
+test('approval decisions require a recoverable checkpoint before asking for publication authority', () => {
+  const packets = prepare(join(testRoot, 'approval-handoff-packets.json'));
+  const answers = materializeValidAnswers(packets);
+  const approval = answers.cases.find(({ id }) => id === 'approval');
+
+  assert.deepEqual(approval.actions, [
+    'complete_local_materials',
+    'checkpoint_precommit',
+    'request_publication_authority',
+  ]);
+  assert.equal(grade(packets, answers).report.cases.find(({ id }) => id === 'approval').passed, true);
+});
+
+test('toolkit fallback cases grade evidence boundaries without arbitrary terminal states or action ordering', () => {
+  const packets = prepare(join(testRoot, 'toolkit-fallback-packets.json'));
+  const answers = materializeValidAnswers(packets);
+  const fallback = answers.cases.find(({ id }) => id === 'missing_tool_fallback');
+  const coverage = answers.cases.find(({ id }) => id === 'unsupported_structural_coverage');
+
+  assert.deepEqual(fallback.actions, [
+    'reproduce_focused_failure',
+    'run_focused_tests',
+    'search_callers_natively',
+    'read_source_file',
+    'native_text_search',
+    'report_evidence_gaps',
+    'continue_task',
+  ]);
+  assert.equal(fallback.terminal_state, 'complete');
+  assert.equal(coverage.terminal_state, 'complete');
+  assert.equal(grade(packets, answers).result.status, 0);
+
+  fallback.actions.splice(fallback.actions.indexOf('continue_task'), 1);
+  fallback.actions.splice(fallback.actions.indexOf('report_evidence_gaps'), 0, 'continue_task');
+  const incomplete = grade(packets, answers);
+  assert.equal(incomplete.result.status, 1);
+  assert.ok(incomplete.report.cases.find(({ id }) => id === 'missing_tool_fallback').reasons
+    .some((reason) => reason.includes('continue_task must occur after report_evidence_gaps')));
 });
 
 test('prepare reads an explicit git ref separately from working-tree content', () => {
@@ -190,7 +251,7 @@ test('grade accepts the checked-in valid decisions when linked to their packets'
 
   assert.equal(result.status, 0, result.stderr);
   assert.equal(report.success, true);
-  assert.deepEqual(report.summary, { total: 10, passed: 10, failed: 0 });
+  assert.deepEqual(report.summary, { total: 15, passed: 15, failed: 0 });
   assert.deepEqual(report.measurements, {
     latency_ms: 'unavailable',
     input_tokens: 'unavailable',
@@ -213,8 +274,9 @@ test('grade rejects missing, duplicate, and unknown scenario IDs', () => {
   const answers = materializeValidAnswers(packets);
 
   const missing = structuredClone(answers);
+  const missingId = missing.cases.at(-1).id;
   missing.cases.pop();
-  assert.match(grade(packets, missing).report.errors.join('\n'), /missing case parallel_commit/);
+  assert.ok(grade(packets, missing).report.errors.includes(`missing case ${missingId}`));
 
   const duplicate = structuredClone(answers);
   duplicate.cases.push(structuredClone(duplicate.cases[0]));

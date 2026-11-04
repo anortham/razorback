@@ -1,6 +1,6 @@
 # Toolkit Reliability Implementation Plan
 
-> **Status:** Implementation authorized on 2026-11-03. User requested implementation, useful subagents, verification, and local commits; no push or release. Final combined acceptance still requires the selected Goldfish G1 and code-kb K3/K4 revisions.
+> **Status:** Implementation authorized on 2026-11-03. User requested implementation, useful subagents, verification, and local commits; no push or release. R1–R3 and the R4 source are implemented; verification details are in `.memories/autonomous-run-2026-11-04-toolkit-reliability.md`. Goldfish G1 is ready; final combined acceptance still requires the code-kb K3/K4 selection.
 >
 > **For agentic workers:** After implementation approval, use `razorback:subagent-driven-development` for independent tasks when delegation is available and permitted. Otherwise use `razorback:executing-plans`.
 
@@ -235,23 +235,23 @@ R1–R3 may run together with `parallel-lead-commit`; each worker owns only its 
 **Approach:** The integration launcher accepts executable/argument arrays in an explicit ignored config file and resolves those commands from current repository documentation; it must not shell-evaluate strings or print the config. Use a supported MCP client in test-only dependencies if needed; do not build a partial protocol client. Ordinary tests skip if integrations are absent, while the explicit command preflights and fails clearly. Add blind cases for switching worktrees/roots, resuming an approval pause, using native tools when one MCP is unavailable, detecting duplicate registrations, and falling back to native reads when code-kb cannot establish structural coverage. Keep deterministic fixtures and real agent-run evidence distinct.
 
 **Acceptance criteria:**
-- [ ] Temporary Goldfish saves and recalls a checkpoint under the intended absolute workspace and isolated home; a second workspace does not inherit the first workspace's project memory, and recall returns the R2 report pointer.
-- [ ] The external integration config contains `goldfish` and `code_kb` records, each with `source_root`, executable `command`, and string-array `args`. The runner launches argv directly without a shell, records each source revision, and never prints the config; the config is not committed.
+- [x] Temporary Goldfish saves and recalls a checkpoint under the intended absolute workspace and isolated home; a second workspace does not inherit the first workspace's project memory, and recall returns the R2 report pointer.
+- [x] The external integration config contains `goldfish` and `code_kb` records, each with `source_root`, executable `command`, and string-array `args`. The runner launches argv directly without a shell, records each source revision, and never prints the config; the config is not committed.
 - [ ] Fresh-session recovery retrieves the R2 pointer, reads the report, verifies the tested commit and current authority, and identifies the next action without duplicate saves when state is unchanged; it is covered by the required fresh-agent runs.
-- [ ] Code-kb requests use the current absolute `project_root` after a worktree switch and return only the selected fixture's structural result; unsupported coverage leads to the documented native-read fallback.
-- [ ] Duplicate-install fixtures produce a doctor finding with exact selected roots and a preferred canonical location; the integration suite does not remove or rewrite any registration.
-- [ ] Ordinary `npm test` emits an explicit skip reason when integration config is absent; `npm run test:integration -- --config /absolute/test-config.json` fails when required config or binaries are missing. This command is new.
-- [ ] Integration subprocesses use temporary home/project/index paths, scrub inherited sensitive environment values, and leave the real Goldfish home and host installation untouched.
-- [ ] Blind packets cover all five requested decision cases; their grading expectations stay outside packets and fixture answers are labeled `deterministic-fixture`.
+- [x] Code-kb requests use the current absolute `project_root` after a worktree switch and return only the selected fixture's structural result; unsupported coverage leads to the documented native-read fallback.
+- [x] Duplicate-install fixtures produce a doctor finding with exact selected roots and a preferred canonical location; the integration suite does not remove or rewrite any registration.
+- [x] Ordinary `npm test` emits an explicit skip reason when integration config is absent; `npm run test:integration -- --config /absolute/test-config.json` fails when required config or binaries are missing. This command is new.
+- [x] Integration subprocesses use temporary home/project/index paths, scrub inherited sensitive environment values, and leave the real Goldfish home and host installation untouched.
+- [x] Blind packets cover all five requested decision cases; their grading expectations stay outside packets and fixture answers are labeled `deterministic-fixture`.
 - [ ] `node --test tests/workflow-eval.test.mjs tests/toolkit-integration.test.mjs` passes; the explicit integration command passes against the selected local services.
 - [ ] Each of the five new scenarios has at least two actual fresh-agent runs on the same pinned harness/model after deterministic checks; reports use `agent-run` only for actual runs and record missing measurements as unavailable. No model calls are part of `npm test` or the integration command.
 - [ ] Actual agent-run outputs satisfy the trusted expected actions, order, and authority boundaries for all five scenarios. Preserve failing attempts; fix the responsible guidance before any new content-bound packet run, and never relabel fixture answers as successful agent evidence.
 - [ ] If fresh-agent access is unavailable, report behavioral acceptance as blocked/limited with the missing prerequisite; do not mark R4 complete.
-- [ ] Worker-scope verification passes; hand the owned diff to the lead per `parallel-lead-commit`.
+- [x] Worker-scope verification passes; hand the owned diff to the lead per `parallel-lead-commit`.
 
 ## Handoff and approval
 
-- **Implementation status:** In progress in the isolated `feat/toolkit-reliability` worktree.
+- **Implementation status:** R1–R3 complete; R4 source implemented and local checks recorded in the run report. R4 remains incomplete until the selected code-kb K3/K4 revision passes combined acceptance. Fresh-agent and final local-suite results are recorded in the report, which remains the live evidence ledger.
 - **Implementation approval:** User explicitly authorized this plan on 2026-11-03: "Implement docs/plans/2026-11-03-toolkit-reliability-plan.md. Use subagents where useful, verify, and commit locally. Don’t push or release." Coordination and prerequisite plans were read; live source states were checked.
 - **Reviewer choice:** `none` unless the implementation approval or a later spec names `codex` or `claude`.
 - **Local commit authority:** Authorized by the implementation request; lead stages reviewed paths and commits locally.
@@ -265,3 +265,5 @@ R1–R3 may run together with `parallel-lead-commit`; each worker owns only its 
 - R3's live diagnostic found 32 duplicate skills through the two selected symlinks and cached plugin. Exact proposed registration-only cleanup is recorded in `.memories/autonomous-run-2026-11-04-toolkit-reliability.md`; it awaits separate authority.
 - R4 introduces a generated npm lockfile. The lead additionally owns `.version-bump.json`, `scripts/bump-version.sh`, and `tests/version-audit.test.mjs` so future bumps keep its two root metadata versions synchronized without changing dependency pins. The five authoritative manifests remain the source of truth; generated lock metadata is excluded from the advisory undeclared-reference audit. The new regression failed before the fix and passed afterward; all 22 focused version checks passed. No project version was bumped.
 - R4 runner construction started against stable contracts before R3 finished. Shared package edits remained serialized until R3 was committed. Final combined acceptance still waits for Goldfish G1 and the code-kb K3/K4 selection.
+
+- R4 affected scope passed 41 tests with one explicit external skip after the `/tmp` quota recovery. The real-service baseline smoke passed with Goldfish `431f40c`, code-kb `f290fdc`, and the patched development-only client 2.4.0. Final combined acceptance remains pending code-kb selection. The lead added `.github/workflows/test.yml` dependency installation and isolated Git setup in the new tests. SDK install advisories were resolved before committing; `npm audit --audit-level=high` reports zero vulnerabilities.

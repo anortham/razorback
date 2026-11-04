@@ -137,6 +137,76 @@
         "skills/subagent-driven-development/SKILL.md",
         "skills/using-razorback/SKILL.md"
       ]
+    },
+    {
+      "id": "worktree_switch",
+      "facts": [
+        "The implementation plan was prepared on the main checkout, but work now continues inside a linked feature worktree.",
+        "The current worktree has uncommitted task changes that are absent from the main checkout.",
+        "Goldfish workspace and code-kb project_root must both change to the current absolute worktree path before their next calls.",
+        "The live branch and tested commit must be checked before choosing where to continue."
+      ],
+      "workflow_files": [
+        "skills/using-git-worktrees/SKILL.md",
+        "skills/using-razorback/SKILL.md",
+        "skills/using-razorback/references/source-control-hygiene.md"
+      ]
+    },
+    {
+      "id": "approval_pause_recovery",
+      "facts": [
+        "A prior session prepared a committed run report and a Goldfish checkpoint that points to it before stopping for publication approval.",
+        "The checkpoint records the worktree, tested source commit, current authority state, and next action.",
+        "The resumed session can recall the checkpoint, read the report, and inspect live git and current user-granted authority.",
+        "Live state still matches the report, no authority has been granted, and no durable task state has changed.",
+        "Push and pull request creation each need explicit authority."
+      ],
+      "workflow_files": [
+        "skills/finishing-a-development-branch/SKILL.md",
+        "skills/executing-plans/SKILL.md",
+        "skills/subagent-driven-development/SKILL.md",
+        "skills/using-razorback/references/blocker-taxonomy.md"
+      ]
+    },
+    {
+      "id": "missing_tool_fallback",
+      "facts": [
+        "The larger task is to find and fix a small source defect in a repository with native text search, readable source files, and focused tests.",
+        "code-kb tools are unavailable for this session.",
+        "The failure output identifies the target, and a focused reproduction test is available; callers and related tests still need investigation.",
+        "Evaluate the evidence-gathering boundary before implementation resumes: use native search and file reads, and record the structural-index gap. The larger task continues after this boundary."
+      ],
+      "workflow_files": [
+        "skills/using-razorback/SKILL.md",
+        "skills/systematic-debugging/SKILL.md",
+        "skills/test-driven-development/SKILL.md"
+      ]
+    },
+    {
+      "id": "duplicate_installations",
+      "facts": [
+        "The user selected two installation roots: a local skills symlink and a cached plugin directory; both expose the same razorback version and matching skill files.",
+        "The diagnostic can establish the exact duplicate registrations and a preferred canonical source from those roots.",
+        "The user asked for findings only and has not authorized installation changes.",
+        "A static check does not prove that the host currently loads either registration."
+      ],
+      "workflow_files": [
+        "README.md",
+        "skills/using-razorback/SKILL.md",
+        "skills/using-razorback/references/codex-tools.md"
+      ]
+    },
+    {
+      "id": "unsupported_structural_coverage",
+      "facts": [
+        "The code-kb response says this source file's language or generated structure is outside indexed coverage and does not provide callers.",
+        "Native source reads and text search can inspect the file and locate textual references.",
+        "The evaluated boundary ends after native evidence is gathered and the incomplete structural coverage is reported; the larger task continues afterward."
+      ],
+      "workflow_files": [
+        "skills/using-razorback/SKILL.md",
+        "skills/using-razorback/references/codex-tools.md"
+      ]
     }
   ]
 }

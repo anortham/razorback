@@ -16,7 +16,8 @@ jobs:
         with:
           node-version: '22'
 
-      # razorback has zero npm dependencies, so there is nothing to install.
+      - name: Install test dependencies
+        run: npm ci --ignore-scripts
 
       - name: Run tests
         run: npm test
