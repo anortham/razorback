@@ -1,12 +1,12 @@
 # Toolkit reliability run report
 
-Status: R1–R4 implementation and local verification complete. The final selected-revision combined gate passed at 2026-11-04 19:52 UTC. Nothing was merged, pushed or released. Earlier pending-dependency text below records the original overnight handoff; see the final closure at the end.
+Status: R1–R4 implementation and local verification completed on 2026-11-04. The final selected-revision combined gate passed at 19:52 UTC. The user's later publication approval and the v0.49.0 release work are recorded in the update at the end. Earlier pending-dependency text below records the original overnight handoff; see the final closure at the end.
 
 ## Scope and authority
 
 Plan: `docs/plans/2026-11-03-toolkit-reliability-plan.md`, R1–R4. The user authorized implementation, useful subagents, verification, and local commits on 2026-11-03: "Implement docs/plans/2026-11-03-toolkit-reliability-plan.md. Use subagents where useful, verify, and commit locally. Don't push or release." The user later confirmed "goldfish completed, code-kb is running."
 
-Push and release remain prohibited. PR creation and installation cleanup are ungranted. This report records a local dependency handoff, not a request for publication approval. External pre-merge reviewer: none. Security scanner scope: none declared by the plan. Privacy, process isolation, and direct-argv checks are required behavior tests.
+The 2026-11-03 implementation approval prohibited push and release. The user later approved integration, versioning, verification, push, tag, and GitHub release on 2026-11-04; this supersedes the original publication limit. No PR is part of the direct release path. Installation cleanup remains ungranted. External pre-merge reviewer: none. Security scanner scope: none declared by the plan. Privacy, process isolation, and direct-argv checks are required behavior tests.
 
 Worktree: `/home/murphy/.config/razorback/worktrees/razorback/toolkit-reliability`.
 Branch: `feat/toolkit-reliability`. Base: `7d870642287539d1261d2ee7e223db8a30a2a88e`.
@@ -87,7 +87,7 @@ The original Razorback main checkout remains clean at `7d87064`, one planning co
 
 An unexpected `/tmp` user quota caused `EDQUOT` despite available filesystem space. Failing test IDs passed with task-local TMPDIR, then the affected wider scope passed. Later verification consistently used task-local TMPDIR; no other session's files were deleted. Earlier smoke and command logs remain ignored scratch evidence; the final raw results and all agent attempts are committed here.
 
-A final Goldfish checkpoint points to this report and records the tested source, plan/task, branch/worktree, user authority source, and remaining next action before its metadata commit. On resume, recall it using this exact worktree as workspace, read this report, and verify current Git state, tested evidence, authority, and external disposition before acting. An unchanged resume needs no new checkpoint. Push/release remain prohibited unless the user later changes that instruction.
+A final Goldfish checkpoint points to this report and records the tested source, plan/task, branch/worktree, user authority source, and remaining next action before its metadata commit. On resume, recall it using this exact worktree as workspace, read this report, and verify current Git state, tested evidence, authority, and external disposition before acting. An unchanged resume needs no new checkpoint. At that checkpoint's creation, push/release remained prohibited; the later approval is recorded below.
 
 ## Final combined gate closed, 2026-11-04 19:52 UTC
 
@@ -95,4 +95,16 @@ The coordinating Goldfish session selected clean Goldfish `431f40c` and code-kb 
 
 With runner `78c1a07`, a fresh explicit ignored config and task-local TMPDIR, `npm run test:integration -- --config <absolute-config>` passed all five real-service/structural checks. The report is committed as `toolkit-reliability-evidence/final-integration.json`. Current packet source-set hash `cee06cf461b8b531ebb102bd9e5733256514d35485385ea67918e46700eb5556`, all ten answer/report hashes, and the 505-pass local-test log hash were independently verified. Existing scoped agent evidence remains valid; no new model trials were dispatched.
 
-This closes R4. Preserve earlier failed outputs, limits and the old smoke config as historical evidence. Do not rerun the unchanged final gate merely because the earlier section says pending. Only metadata changes follow this tested runner revision. The remaining operations are authorization to integrate/publish/install and any specific registration cleanup. The separate Julie 3.12 branch requires its own selection and acceptance if included in a rollout. Full assessment: `/home/murphy/source/goldfish/.worktrees/toolkit-hardening/docs/reviews/2026-11-04-toolkit-plan-evaluation.md`.
+This closes R4. Preserve earlier failed outputs, limits and the old smoke config as historical evidence. Do not rerun the unchanged final gate merely because the earlier section says pending. Only metadata changes follow this tested runner revision. At that time, integration, publication, and installation cleanup still needed separate authorization. The separate Julie 3.12 branch required its own selection and acceptance if included in a rollout. Full assessment: `/home/murphy/source/goldfish/.worktrees/toolkit-hardening/docs/reviews/2026-11-04-toolkit-plan-evaluation.md`.
+
+## v0.49.0 release update, 2026-11-05
+
+The user later explicitly approved Razorback integration, versioning, verification, push, tag, and GitHub publication with "approved, do all of it." This supersedes the implementation request's earlier local-only limit. Duplicate registration cleanup remains separate and unauthorized.
+
+The clean `feat/toolkit-reliability` tip `1b3575f` was fast-forwarded into `main`. The release commit is `4ebc9d3a6ae5d1f8c82f7744383bafc01e89a4e2`; its annotated `v0.49.0` tag points to that commit. The version bump used `scripts/bump-version.sh 0.49.0`; all five declared manifests and both npm lock root versions agree, with dependency pins unchanged.
+
+Verification on the release source: `npm test` passed 505 tests with one explicit external-integration skip; `scripts/bump-version.sh --check 0.49.0` and `--audit` passed. The latest combined gate passed all five checks against Goldfish `0f74184` and the Julie 3.12 code-kb runtime built from `a07c195` (SHA-256 `ae131d03aebabf97a72296e873444c5c6c8436be1dfa5b24eb64dca09d32ffb7`). The blind workflow evidence remains scoped to two passing fresh-agent observations per required case; earlier failures remain preserved. No full 15-case model success or performance claim is made.
+
+After creating the local tag, `git fetch origin` pruned it because global `/home/murphy/.gitconfig` sets `fetch.pruneTags=true`. The remote still had `main` at `e53a9ee` and did not have `v0.49.0`; no remote ref was changed. The same annotated tag was recreated at `4ebc9d3`, and global Git configuration was left untouched.
+
+Publication is pending: push the authorized `main` branch and annotated tag with the repository's `git push --follow-tags` sequence, create the GitHub release with `scripts/bump-version.sh --release 0.49.0`, and verify branch and tag CI. Update this report with the release URL and final CI status after publication.
