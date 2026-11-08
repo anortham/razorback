@@ -19,7 +19,7 @@ Write a plan file only when it carries information across a boundary:
 - **Multi-session:** the work will not finish in this session, and the next session needs the decisions.
 - **Coordination:** parallel workers need file ownership, ordering, and shared contracts.
 
-Otherwise, do the work directly. A task list in the harness is enough to track steps.
+Otherwise, do the work directly. A task list in the harness is enough to track steps. An item count is never the reason: a list of small, independent items is a batch (razorback:fixing-small-issues Batch mode) on one branch with one branch gate and one PR, and no plan file.
 
 After approval, razorback runs to completion and stops only for real blockers (`razorback:using-razorback` skill's `references/blocker-taxonomy.md`).
 

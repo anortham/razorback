@@ -9,7 +9,7 @@ Two flows behind one gate: the branch gate must pass before any push, merge, or 
 
 **Announce at start:** "I'm using the finishing-a-development-branch skill to complete this work."
 
-**Not here:** `razorback:pre-merge-review` already ran. Quick-fix work (`razorback:fixing-small-issues`) never reaches this skill.
+**Not here:** `razorback:pre-merge-review` already ran. Quick-fix work and Batch mode (`razorback:fixing-small-issues`) open their own PR with a plain body and never reach this skill; the morning report and its metadata commits belong to plan runs.
 
 ## Mode selection
 

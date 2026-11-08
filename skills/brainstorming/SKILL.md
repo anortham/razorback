@@ -18,6 +18,7 @@ Do NOT write production code for a consequential design choice the user has not 
 Judge the request by uncertainty, consequence, and coordination, not by size:
 
 - **Clear and low-consequence** (the request says what to build, and a wrong detail is cheap to fix): leave this skill and do the work. A small defect or tweak goes to razorback:fixing-small-issues.
+- **A list of small, independent items** (each clear and low-consequence): leave this skill. razorback:fixing-small-issues Batch mode runs them on one branch with one branch gate and one PR. An item count is not a reason for a plan.
 - **Unclear** (two readings of the request give different results): ask the question that separates them, then re-triage.
 - **Consequential** (hard to reverse, or it changes a public contract, stored data, security, or other people's work): pick a path below.
 - **Needs coordination** (the work spans sessions, agents, or people): take the architectural path, whose written spec and plan give the handoff a home.
@@ -102,6 +103,7 @@ A browser tool for mockups, diagrams, and visual options; not a mode. When visua
 |--------|---------|
 | "It's small, so no design choice is involved" | Size is not risk. A small change to a contract, data, or security gets its choice named first. |
 | "I'll call it bounded and skip the spec" | Bounded means the flow already exists here to read. A new subsystem is architectural. |
+| "The list has eleven items, so it is architectural" | Count the open choices, not the items. A list of clear items is a batch (razorback:fixing-small-issues); a plan file needs a handoff, a multi-session effort, or coordination. |
 | "I understand this kind of app, so it's bounded" | Bounded measures the repo, not your familiarity. A new project has no existing flow — it is architectural. |
 | "The user told me what to build, so every choice is settled" | The request settles the choices it names. An open consequential choice still goes to the user. |
 | "The user told me exactly what to build, but I'll present a design anyway" | A choice the request settles needs no second approval. Proceed. |

@@ -1,11 +1,11 @@
 ---
 name: fixing-small-issues
-description: Fixes a small, local defect on the current checkout after an objective size check, and verifies only the affected scope, with no worktree and no baseline suite. Use when a reported defect or requested tweak looks small and local (a button not disabled, a double-submit, an off-by-one, a wrong label, CSS/styling adjustments, copy changes, config value fixes), before invoking brainstorming, systematic-debugging, or test-driven-development, creating a worktree, or running any test suite.
+description: Fixes a small, local defect on the current checkout after an objective size check, and verifies only the affected scope, with no worktree and no baseline suite. Runs a list of such items as one batch on one branch with one branch gate and one PR. Use when a reported defect or requested tweak looks small and local (a button not disabled, a double-submit, an off-by-one, a wrong label, CSS/styling adjustments, copy changes, config value fixes), before invoking brainstorming, systematic-debugging, or test-driven-development, creating a worktree, or running any test suite.
 ---
 
 # Fixing Small Issues
 
-Triage-first path for small, local, reversible changes: locate, measure against objective criteria, fix in place, verify the affected scope. No worktree, no baseline suite run, no design doc, no implementer dispatch.
+Triage-first path for small, local, reversible changes: locate, measure against objective criteria, fix in place, verify the affected scope. No worktree, no baseline suite run, no design doc, no implementer dispatch. A list of such items is one batch (see Batch mode): one branch, one branch gate, one PR.
 
 **Announce at start:** "I'm using the fixing-small-issues skill to triage this."
 
@@ -53,8 +53,20 @@ The quick-fix tier applies only when ALL criteria hold. Project instructions may
 
 - Identify affected callers and tests with native search and file reads, or code-kb (the tests to run in `get_symbol_context`, and `blast_radius` for the full list) when useful. Its predictions can be incomplete; verify coverage against current source and reconfirm the symptom is gone. A failing test iterates on its own id until it passes; the impacted set runs once after (razorback:systematic-debugging Phase 4). razorback:verification-before-completion applies in full.
 - The full suite is NOT part of this tier; the full suite runs at the branch gate (CI or pre-merge).
-- Commit with a clear message; open a PR where the project is branch-gated.
+- Commit with a clear message. The PR belongs to the branch, not to the item: with more items queued, go to the next item (Batch mode). When the branch is done, run the branch gate once and open one PR with a plain body (items done, items left out and why, gate result).
 - In the closing summary, list any `# razorback:` markers left (`<file>:<line>` + ceiling), or say "no markers left."
+
+## Batch mode: a list of small items
+
+A list of small, independent items (a backlog, a review's nits, a to-do list) is one batch: not N separate quick fixes with N PRs, and not a plan. Announce: "Batch mode: <N> items on branch <name>."
+
+- One branch for the whole batch. Protected branch → one plain feature branch, never one branch per item.
+- Triage each item against the Step 2 criteria when you reach it. Fix it (Step 3), verify its affected scope (Step 4), commit it, move on. A harness task list tracks the items.
+- Measure the criteria and the escalation triggers per item, never against the sum of the branch. Eleven two-file fixes are eleven quick fixes, not a 22-file change.
+- An item that fails a criterion or fires a trigger leaves the batch: note it, finish the other items, then route the leftover through razorback:brainstorming triage. One hard item never promotes the whole list to a plan.
+- The full suite and any slow suite run once, after the last item, as the branch gate. Then one PR for the batch. Never a gate or a PR per item.
+- No plan file, no worker, no ledger, no task report, no morning report. A plan file needs a handoff, a multi-session effort, or a coordination need (razorback:writing-plans), never an item count.
+- Independent items may run in parallel subagents with disjoint files (razorback:dispatching-parallel-agents). The lead reviews each diff, then one gate and one PR.
 
 ## Escalation triggers
 
@@ -82,6 +94,8 @@ Downscaling abuse and ceremony reflex are both violations.
 | "Brainstorming says modifying behavior MUST brainstorm" | Repairing or tuning agreed behavior is not designing new behavior. Brainstorming governs design work. |
 | "I'm almost done, no need to escalate" | Triggers are objective. Almost-done past a trigger is how 20-line fixes become 200-line messes. |
 | "A narrow workaround keeps it in budget" | The tier is measured by where the root cause lives, not by how small you can make the diff. A symptom patch that dodges a shared-code root cause is an escalation, not a fix. |
+| "Eleven items, so eleven PRs" | The PR belongs to the branch. One branch, one gate, one PR. A gate per item is the all-day run Batch mode exists to prevent. |
+| "Eleven items is too big for this tier, so write a plan" | The criteria measure one item. A list of small items is a batch, not a plan. |
 
 ## Red Flags — STOP
 
@@ -91,6 +105,8 @@ Downscaling abuse and ceremony reflex are both violations.
 - Dispatching an implementer subagent for a ≤ 20-line fix
 - Proceeding while a criterion is unmeasured
 - Continuing past an escalation trigger
+- Opening a PR, or running the full suite, after each item of a batch
+- Writing a plan file for a list of items that each pass the criteria
 
 ## It's working if
 
@@ -98,6 +114,7 @@ Downscaling abuse and ceremony reflex are both violations.
 - The affected scope ran and the symptom is gone; the full suite never ran in the inner loop.
 - Every deliberate corner carries a `# razorback:` marker, and the closing summary lists them or says none.
 - Escalation triggers were honored the moment they fired.
+- A list of items shipped on one branch with one branch gate and one PR.
 
 ## Integration
 

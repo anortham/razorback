@@ -111,7 +111,7 @@
           <tr>
             <th scope="row">Small fixes</th>
             <td data-label="A bare agent">No rule for how much process a fix gets.</td>
-            <td data-label="With razorback">A fix of at most two source files and about 20 lines, with no contract change, takes the quick-fix tier: it is fixed on your current checkout and only the affected tests run.</td>
+            <td data-label="With razorback">A fix of at most two source files and about 20 lines, with no contract change, takes the quick-fix tier: it is fixed on your current checkout and only the affected tests run. A list of such fixes is one batch: one branch, one branch gate, one pull request.</td>
           </tr>
           <tr>
             <th scope="row">Long plan runs</th>
@@ -244,6 +244,7 @@
               <li>one <code>git revert</code> undoes it.</li>
             </ul>
             <p>It is fixed on your current checkout, with no worktree and only the affected tests. If a criterion fails or the fix grows, the agent returns to brainstorming triage.</p>
+            <p>Batch mode: a list of such items runs on one branch. Each item gets its own focused tests and commit. The full suite runs once at the end, and one pull request carries the batch. An item that fails a criterion leaves the batch; the rest still ship.</p>
           </div>
           <div>
             <h4>Three brainstorm paths</h4>
@@ -267,7 +268,7 @@
               <dt><a href="#skill-dispatching-parallel-agents">dispatching-parallel-agents</a></dt>
               <dd>Ad-hoc parallel work outside a plan.</dd>
               <dt><a href="#skill-fixing-small-issues">fixing-small-issues</a></dt>
-              <dd>The quick-fix tier.</dd>
+              <dd>The quick-fix tier, and Batch mode for a list of small items.</dd>
             </dl>
           </div>
         </div>
@@ -422,7 +423,7 @@
             <li id="skill-subagent-driven-development"><a href="https://github.com/anortham/razorback/blob/main/skills/subagent-driven-development/SKILL.md"><code data-skill="subagent-driven-development">subagent-driven-development</code></a> Runs independent plan tasks in fresh implementer subagents, with the lead reviewing each one.</li>
             <li id="skill-executing-plans"><a href="https://github.com/anortham/razorback/blob/main/skills/executing-plans/SKILL.md"><code data-skill="executing-plans">executing-plans</code></a> The default plan runner: the current agent runs an approved plan itself.</li>
             <li id="skill-dispatching-parallel-agents"><a href="https://github.com/anortham/razorback/blob/main/skills/dispatching-parallel-agents/SKILL.md"><code data-skill="dispatching-parallel-agents">dispatching-parallel-agents</code></a> Sends two or more independent problems, such as unrelated test failures, to parallel agents.</li>
-            <li id="skill-fixing-small-issues"><a href="https://github.com/anortham/razorback/blob/main/skills/fixing-small-issues/SKILL.md"><code data-skill="fixing-small-issues">fixing-small-issues</code></a> The quick-fix tier: fix on the current checkout and run only the affected tests.</li>
+            <li id="skill-fixing-small-issues"><a href="https://github.com/anortham/razorback/blob/main/skills/fixing-small-issues/SKILL.md"><code data-skill="fixing-small-issues">fixing-small-issues</code></a> The quick-fix tier: fix on the current checkout and run only the affected tests. Batch mode ships a list of small items on one branch with one gate and one pull request.</li>
             <li id="skill-using-git-worktrees"><a href="https://github.com/anortham/razorback/blob/main/skills/using-git-worktrees/SKILL.md"><code data-skill="using-git-worktrees">using-git-worktrees</code></a> Lists existing worktrees and branches, then makes an isolated workspace for the task.</li>
           </ul>
         </div>

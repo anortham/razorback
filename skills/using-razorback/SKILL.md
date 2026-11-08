@@ -32,6 +32,7 @@ These thoughts mean the process no longer fits the task:
 | "The request is clear enough" (two readings give different results) | Ask the one question that separates the readings. |
 | "I understood the task, but the process says to keep going" | Once the task is understood, use the lighter path it supports and say so. |
 | "I remember this skill" | Skills evolve. Read the current version when you load one. |
+| "Eleven items means eleven PRs, or a plan" | A list of clear items is one batch: one branch, one gate, one PR. A plan file needs a handoff, a multi-session effort, or coordination. |
 
 ## Instruction Priority
 
@@ -69,6 +70,7 @@ Skills use Claude Code tool names; substitute your platform's equivalent.
 - **A plan file** exists only for a handoff, a multi-session effort, or a coordination boundary: `razorback:writing-plans`.
 - **Ad-hoc parallel work:** `razorback:dispatching-parallel-agents`.
 - **Small, local, reversible fix:** `razorback:fixing-small-issues` — triage, fix on the current checkout, verify the affected scope only. No worktree, no baseline suite.
+- **A list of small, independent items:** `razorback:fixing-small-issues` Batch mode — one branch, one gate, one PR; focused checks per item, the full suite once. An item count alone never calls for a plan file or a worker.
 
 The agent reviews its completed changes (spec compliance + code quality) on every path. When a process skill (brainstorming, debugging) applies, it sets HOW and runs before domain skills. Rigid skills (TDD, debugging) are followed exactly once loaded. A bug fix still finds the root cause.
 
