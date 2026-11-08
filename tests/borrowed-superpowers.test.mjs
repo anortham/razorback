@@ -126,7 +126,7 @@ test('subagent-driven-development keeps SDD artifacts self-ignored and worktree-
     const worktree = path.join(testRoot, 'wt');
     run('git', ['worktree', 'add', '-q', worktree, '-b', 'wt-feature'], { cwd: repo });
     const worktreeRoot = run('git', ['rev-parse', '--show-toplevel'], { cwd: worktree }).trim();
-    const worktreeDir = run('bash', [workspaceScript, 'plan.md'], { cwd: worktree }).trim();
+    const worktreeDir = path.normalize(run('bash', [workspaceScript, 'plan.md'], { cwd: worktree }).trim());
 
     assert.equal(worktreeDir, path.join(worktreeRoot, '.razorback', 'sdd', 'plan-0bbe5bc4573b'));
     assert.notEqual(worktreeDir, dir);
