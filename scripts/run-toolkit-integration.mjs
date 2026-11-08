@@ -106,7 +106,8 @@ function verifySource(name, source) {
   } catch {
     throw new RunnerError(`The configured ${name} source root or executable is unavailable.`, 2);
   }
-  if (sourceRoot !== runGit(['rev-parse', '--show-toplevel'], sourceRoot, `${name} Git root`)) {
+  const gitRoot = runGit(['rev-parse', '--show-toplevel'], sourceRoot, `${name} Git root`);
+  if (realpathSync.native(sourceRoot) !== realpathSync.native(gitRoot)) {
     throw new RunnerError(`The configured ${name} source_root is not a repository root.`, 2);
   }
   if (runGit(['status', '--porcelain', '--untracked-files=all'], sourceRoot, `${name} Git status`)) {
