@@ -3,16 +3,41 @@
 
 set -euo pipefail
 
-# Determine plugin root directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
-PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+# Determine plugin root directory.
+# Splits $0 on its last / or \ (run-hook.cmd's cmd half passes a Windows
+# path), with no separator meaning the current directory. No external command
+# resolves the directory because a SessionStart:startup hook can run with a
+# broken/empty PATH (anthropics/claude-code#43127) before any PATH-repairing
+# sibling hook in the same startup batch takes effect.
+#
+# No command substitution or pipe runs in this script: each one forks, and a
+# fork costs tens of milliseconds under Git Bash on Windows. The paths stay
+# relative to the current directory, which is all the file reads below need.
+case "$0" in
+  */*|*\\*) SCRIPT_DIR="${0%[/\\]*}" ;;
+  *) SCRIPT_DIR="." ;;
+esac
+PLUGIN_ROOT="${SCRIPT_DIR}/.."
 
-# Read using-razorback content
-using_razorback_content=$(cat "${PLUGIN_ROOT}/skills/using-razorback/SKILL.md" 2>&1 || echo "Error reading using-razorback skill")
+# Read using-razorback content with the read builtin (no external command, for
+# the same PATH-independence reason, and no subshell). read returns 1
+# at end of file, hence || true; the loop drops trailing newlines as command
+# substitution did.
+skill_md="${PLUGIN_ROOT}/skills/using-razorback/SKILL.md"
+using_razorback_content="Error reading using-razorback skill"
+skill_readable=0
+if [ -r "$skill_md" ]; then
+  skill_readable=1
+  IFS= read -r -d '' using_razorback_content < "$skill_md" || true
+  while [[ $using_razorback_content == *$'\n' ]]; do
+    using_razorback_content="${using_razorback_content%$'\n'}"
+  done
+fi
 
 # Escape string for JSON embedding using bash parameter substitution.
 # Each ${s//old/new} is a single C-level pass - orders of magnitude
-# faster than the character-by-character loop this replaces.
+# faster than a character-by-character loop. The result goes to the
+# json_escaped variable instead of stdout, so no subshell is needed.
 escape_for_json() {
     local s="$1"
     s="${s//\\/\\\\}"
@@ -20,38 +45,69 @@ escape_for_json() {
     s="${s//$'\n'/\\n}"
     s="${s//$'\r'/\\r}"
     s="${s//$'\t'/\\t}"
-    printf '%s' "$s"
+    json_escaped="$s"
 }
 
 # Drop the harness blocks that belong to other harnesses. SKILL.md marks each
 # harness-specific paragraph with <!-- harness:<id> --> ... <!-- /harness -->.
-# Fails open: an unmarked file, an awk failure, or an empty result all yield the
-# full unfiltered content, so a filter bug can never inject an empty payload.
+# The loop reads the skill file line by line with the read builtin and stores
+# the kept lines in the filtered variable. Fails open: an unmarked file or an
+# empty result yields the full unfiltered content, so a filter bug can never
+# inject an empty payload.
 filter_harness_blocks() {
-    local keep="$1" content="$2" filtered
-    filtered=$(printf '%s\n' "$content" | awk -v keep="$keep" '
-        /^<!-- harness:[a-z-]+ -->$/ {
-            id = $0
-            sub(/^<!-- harness:/, "", id)
-            sub(/ -->$/, "", id)
-            skip = (id != keep)
-            next
-        }
-        /^<!-- \/harness -->$/ { skip = 0; next }
-        !skip
-    ' 2>/dev/null) || { printf '%s' "$content"; return 0; }
-
+    local keep="$1" file="$2" line id skip=0 have_line=0
+    filtered=""
+    while IFS= read -r line || [ -n "$line" ]; do
+        case "$line" in
+            '<!-- harness:'*' -->')
+                id="${line#'<!-- harness:'}"
+                id="${id%' -->'}"
+                case "$id" in
+                    ''|*[!a-z-]*) ;;
+                    *)
+                        if [ "$id" = "$keep" ]; then skip=0; else skip=1; fi
+                        continue
+                        ;;
+                esac
+                ;;
+            '<!-- /harness -->')
+                skip=0
+                continue
+                ;;
+        esac
+        if [ "$skip" -eq 1 ]; then
+            continue
+        fi
+        if [ "$have_line" -eq 1 ]; then
+            filtered="${filtered}"$'\n'"${line}"
+        else
+            filtered="$line"
+            have_line=1
+        fi
+    done < "$file"
+    while [[ $filtered == *$'\n' ]]; do
+        filtered="${filtered%$'\n'}"
+    done
     if [ -z "$filtered" ]; then
-        printf '%s' "$content"
-        return 0
+        filtered="$using_razorback_content"
     fi
-    printf '%s' "$filtered"
 }
 
 build_session_context() {
-    local escaped
-    escaped=$(escape_for_json "$1")
-    printf '%s' "<EXTREMELY_IMPORTANT>\nYou have razorback.\n\n**Below is the full content of your 'razorback:using-razorback' skill - your introduction to using skills. For all other skills, use the 'Skill' tool:**\n\n${escaped}\n</EXTREMELY_IMPORTANT>"
+    escape_for_json "$1"
+    session_context="<EXTREMELY_IMPORTANT>\nYou have razorback.\n\n**Below is the full content of your 'razorback:using-razorback' skill - your introduction to using skills. For all other skills, use the 'Skill' tool:**\n\n${json_escaped}\n</EXTREMELY_IMPORTANT>"
+}
+
+# A known platform gets only its own harness blocks; the unknown-platform
+# fallback gets every harness, since we cannot tell which one is reading.
+select_harness_content() {
+    local keep="$1"
+    if [ "$skill_readable" -eq 1 ]; then
+        filter_harness_blocks "$keep" "$skill_md"
+        build_session_context "$filtered"
+    else
+        build_session_context "$using_razorback_content"
+    fi
 }
 
 # Output context injection as JSON.
@@ -61,23 +117,35 @@ build_session_context() {
 # Claude Code reads BOTH additional_context and hookSpecificOutput without
 # deduplication, so we must emit only the field the current platform consumes.
 #
-# A known platform gets only its own harness blocks; the unknown-platform
-# fallback gets every harness, since we cannot tell which one is reading.
-#
 # Uses printf instead of heredoc to work around bash 5.3+ heredoc hang.
 # See: https://github.com/obra/superpowers/issues/571
+#
+# emit_json absorbs EPIPE without a pipe through an external command. On
+# Windows + Git Bash, the harness can close the hook's stdout before printf
+# finishes, and Git Bash's printf reports that EPIPE as "printf: write error:
+# Permission denied", which `set -euo pipefail` would let escape as a startup
+# diagnostic every session (obra/superpowers#1612). SIGPIPE is ignored so other
+# platforms see the same EPIPE error instead of a signal; the error message is
+# dropped and the status ignored. No external command is involved, so a broken
+# PATH (obra/superpowers#2310) changes nothing.
+emit_json() {
+  trap '' PIPE
+  # shellcheck disable=SC2059 # every caller passes a literal format string
+  printf "$@" 2>/dev/null || true
+}
+
 if [ -n "${CURSOR_PLUGIN_ROOT:-}" ]; then
   # Cursor sets CURSOR_PLUGIN_ROOT (may also set CLAUDE_PLUGIN_ROOT)
-  session_context=$(build_session_context "$(filter_harness_blocks cursor "$using_razorback_content")")
-  printf '{\n  "additional_context": "%s"\n}\n' "$session_context"
+  select_harness_content cursor
+  emit_json '{\n  "additional_context": "%s"\n}\n' "$session_context"
 elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ]; then
   # Claude Code sets CLAUDE_PLUGIN_ROOT
-  session_context=$(build_session_context "$(filter_harness_blocks claude-code "$using_razorback_content")")
-  printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "SessionStart",\n    "additionalContext": "%s"\n  }\n}\n' "$session_context"
+  select_harness_content claude-code
+  emit_json '{\n  "hookSpecificOutput": {\n    "hookEventName": "SessionStart",\n    "additionalContext": "%s"\n  }\n}\n' "$session_context"
 else
   # unknown platform fallback -- SDK standard format
-  session_context=$(build_session_context "$using_razorback_content")
-  printf '{\n  "additionalContext": "%s"\n}\n' "$session_context"
+  build_session_context "$using_razorback_content"
+  emit_json '{\n  "additionalContext": "%s"\n}\n' "$session_context"
 fi
 
 exit 0

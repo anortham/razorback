@@ -112,7 +112,7 @@ test('commit modes are bound to their git behavior in the worker prompts', () =>
 // Lock the parallel-lead-commit durability contract: commit before recording,
 // record a real SHA (never "pending"), scope lead staging, and reconcile on resume.
 test('subagent-driven-development enforces the parallel-lead-commit durability contract', () => {
-  const skill = read('skills/subagent-driven-development/SKILL.md');
+  const skill = read('skills/subagent-driven-development/SKILL.md') + read('skills/subagent-driven-development/references/ledger.md');
 
   // Lead stages only owned files, never a broad add that sweeps sibling edits.
   assert.match(skill, /Never `git add -A`/);

@@ -68,12 +68,13 @@ test('subagent-driven-development defines artifact helpers and durable ledger', 
   assert.match(skill, /\.razorback\/sdd\/<plan-key>/);
   assert.match(read('skills/subagent-driven-development/implementer-prompt.md'), /\.razorback\/sdd\/<plan-key>/);
   assert.match(read('skills/subagent-driven-development/fix-prompt.md'), /\.razorback\/sdd\/<plan-key>/);
-  assert.match(read('skills/subagent-driven-development/scripts/review-package'), /git diff -U10/);
+  assert.match(read('skills/subagent-driven-development/scripts/review-package'), /diff -U10/);
   assert.match(skill, /## File Handoffs/);
   assert.match(skill, /## Durable Progress/);
   assert.match(skill, /\.razorback\/sdd\/progress\.md/);
-  assert.match(skill, /Lead inline review/);
+  assert.match(skill, /Lead inline review/i);
   assert.match(skill, /No reviewer subagents/);
+  assert.match(read('skills/subagent-driven-development/references/ledger.md'), /Lead inline review clean/);
 });
 
 test('subagent-driven-development keeps SDD artifacts self-ignored and worktree-local', () => {
@@ -178,7 +179,8 @@ test('plans carry spec pointer and sdd enforces spec reading, conflict scan tabl
   assert.match(templates, /\*\*Spec:\*\*\s*\[path to the spec\/design doc/);
   assert.match(writingPlans, /\*\*Spec:\*\*/);
   assert.match(sdd, /If the plan names a Spec, read that too/i);
-  assert.match(sdd, /The scan's output is a table, not a verdict/i);
+  assert.match(sdd, /references\/preflight\.md/);
+  assert.match(read('skills/subagent-driven-development/references/preflight.md'), /The scan's output is a table, not a verdict/i);
   assert.match(sdd, /Batch small same-shape work/i);
   assert.match(sdd, /re-read.*evidence|do not ask a reviewer to re-run tests|reviewers will not re-run tests/i);
   assert.match(sdd, /Rulings I made/i);

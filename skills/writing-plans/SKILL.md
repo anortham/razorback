@@ -98,6 +98,7 @@ When a plan has exactly one task, use the task template unchanged. Only two thin
 3. Task decomposition: clear boundaries, testable acceptance criteria, correct dependency order.
 4. Binding parts: every requirement the executor must not vary sits in a binding field, not only in an Approach.
 5. Buildability: every path and symbol is real — check it in current source (a file read, or code-kb `lookup_symbol(query='<symbol>')`). Fix any invented API.
+6. Proportion: compare the plan's length to the spec's. A plan several times longer than its spec is a transcript of the code, not a plan; when code blocks dominate, replace bodies with signatures, test names, and assertions, and check that each task still binds what it must.
 
 Fix inline. If the session can dispatch subagents, you may instead dispatch a reviewer with `plan-document-reviewer-prompt.md` (this directory).
 

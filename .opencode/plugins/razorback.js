@@ -38,6 +38,11 @@ const extractAndStripFrontmatter = (content) => {
   return { frontmatter, content: body };
 };
 
+// Opening of every injected bootstrap part. The already-injected guard matches
+// it at the start of a part, so a prompt that merely mentions the tag is not
+// mistaken for the bootstrap.
+export const BOOTSTRAP_MARKER = '<EXTREMELY_IMPORTANT>\nYou have razorback.';
+
 export const RazorbackPlugin = async ({ client, directory }) => {
   const razorbackSkillsDir = path.resolve(__dirname, '../../skills');
 
@@ -54,13 +59,12 @@ When skills reference tools, substitute OpenCode equivalents:
 - \`TodoWrite\` → \`todowrite\`
 - \`TaskCreate\`/\`TaskUpdate\` → \`todowrite\`
 - \`Agent\` tool (dispatching subagents) → opencode's \`Task\` tool. The built-in \`general\` subagent is suitable for most implementer work. Multiple \`Task\` calls in one turn run in parallel. Users can also \`@mention\` subagents manually.
-- \`Skill\` tool → opencode's native \`skill\` tool
+- \`Skill\` tool → opencode's native \`skill\` tool. Skill ids are bare names, so drop the \`razorback:\` prefix skills use when they name each other (\`razorback:brainstorming\` → \`skill\` with \`name: "brainstorming"\`)
 - \`Read\`/\`Write\`/\`Edit\`/\`Bash\` → your native tools
 
 Use OpenCode's native \`skill\` tool to list and load skills.`;
 
-    return `<EXTREMELY_IMPORTANT>
-You have razorback.
+    return `${BOOTSTRAP_MARKER}
 
 **IMPORTANT: The using-razorback skill content is included below. It is ALREADY LOADED - you are currently following it. Do NOT use the skill tool to load "using-razorback" again - that would be redundant.**
 
@@ -98,8 +102,7 @@ ${toolMapping}
         if (!bootstrap || !output.messages.length) return;
         const firstUser = output.messages.find(m => m.info.role === 'user');
         if (!firstUser || !firstUser.parts.length) return;
-        // Only inject once
-        if (firstUser.parts.some(p => p.type === 'text' && p.text.includes('EXTREMELY_IMPORTANT'))) return;
+        if (firstUser.parts.some(p => p.type === 'text' && p.text.startsWith(BOOTSTRAP_MARKER))) return;
         const ref = firstUser.parts[0];
         firstUser.parts.unshift({ ...ref, type: 'text', text: bootstrap });
       } catch (err) {

@@ -24,8 +24,7 @@ Dispatch, follow-up, and wait tool names per harness: read `references/harness-d
 3. Tasks marked complete **with a named commit** are DONE (verify with `git log`). A completion line whose SHA is missing, `pending`, or absent from `git log` is **INCOMPLETE** — the `parallel-lead-commit` crash window: `git status`, inspect the task's owned files, then re-review and commit the approved edits (Commit Mode Contract) or re-dispatch.
 4. Read the plan's areas so review can spot drift: file reads, or code-kb `file_skeleton` on the folders the plan modifies.
 5. Validate the plan's `## Parallel Execution Contract`: a safe batch with 2+ eligible tasks dispatches together. Safe = non-overlapping file ownership, no ordering dependency, `Serialization required: No`. Serialized lanes need `Serialization required: Yes` plus a `Dependency reason`. Serializing a safe batch requires a recorded dependency or tool limitation — caution is not one.
-6. **Pre-dispatch conflict scan:** Before dispatching Task 1, scan the plan once for conflicts (tasks that contradict each other or the plan's Global Constraints; requirements treated as defects; self-contradictions). The scan's output is a table, not a verdict: one row for every pair of tasks that share a file or an interface (what one produces against what the other consumes, and what you found), and one row for every task checking its own internal agreement (tests specified against code specified, files created vs touched). Write the table to the ledger. Rule on every conflict found before execution begins (the spec is the binding authority, the plan is its argument) and record each ruling in the ledger beside its row as a `Ruling:` line.
-
+6. **Pre-dispatch conflict scan:** before dispatching Task 1, read `references/preflight.md` (this directory), write its conflict table to the ledger, and rule on every conflict it finds.
 
 ## Step 2: Dispatch Implementer Subagent
 
@@ -33,7 +32,7 @@ Template: `./implementer-prompt.md`. Record `BASE=$(git rev-parse HEAD)` first; 
 
 **The brief file is the single source of task requirements.** Task text and every exact value live only in `task-N-brief.md`, never in the spawn prompt, which introduces the brief path as "read this first — it is your requirements, with the exact values to use verbatim".
 
-Prompt-resident (the template's sections): scene-setting; earlier-task interfaces and lead ambiguity resolutions (never prior-task summaries); file ownership; evidence directives; API-shape evidence requirement; gate invariant requirement; TDD (`razorback:test-driven-development`); verification scope; commit mode; architecture-quality context (approved architecture, any `No Architecture Impact` note, the plan mismatch rule); report path under `.razorback/sdd/<plan-key>/` (the worker returns only status, commits, test summary, concerns).
+Fill every section of the template: scene-setting, earlier-task interfaces and lead rulings (never prior-task summaries), file ownership, evidence directives, the API-shape evidence requirement, gate invariant, TDD, verification scope, commit mode, architecture-quality context, and the report path under `.razorback/sdd/<plan-key>/` (the worker returns only status, commits, test summary, concerns).
 
 **Verification scopes** (`references/verification-scopes.md`, read before the first dispatch): workers run `worker-red-green` / `worker-ceiling`; the lead owns `affected-change`, `branch-gate`, `expensive-specialist` and the verification ledger. The plan's slow tier (browser, end-to-end, real database) runs once at the branch gate against all tasks, never after each task. A passing ledger entry for the same HEAD and scope is reusable.
 
@@ -52,20 +51,11 @@ Local commits in both modes are authorized by the approved scope. If a user or h
 
 ## File Handoffs
 
-Scripts live in this skill's `scripts/` (`"$SKILL_DIR/scripts/…"`), not the target repo. They need bash, git, and Node.js on `PATH`. `task-brief PLAN_FILE N` writes `task-N-brief.md` under the plan's workspace and prints the path. The worker writes `task-N-report.md` beside it; fix rounds append. `review-package PLAN_FILE BASE HEAD` builds a focused diff for the lead; no reviewer subagents.
+Scripts live in this skill's `scripts/` (`"$SKILL_DIR/scripts/…"`), not the target repo. They need bash, git, and Node.js on `PATH`. Run each by its absolute path from the working tree you execute in, never by `cd` into the skill directory; `-C DIR` points a helper at another checkout or worktree. They act on the current directory's repository and stop with exit 2 outside one or before its first commit (a new project needs `git init` and a first commit first). `task-brief PLAN_FILE N` writes `task-N-brief.md` under the plan's workspace and prints the path. The worker writes `task-N-report.md` beside it; fix rounds append. `review-package PLAN_FILE BASE HEAD` builds a focused diff for the lead; no reviewer subagents.
 
 ## Durable Progress
 
-Workspace: `"$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE` prints `<repo-root>/.razorback/sdd/<plan-key>/` (git-ignored; other plans' directories are never yours; a stray `.razorback/sdd/progress.md` is another plan's). Ledger `<workspace>/progress.md`, first line `# Razorback SDD ledger — plan: <plan file path>`, lines:
-
-- `Task N: complete (commits <base7>..<head7>, Lead inline review clean)` — serial, after the worker commit.
-- `Task N: complete (parallel-lead-commit, Lead inline review clean, lead commit <sha7>)` — the lead commits first, then records the SHA.
-- `Task N: fix round <R> (<X> addressed, <Y> open — <one-liners>; commits <a7>..<b7>)` (`commits none - parallel-lead-commit` in that mode).
-- `Task N: minor (deferred): <one-liner>`; non-Minor out-of-diff observations: `Task N: deferred (<Important|Critical>): <one-liner>`.
-- `Task N: cap ruling (<contested|real-but-deferred|load-bearing-stop>): <finding> — <reason>`.
-- `Ruling: <preflight conflict, parked finding, or breaker adjudication> — <decision>; cost if wrong: <one-liner>`.
-
-`git clean -fdx` deletes the ledger; recover from `git log` and plan checkboxes.
+Workspace: `"$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE` prints `<repo-root>/.razorback/sdd/<plan-key>/` (git-ignored; other plans' directories are never yours; a stray `.razorback/sdd/progress.md` is another plan's). Ledger `<workspace>/progress.md`, first line `# Razorback SDD ledger — plan: <plan file path>`; line formats in `references/ledger.md` (this directory). Commit before you record: a completion line carries the real commit SHA.
 
 ### Parallel Dispatch (Independent Tasks)
 
@@ -102,20 +92,7 @@ One pass by the lead. No reviewer subagents. Checklists: `./spec-reviewer-prompt
 
 ## Step 4: Fixes
 
-Send `./fix-prompt.md` with the findings to the saved implementer via the harness follow-up path (`references/harness-dispatch.md`); it keeps its orientation context. Iterations 1-3 preserve context; the 4th attempt is a fresh reframed dispatch with the prior-commit pointer.
-
-### Scoped Re-Review
-
-1. Gate the fix report: covering tests, exact command, output. Missing evidence bounces the report; that is not a fix iteration.
-2. `"$SKILL_DIR/scripts/review-package" PLAN_FILE FIX_BASE HEAD` (FIX_BASE = the head the previous review saw).
-3. Verdict every prior finding ADDRESSED or NOT ADDRESSED with file:line. "Attempted" is not ADDRESSED.
-4. Inspect only the fix diff for new breakage.
-5. Observations outside the fix diff never extend the loop: ledger them at observed severity; Critical/Important go to cap adjudication; a blocker-taxonomy match stops the run.
-6. Write the fix-round ledger line.
-
-### Review Campaign Boundary
-
-The routine scoped fix review here does not start a review campaign: three context-preserving attempts plus the optional reframed 4th attempt, each with lead-only scoped re-review. If a review reopens broad discovery or dispatches an external reviewer, invoke `razorback:managing-review-campaigns` first: one immutable campaign setup, count every external CLI call, close on terminal status.
+Read `references/fix-loop.md` (this directory) before every fix round, even when you read it earlier in this session: it holds the resume path to the saved implementer, the scoped re-review, the fix-round ledger line, and the review campaign boundary. Iterations 1-3 resume the worker; the 4th attempt is the reframed fresh dispatch from Step 3.
 
 ## Step 4a: Pre-merge external review (if chosen)
 
@@ -154,12 +131,12 @@ In `parallel-lead-commit` workers neither checkpoint nor commit; the lead owns b
 
 The lead also checkpoints at these handoff moments:
 
-1. **Likely context loss** — in a long run, before compaction or a session end with work unfinished: the current task, the decisions made, the next step, and the branch and worktree path. A multi-phase plan runs in one worktree by default; a phase that opens its own worktree runs Step 0b of `razorback:using-git-worktrees` first.
-2. **Pre-review** — before Step 4a begins (if a reviewer was chosen): reviewer choice, diff range, verification strategy, and the immutable REVIEW CAMPAIGN setup and current counters.
+1. **Likely context loss** — before compaction or a session end with work unfinished: current task, decisions made, next step, branch and worktree path. A multi-phase plan runs in one worktree by default; a phase that opens its own runs Step 0b of `razorback:using-git-worktrees` first.
+2. **Pre-review** — before Step 4a begins (if a reviewer was chosen): reviewer choice, diff range, verification strategy, the immutable REVIEW CAMPAIGN setup and current counters.
 3. **Post-review** — after Step 4a completes: findings, classifications, fix commits, and the terminal `REVIEW CAMPAIGN STATUS` block.
 4. **PR-URL commit checkpoint** — inside `finishing-a-development-branch` Step 7, after the PR exists and before its PR-URL metadata commit; do not emit a duplicate checkpoint after finishing returns.
 
-Save another checkpoint only when durable task state changes; an unchanged resume does not create a duplicate checkpoint. Examples include entering a publication-approval wait or recording a created PR.
+Save another checkpoint only when durable task state changes; an unchanged resume does not create a duplicate checkpoint.
 
 Never create a checkpoint-only follow-up commit; it would need another checkpoint and recurse.
 
@@ -167,21 +144,7 @@ A checkpoint is a fast, non-blocking memory write — never a stop, a review gat
 
 ## Recovery
 
-On detecting a resumed run (post-compaction note, mismatch between expected and actual conversation state, or the user says "resume"), the lead follows this fixed orientation sequence before continuing:
-
-1. If Goldfish is available, call `goldfish:recall` with `workspace` set to the absolute current project/worktree root to retrieve the active brief and recent checkpoints. Without it, use the run report, plan file, TaskList, and git state below.
-   Read the report linked by the checkpoint before choosing the next task. Verify the current branch, worktree, commit (HEAD), tested source commit, verification evidence, and publication authority against live state and the authority's recorded source. A checkpoint records prior user-granted authority; it does not grant publication authority. If authority cannot be verified from its cited source, treat it as missing; implementation approval alone never grants push or PR authority. Without Goldfish, recover from the report and git state.
-2. Restore any immutable REVIEW CAMPAIGN setup and current counters from the checkpoint. Counters only increase; participants and budgets never change after resume.
-3. If recalled `REVIEW CAMPAIGN STATUS` contains `campaign_closed: yes`, treat it as terminal and do not dispatch another reviewer, even when the state is `capped` or `blocked`.
-4. Read the plan file, noting which acceptance-criteria checkboxes are already `[x]`.
-5. Check the TaskList for completed / in-progress / pending tasks.
-6. `git log --oneline <base>..HEAD` — verify what is actually committed.
-7. Reconcile `parallel-lead-commit` gaps: re-read this plan's ledger and run Step 1's completion-line check — a missing, `pending`, or unverifiable SHA means inspect the owned files, then commit approved edits per the Commit Mode Contract or re-dispatch. Do not trust a completion record that has no verifiable commit.
-8. Identify the next incomplete task and resume execution.
-
-Name the next action explicitly, even if it is to keep waiting for publication authority, before continuing.
-
-This sequence runs only on resumed runs. A fresh run enters at Step 1. Subagent IDs from the prior session cannot be resumed post-compaction — treat any needed fix as a fresh dispatch with prior-commit context.
+On a resumed run only (a post-compaction note, a mismatch between expected and actual conversation state, or the user says "resume"), follow the orientation sequence in the `razorback:using-razorback` skill's `references/run-recovery.md` before continuing, including its "Delegated runs" section. A fresh run enters at Step 1 and skips it.
 
 ## Rationalizations
 
@@ -202,8 +165,7 @@ This sequence runs only on resumed runs. A fresh run enters at Step 1. Subagent 
 - Proceed to the next task while any review has open issues
 - Dispatch parallel implementer subagents on overlapping files (conflicts)
 - Let parallel-batch workers race on `git add` or `git commit`
-- Stage a `parallel-lead-commit` task outside the Commit Mode Contract's lead-staging rule
-- Record a `parallel-lead-commit` task complete before its lead commit exists, or write its progress line without the real commit SHA
+- Stage a `parallel-lead-commit` task outside the Commit Mode Contract, or record it complete before its lead commit exists with a real SHA
 - Make the subagent read the plan file, or paste task text and exact values into the dispatch prompt (point the worker at its task brief — Step 2)
 - Skip scene-setting context (the subagent needs to know where the task fits)
 - Ignore subagent questions (answer before letting them proceed)
@@ -214,7 +176,7 @@ This sequence runs only on resumed runs. A fresh run enters at Step 1. Subagent 
 - Approve work from an implementer who cannot show the evidence behind its API shapes
 - Open a new phase worktree without running the Step 0b inventory against the prior phase's
 - Reach Step 5 without statusing every worktree the run created (Check B)
-- Pause for user input between tasks - the plan is approved, run it to completion. Stops are governed by the blocker taxonomy. If you can reason through a plan-consistent path, keep moving and log the choice.
+- Pause for user input between tasks: the plan is approved, so run it to completion; only the blocker taxonomy stops it
 
 ## Integration
 

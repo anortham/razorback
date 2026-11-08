@@ -87,6 +87,10 @@ pass, review it in passes yourself and say so in your report.
 - Documentation complete?
 - No obvious bugs?
 
+## The spec is a vision document
+
+The spec says what the software must do. It does not list every input, environment, or condition the software will meet. For behavior the spec is silent on, judge by what a reasonable person using this software would expect: that expectation is a requirement, and the spec's silence is not permission. Grade such a finding by its effect on that person, not by whether the spec names the trigger.
+
 ## Output Format
 
 ### Findings
@@ -110,6 +114,9 @@ If there are no material findings, say `No material findings.` and move to Asses
 
 ### Open Questions / Assumptions
 [Only include this section if you need it.]
+
+### Declined to judge
+[Every behavior you considered and set aside as outside the plan or spec, one line each, with the reason. The lead rules on each line; nothing set aside is dropped silently. Write `None` when you set nothing aside.]
 
 ### Assessment
 

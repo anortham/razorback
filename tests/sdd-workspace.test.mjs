@@ -43,7 +43,7 @@ const sddBase = join(repo, '.razorback', 'sdd');
 test('sdd-workspace without a plan file exits 2 with usage', () => {
   const result = runScript(repo, 'sdd-workspace');
   assert.equal(result.status, 2);
-  assert.match(result.stderr, /usage: sdd-workspace PLAN_FILE/);
+  assert.match(result.stderr, /usage: sdd-workspace \[-C DIR\] PLAN_FILE/);
 });
 
 test('sdd-workspace with a nonexistent plan file exits 2', () => {
@@ -175,7 +175,7 @@ test('review-package requires the plan file first and writes into its plan direc
 
   const legacy = runScript(repo, 'review-package', 'HEAD~1', 'HEAD');
   assert.equal(legacy.status, 2);
-  assert.match(legacy.stderr, /usage: review-package PLAN_FILE BASE HEAD/);
+  assert.match(legacy.stderr, /usage: review-package \[-C DIR\] PLAN_FILE BASE HEAD/);
 
   const result = runScript(repo, 'review-package', 'plan-a.md', 'HEAD~1', 'HEAD');
   assert.equal(result.status, 0, result.stderr);
@@ -183,4 +183,101 @@ test('review-package requires the plan file first and writes into its plan direc
   assert.equal(dirname(reviewPath), join(sddBase, 'plan-a-622bfa9a0830'));
   assert.match(reviewPath, /review-[0-9a-f]+\.\.[0-9a-f]+\.diff$/);
   assert.match(readFileSync(reviewPath, 'utf8'), /## Diff/);
+});
+
+test('sdd-repo stops with exit 2 outside a working tree and names the fix', () => {
+  const outside = mkdtempSync(join(testRoot, 'outside-'));
+  const result = runScript(outside, 'sdd-repo');
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /must run from inside the git working tree/);
+  assert.match(result.stderr, /git said:/);
+});
+
+test('sdd-repo --with-commit stops with exit 2 before the first commit', () => {
+  const fresh = join(testRoot, 'fresh');
+  git(testRoot, 'init', '-q', '-b', 'main', fresh);
+  const plain = runScript(fresh, 'sdd-repo');
+  assert.equal(plain.status, 0, plain.stderr);
+  const withCommit = runScript(fresh, 'sdd-repo', '--with-commit');
+  assert.equal(withCommit.status, 2);
+  assert.match(withCommit.stderr, /run 'git init' and make a first commit/);
+});
+
+test('the helpers take -C DIR and act on that working tree', () => {
+  const other = setupRepo('other');
+  git(other, 'add', 'plan-a.md');
+  git(other, ...gitIdentity, 'commit', '-qm', 'base');
+  writeFileSync(join(other, 'g'), 'z\n');
+  git(other, 'add', 'g');
+  git(other, ...gitIdentity, 'commit', '-qm', 'next');
+  const elsewhere = mkdtempSync(join(testRoot, 'elsewhere-'));
+
+  const ws = runScript(elsewhere, 'sdd-workspace', '-C', other, 'plan-a.md');
+  assert.equal(ws.status, 0, ws.stderr);
+  assert.equal(dirname(ws.stdout.trim()), join(other, '.razorback', 'sdd'));
+
+  const brief = runScript(elsewhere, 'task-brief', '-C', other, 'plan-a.md', '1');
+  assert.equal(brief.status, 0, brief.stderr);
+  assert.match(brief.stdout, new RegExp(`^wrote ${other}/`, 'm'));
+
+  const pkg = runScript(elsewhere, 'review-package', '-C', other, 'plan-a.md', 'HEAD~1', 'HEAD');
+  assert.equal(pkg.status, 0, pkg.stderr);
+  assert.match(pkg.stdout, /1 commit\(s\)/);
+
+  const bad = runScript(elsewhere, 'review-package', '-C', join(testRoot, 'no-such-dir'), 'plan-a.md', 'HEAD~1', 'HEAD');
+  assert.equal(bad.status, 2);
+  assert.match(bad.stderr, /bad -C directory/);
+});
+
+test('review-package refuses an empty or non-descendant range with exit 3', () => {
+  const same = runScript(repo, 'review-package', 'plan-a.md', 'HEAD', 'HEAD');
+  assert.equal(same.status, 3);
+  assert.match(same.stderr, /empty commit range/);
+
+  const reversed = runScript(repo, 'review-package', 'plan-a.md', 'HEAD', 'HEAD~1');
+  assert.equal(reversed.status, 3);
+  assert.match(reversed.stderr, /HEAD is not a descendant of BASE/);
+});
+
+test('task-brief matches a task id as a whole and keeps its lettered sub-tasks', () => {
+  const plan = join(repo, 'plan-ids.md');
+  writeFileSync(plan, [
+    '# Plan', '', '## Task 6: Six', '', 'six body', '', '### Task 6b: Six bee', '', 'six-bee body', '',
+    '## Task 2.1: Two point one', '', 'dotted body', '', '## Task A1: Letter first', '', 'lettered body', '',
+    '## Task 61: Sixty-one', '', 'sixty-one body', '',
+  ].join('\n'));
+
+  const six = runScript(repo, 'task-brief', 'plan-ids.md', '6', join(testRoot, 'six.md'));
+  assert.equal(six.status, 0, six.stderr);
+  const sixText = readFileSync(join(testRoot, 'six.md'), 'utf8');
+  assert.match(sixText, /six body/);
+  assert.match(sixText, /six-bee body/);
+  assert.doesNotMatch(sixText, /sixty-one body/);
+  assert.doesNotMatch(sixText, /dotted body/);
+
+  for (const [id, body] of [['2.1', 'dotted body'], ['A1', 'lettered body'], ['6b', 'six-bee body']]) {
+    const out = join(testRoot, `task-${id}.md`);
+    const result = runScript(repo, 'task-brief', 'plan-ids.md', id, out);
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(readFileSync(out, 'utf8'), new RegExp(body));
+  }
+});
+
+test('task-brief refuses a brief that an unclosed code fence would run to the end of the plan', () => {
+  const plan = join(repo, 'plan-fence.md');
+  writeFileSync(plan, ['# Plan', '', '## Task 1: One', '', '```bash', 'echo never closed', '', '## Task 2: Two', '', 'two body', ''].join('\n'));
+  const out = join(testRoot, 'fence.md');
+  const result = runScript(repo, 'task-brief', 'plan-fence.md', '1', out);
+  assert.equal(result.status, 4);
+  assert.match(result.stderr, /code fence opened at line 5 of plan-fence\.md never closes/);
+  assert.ok(!existsSync(out));
+});
+
+test('task-brief names the English heading word when a plan has none', () => {
+  const plan = join(repo, 'plan-es.md');
+  writeFileSync(plan, ['# Plan', '', '## Tarea 1: Primera', '', 'cuerpo', ''].join('\n'));
+  const result = runScript(repo, 'task-brief', 'plan-es.md', '1', join(testRoot, 'es.md'));
+  assert.equal(result.status, 3);
+  assert.match(result.stderr, /must use the English word "Task"/);
+  assert.match(result.stderr, /## Tarea 1: Primera/);
 });

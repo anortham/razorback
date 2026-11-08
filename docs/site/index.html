@@ -126,7 +126,7 @@
           <tr>
             <th scope="row">Review</th>
             <td data-label="A bare agent">The agent that wrote the code says it is done.</td>
-            <td data-label="With razorback">The lead reviews every task against the spec, then for code quality. No "done" or "passing" claim without fresh command output. An optional pre-merge review by codex or claude adds a general pass and a security pass.</td>
+            <td data-label="With razorback">The lead reviews every task against the spec, then for code quality. No "done" or "passing" claim without fresh command output. A reviewer grades behavior the spec never named by what a user would expect, and lists what it set aside so the lead rules on it. An optional pre-merge review by codex or claude adds a general pass and a security pass.</td>
           </tr>
           <tr>
             <th scope="row">Memory across sessions</th>
@@ -256,7 +256,7 @@
               <dt>Architectural</dt>
               <dd>A new project, subsystem, or interface change. Two or three approaches, an architecture check, a written spec you review, then a plan.</dd>
             </dl>
-            <p>Clear, low-consequence work skips brainstorming. The agent judges by uncertainty and consequence, not by the size of the diff. A path upgrades when hidden complexity appears and downgrades when the task turns out simpler.</p>
+            <p>Clear, low-consequence work skips brainstorming. The agent judges by uncertainty and consequence, not by the size of the diff. A path upgrades when hidden complexity appears and downgrades when the task turns out simpler. It asks a question only when the answer changes what gets built and nothing already answers it; otherwise it states its call as a proposal you can correct.</p>
           </div>
           <div>
             <h4>Which skill runs the work</h4>

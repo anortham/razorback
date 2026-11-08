@@ -71,7 +71,9 @@ Every path starts by reading the code the request touches (code-kb helps in an u
 
 ## Interviewing
 
-- Infer and record routine, reversible details instead of asking. Ask only unresolved questions whose answers materially change product intent, safety, scope, or architecture.
+- Infer and record routine, reversible details instead of asking. Ask only unresolved questions whose answers materially change product intent, safety, scope, or architecture. When neither the request nor the project answers such a question, ask it; otherwise state your call and your reason as a proposal the user can correct, and move on.
+- Process steps are your own calls, never questions: whether to write something up, where a file goes, whether to look further, how to show a result. Do them and say what you did.
+- When a choice has options you can name, sketch each one concretely with its trade-off and say which you would pick. Ask an open question, with nothing to pick from, only when you do not yet know why the user wants the thing.
 - One question per message, with a falsifiable guess: "I'm guessing X because Y — is that right?" Prefer multiple choice; guess first, labelled.
 - Environment facts (repo contents, tool support, config values) come from the repo (search, file reads, code-kb) or a subagent, never the user. Only questions downstream of that fact wait.
 - A question is on the frontier when its prerequisites are settled. If the dialogue loops on a question only running code can answer, take the razorback:prototyping off-ramp and record the verdict on return.

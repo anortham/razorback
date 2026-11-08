@@ -17,21 +17,37 @@
 # Single source of truth for the workspace location, so task-brief and
 # review-package cannot drift to different directories.
 #
-# Usage: sdd-workspace PLAN_FILE
+# The repository is the current directory's (see sdd-repo). -C DIR runs as
+# if started in DIR, the way git -C does: a caller working on another
+# checkout or worktree needs no `cd DIR ;` prefix, a compound that harnesses
+# cannot allowlist because DIR differs on every run.
+#
+# Usage: sdd-workspace [-C DIR] PLAN_FILE
 set -euo pipefail
 
+here=$(cd "$(dirname "$0")" && pwd)
+if [ "${1:-}" = "-C" ]; then
+  [ -d "${2:-}" ] || { echo "bad -C directory: ${2:-}" >&2; exit 2; }
+  cd "$2"
+  shift 2
+fi
+
 if [ $# -ne 1 ]; then
-  echo "usage: sdd-workspace PLAN_FILE" >&2
+  echo "usage: sdd-workspace [-C DIR] PLAN_FILE" >&2
   exit 2
 fi
 
 plan=$1
 [ -f "$plan" ] || { echo "no such plan file: $plan" >&2; exit 2; }
 
-root=$(git rev-parse --show-toplevel 2>/dev/null) \
-  || { echo "not in a git repository: $plan" >&2; exit 2; }
+# Invoke via bash rather than direct exec: some extractors (Python zipfile)
+# strip Unix exec bits when unpacking marketplace packages.
+root=$("${BASH:-bash}" "$here/sdd-repo")
 
-exec node - "$plan" "$root" <<'NODE'
+# On Windows (Git Bash, MSYS2, Cygwin) print C:/Users/... rather than
+# /c/Users/...: the caller may be PowerShell or another native tool, which
+# cannot resolve MSYS paths, and bash accepts this form too.
+dir=$(node - "$plan" "$root" <<'NODE'
 const fs = require('node:fs');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
@@ -178,3 +194,5 @@ try {
   fail(error instanceof Error ? error.message : String(error));
 }
 NODE
+)
+if command -v cygpath >/dev/null 2>&1; then cygpath -m "$dir"; else printf '%s\n' "$dir"; fi

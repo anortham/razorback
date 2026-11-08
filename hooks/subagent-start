@@ -11,16 +11,36 @@
 
 set -euo pipefail
 
-# Determine plugin root directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
-PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+# Determine plugin root directory.
+# Splits $0 on its last / or \ (run-hook.cmd's cmd half passes a Windows
+# path), with no separator meaning the current directory. No external command
+# resolves the directory because a hook can run with a broken/empty PATH
+# (anthropics/claude-code#43127).
+#
+# No command substitution or pipe runs in this script: each one forks, and a
+# fork costs tens of milliseconds under Git Bash on Windows.
+case "$0" in
+  */*|*\\*) SCRIPT_DIR="${0%[/\\]*}" ;;
+  *) SCRIPT_DIR="." ;;
+esac
+PLUGIN_ROOT="${SCRIPT_DIR}/.."
 
-# Read the subagent toolchain ruleset
-toolchain_content=$(cat "${PLUGIN_ROOT}/skills/using-razorback/references/subagent-toolchain.md" 2>&1 || echo "Error reading subagent-toolchain reference")
+# Read the subagent toolchain ruleset with the read builtin (no external
+# command, for the same PATH-independence reason). read returns 1 at end of
+# file, hence || true; the loop drops trailing newlines as command substitution did.
+toolchain_md="${PLUGIN_ROOT}/skills/using-razorback/references/subagent-toolchain.md"
+toolchain_content="Error reading subagent-toolchain reference"
+if [ -r "$toolchain_md" ]; then
+  IFS= read -r -d '' toolchain_content < "$toolchain_md" || true
+  while [[ $toolchain_content == *$'\n' ]]; do
+    toolchain_content="${toolchain_content%$'\n'}"
+  done
+fi
 
 # Escape string for JSON embedding using bash parameter substitution.
 # Each ${s//old/new} is a single C-level pass - orders of magnitude
-# faster than a character-by-character loop.
+# faster than a character-by-character loop. The result goes to the
+# json_escaped variable instead of stdout, so no subshell is needed.
 escape_for_json() {
     local s="$1"
     s="${s//\\/\\\\}"
@@ -28,11 +48,11 @@ escape_for_json() {
     s="${s//$'\n'/\\n}"
     s="${s//$'\r'/\\r}"
     s="${s//$'\t'/\\t}"
-    printf '%s' "$s"
+    json_escaped="$s"
 }
 
-toolchain_escaped=$(escape_for_json "$toolchain_content")
-subagent_context="<EXTREMELY_IMPORTANT>\n${toolchain_escaped}\n</EXTREMELY_IMPORTANT>"
+escape_for_json "$toolchain_content"
+subagent_context="<EXTREMELY_IMPORTANT>\n${json_escaped}\n</EXTREMELY_IMPORTANT>"
 
 # Output context injection as JSON.
 # Claude Code drops raw stdout for SubagentStart -- only the nested
@@ -41,6 +61,19 @@ subagent_context="<EXTREMELY_IMPORTANT>\n${toolchain_escaped}\n</EXTREMELY_IMPOR
 #
 # Uses printf instead of heredoc to work around bash 5.3+ heredoc hang.
 # See: https://github.com/obra/superpowers/issues/571
-printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "SubagentStart",\n    "additionalContext": "%s"\n  }\n}\n' "$subagent_context"
+#
+# emit_json absorbs EPIPE without a pipe through an external command: the
+# harness can close the hook's stdout before printf finishes, and Git Bash's
+# printf reports that EPIPE as "printf: write error: Permission denied", which
+# `set -euo pipefail` would let escape as a diagnostic (obra/superpowers#1612).
+# SIGPIPE is ignored so other platforms see the same EPIPE error instead of a
+# signal; the error message is dropped and the status ignored.
+emit_json() {
+  trap '' PIPE
+  # shellcheck disable=SC2059 # every caller passes a literal format string
+  printf "$@" 2>/dev/null || true
+}
+
+emit_json '{\n  "hookSpecificOutput": {\n    "hookEventName": "SubagentStart",\n    "additionalContext": "%s"\n  }\n}\n' "$subagent_context"
 
 exit 0

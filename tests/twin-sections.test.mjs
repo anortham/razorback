@@ -40,45 +40,6 @@ const TWINS = [
     ],
   },
   {
-    heading: '## Recovery',
-    divergences: [
-      {
-        name: 'SDD scopes the sequence in its lead-in; executing-plans scopes it in a standalone paragraph plus a separate lead-in',
-        sdd: /^On detecting a resumed run \(post-compaction note, .*\), the lead follows this fixed orientation sequence before continuing:$/,
-        plans: /^This sequence runs \*\*only on a resumed run\*\* — a post-compaction note, .* skip it and keep going\.$/,
-      },
-      {
-        name: 'executing-plans lead-in sentence for the numbered steps',
-        plans: /^On a resumed run, orient before continuing:$/,
-      },
-      {
-        name: 'SDD-only step 7: reconcile parallel-lead-commit gaps (executing-plans is single-agent, so it has no lead-commit crash window)',
-        sdd: /^7\. Reconcile `parallel-lead-commit` gaps: .* Do not trust a completion record that has no verifiable commit\.$/,
-      },
-      {
-        name: 'final step renumbered by SDD’s extra step 7 (SDD 8 vs executing-plans 7)',
-        sdd: /^8\. Identify the next incomplete task and resume execution\.$/,
-        plans: /^7\. Identify the next incomplete task and resume execution\.$/,
-      },
-      {
-        name: 'SDD-only trailer: fresh runs enter at Step 1, and prior-session subagent IDs die at compaction',
-        sdd: /^This sequence runs only on resumed runs\. .* treat any needed fix as a fresh dispatch with prior-commit context\.$/,
-      },
-    ],
-    invariants: [
-      { name: 'sequence is scoped to resumed runs only', match: /only on a resumed run|only on resumed runs/i },
-      { name: 'step 1 optional goldfish:recall binds to the current project root', match: /If Goldfish is available, call `goldfish:recall` with `workspace` set to the absolute current project\/worktree root to retrieve the active brief and recent checkpoints\. Without it, use the run report, plan file, TaskList, and git state below\./ },
-      { name: 'read the checkpoint-linked report before choosing a task', match: /Read the report linked by the checkpoint before choosing the next task\./ },
-      { name: 'verify live source and authority state before acting', match: /Verify the current branch, worktree, commit \(HEAD\), tested source commit, verification evidence, and publication authority against live state and the authority's recorded source\./ },
-      { name: 'a checkpoint does not grant publication authority', match: /A checkpoint records prior user-granted authority; it does not grant publication authority\./ },
-      { name: 'the report and git remain the recovery path without Goldfish', match: /Without Goldfish, recover from the report and git state\./ },
-      { name: 'step 2 read plan checkboxes', match: /Read the plan file, noting which acceptance-criteria checkboxes are already `\[x\]`\./ },
-      { name: 'step 3 check the TaskList', match: /Check the TaskList for completed \/ in-progress \/ pending tasks\./ },
-      { name: 'step 4 verify against git log', match: /`git log --oneline <base>\.\.HEAD` — verify what is actually committed\./ },
-      { name: 'final step resumes at the next incomplete task', match: /Identify the next incomplete task and resume execution\./ },
-    ],
-  },
-  {
     // This pair shares no verbatim lines — both sides state the same rules in their own
     // prose. The line compare therefore proves nothing here and the invariant layer below
     // is the real guard: reword freely, but a dropped rule must fail.
@@ -180,6 +141,8 @@ function compareTwin(sddLines, plansLines, divergences) {
   };
 }
 
+const RECOVERY = 'skills/using-razorback/references/run-recovery.md';
+
 const sddText = readFileSync(join(root, SDD), 'utf8');
 const plansText = readFileSync(join(root, PLANS), 'utf8');
 
@@ -220,6 +183,29 @@ for (const twin of TWINS) {
     }
   });
 }
+
+test('## Recovery lives once in run-recovery.md and both execution skills point at it', () => {
+  const recovery = readFileSync(join(root, RECOVERY), 'utf8');
+  for (const file of [SDD, PLANS]) {
+    const section = extractSection(readFileSync(join(root, file), 'utf8'), '## Recovery').join('\n');
+    assert.match(section, /references\/run-recovery\.md/, `${file} ## Recovery must point at ${RECOVERY}`);
+    assert.doesNotMatch(section, /goldfish:recall/, `${file} ## Recovery restates the sequence instead of pointing at ${RECOVERY}`);
+  }
+  assert.match(recovery, /only on a resumed run/i);
+  assert.match(recovery, /If Goldfish is available, call `goldfish:recall` with `workspace` set to the absolute current project\/worktree root/);
+  assert.match(recovery, /Read the report linked by the checkpoint before choosing the next task\./);
+  assert.match(recovery, /A checkpoint records prior user-granted authority; it does not grant publication authority\./);
+  assert.match(recovery, /Without Goldfish, recover from the report and git state\./);
+  assert.match(recovery, /campaign_closed: yes[\s\S]*terminal/i);
+  assert.match(recovery, /do not dispatch another reviewer/i);
+  assert.match(recovery, /noting which acceptance-criteria checkboxes are already `\[x\]`/);
+  assert.match(recovery, /`git log --oneline <base>\.\.HEAD`/);
+  assert.match(recovery, /Identify the next incomplete task and resume execution\./);
+  assert.match(recovery, /Name the next action explicitly, even if it is to keep waiting for publication authority/);
+  assert.match(recovery, /## Delegated runs \(subagent-driven-development only\)/);
+  assert.match(recovery, /Do not trust a completion record that has no verifiable commit\./);
+  assert.match(recovery, /Subagent IDs from the prior session cannot be resumed post-compaction/);
+});
 
 test('a divergence nobody allowlisted is reported against the side that drifted', () => {
   const result = compareTwin(

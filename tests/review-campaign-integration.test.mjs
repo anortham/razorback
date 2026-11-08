@@ -71,7 +71,7 @@ test('pre-merge reviewer prompts consume malformed output without retrying a pas
 });
 
 test('routine scoped SDD fix review stays outside campaign management', async () => {
-  const skill = await read('skills/subagent-driven-development/SKILL.md');
+  const skill = await read('skills/subagent-driven-development/references/fix-loop.md');
 
   assert.match(skill, /routine scoped fix review[\s\S]*does not start a review campaign/i);
   assert.match(skill, /broad discovery or dispatches an external reviewer[\s\S]*razorback:managing-review-campaigns/i);
@@ -79,7 +79,7 @@ test('routine scoped SDD fix review stays outside campaign management', async ()
 });
 
 test('delegated execution checkpoints and recovery preserve campaign terminal state', async () => {
-  const skill = await read('skills/subagent-driven-development/SKILL.md');
+  const skill = (await read('skills/subagent-driven-development/SKILL.md')) + (await read('skills/using-razorback/references/run-recovery.md'));
 
   assert.match(skill, /immutable REVIEW CAMPAIGN setup and current counters/i);
   assert.match(skill, /REVIEW CAMPAIGN STATUS/);
@@ -88,7 +88,7 @@ test('delegated execution checkpoints and recovery preserve campaign terminal st
 });
 
 test('single-agent execution checkpoints and recovery preserve campaign terminal state', async () => {
-  const skill = await read('skills/executing-plans/SKILL.md');
+  const skill = (await read('skills/executing-plans/SKILL.md')) + (await read('skills/using-razorback/references/run-recovery.md'));
 
   assert.match(skill, /immutable REVIEW CAMPAIGN setup and current counters/i);
   assert.match(skill, /REVIEW CAMPAIGN STATUS/);

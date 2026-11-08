@@ -34,7 +34,13 @@ Lead inline review — spec compliance for Task N:
        `find_references(symbol_name, direction="callers")` for the full list).
     Read the sections the change touches; a missing index result is not proof.
 
+    The spec is a vision document: for behavior it is silent on, judge by what a reasonable
+    person using this software would expect, and grade the finding by its effect on that
+    person, not by whether the spec names the trigger.
+
     Report:
     - ✅ Spec compliant
     - ❌ Issues found: [what is missing or extra, with file:line]
+    - Declined to judge: [each behavior set aside as outside the plan or spec, with the reason;
+      the lead rules on every line, so nothing is dropped silently. `None` when empty]
 ```

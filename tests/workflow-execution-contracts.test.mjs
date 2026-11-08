@@ -74,9 +74,7 @@ test('approval routing makes the checkpoint obligation visible before the long e
   assert.match(routing, /approval pause is unfinished work/i);
   assert.match(routing, /checkpoint pointer/i);
   assert.match(routing, /commit them together/i);
-  for (const path of ['skills/executing-plans/SKILL.md', 'skills/subagent-driven-development/SKILL.md']) {
-    assert.match(read(path), /Name the next action explicitly, even if it is to keep waiting for publication authority/);
-  }
+  assert.match(read('skills/using-razorback/references/run-recovery.md'), /Name the next action explicitly, even if it is to keep waiting for publication authority/);
 });
 
 test('post-PR checkpoint records the changed handoff in the report commit', () => {

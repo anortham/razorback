@@ -1,21 +1,56 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { accessSync, constants, readFileSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { accessSync, constants, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const hook = join(root, 'hooks/subagent-start');
+const wrapper = join(root, 'hooks/run-hook.cmd');
 
 function read(relativePath) {
   return readFileSync(join(root, relativePath), 'utf8');
 }
 
 function runSubagentStart(env = {}) {
-  return execFileSync('bash', [join(root, 'hooks/subagent-start')], {
+  return execFileSync('bash', [hook], {
     encoding: 'utf8',
     env: { ...process.env, CLAUDE_PLUGIN_ROOT: root, ...env },
   });
+}
+
+function locate(command) {
+  const result = spawnSync('bash', ['-c', `command -v ${command}`], { encoding: 'utf8' });
+  return result.status === 0 ? result.stdout.trim() : '';
+}
+
+const bashPath = locate('bash');
+const stracePath = process.platform === 'linux' ? locate('strace') : '';
+
+function runIsolated(args, options = {}) {
+  return execFileSync(bashPath, args, {
+    encoding: 'utf8',
+    env: { PATH: '', HOME: tmpdir(), CLAUDE_PLUGIN_ROOT: root },
+    ...options,
+  });
+}
+
+function nestedPayload(stdout) {
+  const parsed = JSON.parse(stdout);
+  assert.deepEqual(Object.keys(parsed), ['hookSpecificOutput']);
+  assert.equal(parsed.hookSpecificOutput.hookEventName, 'SubagentStart');
+  return parsed.hookSpecificOutput.additionalContext;
+}
+
+function inSandbox(fn) {
+  const sandbox = mkdtempSync(join(tmpdir(), 'razorback-subagent-start-'));
+  try {
+    return fn(sandbox);
+  } finally {
+    rmSync(sandbox, { recursive: true, force: true });
+  }
 }
 
 test('subagent-start emits the Claude Code SubagentStart hookSpecificOutput shape', () => {
@@ -132,6 +167,72 @@ test('hooks.json is valid JSON and registers both SessionStart and SubagentStart
     '"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd" subagent-start',
   );
   assert.equal(entry.async, false);
+});
+
+test('subagent-start emits the SubagentStart shape when PATH is empty', () => {
+  const payload = nestedPayload(runIsolated([hook]));
+
+  assert.match(payload, /Use code-kb first for code structure/);
+  assert.doesNotMatch(payload, /Error reading subagent-toolchain reference/);
+});
+
+test('run-hook.cmd dispatches subagent-start when PATH is empty', () => {
+  const payload = nestedPayload(runIsolated([wrapper, 'subagent-start']));
+
+  assert.match(payload, /Use code-kb first for code structure/);
+});
+
+test('subagent-start run by bare filename from hooks/ still resolves the plugin root', () => {
+  const payload = nestedPayload(runIsolated(['subagent-start'], { cwd: join(root, 'hooks') }));
+
+  assert.doesNotMatch(payload, /Error reading subagent-toolchain reference/);
+});
+
+test('subagent-start exits 0 silently when stdout is closed early', () => {
+  inSandbox((sandbox) => {
+    const errFile = join(sandbox, 'stderr.txt');
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      for (const args of [[hook], [wrapper, 'subagent-start']]) {
+        const result = spawnSync(
+          bashPath,
+          ['-c', '"$@" 2>"$ERR_FILE" | :; exit "${PIPESTATUS[0]}"', '_', bashPath, ...args],
+          { encoding: 'utf8', env: { PATH: '', HOME: sandbox, CLAUDE_PLUGIN_ROOT: root, ERR_FILE: errFile } },
+        );
+
+        assert.equal(result.status, 0, `${args.join(' ')} exited ${result.status}`);
+        assert.equal(readFileSync(errFile, 'utf8'), '', `${args.join(' ')} wrote to stderr`);
+      }
+    }
+  });
+});
+
+test('subagent-start starts no child processes', { skip: !stracePath }, () => {
+  inSandbox((sandbox) => {
+    const log = join(sandbox, 'forks.log');
+    const result = spawnSync(
+      stracePath,
+      ['-f', '-qq', '-e', 'trace=fork,vfork,clone,clone3', '-o', log, bashPath, hook],
+      { encoding: 'utf8', env: { PATH: '', HOME: sandbox, CLAUDE_PLUGIN_ROOT: root } },
+    );
+
+    assert.equal(result.status, 0, result.stderr);
+    const forks = readFileSync(log, 'utf8').split('\n').filter((line) => /(fork|clone3?)\(/.test(line));
+    assert.deepEqual(forks, []);
+  });
+});
+
+test('hooks/subagent-start uses bash builtins only', () => {
+  const script = read('hooks/subagent-start');
+
+  assert.doesNotMatch(script, /\$\(/);
+  assert.doesNotMatch(script, /\b(awk|cat|dirname|sed|grep|pwd)\b/);
+  assert.doesNotMatch(script, /<</);
+  assert.match(script, /^case "\$0" in$/m);
+  assert.match(script, /IFS= read -r -d '' toolchain_content < "\$toolchain_md"/);
+  assert.match(script, /^emit_json\(\) \{$/m);
+  assert.match(script, /trap '' PIPE/);
+  assert.match(script, /printf "\$@" 2>\/dev\/null \|\| true/);
+  assert.doesNotMatch(script, /^\s*printf '\{/m);
 });
 
 test('subagent hook is Claude Code only - cursor hooks stay untouched', () => {

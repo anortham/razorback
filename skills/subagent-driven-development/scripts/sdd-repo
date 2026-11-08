@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Print the top-level directory of the git working tree the SDD scripts use:
+# the current directory's, exactly as git itself picks one. A caller that
+# means a different working tree says so with the scripts' -C DIR, which
+# they apply (cd) before calling this.
+#
+# The plan file's location never picks the repository. A lead working in a
+# linked worktree commonly holds an absolute path to the plan in the main
+# checkout, and its workspace and commits belong to the worktree it works in.
+# A caller standing outside any repository, such as the skill's own directory
+# in an installed plugin, is in the wrong place: guessing a repository from
+# the plan would silently act on whichever checkout the path points into.
+#
+# Outside any working tree, stop. --with-commit also stops on a repository
+# with no commit yet, for callers that need HEAD as a BASE or a review range.
+#
+# Single source of truth for which repository the SDD scripts work in, so no
+# two of them can disagree.
+#
+# Usage: sdd-repo [--with-commit]
+set -euo pipefail
+
+with_commit=false
+if [ "${1:-}" = "--with-commit" ]; then
+  with_commit=true
+  shift
+fi
+
+if [ $# -ne 0 ]; then
+  echo "usage: sdd-repo [--with-commit]" >&2
+  exit 2
+fi
+
+if root=$(git rev-parse --show-toplevel 2>/dev/null); then
+  if [ "$with_commit" = false ] || git -C "$root" rev-parse --verify --quiet HEAD >/dev/null; then
+    printf '%s\n' "$root"
+    exit 0
+  fi
+  said=$(git -C "$root" rev-parse --verify HEAD 2>&1 >/dev/null) || true
+else
+  said=$(git rev-parse --show-toplevel 2>&1 >/dev/null) || true
+fi
+
+echo "SDD scripts must run from inside the git working tree you work in, with at least one commit (current directory: $PWD). If this is a new project, run 'git init' and make a first commit, then rerun." >&2
+echo "git said: ${said%%$'\n'*}" >&2
+exit 2
