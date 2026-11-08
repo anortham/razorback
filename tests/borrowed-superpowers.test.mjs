@@ -102,7 +102,7 @@ test('subagent-driven-development keeps SDD artifacts self-ignored and worktree-
     run('git', ['add', 'plan.md'], { cwd: repo });
     run('git', [...gitIdentity, 'commit', '-qm', 'c1'], { cwd: repo });
 
-    const dir = run('bash', [workspaceScript, 'plan.md'], { cwd: repo }).trim();
+    const dir = path.normalize(run('bash', [workspaceScript, 'plan.md'], { cwd: repo }).trim());
     assert.equal(dir, path.join(repo, '.razorback', 'sdd', 'plan-0bbe5bc4573b'));
     assert.equal(fs.readFileSync(path.join(repo, '.razorback', 'sdd', '.gitignore'), 'utf8'), '*\n');
 

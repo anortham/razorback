@@ -57,8 +57,8 @@ test('two plans resolve to two distinct plan-scoped directories', () => {
   const b = runScript(repo, 'sdd-workspace', 'plan-b.md');
   assert.equal(a.status, 0, a.stderr);
   assert.equal(b.status, 0, b.stderr);
-  const dirA = a.stdout.trim();
-  const dirB = b.stdout.trim();
+  const dirA = normalize(a.stdout.trim());
+  const dirB = normalize(b.stdout.trim());
   assert.equal(dirA, join(sddBase, 'plan-a-622bfa9a0830'));
   assert.equal(dirB, join(sddBase, 'plan-b-26c66ffe5996'));
   assert.notEqual(dirA, dirB);
@@ -82,9 +82,9 @@ test('same basenames in different directories resolve to distinct hashed plan ke
   const beta = runScript(repo, 'sdd-workspace', 'plans/beta/plan.md');
   assert.equal(alpha.status, 0, alpha.stderr);
   assert.equal(beta.status, 0, beta.stderr);
-  assert.equal(alpha.stdout.trim(), join(sddBase, 'plan-03374bad0d91'));
-  assert.equal(beta.stdout.trim(), join(sddBase, 'plan-e610f5aaa9e2'));
-  assert.notEqual(alpha.stdout.trim(), beta.stdout.trim());
+  assert.equal(normalize(alpha.stdout.trim()), join(sddBase, 'plan-03374bad0d91'));
+  assert.equal(normalize(beta.stdout.trim()), join(sddBase, 'plan-e610f5aaa9e2'));
+  assert.notEqual(normalize(alpha.stdout.trim()), normalize(beta.stdout.trim()));
 });
 
 test('absolute, relative, and normalized spellings resolve to one plan workspace', () => {
@@ -96,7 +96,7 @@ test('absolute, relative, and normalized spellings resolve to one plan workspace
   const results = spellings.map((plan) => runScript(repo, 'sdd-workspace', plan));
   for (const result of results) {
     assert.equal(result.status, 0, result.stderr);
-    assert.equal(result.stdout.trim(), join(sddBase, 'plan-03374bad0d91'));
+    assert.equal(normalize(result.stdout.trim()), join(sddBase, 'plan-03374bad0d91'));
   }
 });
 
@@ -121,7 +121,7 @@ test('a matching legacy ledger resumes its basename workspace', () => {
   const result = runScript(legacyRepo, 'sdd-workspace', 'plan-a.md');
 
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout.trim(), legacyDir);
+  assert.equal(normalize(result.stdout.trim()), legacyDir);
 });
 
 test('a mismatched legacy ledger is not shared with another plan', () => {
@@ -134,7 +134,7 @@ test('a mismatched legacy ledger is not shared with another plan', () => {
   const result = runScript(mismatchRepo, 'sdd-workspace', 'plan-a.md');
 
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout.trim(), join(mismatchRepo, '.razorback', 'sdd', 'plan-a-622bfa9a0830'));
+  assert.equal(normalize(result.stdout.trim()), join(mismatchRepo, '.razorback', 'sdd', 'plan-a-622bfa9a0830'));
   assert.equal(readFileSync(join(legacyDir, 'keep.txt'), 'utf8'), 'keep\n');
 });
 
@@ -180,7 +180,7 @@ test('review-package requires the plan file first and writes into its plan direc
   const result = runScript(repo, 'review-package', 'plan-a.md', 'HEAD~1', 'HEAD');
   assert.equal(result.status, 0, result.stderr);
   const reviewPath = result.stdout.match(/^wrote (.*): \d+ commit/m)?.[1];
-  assert.equal(dirname(reviewPath), join(sddBase, 'plan-a-622bfa9a0830'));
+  assert.equal(dirname(normalize(reviewPath)), join(sddBase, 'plan-a-622bfa9a0830'));
   assert.match(reviewPath, /review-[0-9a-f]+\.\.[0-9a-f]+\.diff$/);
   assert.match(readFileSync(reviewPath, 'utf8'), /## Diff/);
 });
@@ -214,11 +214,11 @@ test('the helpers take -C DIR and act on that working tree', () => {
 
   const ws = runScript(elsewhere, 'sdd-workspace', '-C', other, 'plan-a.md');
   assert.equal(ws.status, 0, ws.stderr);
-  assert.equal(dirname(ws.stdout.trim()), join(other, '.razorback', 'sdd'));
+  assert.equal(dirname(normalize(ws.stdout.trim())), join(other, '.razorback', 'sdd'));
 
   const brief = runScript(elsewhere, 'task-brief', '-C', other, 'plan-a.md', '1');
   assert.equal(brief.status, 0, brief.stderr);
-  assert.match(brief.stdout, new RegExp(`^wrote ${other}/`, 'm'));
+  assert.ok(normalize(brief.stdout.match(/^wrote (.*): \d+ lines$/m)[1]).startsWith(join(other, '.razorback', 'sdd')));
 
   const pkg = runScript(elsewhere, 'review-package', '-C', other, 'plan-a.md', 'HEAD~1', 'HEAD');
   assert.equal(pkg.status, 0, pkg.stderr);

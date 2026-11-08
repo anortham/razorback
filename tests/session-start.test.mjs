@@ -15,7 +15,8 @@ function read(relativePath) {
 }
 
 function locate(command) {
-  const result = spawnSync('bash', ['-c', `command -v ${command}`], { encoding: 'utf8' });
+  const resolve = process.platform === 'win32' ? `cygpath -m "$(command -v ${command})"` : `command -v ${command}`;
+  const result = spawnSync('bash', ['-c', resolve], { encoding: 'utf8' });
   return result.status === 0 ? result.stdout.trim() : '';
 }
 
