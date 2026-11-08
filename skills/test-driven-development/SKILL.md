@@ -95,6 +95,7 @@ Remove duplication, improve names, extract helpers. Keep the test surface on the
 | "TDD will slow me down" | TDD faster than debugging. Pragmatic = test-first. |
 | "Manual test faster" | Manual doesn't prove edge cases. You'll re-test every change. |
 | "Run the whole scope after every edit to be safe" | The edit's test is the inner loop. The scope runs once when it passes; the full suite once at the branch gate. |
+| "This task touched the UI, so run the browser suite now" | A slow suite (browser, end-to-end, real database) runs once at the branch gate against all tasks. Per task, run the focused tests for the change. |
 | "Existing code has no tests" | A missing test is not an exception. Add a test for the behavior. |
 
 ## Red Flags - STOP and Start Over

@@ -35,7 +35,7 @@ Template: `./implementer-prompt.md`. Record `BASE=$(git rev-parse HEAD)` first; 
 
 Prompt-resident (the template's sections): scene-setting; earlier-task interfaces and lead ambiguity resolutions (never prior-task summaries); file ownership; evidence directives; API-shape evidence requirement; gate invariant requirement; TDD (`razorback:test-driven-development`); verification scope; commit mode; architecture-quality context (approved architecture, any `No Architecture Impact` note, the plan mismatch rule); report path under `.razorback/sdd/<plan-key>/` (the worker returns only status, commits, test summary, concerns).
 
-**Verification scopes** (`references/verification-scopes.md`, read before the first dispatch): workers run `worker-red-green` / `worker-ceiling`; the lead owns `affected-change`, `branch-gate`, `expensive-specialist` and the verification ledger. A passing ledger entry for the same HEAD and scope is reusable.
+**Verification scopes** (`references/verification-scopes.md`, read before the first dispatch): workers run `worker-red-green` / `worker-ceiling`; the lead owns `affected-change`, `branch-gate`, `expensive-specialist` and the verification ledger. The plan's slow tier (browser, end-to-end, real database) runs once at the branch gate against all tasks, never after each task. A passing ledger entry for the same HEAD and scope is reusable.
 
 ### Commit Mode Contract
 

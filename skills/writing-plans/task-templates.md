@@ -50,6 +50,8 @@ Copy these blocks into the plan in this order: header, Verification Strategy, Pa
 
 **Branch gate:** [Broad confidence gate before handoff, push, or PR]
 
+**Expensive tier:** [Every slow suite (browser, end-to-end, real database, or anything longer than a few minutes) with its command. Each runs once at the branch gate against the whole batch, or when an escalation trigger fires; never after each task. Write `none` when the repo has no such suite.]
+
 **Security scope:** [Project-defined secrets-scan and dependency-audit commands run at the branch gate, or `none declared`.]
 
 **Replay/metric evidence:** [Which assertions or metrics are hard gates and which are report-only]

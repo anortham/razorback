@@ -23,7 +23,7 @@ Dispatch a reviewer subagent:
     | Spec Alignment | Plan covers spec requirements, no major scope creep |
     | Task Decomposition | Tasks have clear boundaries and testable acceptance criteria; anything the executor must not vary sits in a binding field, not only in the Approach |
     | Buildability | Could an engineer follow this plan without getting stuck? |
-    | Verification | Does the worker red/green scope name the repo runner narrowed to the change (one test or the focused group), with the full suite only at the branch gate? |
+    | Verification | Does the worker red/green scope name the repo runner narrowed to the change (one test or the focused group), with the full suite only at the branch gate, and slow suites (browser, end-to-end, real database) named in the Expensive tier to run once against the whole batch, never after each task? |
 
     ## Verify Against Current Source
 

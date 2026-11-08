@@ -68,3 +68,37 @@ test('no skill bakes a runner into the after-failure examples', () => {
   assert.doesNotMatch(tracing, /npm test/);
   assert.match(tracing, /<failing-test command>/);
 });
+
+test('a slow suite is a branch-gate scope that runs once against the whole batch, never per task', () => {
+  const slowTier = /A slow suite \(browser, end-to-end, real database, or anything longer than a few minutes\) is a branch-gate scope: it runs once against the whole batch of tasks, never after each task/;
+  for (const relativePath of [
+    'skills/using-razorback/SKILL.md',
+    'skills/using-razorback/references/instruction-tier.md',
+    'skills/using-razorback/references/subagent-toolchain.md',
+  ]) {
+    assert.match(read(relativePath), slowTier, relativePath);
+    assert.doesNotMatch(read(relativePath), /Run broader suites at task boundaries/, relativePath);
+  }
+
+  const scopes = read('skills/subagent-driven-development/references/verification-scopes.md');
+  assert.match(scopes, /once against the whole batch at the branch gate, never after each task/);
+
+  const template = read('skills/writing-plans/task-templates.md');
+  assert.match(template, /\*\*Expensive tier:\*\*/);
+  assert.match(template, /never after each task/);
+
+  const reviewerPrompt = read('skills/writing-plans/plan-document-reviewer-prompt.md');
+  assert.match(reviewerPrompt, /slow suites .*named in the Expensive tier/);
+
+  const tdd = read('skills/test-driven-development/SKILL.md');
+  assert.match(tdd, /This task touched the UI, so run the browser suite now/);
+
+  const executing = read('skills/executing-plans/SKILL.md');
+  assert.match(executing, /slow tier .*runs once at the branch gate/);
+
+  const sdd = read('skills/subagent-driven-development/SKILL.md');
+  assert.match(sdd, /slow tier .*runs once at the branch gate/);
+
+  const site = read('docs/site/index.html');
+  assert.match(site, /slow suites? .*once at the branch gate/i);
+});

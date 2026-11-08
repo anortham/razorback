@@ -121,7 +121,7 @@
           <tr>
             <th scope="row">Tests</th>
             <td data-label="A bare agent">Test order and test scope are up to the agent.</td>
-            <td data-label="With razorback">A failing test comes first on every task. Focused tests run in the inner loop, the full suite runs once at the branch gate, and nothing reruns on an unchanged tree.</td>
+            <td data-label="With razorback">A failing test comes first on every task. Focused tests run in the inner loop, the full suite runs once at the branch gate, and nothing reruns on an unchanged tree. Slow suites such as browser tests run once at the branch gate against the whole batch, never after each task.</td>
           </tr>
           <tr>
             <th scope="row">Review</th>
@@ -346,7 +346,7 @@
         </li>
         <li>
           <h3>Keep test runs scoped</h3>
-          <p>Focused tests in the inner loop, the full suite once at the branch gate, and never a rerun on an unchanged tree. After a wide failure, rerun only the failing tests, then the wide command once.</p>
+          <p>Focused tests in the inner loop, the full suite once at the branch gate, and never a rerun on an unchanged tree. Slow suites such as browser or end-to-end tests run once at the branch gate against the whole batch, never after each task. After a wide failure, rerun only the failing tests, then the wide command once.</p>
           <a class="skill-ref" href="https://github.com/anortham/razorback/blob/main/skills/using-razorback/SKILL.md">using-razorback</a>
         </li>
         <li>

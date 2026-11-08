@@ -25,7 +25,7 @@ Use your host's native editing tools to modify files.
 5. When the evidence cannot prove a shape, say what evidence is missing and choose the safest plan-consistent path. Do not fill gaps from memory or plausible guesses.
 6. Indexed references and predicted tests can be incomplete. They are not proof that an omitted caller or test is irrelevant.
 7. A missing or stale code-kb index never blocks work: use native search and file reads.
-8. Run only the verification scope your task assigns. Broader suites belong to the lead. Do not rerun any scope on an unchanged tree: capture a wide run's output to a file and read that. After a wide run fails, rerun only the failing test ids (project runner plus its own filter) until they pass, then the assigned command once.
+8. Run only the verification scope your task assigns. Broader suites belong to the lead. A slow suite (browser, end-to-end, real database, or anything longer than a few minutes) is a branch-gate scope: it runs once against the whole batch of tasks, never after each task. Do not rerun any scope on an unchanged tree: capture a wide run's output to a file and read that. After a wide run fails, rerun only the failing test ids (project runner plus its own filter) until they pass, then the assigned command once.
 
 Restricted external CLI reviewers invoked by the pre-merge review workflow are the deliberate exception: they run without MCP under a read-only allowlist, read the lead's sanitized source-backed evidence bundle, and report missing evidence instead of claiming they ran code-kb. The lead verifies every finding against current source.
 

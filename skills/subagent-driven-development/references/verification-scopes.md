@@ -8,9 +8,10 @@ Razorback is language-agnostic: the target repo supplies concrete commands throu
 | `worker-ceiling` | Implementer | Maximum scope a worker may run without lead assignment; once on the final tree, not after each edit |
 | `affected-change` | Lead | Touched files, changed subsystem, or repo-defined affected area after a coherent batch |
 | `branch-gate` | Lead | Broad confidence before handoff, push, or PR |
-| `expensive-specialist` | Lead | Slow domain gates only when touched areas or failures require them |
+| `expensive-specialist` | Lead | Slow domain gates (browser, end-to-end, real database, or anything longer than a few minutes): once against the whole batch at the branch gate, never after each task, plus whenever an escalation trigger fires |
 
 Rules:
+- A suite that takes longer than a few minutes is never a `worker-ceiling` or `affected-change` scope, even when the repo's default test command runs it. Narrow the command to the changed area for those scopes and leave the slow run to `branch-gate` or `expensive-specialist`.
 - Workers never own `affected-change`, `branch-gate`, or `expensive-specialist`. A broad command a worker runs for diagnostics is labeled diagnostic, not acceptance evidence.
 - A failing assigned gate stops the worker unless the plan explicitly says to update that gate. It is never acceptance evidence.
 - Each worker report states the invariant every assigned gate proves; replay or metric evidence separates hard-gate metrics from report-only metrics.

@@ -62,7 +62,7 @@ Non-mechanical plans record the approved module/interface shape and the main arc
 
 ## Verification Strategy
 
-Required. Razorback owns scope boundaries; the target repo owns commands. Never bake language or test-runner commands into razorback skills. If the repo has no documented hierarchy, define one with the neutral labels **worker**, **affected-change**, **branch**, **expensive**.
+Required. Razorback owns scope boundaries; the target repo owns commands. Never bake language or test-runner commands into razorback skills. If the repo has no documented hierarchy, define one with the neutral labels **worker**, **affected-change**, **branch**, **expensive**. The `Expensive tier` line names every slow suite (browser, end-to-end, real database, or anything longer than a few minutes); each runs once at the branch gate against the whole batch, never after each task, and never inside a worker or affected-change scope.
 
 The security field is never left blank:
 

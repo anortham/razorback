@@ -48,6 +48,7 @@ const INVARIANTS = [
   'Restricted external CLI reviewers',
   'Do not rerun any scope on an unchanged tree', // test-scope rule
   'rerun only the failing test ids', // after-failure loop
+  'is a branch-gate scope: it runs once against the whole batch of tasks, never after each task', // slow-tier rule
 ];
 
 // The three files that restate the exploration rules. Not byte-comparable to each other:
