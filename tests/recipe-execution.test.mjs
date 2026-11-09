@@ -1,10 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+import { read } from './helpers/repo.mjs';
 
 const DELEGATION_SKILLS = [
   'skills/claude-cli/SKILL.md',
@@ -15,8 +11,6 @@ const DELEGATION_SKILLS = [
 ];
 
 const HEADING = '## Running These Recipes';
-
-const read = (rel) => fs.readFileSync(path.join(root, rel), 'utf8');
 
 const section = (source) => {
   const start = source.indexOf(HEADING);

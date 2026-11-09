@@ -1,10 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-
-const root = join(import.meta.dirname, '..');
+import { read, root } from './helpers/repo.mjs';
 
 const RULESET_COPIES = [
   '.clinerules/razorback.md',
@@ -116,7 +113,7 @@ test('the routing guard accepts the code-kb 2.12 wording', () => {
 
 test('no skill, agent, hook, ruleset copy, or guide requires file_skeleton before every Read or chained drill-downs after get_symbol_context', () => {
   const violations = guidanceFiles().flatMap((path) =>
-    routingViolations(path, readFileSync(join(root, path), 'utf8')),
+    routingViolations(path, read(path)),
   );
   assert.deepEqual(violations, []);
 });

@@ -1,51 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
+import { bashPath, forksStartedBy, hookPayload, locate, runIsolated, runWithClosedStdout, stracePath, withSandbox } from './helpers/hook-harness.mjs';
+import { read, root } from './helpers/repo.mjs';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const hook = join(root, 'hooks/session-start');
 const wrapper = join(root, 'hooks/run-hook.cmd');
 
-function read(relativePath) {
-  return readFileSync(join(root, relativePath), 'utf8');
-}
-
-function locate(command) {
-  const resolve = process.platform === 'win32' ? `cygpath -m "$(command -v ${command})"` : `command -v ${command}`;
-  const result = spawnSync('bash', ['-c', resolve], { encoding: 'utf8' });
-  return result.status === 0 ? result.stdout.trim() : '';
-}
-
-const bashPath = locate('bash');
 const zshPath = locate('zsh');
-const stracePath = process.platform === 'linux' ? locate('strace') : '';
-
-function runIsolated(shell, args, env, options = {}) {
-  return execFileSync(shell, args, {
-    encoding: 'utf8',
-    env: { PATH: '', HOME: tmpdir(), ...env },
-    ...options,
-  });
-}
 
 function nestedPayload(stdout) {
-  const parsed = JSON.parse(stdout);
-  assert.deepEqual(Object.keys(parsed), ['hookSpecificOutput']);
-  assert.equal(parsed.hookSpecificOutput.hookEventName, 'SessionStart');
-  return parsed.hookSpecificOutput.additionalContext;
+  return hookPayload('SessionStart', stdout);
 }
 
 function inSandbox(fn) {
-  const sandbox = mkdtempSync(join(tmpdir(), 'razorback-session-start-'));
-  try {
-    return fn(sandbox);
-  } finally {
-    rmSync(sandbox, { recursive: true, force: true });
-  }
+  return withSandbox('razorback-session-start-', fn);
 }
 
 function runSessionStart(env = {}, pluginRoot = root) {
@@ -351,16 +323,6 @@ test('session-start reached through a backslash path still reads the skill', { s
   });
 });
 
-function runWithClosedStdout(sandbox, args) {
-  const errFile = join(sandbox, 'stderr.txt');
-  const result = spawnSync(
-    bashPath,
-    ['-c', '"$@" 2>"$ERR_FILE" | :; exit "${PIPESTATUS[0]}"', '_', bashPath, ...args],
-    { encoding: 'utf8', env: { PATH: '', HOME: sandbox, CLAUDE_PLUGIN_ROOT: root, ERR_FILE: errFile } },
-  );
-  return { status: result.status, stderr: readFileSync(errFile, 'utf8') };
-}
-
 test('session-start exits 0 silently when stdout is closed early', () => {
   inSandbox((sandbox) => {
     for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -399,16 +361,7 @@ test('run-hook.cmd exits 0 silently when neither bash nor zsh is on PATH', { ski
 test('session-start and run-hook.cmd start no child processes', { skip: !stracePath }, () => {
   inSandbox((sandbox) => {
     for (const args of [[hook], [wrapper, 'session-start']]) {
-      const log = join(sandbox, 'forks.log');
-      const result = spawnSync(
-        stracePath,
-        ['-f', '-qq', '-e', 'trace=fork,vfork,clone,clone3', '-o', log, bashPath, ...args],
-        { encoding: 'utf8', env: { PATH: '', HOME: sandbox, CLAUDE_PLUGIN_ROOT: root } },
-      );
-
-      assert.equal(result.status, 0, result.stderr);
-      const forks = readFileSync(log, 'utf8').split('\n').filter((line) => /(fork|clone3?)\(/.test(line));
-      assert.deepEqual(forks, [], `${args.join(' ')} started child processes`);
+      assert.deepEqual(forksStartedBy(sandbox, args), [], `${args.join(' ')} started child processes`);
     }
   });
 });

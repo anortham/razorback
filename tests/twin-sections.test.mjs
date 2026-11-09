@@ -1,10 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+import { section } from './helpers/markdown.mjs';
+import { read } from './helpers/repo.mjs';
 
 const SDD = 'skills/subagent-driven-development/SKILL.md';
 const PLANS = 'skills/executing-plans/SKILL.md';
@@ -100,20 +97,8 @@ const TWINS = [
 ];
 
 function extractSection(text, heading) {
-  const lines = text.split('\n');
-  const start = lines.findIndex((line) => line.trim() === heading);
-  assert.notEqual(start, -1, `missing section ${heading}`);
-  const level = heading.match(/^#+/)[0].length;
-  let end = lines.length;
-  for (let i = start + 1; i < lines.length; i++) {
-    const next = lines[i].match(/^(#+)\s/);
-    if (next && next[1].length <= level) {
-      end = i;
-      break;
-    }
-  }
-  return lines
-    .slice(start + 1, end)
+  return section(text, heading)
+    .split('\n')
     .map((line) => line.trim().replace(/\s+/g, ' '))
     .filter((line) => line !== '');
 }
@@ -143,8 +128,8 @@ function compareTwin(sddLines, plansLines, divergences) {
 
 const RECOVERY = 'skills/using-razorback/references/run-recovery.md';
 
-const sddText = readFileSync(join(root, SDD), 'utf8');
-const plansText = readFileSync(join(root, PLANS), 'utf8');
+const sddText = read(SDD);
+const plansText = read(PLANS);
 
 for (const twin of TWINS) {
   test(`${twin.heading} stays a twin across both execution skills`, () => {
@@ -185,9 +170,9 @@ for (const twin of TWINS) {
 }
 
 test('## Recovery lives once in run-recovery.md and both execution skills point at it', () => {
-  const recovery = readFileSync(join(root, RECOVERY), 'utf8');
+  const recovery = read(RECOVERY);
   for (const file of [SDD, PLANS]) {
-    const section = extractSection(readFileSync(join(root, file), 'utf8'), '## Recovery').join('\n');
+    const section = extractSection(read(file), '## Recovery').join('\n');
     assert.match(section, /references\/run-recovery\.md/, `${file} ## Recovery must point at ${RECOVERY}`);
     assert.doesNotMatch(section, /goldfish:recall/, `${file} ## Recovery restates the sequence instead of pointing at ${RECOVERY}`);
   }

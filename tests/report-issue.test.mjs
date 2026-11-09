@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { root } from './helpers/repo.mjs';
 
-const root = join(import.meta.dirname, '..');
 const skillDir = join(root, 'skills', 'report-issue');
 const skill = readFileSync(join(skillDir, 'SKILL.md'), 'utf8');
 

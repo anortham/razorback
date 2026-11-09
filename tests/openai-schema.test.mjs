@@ -3,9 +3,8 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { read, root } from './helpers/repo.mjs';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const script = path.join(root, 'skills/codex-cli/scripts/openai-schema');
 const canonical = path.join(root, 'skills/codex-cli/schemas/review-output.schema.json');
 
@@ -87,7 +86,7 @@ test('no skill hands codex the canonical schema file directly', () => {
   ];
 
   for (const rel of callers) {
-    const source = fs.readFileSync(path.join(root, rel), 'utf8');
+    const source = read(rel);
     for (const line of source.split('\n')) {
       if (!line.includes('--output-schema')) continue;
       assert.ok(

@@ -12,13 +12,14 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { git as runGit, initRepository, removeTree } from './helpers/git-fixture.mjs';
+import { root } from './helpers/repo.mjs';
 
-const root = join(import.meta.dirname, '..');
 const cli = join(root, 'scripts', 'workflow-eval.mjs');
 const fixtureRoot = join(root, 'tests', 'fixtures', 'workflow-eval');
 const testRoot = mkdtempSync(join(tmpdir(), 'razorback-workflow-eval-'));
 
-test.after(() => rmSync(testRoot, { recursive: true, force: true }));
+test.after(() => removeTree(testRoot));
 
 function run(...args) {
   return spawnSync(process.execPath, [cli, ...args], {
@@ -27,10 +28,10 @@ function run(...args) {
   });
 }
 
+const gitIdentity = { 'user.name': 'Workflow Eval Test', 'user.email': 'workflow-eval@example.invalid' };
+
 function git(cwd, ...args) {
-  const result = spawnSync('git', args, { cwd, encoding: 'utf8' });
-  assert.equal(result.status, 0, result.stderr);
-  return result.stdout.trim();
+  return runGit(cwd, ...args).trim();
 }
 
 function readJson(path) {
@@ -274,9 +275,7 @@ test('prepare reads an explicit git ref separately from working-tree content', (
     schema_version: 1,
     scenarios: [{ id: 'sample', facts: ['Choose from current evidence.'], workflow_files: ['workflow.md'] }],
   }));
-  git(repo, 'init', '-q');
-  git(repo, 'config', 'user.name', 'Workflow Eval Test');
-  git(repo, 'config', 'user.email', 'workflow-eval@example.invalid');
+  initRepository(repo, { config: gitIdentity });
   git(repo, 'add', '-A');
   git(repo, 'commit', '-q', '-m', 'baseline');
   const baselineRevision = git(repo, 'rev-parse', 'HEAD');
@@ -310,9 +309,7 @@ test('git-ref preparation ignores a current working-tree symlink', () => {
     schema_version: 1,
     scenarios: [{ id: 'sample', facts: ['Use historical evidence.'], workflow_files: ['workflow.md'] }],
   }));
-  git(repo, 'init', '-q');
-  git(repo, 'config', 'user.name', 'Workflow Eval Test');
-  git(repo, 'config', 'user.email', 'workflow-eval@example.invalid');
+  initRepository(repo, { config: gitIdentity });
   git(repo, 'add', '-A');
   git(repo, 'commit', '-q', '-m', 'baseline');
   rmSync(join(repo, 'workflow.md'));
@@ -735,9 +732,7 @@ test('prepare rejects working-tree symlinks that escape the repository', () => {
     schema_version: 1,
     scenarios: [{ id: 'sample', facts: ['Use repository evidence.'], workflow_files: ['workflow.md'] }],
   }));
-  git(repo, 'init', '-q');
-  git(repo, 'config', 'user.name', 'Workflow Eval Test');
-  git(repo, 'config', 'user.email', 'workflow-eval@example.invalid');
+  initRepository(repo, { config: gitIdentity });
   git(repo, 'add', 'scenarios.json');
   git(repo, 'commit', '-q', '-m', 'baseline');
 

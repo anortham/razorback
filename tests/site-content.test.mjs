@@ -2,9 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { read, readJson, root } from './helpers/repo.mjs';
 
-const root = path.join(import.meta.dirname, '..');
-const page = fs.readFileSync(path.join(root, 'docs', 'site', 'index.html'), 'utf8');
+const page = read('docs/site/index.html');
 const skillDirs = fs
   .readdirSync(path.join(root, 'skills'), { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
@@ -24,7 +24,7 @@ test('site hero states the real skill count', () => {
 });
 
 test('site does not hard-code the package version', () => {
-  const { version } = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+  const { version } = readJson('package.json');
   assert.equal(page.includes(version), false, `index.html contains ${version}`);
 });
 

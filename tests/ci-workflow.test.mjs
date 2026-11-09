@@ -2,10 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-
-const root = path.join(import.meta.dirname, '..');
-const readText = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
-const readJson = (relativePath) => JSON.parse(readText(relativePath));
+import { read, readJson, root } from './helpers/repo.mjs';
 
 const WORKFLOW = '.github/workflows/test.yml';
 
@@ -18,7 +15,7 @@ test('CI workflow file exists', () => {
 });
 
 test('CI workflow triggers on push to main, v* tags, and pull requests', () => {
-  const workflow = readText(WORKFLOW);
+  const workflow = read(WORKFLOW);
 
   assert.match(workflow, /^on:$/m, 'workflow must declare an `on:` trigger block');
   assert.match(workflow, /^\s+push:$/m, 'workflow must trigger on push');
@@ -28,7 +25,7 @@ test('CI workflow triggers on push to main, v* tags, and pull requests', () => {
 });
 
 test('CI workflow checks out the repo and sets up Node 22', () => {
-  const workflow = readText(WORKFLOW);
+  const workflow = read(WORKFLOW);
 
   assert.match(workflow, /uses:\s*actions\/checkout@v4/, 'workflow must check out the repo');
   assert.match(workflow, /uses:\s*actions\/setup-node@v4/, 'workflow must set up Node');
@@ -36,12 +33,12 @@ test('CI workflow checks out the repo and sets up Node 22', () => {
 });
 
 test('CI workflow runs the full test suite', () => {
-  const workflow = readText(WORKFLOW);
+  const workflow = read(WORKFLOW);
   assert.match(workflow, /run:\s*npm test$/m, 'workflow must run `npm test`');
 });
 
 test('CI workflow runs the version audit', () => {
-  const workflow = readText(WORKFLOW);
+  const workflow = read(WORKFLOW);
   assert.match(
     workflow,
     /run:\s*\.\/scripts\/bump-version\.sh --audit$/m,
@@ -50,7 +47,7 @@ test('CI workflow runs the version audit', () => {
 });
 
 test('CI workflow gates v* tags on the tag matching the manifest version', () => {
-  const workflow = readText(WORKFLOW);
+  const workflow = read(WORKFLOW);
 
   // The audit only proves the manifests agree with each other. It cannot catch
   // the case where every manifest is stale together, so tag runs must also

@@ -3,15 +3,13 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import {
   mkdtempSync,
-  readFileSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
+import { read, root } from './helpers/repo.mjs';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const validator = join(root, 'skills/codex-cli/scripts/validate-review-output');
 const testRoot = mkdtempSync(join(tmpdir(), 'review-output-completion-'));
 
@@ -192,7 +190,7 @@ test('rejects empty or duplicate inspected-file and evidence lists', () => {
 
 test('schema declares completion evidence as required', () => {
   const schema = JSON.parse(
-    readFileSync(join(root, 'skills/codex-cli/schemas/review-output.schema.json'), 'utf8'),
+    read('skills/codex-cli/schemas/review-output.schema.json'),
   );
 
   for (const property of ['review_completed', 'files_inspected', 'commands_run', 'evidence']) {

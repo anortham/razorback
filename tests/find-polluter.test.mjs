@@ -3,10 +3,9 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, delimiter } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join, delimiter } from 'node:path';
+import { root } from './helpers/repo.mjs';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const scriptUnderTest = join(root, 'skills/systematic-debugging/find-polluter.sh');
 
 const testRoot = mkdtempSync(join(tmpdir(), 'find-polluter-'));

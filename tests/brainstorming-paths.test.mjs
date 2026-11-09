@@ -1,11 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { read } from './helpers/repo.mjs';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const skill = fs.readFileSync(path.join(root, 'skills/brainstorming/SKILL.md'), 'utf8');
+const skill = read('skills/brainstorming/SKILL.md');
 
 test('brainstorming defines the three paths: spike, bounded, architectural', () => {
   assert.match(skill, /## Three Paths/);

@@ -1,11 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const read = (relativePath) => readFileSync(join(root, relativePath), 'utf8');
+import { read } from './helpers/repo.mjs';
 
 test('implementation approval records publication authority separately', () => {
   const plans = read('skills/writing-plans/SKILL.md');

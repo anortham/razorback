@@ -5,14 +5,11 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync 
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
+import { bashBlocks } from './helpers/markdown.mjs';
+import { read, root } from './helpers/repo.mjs';
 
 const expectedRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
-const root = expectedRoot;
 const reviewArtifactHelper = join(root, 'skills/security-review/scripts/prepare-review-artifact');
-
-function read(relativePath) {
-  return readFileSync(join(root, relativePath), 'utf8');
-}
 
 function commandBlockHasBare(text) {
   return /```bash[\s\S]*?claude -p[\s\S]*?\n\s*--bare \\/.test(text);
@@ -68,10 +65,6 @@ const CLAUDE_INVOCATION_DOCS = [
   'skills/pre-merge-review/SKILL.md',
   'skills/pre-merge-review/reviewer-prompts/claude.md',
 ];
-
-function bashBlocks(text) {
-  return [...text.matchAll(/```bash\n([\s\S]*?)```/g)].map((match) => match[1]);
-}
 
 test('claude invocation blocks pin the read-only allowlist', () => {
   for (const rel of CLAUDE_INVOCATION_DOCS) {

@@ -1,10 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+import { section } from './helpers/markdown.mjs';
+import { read } from './helpers/repo.mjs';
 
 const KIT = 'skills/using-razorback/references/digest-kit.md';
 
@@ -26,28 +23,10 @@ const WIRING = [
   },
 ];
 
-function read(relativePath) {
-  return readFileSync(join(root, relativePath), 'utf8');
-}
-
 function extractSection(text, heading, file) {
-  const lines = text.split('\n');
-  const start = lines.findIndex((line) => line.trim() === heading);
-  assert.notEqual(
-    start,
-    -1,
-    `${file} lost the region "${heading}" — the digest wiring lives inside it; restore the heading, or move the wiring and update tests/digest-wiring.test.mjs to the new region`
-  );
-  const level = heading.match(/^#+/)[0].length;
-  let end = lines.length;
-  for (let i = start + 1; i < lines.length; i++) {
-    const next = lines[i].match(/^(#+)\s/);
-    if (next && next[1].length <= level) {
-      end = i;
-      break;
-    }
-  }
-  return lines.slice(start + 1, end).join('\n');
+  return section(text, heading, {
+    message: `${file} lost the region "${heading}" — the digest wiring lives inside it; restore the heading, or move the wiring and update tests/digest-wiring.test.mjs to the new region`,
+  });
 }
 
 test('the digest kit exists and declares the .digest scope class', () => {

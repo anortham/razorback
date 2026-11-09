@@ -1,10 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-
-const root = join(import.meta.dirname, '..');
-const read = (relativePath) => readFileSync(join(root, relativePath), 'utf8');
+import { read } from './helpers/repo.mjs';
 
 test('systematic-debugging owns the after-failure loop: ids first, wide command once', () => {
   const skill = read('skills/systematic-debugging/SKILL.md');

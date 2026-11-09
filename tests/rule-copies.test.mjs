@@ -4,8 +4,8 @@ import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { read, root } from './helpers/repo.mjs';
 
-const root = path.join(import.meta.dirname, '..');
 const checker = path.join(root, 'scripts', 'check-rule-copies.mjs');
 
 const CANONICAL = 'skills/using-razorback/references/instruction-tier.md';
@@ -46,7 +46,7 @@ test('checker passes against the real repo', () => {
 });
 
 test('canonical carries no Skill-tool or razorback: skill references', () => {
-  const canonical = fs.readFileSync(path.join(root, CANONICAL), 'utf8');
+  const canonical = read(CANONICAL);
   assert.equal(/razorback:[a-z-]+/.test(canonical), false, 'canonical references a razorback: skill');
   assert.equal(/\bSkill tool\b/i.test(canonical), false, 'canonical references the Skill tool');
 });

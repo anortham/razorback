@@ -1,11 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { read, root } from './helpers/repo.mjs';
 
-const root = join(import.meta.dirname, '..');
-const read = (path) => readFileSync(join(root, path), 'utf8');
 const activeMatches = (pattern) => {
   const result = spawnSync('git', [
     'grep', '--untracked', '-n', '-E', pattern, '--', '.',

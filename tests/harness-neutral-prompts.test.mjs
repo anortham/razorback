@@ -2,8 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { root } from './helpers/repo.mjs';
 
-const root = path.join(import.meta.dirname, '..');
 const skillsDir = path.join(root, 'skills');
 
 const BANNED_TOKENS = ['Agent tool', 'Task tool', 'general-purpose', 'subagent_type'];

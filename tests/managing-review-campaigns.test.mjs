@@ -1,14 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-
-function read(relativePath) {
-  return readFileSync(join(root, relativePath), 'utf8');
-}
+import { read } from './helpers/repo.mjs';
 
 test('campaign setup is immutable and budgets external invocations separately from rounds', () => {
   const skill = read('skills/managing-review-campaigns/SKILL.md');

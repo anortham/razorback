@@ -1,10 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+import { read } from './helpers/repo.mjs';
 
 const VARIANTS = { codex: 'Codex', claude: 'Claude', grok: 'Grok', agy: 'Antigravity' };
 
@@ -21,11 +17,11 @@ function promptPath(cli) {
 }
 
 function readPrompt(cli) {
-  return readFileSync(join(root, promptPath(cli)), 'utf8');
+  return read(promptPath(cli));
 }
 
 function readSecurityPrompt() {
-  return readFileSync(join(root, SECURITY_PROMPT), 'utf8');
+  return read(SECURITY_PROMPT);
 }
 
 function labeledQuartet() {

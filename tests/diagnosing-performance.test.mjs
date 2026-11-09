@@ -1,14 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-
-function read(relativePath) {
-  return readFileSync(join(root, relativePath), 'utf8');
-}
+import { readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { read, root } from './helpers/repo.mjs';
 
 const skill = () => read('skills/diagnosing-performance/SKILL.md');
 const catalog = () => read('skills/diagnosing-performance/bottleneck-catalog.md');

@@ -1,18 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync, spawnSync } from 'node:child_process';
-import { accessSync, constants, mkdtempSync, readFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
+import { accessSync, constants } from 'node:fs';
+import { join } from 'node:path';
+import { bashPath, forksStartedBy, hookPayload, runIsolated as runIsolatedShell, runWithClosedStdout, stracePath, withSandbox } from './helpers/hook-harness.mjs';
+import { read, root } from './helpers/repo.mjs';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const hook = join(root, 'hooks/subagent-start');
 const wrapper = join(root, 'hooks/run-hook.cmd');
-
-function read(relativePath) {
-  return readFileSync(join(root, relativePath), 'utf8');
-}
 
 function runSubagentStart(env = {}) {
   return execFileSync('bash', [hook], {
@@ -21,37 +16,16 @@ function runSubagentStart(env = {}) {
   });
 }
 
-function locate(command) {
-  const resolve = process.platform === 'win32' ? `cygpath -m "$(command -v ${command})"` : `command -v ${command}`;
-  const result = spawnSync('bash', ['-c', resolve], { encoding: 'utf8' });
-  return result.status === 0 ? result.stdout.trim() : '';
-}
-
-const bashPath = locate('bash');
-const stracePath = process.platform === 'linux' ? locate('strace') : '';
-
 function runIsolated(args, options = {}) {
-  return execFileSync(bashPath, args, {
-    encoding: 'utf8',
-    env: { PATH: '', HOME: tmpdir(), CLAUDE_PLUGIN_ROOT: root },
-    ...options,
-  });
+  return runIsolatedShell(bashPath, args, { CLAUDE_PLUGIN_ROOT: root }, options);
 }
 
 function nestedPayload(stdout) {
-  const parsed = JSON.parse(stdout);
-  assert.deepEqual(Object.keys(parsed), ['hookSpecificOutput']);
-  assert.equal(parsed.hookSpecificOutput.hookEventName, 'SubagentStart');
-  return parsed.hookSpecificOutput.additionalContext;
+  return hookPayload('SubagentStart', stdout);
 }
 
 function inSandbox(fn) {
-  const sandbox = mkdtempSync(join(tmpdir(), 'razorback-subagent-start-'));
-  try {
-    return fn(sandbox);
-  } finally {
-    rmSync(sandbox, { recursive: true, force: true });
-  }
+  return withSandbox('razorback-subagent-start-', fn);
 }
 
 test('subagent-start emits the Claude Code SubagentStart hookSpecificOutput shape', () => {
@@ -191,17 +165,12 @@ test('subagent-start run by bare filename from hooks/ still resolves the plugin 
 
 test('subagent-start exits 0 silently when stdout is closed early', () => {
   inSandbox((sandbox) => {
-    const errFile = join(sandbox, 'stderr.txt');
     for (let attempt = 0; attempt < 3; attempt += 1) {
       for (const args of [[hook], [wrapper, 'subagent-start']]) {
-        const result = spawnSync(
-          bashPath,
-          ['-c', '"$@" 2>"$ERR_FILE" | :; exit "${PIPESTATUS[0]}"', '_', bashPath, ...args],
-          { encoding: 'utf8', env: { PATH: '', HOME: sandbox, CLAUDE_PLUGIN_ROOT: root, ERR_FILE: errFile } },
-        );
+        const { status, stderr } = runWithClosedStdout(sandbox, args);
 
-        assert.equal(result.status, 0, `${args.join(' ')} exited ${result.status}`);
-        assert.equal(readFileSync(errFile, 'utf8'), '', `${args.join(' ')} wrote to stderr`);
+        assert.equal(status, 0, `${args.join(' ')} exited ${status}`);
+        assert.equal(stderr, '', `${args.join(' ')} wrote to stderr`);
       }
     }
   });
@@ -209,16 +178,7 @@ test('subagent-start exits 0 silently when stdout is closed early', () => {
 
 test('subagent-start starts no child processes', { skip: !stracePath }, () => {
   inSandbox((sandbox) => {
-    const log = join(sandbox, 'forks.log');
-    const result = spawnSync(
-      stracePath,
-      ['-f', '-qq', '-e', 'trace=fork,vfork,clone,clone3', '-o', log, bashPath, hook],
-      { encoding: 'utf8', env: { PATH: '', HOME: sandbox, CLAUDE_PLUGIN_ROOT: root } },
-    );
-
-    assert.equal(result.status, 0, result.stderr);
-    const forks = readFileSync(log, 'utf8').split('\n').filter((line) => /(fork|clone3?)\(/.test(line));
-    assert.deepEqual(forks, []);
+    assert.deepEqual(forksStartedBy(sandbox, [hook]), []);
   });
 });
 

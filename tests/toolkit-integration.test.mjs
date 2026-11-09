@@ -1,19 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { createEnvironment, readClientSdkVersion } from '../scripts/run-toolkit-integration.mjs';
+import { initRepository, removeTree } from './helpers/git-fixture.mjs';
+import { readJson, root } from './helpers/repo.mjs';
 
-const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const runner = join(root, 'scripts', 'run-toolkit-integration.mjs');
 const integrationConfig = process.env.RAZORBACK_TOOLKIT_INTEGRATION_CONFIG;
 const testRoot = mkdtempSync(join(tmpdir(), 'razorback-toolkit-integration-tests-'));
 const fixtureEnvironment = createEnvironment(join(testRoot, 'git-setup')).environment;
 
-test.after(() => rmSync(testRoot, { recursive: true, force: true }));
+test.after(() => removeTree(testRoot));
 
 function run(args, timeout = 5000, env = process.env) {
   return spawnSync(process.execPath, [runner, ...args], {
@@ -27,9 +27,10 @@ function run(args, timeout = 5000, env = process.env) {
 function createSourceRoot(name) {
   const sourceRoot = join(testRoot, name);
   mkdirSync(sourceRoot, { recursive: true });
-  execFileSync('git', ['init', '-q'], { cwd: sourceRoot, stdio: 'ignore', env: fixtureEnvironment });
-  execFileSync('git', ['config', 'user.name', 'Toolkit integration test'], { cwd: sourceRoot, stdio: 'ignore', env: fixtureEnvironment });
-  execFileSync('git', ['config', 'user.email', 'toolkit-integration@example.invalid'], { cwd: sourceRoot, stdio: 'ignore', env: fixtureEnvironment });
+  initRepository(sourceRoot, {
+    config: { 'user.name': 'Toolkit integration test', 'user.email': 'toolkit-integration@example.invalid' },
+    env: fixtureEnvironment,
+  });
   writeFileSync(join(sourceRoot, 'source.txt'), 'tracked source\n');
   execFileSync('git', ['add', 'source.txt'], { cwd: sourceRoot, stdio: 'ignore', env: fixtureEnvironment });
   execFileSync('git', ['commit', '-q', '-m', 'source'], { cwd: sourceRoot, stdio: 'ignore', env: fixtureEnvironment });
@@ -178,7 +179,7 @@ test('server environment replaces inherited home and secret values with temporar
 });
 
 test('integration report version matches the exact installed SDK pin', () => {
-  const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+  const manifest = readJson('package.json');
 
   assert.equal(readClientSdkVersion(), manifest.devDependencies['@modelcontextprotocol/client']);
 });

@@ -1,10 +1,6 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-
-const root = path.join(import.meta.dirname, '..');
-const readJson = (relativePath) => JSON.parse(fs.readFileSync(path.join(root, relativePath), 'utf8'));
+import { readJson } from './helpers/repo.mjs';
 
 // Resolve a dotted field path like "plugins.0.version" against a parsed manifest.
 function resolveField(obj, dottedField) {

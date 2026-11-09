@@ -1,14 +1,6 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import test from 'node:test';
-
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-
-function read(relPath) {
-  return readFileSync(resolve(root, relPath), 'utf8');
-}
+import { read } from './helpers/repo.mjs';
 
 function expectSnippets(filePath, snippets) {
   const content = read(filePath);

@@ -11,8 +11,9 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
+import { read, root as repositoryRoot } from './helpers/repo.mjs';
+import { REVIEWER_CLI_SKILLS, REVIEWER_DOCUMENTS } from './helpers/reviewer-documents.mjs';
 
-const repositoryRoot = dirname(import.meta.dirname);
 const helper = join(repositoryRoot, 'skills/security-review/scripts/prepare-review-artifact');
 const redactor = join(repositoryRoot, 'skills/security-review/scripts/redact-outbound');
 const testRoot = mkdtempSync(join(tmpdir(), 'review-payload-transport-'));
@@ -102,28 +103,16 @@ test('small prompts carry redacted instructions and large wrappers stay static',
   assert.doesNotMatch(readFileSync(payloadFile, 'utf8'), new RegExp(secretFocus));
   assert.equal(existsSync(join(workspace, '.razorback-review')), false);
 
-  const instructionDocs = [
-    'skills/grok-cli/SKILL.md',
-    'skills/claude-cli/SKILL.md',
-    'skills/codex-cli/SKILL.md',
-    'skills/agy-cli/SKILL.md',
-  ];
-  for (const relativePath of instructionDocs) {
-    const text = readFileSync(join(repositoryRoot, relativePath), 'utf8');
+  for (const relativePath of REVIEWER_CLI_SKILLS) {
+    const text = read(relativePath);
     assert.match(text, /printf '%s\\n(?:\\n)?' "\$REVIEW_INSTRUCTION"/,
       `${relativePath} must put its review instruction in the redacted payload`);
     assert.match(text, /Focus area: %s\\n.*\$FOCUS|Focus area: %s\\n.*\$USER_FOCUS/s,
       `${relativePath} must put focus text in the redacted payload`);
   }
 
-  const wrapperDocs = [
-    ...instructionDocs,
-    'skills/pre-merge-review/SKILL.md',
-    'skills/pre-merge-review/reviewer-prompts/claude.md',
-    'skills/pre-merge-review/reviewer-prompts/codex.md',
-  ];
-  for (const relativePath of wrapperDocs) {
-    const text = readFileSync(join(repositoryRoot, relativePath), 'utf8');
+  for (const relativePath of REVIEWER_DOCUMENTS) {
+    const text = read(relativePath);
     assert.match(text, /Read and follow the complete redacted review bundle at:/,
       `${relativePath} must use the static large-review wrapper`);
     assert.doesNotMatch(text, /printf[\s\S]{0,300}\$REVIEW_INSTRUCTION[\s\S]{0,120}\$REVIEW_ARTIFACT/,
@@ -144,17 +133,8 @@ test('review artifacts cannot be placed in a workspace with live Git metadata', 
 });
 
 test('large review recipes use the shared artifact contract and bounded prompt', () => {
-  const docs = [
-    'skills/grok-cli/SKILL.md',
-    'skills/claude-cli/SKILL.md',
-    'skills/codex-cli/SKILL.md',
-    'skills/agy-cli/SKILL.md',
-    'skills/pre-merge-review/SKILL.md',
-    'skills/pre-merge-review/reviewer-prompts/claude.md',
-    'skills/pre-merge-review/reviewer-prompts/codex.md',
-  ];
-  for (const relativePath of docs) {
-    const text = readFileSync(join(repositoryRoot, relativePath), 'utf8');
+  for (const relativePath of REVIEWER_DOCUMENTS) {
+    const text = read(relativePath);
     assert.match(text, /prepare-review-artifact/, `${relativePath} must use the shared helper`);
     assert.match(text, /REVIEW_ARTIFACT/, `${relativePath} must name the large-review artifact`);
     assert.match(text, /bounded|concise|small prompt/i, `${relativePath} must keep large prompts bounded`);
@@ -162,17 +142,8 @@ test('large review recipes use the shared artifact contract and bounded prompt',
 });
 
 test('large review prompts point to the artifact instead of reloading its bytes', () => {
-  const docs = [
-    'skills/grok-cli/SKILL.md',
-    'skills/claude-cli/SKILL.md',
-    'skills/codex-cli/SKILL.md',
-    'skills/agy-cli/SKILL.md',
-    'skills/pre-merge-review/SKILL.md',
-    'skills/pre-merge-review/reviewer-prompts/claude.md',
-    'skills/pre-merge-review/reviewer-prompts/codex.md',
-  ];
-  for (const relativePath of docs) {
-    const text = readFileSync(join(repositoryRoot, relativePath), 'utf8');
+  for (const relativePath of REVIEWER_DOCUMENTS) {
+    const text = read(relativePath);
     assert.match(text, /complete redacted (?:review )?bundle/i, `${relativePath} must document the bundle`);
     assert.match(text, /artifact path|review artifact/i, `${relativePath} must tell the reviewer where the bundle is`);
   }

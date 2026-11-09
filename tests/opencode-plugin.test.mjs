@@ -2,8 +2,8 @@ import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { pathToFileURL } from 'node:url';
+import { root } from './helpers/repo.mjs';
 
-const root = path.join(import.meta.dirname, '..');
 const pluginPath = path.join(root, '.opencode', 'plugins', 'razorback.js');
 const mod = await import(pathToFileURL(pluginPath).href);
 

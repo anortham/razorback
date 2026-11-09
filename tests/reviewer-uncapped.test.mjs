@@ -1,40 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { read } from './helpers/repo.mjs';
+import { PRE_MERGE_REVIEWER_PROMPTS, REVIEWER_CLI_SKILLS, REVIEWER_DOCUMENTS as REVIEWER_DOCS } from './helpers/reviewer-documents.mjs';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-
-const REVIEWER_DOCS = [
-  'skills/claude-cli/SKILL.md',
-  'skills/codex-cli/SKILL.md',
-  'skills/grok-cli/SKILL.md',
-  'skills/agy-cli/SKILL.md',
-  'skills/pre-merge-review/SKILL.md',
-  'skills/pre-merge-review/reviewer-prompts/claude.md',
-  'skills/pre-merge-review/reviewer-prompts/codex.md',
-];
-
-const FAILSAFE_TIMEOUT_DOCS = [
-  'skills/claude-cli/SKILL.md',
-  'skills/codex-cli/SKILL.md',
-  'skills/grok-cli/SKILL.md',
-  'skills/agy-cli/SKILL.md',
-  'skills/pre-merge-review/reviewer-prompts/claude.md',
-  'skills/pre-merge-review/reviewer-prompts/codex.md',
-];
-
-const REVIEWER_CLI_SKILLS = [
-  'skills/claude-cli/SKILL.md',
-  'skills/codex-cli/SKILL.md',
-  'skills/grok-cli/SKILL.md',
-  'skills/agy-cli/SKILL.md',
-];
-
-function read(relativePath) {
-  return readFileSync(join(root, relativePath), 'utf8');
-}
+const FAILSAFE_TIMEOUT_DOCS = [...REVIEWER_CLI_SKILLS, ...PRE_MERGE_REVIEWER_PROMPTS];
 
 function normalized(text) {
   return text.replace(/\s+/g, ' ');

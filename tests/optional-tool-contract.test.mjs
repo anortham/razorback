@@ -1,8 +1,6 @@
-import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-
-const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
+import { read } from './helpers/repo.mjs';
 
 test('installation and Codex guidance allow native tools without MCP dependencies', () => {
   for (const path of ['.codex/INSTALL.md', '.opencode/INSTALL.md', 'skills/using-razorback/references/codex-tools.md', 'docs/README.codex.md', 'docs/README.opencode.md']) {

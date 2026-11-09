@@ -2,15 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
+import { read, root } from './helpers/repo.mjs';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const skillDir = join(root, 'skills', 'codex-cli');
-
-function read(relativePath) {
-  return readFileSync(join(root, relativePath), 'utf8');
-}
 
 function extractConstructionBlock() {
   const lines = read('skills/codex-cli/SKILL.md').split('\n');

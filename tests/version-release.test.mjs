@@ -1,26 +1,16 @@
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { bumpVersion as bump, copyBumpVersionFiles, requiresJq } from './helpers/bump-version-fixture.mjs';
+import { git as runGit, identityFlags, initRepository, removeTree } from './helpers/git-fixture.mjs';
+import { root } from './helpers/repo.mjs';
 
-const root = path.join(import.meta.dirname, '..');
-const requiresJq = { skip: spawnSync('sh', ['-c', 'command -v jq']).status !== 0 && 'bump-version.sh needs jq on PATH' };
-const config = JSON.parse(fs.readFileSync(path.join(root, '.version-bump.json'), 'utf8'));
+const gitIdentity = identityFlags('Test', 'test@example.com');
 
 function git(dir, ...args) {
-  const result = spawnSync(
-    'git',
-    ['-C', dir, '-c', 'user.name=Test', '-c', 'user.email=test@example.com', '-c', 'commit.gpgsign=false', '-c', 'gc.auto=0', '-c', 'maintenance.auto=false', ...args],
-    { encoding: 'utf8' }
-  );
-  assert.equal(result.status, 0, `git ${args.join(' ')} failed:\n${result.stdout}\n${result.stderr}`);
-  return result.stdout;
-}
-
-function bump(dir, ...args) {
-  return spawnSync('bash', [path.join(dir, 'scripts/bump-version.sh'), ...args], { cwd: dir, encoding: 'utf8' });
+  return runGit(dir, ...gitIdentity, ...args);
 }
 
 function release(dir, version, extra = { body: '', bullets: [] }) {
@@ -38,19 +28,9 @@ function release(dir, version, extra = { body: '', bullets: [] }) {
 // A throwaway repo carrying the script, its config, and the declared manifests,
 // so the release path can be driven against real tags without touching origin.
 function makeFixture() {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'razorback-release-'));
-  const copy = (relativePath) => {
-    const dest = path.join(dir, relativePath);
-    fs.mkdirSync(path.dirname(dest), { recursive: true });
-    fs.copyFileSync(path.join(root, relativePath), dest);
-  };
+  const dir = copyBumpVersionFiles('razorback-release-');
 
-  copy('.version-bump.json');
-  copy('scripts/bump-version.sh');
-  fs.chmodSync(path.join(dir, 'scripts/bump-version.sh'), 0o755);
-  for (const entry of config.files) copy(entry.path);
-
-  git(dir, 'init', '-q');
+  initRepository(dir);
   git(dir, 'add', '-A');
   git(dir, 'commit', '-q', '-m', 'initial');
 
@@ -66,7 +46,7 @@ function makeFixture() {
 
 test('--release --dry-run titles the release from the release commit subject', requiresJq, (t) => {
   const dir = makeFixture();
-  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  t.after(() => removeTree(dir));
 
   const result = bump(dir, '--release', '1.1.0', '--dry-run');
   assert.equal(result.status, 0, `stdout:\n${result.stdout}\n${result.stderr}`);
@@ -75,7 +55,7 @@ test('--release --dry-run titles the release from the release commit subject', r
 
 test('--release --dry-run publishes nothing', requiresJq, (t) => {
   const dir = makeFixture();
-  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  t.after(() => removeTree(dir));
 
   const result = bump(dir, '--release', '1.1.0', '--dry-run');
   assert.match(result.stdout, /DRY RUN — nothing published/);
@@ -83,7 +63,7 @@ test('--release --dry-run publishes nothing', requiresJq, (t) => {
 
 test('--release notes carry the release commit body without its trailers', requiresJq, (t) => {
   const dir = makeFixture();
-  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  t.after(() => removeTree(dir));
 
   const result = bump(dir, '--release', '1.1.0', '--dry-run');
   assert.match(result.stdout, /Adds the thing everyone asked for\./);
@@ -93,7 +73,7 @@ test('--release notes carry the release commit body without its trailers', requi
 
 test('--release notes list the commits since the previous tag, oldest first', requiresJq, (t) => {
   const dir = makeFixture();
-  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  t.after(() => removeTree(dir));
 
   const result = bump(dir, '--release', '1.1.0', '--dry-run');
   const feature = result.stdout.indexOf('- feat: add a thing');
@@ -105,7 +85,7 @@ test('--release notes list the commits since the previous tag, oldest first', re
 
 test('--release notes drop the release commit and the configured noise subjects', requiresJq, (t) => {
   const dir = makeFixture();
-  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  t.after(() => removeTree(dir));
 
   const result = bump(dir, '--release', '1.1.0', '--dry-run');
   assert.doesNotMatch(result.stdout, /- release: 1\.1\.0/);
@@ -114,7 +94,7 @@ test('--release notes drop the release commit and the configured noise subjects'
 
 test('--release notes stop at the previous tag', requiresJq, (t) => {
   const dir = makeFixture();
-  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  t.after(() => removeTree(dir));
 
   const result = bump(dir, '--release', '1.1.0', '--dry-run');
   assert.doesNotMatch(result.stdout, /- release: 1\.0\.0/);
@@ -123,7 +103,7 @@ test('--release notes stop at the previous tag', requiresJq, (t) => {
 
 test('--release defaults to the version the manifests declare', requiresJq, (t) => {
   const dir = makeFixture();
-  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  t.after(() => removeTree(dir));
 
   const result = bump(dir, '--release', '--dry-run');
   assert.equal(result.status, 0, `stdout:\n${result.stdout}\n${result.stderr}`);
@@ -132,7 +112,7 @@ test('--release defaults to the version the manifests declare', requiresJq, (t) 
 
 test('--release exits non-zero when the tag does not exist', requiresJq, (t) => {
   const dir = makeFixture();
-  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  t.after(() => removeTree(dir));
 
   const result = bump(dir, '--release', '9.9.9', '--dry-run');
   assert.notEqual(result.status, 0, `stdout:\n${result.stdout}\n${result.stderr}`);
@@ -143,7 +123,7 @@ test('--release exits non-zero when the tag does not exist', requiresJq, (t) => 
 // stale-but-consistent checkout cannot be released under someone else's tag.
 test('--release exits non-zero when the tagged commit declares another version', requiresJq, (t) => {
   const dir = makeFixture();
-  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  t.after(() => removeTree(dir));
 
   git(dir, 'tag', 'v2.0.0');
 
@@ -154,7 +134,7 @@ test('--release exits non-zero when the tagged commit declares another version',
 
 test('--release --notes-file publishes the given notes verbatim', requiresJq, (t) => {
   const dir = makeFixture();
-  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  t.after(() => removeTree(dir));
 
   const notes = path.join(dir, 'notes.md');
   fs.writeFileSync(notes, 'Hand-written notes for this release.\n');
@@ -168,7 +148,7 @@ test('--release --notes-file publishes the given notes verbatim', requiresJq, (t
 
 test('--release works when the config declares no excluded subjects', requiresJq, (t) => {
   const dir = makeFixture();
-  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  t.after(() => removeTree(dir));
 
   const configPath = path.join(dir, '.version-bump.json');
   const fixtureConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
@@ -182,7 +162,7 @@ test('--release works when the config declares no excluded subjects', requiresJq
 
 test('--release rejects an unknown flag', requiresJq, (t) => {
   const dir = makeFixture();
-  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  t.after(() => removeTree(dir));
 
   const result = bump(dir, '--release', '--bogus');
   assert.notEqual(result.status, 0, `stdout:\n${result.stdout}\n${result.stderr}`);

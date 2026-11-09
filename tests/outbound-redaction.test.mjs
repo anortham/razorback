@@ -1,10 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { read, root } from './helpers/repo.mjs';
 
-const root = join(import.meta.dirname, '..');
 const script = join(root, 'skills/security-review/scripts/redact-outbound');
 const privateKeyBegin = ['-----BEGIN ', 'PRIVATE KEY-----'].join('');
 const privateKeyEnd = ['-----END ', 'PRIVATE KEY-----'].join('');
@@ -175,7 +174,7 @@ for (const { name, input, expected, status = 0, stderrIncludes, environment, sec
 }
 
 test('the security review template passes redaction with GCM_CREDENTIAL_STORE=cache in the environment', () => {
-  const template = readFileSync(join(root, 'skills/security-review/security-adversarial-prompt.txt'), 'utf8');
+  const template = read('skills/security-review/security-adversarial-prompt.txt');
   const result = runRedactor(template, { GCM_CREDENTIAL_STORE: 'cache' });
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.stdout, template);

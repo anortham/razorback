@@ -1,15 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
+import { bashBlocks } from './helpers/markdown.mjs';
+import { read, root } from './helpers/repo.mjs';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const wrapper = join(root, 'skills/codex-cli/scripts/codex-exec');
-
-const read = (rel) => readFileSync(join(root, rel), 'utf8');
 
 function bashPath(windowsPath) {
   return spawnSync('bash', ['-c', 'cygpath -u "$1" 2>/dev/null || printf "%s" "$1"', '_', windowsPath], {
@@ -104,8 +102,7 @@ test('codex-exec is a transparent pass-through off Windows', () => {
 
 test('codex-cli recipes dispatch through the codex-exec wrapper', () => {
   const skill = read('skills/codex-cli/SKILL.md');
-  const bashBlocks = [...skill.matchAll(/```bash\n([\s\S]*?)```/g)].map((m) => m[1]);
-  const bare = bashBlocks.filter((block) => /^\s*(cat [^|]*\| *)?codex exec\b/m.test(block));
+  const bare = bashBlocks(skill).filter((block) => /^\s*(cat [^|]*\| *)?codex exec\b/m.test(block));
   assert.equal(bare.length, 0, `bare \`codex exec\` in recipe blocks:\n${bare.join('\n---\n')}`);
   assert.match(skill, /"\$SKILL_DIR\/scripts\/codex-exec"/);
   assert.match(skill, /WindowsApps/);

@@ -5,8 +5,9 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { initRepository, removeTree } from './helpers/git-fixture.mjs';
+import { root } from './helpers/repo.mjs';
 
-const root = path.join(import.meta.dirname, '..');
 const sourceScript = path.join(root, 'scripts/package-codex-plugin.sh');
 
 const run = (cmd, args, options = {}) =>
@@ -138,13 +139,10 @@ function createFixture() {
   const repo = path.join(tempRoot, 'repo');
   const scriptPath = path.join(repo, 'scripts/package-codex-plugin.sh');
 
-  run('git', ['init', '-q', '-b', 'main', repo]);
-  run('git', ['-C', repo, 'config', 'gc.auto', '0']);
-  run('git', ['-C', repo, 'config', 'maintenance.auto', 'false']);
-  run('git', ['-C', repo, 'config', 'user.email', 't@example.com']);
-  run('git', ['-C', repo, 'config', 'user.name', 't']);
-  run('git', ['-C', repo, 'config', 'commit.gpgsign', 'false']);
-  run('git', ['-C', repo, 'config', 'core.autocrlf', 'false']);
+  initRepository(repo, {
+    branch: 'main',
+    config: { 'user.email': 't@example.com', 'user.name': 't', 'commit.gpgsign': 'false', 'core.autocrlf': 'false' },
+  });
 
   fs.mkdirSync(path.dirname(scriptPath), { recursive: true });
   fs.copyFileSync(sourceScript, scriptPath);
@@ -229,10 +227,10 @@ function createFixture() {
 function cleanupFixture(fixture, extraPaths = []) {
   for (const extraPath of extraPaths) {
     if (extraPath && fs.existsSync(extraPath)) {
-      fs.rmSync(extraPath, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+      removeTree(extraPath);
     }
   }
-  fs.rmSync(fixture.tempRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+  removeTree(fixture.tempRoot);
 }
 
 test('packages a rootless Codex-only archive with every skill and no manifest hooks', { skip: !hasZip || !hasTarGz }, () => {

@@ -2,16 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-
-const root = path.join(import.meta.dirname, '..');
-
-function read(relativePath) {
-  return fs.readFileSync(path.join(root, relativePath), 'utf8');
-}
-
-function readJson(relativePath) {
-  return JSON.parse(read(relativePath));
-}
+import { read, readJson, root } from './helpers/repo.mjs';
 
 function readBuffer(relativePath) {
   return fs.readFileSync(path.join(root, relativePath));

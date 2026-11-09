@@ -4,9 +4,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { fileURLToPath } from 'node:url';
+import { readJson, root as repositoryRoot } from './helpers/repo.mjs';
 
-const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const doctorPath = path.join(repositoryRoot, 'scripts', 'toolkit-doctor.mjs');
 
 function fixture(t) {
@@ -303,6 +302,6 @@ test('doctor text output is readable and the npm command is registered', t => {
   assert.equal(result.status, 1, result.stderr);
   assert.match(result.stdout, /workspace-root-binding: unknown/);
   assert.match(result.stdout, /capabilities: pass/);
-  const packageJson = JSON.parse(fs.readFileSync(path.join(repositoryRoot, 'package.json'), 'utf8'));
+  const packageJson = readJson('package.json');
   assert.equal(packageJson.scripts.doctor, 'node scripts/toolkit-doctor.mjs');
 });

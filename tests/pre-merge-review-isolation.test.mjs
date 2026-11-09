@@ -13,39 +13,23 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, relative } from 'node:path';
+import { join, relative } from 'node:path';
+import { git, identityFlags, initRepository, removeTree } from './helpers/git-fixture.mjs';
+import { bashBlocks } from './helpers/markdown.mjs';
+import { read, root as repositoryRoot } from './helpers/repo.mjs';
 
-const repositoryRoot = dirname(import.meta.dirname);
 const script = join(repositoryRoot, 'skills/pre-merge-review/scripts/prepare-review-tree');
 const testRoot = mkdtempSync(join(tmpdir(), 'pre-merge-review-isolation-'));
 
-test.after(() => rmSync(testRoot, { recursive: true, force: true }));
+test.after(() => removeTree(testRoot));
 
-const gitIdentity = [
-  '-c',
-  'user.email=test@example.com',
-  '-c',
-  'user.name=review-tree-test',
-  '-c',
-  'commit.gpgsign=false',
-  '-c',
-  'gc.auto=0',
-  '-c',
-  'maintenance.auto=false',
-];
-
-function git(cwd, ...args) {
-  const result = spawnSync('git', args, { cwd, encoding: 'utf8' });
-  assert.equal(result.status, 0, result.stderr);
-  return result.stdout;
-}
+const gitIdentity = identityFlags('review-tree-test', 'test@example.com');
 
 function createRepository() {
   const caseRoot = mkdtempSync(join(testRoot, 'case-'));
   const repo = join(caseRoot, 'repo');
   mkdirSync(repo, { recursive: true });
-  git(caseRoot, 'init', '-q', '-b', 'main', repo);
-  git(repo, 'config', 'core.autocrlf', 'false');
+  initRepository(repo, { branch: 'main', config: { 'core.autocrlf': 'false' } });
   writeFileSync(join(repo, 'tracked.txt'), 'tracked\n');
   git(repo, 'add', 'tracked.txt');
   git(repo, ...gitIdentity, 'commit', '-qm', 'tracked baseline');
@@ -84,14 +68,6 @@ exec "${commandPath('tar')}" "$@"
   );
   chmodSync(tar, 0o755);
   return bin;
-}
-
-function read(relativePath) {
-  return readFileSync(join(repositoryRoot, relativePath), 'utf8');
-}
-
-function bashBlocks(text) {
-  return [...text.matchAll(/```bash\n([\s\S]*?)```/g)].map((match) => match[1]);
 }
 
 test('exports the reviewed tracked tree without live git metadata or untracked files', () => {

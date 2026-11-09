@@ -5,10 +5,10 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { identityFlags, initRepository, removeTree } from './helpers/git-fixture.mjs';
+import { read, root } from './helpers/repo.mjs';
 
 const require = createRequire(import.meta.url);
-const root = path.join(import.meta.dirname, '..');
-const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
 const exists = (relativePath) => fs.existsSync(path.join(root, relativePath));
 const run = (cmd, args, options = {}) =>
   childProcess.execFileSync(cmd, args, { encoding: 'utf8', ...options });
@@ -85,20 +85,14 @@ test('subagent-driven-development keeps SDD artifacts self-ignored and worktree-
 
   try {
     const repoInput = path.join(testRoot, 'repo');
-    run('git', ['init', '-q', '-b', 'main', repoInput]);
+    initRepository(repoInput, { branch: 'main' });
     const repo = run('git', ['rev-parse', '--show-toplevel'], { cwd: repoInput }).trim();
 
     fs.writeFileSync(
       path.join(repo, 'plan.md'),
       '# Plan\n\n## Task 1: First thing\n\nDo the first thing.\n'
     );
-    const gitIdentity = [
-      '-c', 'user.email=t@example.com',
-      '-c', 'user.name=t',
-      '-c', 'commit.gpgsign=false',
-      '-c', 'gc.auto=0',
-      '-c', 'maintenance.auto=false'
-    ];
+    const gitIdentity = identityFlags('t', 't@example.com');
     run('git', ['add', 'plan.md'], { cwd: repo });
     run('git', [...gitIdentity, 'commit', '-qm', 'c1'], { cwd: repo });
 
@@ -134,7 +128,7 @@ test('subagent-driven-development keeps SDD artifacts self-ignored and worktree-
     fs.writeFileSync(path.join(worktreeDir, 'artifact.md'), 'y\n');
     assert.equal(run('git', ['status', '--porcelain'], { cwd: worktree }), '');
   } finally {
-    fs.rmSync(testRoot, { recursive: true, force: true });
+    removeTree(testRoot);
   }
 });
 

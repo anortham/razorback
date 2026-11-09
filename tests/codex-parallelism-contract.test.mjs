@@ -1,10 +1,7 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-
-const root = path.join(import.meta.dirname, '..');
-const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
+import { section as markdownSection } from './helpers/markdown.mjs';
+import { read } from './helpers/repo.mjs';
 
 test('writing-plans requires the parallel execution contract header and fields', () => {
   const skill = read('skills/writing-plans/SKILL.md');
@@ -168,26 +165,8 @@ test('pre-merge-review carries no model-tier routing vocabulary', () => {
   }
 });
 
-// Extract a markdown section from its heading up to the next `## ` heading,
-// ignoring `## ` lines that live inside fenced code blocks (the plan forms embed
-// ````markdown examples that themselves contain `## Parallel Execution Contract`).
-// Fence length is tracked so a nested ```python block does not close an outer ````fence.
+// The plan forms embed ````markdown examples that themselves contain `## Parallel Execution Contract`,
+// so a `## ` line inside a fenced code block must not end the section.
 function section(content, heading) {
-  const lines = content.split('\n');
-  const startIdx = lines.indexOf(heading);
-  assert.notEqual(startIdx, -1, `missing section: ${heading}`);
-  const out = [lines[startIdx]];
-  let fenceLen = 0;
-  for (let i = startIdx + 1; i < lines.length; i++) {
-    const line = lines[i];
-    const fence = line.match(/^(`{3,})/);
-    if (fence) {
-      const len = fence[1].length;
-      if (fenceLen === 0) fenceLen = len;
-      else if (len >= fenceLen) fenceLen = 0;
-    }
-    if (fenceLen === 0 && /^## /.test(line)) break;
-    out.push(line);
-  }
-  return out.join('\n');
+  return markdownSection(content, heading, { exact: true, includeHeading: true, endsAt: /^## /, skipFences: true });
 }

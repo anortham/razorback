@@ -1,14 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-
-function read(relativePath) {
-  return readFileSync(join(root, relativePath), 'utf8');
-}
+import { read } from './helpers/repo.mjs';
 
 test('agy-cli documents agy models pre-flight check without discarding stderr', () => {
   const skill = read('skills/agy-cli/SKILL.md');

@@ -1,11 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { read } from './helpers/repo.mjs';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const skill = readFileSync(join(root, 'skills/refactoring-test-suites/SKILL.md'), 'utf8');
+const skill = read('skills/refactoring-test-suites/SKILL.md');
 
 test('refactoring-test-suites names its trigger and its sibling boundary', () => {
   assert.match(skill, /^---\nname: refactoring-test-suites\ndescription: Cuts a test suite's run time and test count .* Use when a suite is slow or bloated/);

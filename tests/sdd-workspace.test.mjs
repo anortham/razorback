@@ -1,24 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, normalize } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { git, identityFlags, initRepository, removeTree } from './helpers/git-fixture.mjs';
+import { root } from './helpers/repo.mjs';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const scripts = join(root, 'skills/subagent-driven-development/scripts');
 
 const testRoot = mkdtempSync(join(tmpdir(), 'sdd-workspace-'));
-test.after(() => rmSync(testRoot, { recursive: true, force: true }));
+test.after(() => removeTree(testRoot));
 
-const gitIdentity = ['-c', 'user.email=t@example.com', '-c', 'user.name=t', '-c', 'commit.gpgsign=false', '-c', 'gc.auto=0', '-c', 'maintenance.auto=false'];
-
-function git(cwd, ...args) {
-  const result = spawnSync('git', args, { cwd, encoding: 'utf8' });
-  assert.equal(result.status, 0, result.stderr);
-  return result.stdout;
-}
+const gitIdentity = identityFlags('t', 't@example.com');
 
 function runScript(cwd, script, ...args) {
   return spawnSync('bash', [join(scripts, script), ...args], { cwd, encoding: 'utf8' });
@@ -26,7 +20,7 @@ function runScript(cwd, script, ...args) {
 
 function setupRepo(name = 'repo') {
   const input = join(testRoot, name);
-  git(testRoot, 'init', '-q', '-b', 'main', input);
+  initRepository(input, { branch: 'main' });
   const repo = git(input, 'rev-parse', '--show-toplevel').trim();
   writeFileSync(join(repo, 'plan-a.md'), '# Plan A\n\n## Task 1: First thing\n\nDo the first thing.\n');
   writeFileSync(join(repo, 'plan-b.md'), '# Plan B\n\n## Task 1: Other thing\n\nDo the other thing.\n');
@@ -143,7 +137,7 @@ test('a pre-planted .razorback/sdd symlink to an outside directory exits 2 and l
   mkdirSync(outside);
   writeFileSync(join(outside, 'keep.txt'), 'keep\n');
   const trap = join(testRoot, 'trap');
-  git(testRoot, 'init', '-q', '-b', 'main', trap);
+  initRepository(trap, { branch: 'main' });
   const trapRepo = git(trap, 'rev-parse', '--show-toplevel').trim();
   writeFileSync(join(trapRepo, 'plan-a.md'), '# Plan A\n\n## Task 1: First thing\n\nDo the first thing.\n');
   mkdirSync(join(trapRepo, '.razorback'));
@@ -195,7 +189,7 @@ test('sdd-repo stops with exit 2 outside a working tree and names the fix', () =
 
 test('sdd-repo --with-commit stops with exit 2 before the first commit', () => {
   const fresh = join(testRoot, 'fresh');
-  git(testRoot, 'init', '-q', '-b', 'main', fresh);
+  initRepository(fresh, { branch: 'main' });
   const plain = runScript(fresh, 'sdd-repo');
   assert.equal(plain.status, 0, plain.stderr);
   const withCommit = runScript(fresh, 'sdd-repo', '--with-commit');

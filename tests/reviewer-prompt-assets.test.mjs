@@ -2,8 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { read, root } from './helpers/repo.mjs';
 
-const root = path.join(import.meta.dirname, '..');
 const SKILL_DIR = 'skills/pre-merge-review';
 
 const REVIEWER_PROMPTS = [
@@ -20,10 +20,6 @@ const PATH_EXPRESSION = new RegExp(
   String.raw`\$(?:\{)?(${Object.keys(ANCHORS).join('|')})(?:\})?((?:\/[^\s"'\`)\]]+)+)`,
   'g',
 );
-
-function read(rel) {
-  return fs.readFileSync(path.join(root, rel), 'utf8');
-}
 
 function pathExpressions(source) {
   return [...source.matchAll(PATH_EXPRESSION)].map((match) => ({
