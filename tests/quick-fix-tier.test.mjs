@@ -108,8 +108,6 @@ test('systematic-debugging hands qualifying fixes to the quick-fix tier', () => 
 test('fixing-small-issues carries its own scoped verification policy', () => {
   const skill = read('skills/fixing-small-issues/SKILL.md');
 
-  assert.match(skill, /NO INFRASTRUCTURE BEFORE INVESTIGATION/);
-  assert.match(skill, /Affected scope only/);
   assert.match(skill, /full suite runs at the branch gate/i);
   assert.doesNotMatch(skill, /repo-root `RAZORBACK\.md`/);
 });

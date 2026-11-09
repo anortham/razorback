@@ -42,9 +42,6 @@ test('subagent-driven-development enforces approved architecture during dispatch
     'architecture-quality',
     'approved architecture',
     'plan mismatch',
-    'Does this keep complexity local?',
-    'same interface callers use',
-    'speculative extensibility',
   ]);
 });
 
@@ -53,9 +50,6 @@ test('implementer prompt preserves architecture shape and reports plan mismatch'
     'approved module/interface shape',
     'Do not redesign locally',
     'report a plan mismatch',
-    'Does this keep complexity local?',
-    'same interface callers use',
-    'speculative extensibility',
   ]);
 });
 

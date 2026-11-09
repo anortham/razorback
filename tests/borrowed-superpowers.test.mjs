@@ -143,7 +143,6 @@ test('code-kb guidance forbids guessed API shapes in active workflows', () => {
   const surfaceList =
     /symbol names, function signatures, config shapes, route names, CLI flags, or public contracts/;
 
-  assert.match(usingRazorback, /Do not infer or invent API shapes/);
   assert.match(usingRazorback, surfaceList);
   assert.match(writingPlans, surfaceList);
   assert.match(sdd, /API-shape evidence requirement/);

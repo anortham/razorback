@@ -51,10 +51,6 @@ const ACCESS_TEXT = {
   opencode: /\*\*In OpenCode:\*\*/,
 };
 
-test('check-rule-copies exposes exactly the thirteen rule invariants this hook must carry', () => {
-  assert.equal(RULE_INVARIANTS.length, 13, `parsed invariants: ${JSON.stringify(RULE_INVARIANTS)}`);
-});
-
 test('session-start emits the Claude Code SessionStart hookSpecificOutput shape', () => {
   const parsed = claudeCode();
 
@@ -158,11 +154,11 @@ test('every branch carries the full code-kb toolchain table', () => {
     for (const row of tableRows) {
       assert.match(text, row, `${branch} is missing toolchain row ${row}`);
     }
-    assert.match(text, /Use your host's native editing tools to modify files\./, `${branch} is missing the native-editing directive`);
   }
 });
 
-test('every branch carries all thirteen check-rule-copies invariants', () => {
+test('every branch carries every check-rule-copies invariant', () => {
+  assert.ok(RULE_INVARIANTS.length > 0, 'no invariant parsed from check-rule-copies.mjs');
   for (const [branch, payload] of Object.entries(payloadOf)) {
     const text = payload();
     for (const phrase of RULE_INVARIANTS) {

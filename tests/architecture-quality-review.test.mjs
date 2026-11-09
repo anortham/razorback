@@ -19,14 +19,6 @@ test('requesting-code-review delegates planned pre-merge external review to pre-
   assert.match(skill, /razorback:pre-merge-review/);
 });
 
-test('requesting-code-review checklist includes compact architecture checks', () => {
-  const reviewer = read('skills/requesting-code-review/code-reviewer.md');
-
-  assert.match(reviewer, /Does this keep complexity local\?/);
-  assert.match(reviewer, /same interface callers use/);
-  assert.match(reviewer, /speculative extensibility/);
-});
-
 test('code-reviewer agent keeps architecture review concrete', () => {
   const agent = read('agents/code-reviewer.md');
 

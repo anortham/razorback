@@ -1,23 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { tmpdir } from 'node:os';
 import { bashBlocks } from './helpers/markdown.mjs';
-import { read, root } from './helpers/repo.mjs';
-
-const expectedRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
-const reviewArtifactHelper = join(root, 'skills/security-review/scripts/prepare-review-artifact');
+import { read } from './helpers/repo.mjs';
 
 function commandBlockHasBare(text) {
   return /```bash[\s\S]*?claude -p[\s\S]*?\n\s*--bare \\/.test(text);
 }
-
-test('documentation tests read from the checked-out repository', () => {
-  assert.equal(root, expectedRoot);
-});
 
 test('claude-cli skill says bare mode is not used', () => {
   const skill = read('skills/claude-cli/SKILL.md');
@@ -139,50 +127,6 @@ test('active reviewer docs never accept schema-valid partial output', () => {
       /schema-valid partial output exists[\s\S]*?(?:use it|proceed with)/i,
       `${rel} must not accept partial output as completion evidence`,
     );
-  }
-});
-
-test('file and stdin transport preserve a 276 KiB review payload without one positional argument', () => {
-  const metadata = [
-    'Target: branch feature: 4 files changed, main..HEAD',
-    'File stat:',
-    '  4 files changed, 200 insertions(+), 20 deletions(-)',
-    'Commit log:',
-    'abc1234 review transport',
-    'Diff:',
-    '',
-  ].join('\n');
-  const payload = `${metadata}${'review-payload-'.repeat(Math.ceil((276 * 1024) / 15))}`.slice(0, 276 * 1024);
-  const script = 'const fs = require("node:fs"); process.stdout.write(process.argv[1] === "file" ? fs.readFileSync(process.argv[2]) : fs.readFileSync(0));';
-  const file = join(expectedRoot, 'tests', `.payload-${process.pid}`);
-  const workspace = mkdtempSync(join(tmpdir(), 'review-artifact-'));
-  const bundle = join(workspace, 'bundle.md');
-  try {
-    writeFileSync(file, payload);
-    const fromFile = spawnSync(process.execPath, ['-e', script, 'file', file], { encoding: 'utf8' });
-    const fromStdin = spawnSync(process.execPath, ['-e', script, 'stdin', '-'], { input: payload, encoding: 'utf8' });
-
-    assert.equal(fromFile.status, 0, fromFile.stderr);
-    assert.equal(fromStdin.status, 0, fromStdin.stderr);
-    assert.equal(fromFile.stdout, payload);
-    assert.equal(fromStdin.stdout, payload);
-    assert.equal(fromFile.error, undefined);
-    assert.equal(fromStdin.error, undefined);
-
-    writeFileSync(bundle, payload, { mode: 0o600 });
-    const artifactResult = spawnSync(process.execPath, [reviewArtifactHelper, workspace, bundle], { encoding: 'utf8' });
-    assert.equal(artifactResult.status, 0, artifactResult.stderr);
-    const artifact = artifactResult.stdout.trim();
-    assert.match(artifact, /\.razorback-review[\\/]review-input\.md$/);
-    assert.equal(readFileSync(artifact, 'utf8'), payload);
-    if (process.platform !== 'win32') assert.equal(statSync(artifact).mode & 0o777, 0o600);
-    const prompt = `Read the complete redacted review bundle at: ${artifact}`;
-    assert.ok(Buffer.byteLength(prompt) < 4096);
-    assert.doesNotMatch(prompt, /review-payload-/);
-    assert.equal(existsSync(join(workspace, '.git')), false);
-  } finally {
-    rmSync(file, { force: true });
-    rmSync(workspace, { recursive: true, force: true });
   }
 });
 

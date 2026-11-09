@@ -57,6 +57,7 @@ test('large redacted review bundles are stored in the reviewer workspace', () =>
   const artifact = result.stdout.trim();
   assert.ok(artifact, 'large payloads must return an artifact path');
   assert.equal(relative(workspace, artifact).startsWith('..'), false);
+  assert.match(artifact, /\.razorback-review[\\/]review-input\.md$/);
   assert.equal(readFileSync(artifact, 'utf8'), payload);
   if (process.platform !== 'win32') {
     assert.equal(statSync(artifact).mode & 0o777, 0o600);

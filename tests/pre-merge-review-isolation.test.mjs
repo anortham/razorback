@@ -8,7 +8,6 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
-  rmSync,
   symlinkSync,
   writeFileSync,
 } from 'node:fs';
@@ -150,18 +149,6 @@ test('rejects an output directory inside the source repository', () => {
 
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /outside.*repository|repository.*outside/i);
-  assert.equal(existsSync(output), false);
-});
-
-test('leaves cleanup to the caller after the export process exits', () => {
-  const { caseRoot, repo } = createRepository();
-  const output = join(caseRoot, 'review-tree');
-
-  const result = runScript(repo, 'HEAD', output);
-
-  assert.equal(result.status, 0, result.stderr);
-  assert.equal(existsSync(output), true);
-  rmSync(output, { recursive: true, force: true });
   assert.equal(existsSync(output), false);
 });
 

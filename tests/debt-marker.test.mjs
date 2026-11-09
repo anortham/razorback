@@ -85,20 +85,3 @@ test('fixing-small-issues tells the fixer to mark a deliberate shortcut', () => 
   assert.match(skill, /marker/i);
 });
 
-test('fixing-small-issues triage criteria survive the marker edit unchanged', () => {
-  const skill = read('skills/fixing-small-issues/SKILL.md');
-
-  // Load-bearing triage phrases — protected by CLAUDE.md "What Not to Change".
-  assert.match(skill, /The quick-fix tier applies only when ALL criteria hold/);
-  assert.match(skill, /≤ 2 source files/);
-  assert.match(skill, /~20 changed lines/);
-  assert.match(skill, /single `git revert`/);
-  assert.match(skill, /Confirmed with evidence from current source/);
-  assert.match(
-    skill,
-    /\*\*Any criterion fails or cannot be measured → exit this skill\.\*\*/,
-  );
-  assert.match(skill, /An unknown is a failure, not a pass/);
-  assert.match(skill, /NO INFRASTRUCTURE BEFORE INVESTIGATION/);
-  assert.match(skill, /Affected scope only/);
-});

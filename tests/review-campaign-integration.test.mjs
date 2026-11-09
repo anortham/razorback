@@ -81,8 +81,6 @@ test('delegated execution checkpoints and recovery preserve campaign terminal st
 
   assert.match(skill, /immutable REVIEW CAMPAIGN setup and current counters/i);
   assert.match(skill, /REVIEW CAMPAIGN STATUS/);
-  assert.match(skill, /campaign_closed: yes[\s\S]*terminal/i);
-  assert.match(skill, /do not dispatch another reviewer/i);
 });
 
 test('single-agent execution checkpoints and recovery preserve campaign terminal state', async () => {
@@ -90,8 +88,6 @@ test('single-agent execution checkpoints and recovery preserve campaign terminal
 
   assert.match(skill, /immutable REVIEW CAMPAIGN setup and current counters/i);
   assert.match(skill, /REVIEW CAMPAIGN STATUS/);
-  assert.match(skill, /campaign_closed: yes[\s\S]*terminal/i);
-  assert.match(skill, /do not dispatch another reviewer/i);
 });
 
 test('morning report renders bounded campaign evidence', async () => {

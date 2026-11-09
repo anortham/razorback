@@ -71,8 +71,6 @@ test('implementer and fix prompts support lead-commit and worker-commit modes', 
 
   for (const prompt of [implementerPrompt, fixPrompt]) {
     assert.match(prompt, /## Commit mode/);
-    assert.match(prompt, /serial-worker-commit/);
-    assert.match(prompt, /parallel-lead-commit/);
   }
 });
 

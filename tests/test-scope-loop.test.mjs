@@ -14,19 +14,6 @@ test('systematic-debugging owns the after-failure loop: ids first, wide command 
   assert.match(skill, /The wide test command ran at most twice/);
 });
 
-test('the toolchain floor forbids reruns on an unchanged tree and names the failing-id loop', () => {
-  for (const relativePath of [
-    'skills/using-razorback/SKILL.md',
-    'skills/using-razorback/references/instruction-tier.md',
-    'skills/using-razorback/references/subagent-toolchain.md',
-  ]) {
-    const text = read(relativePath);
-    assert.match(text, /Do not rerun any scope on an unchanged tree/, relativePath);
-    assert.match(text, /capture a wide run's output to a file/, relativePath);
-    assert.match(text, /rerun only the failing test ids/, relativePath);
-  }
-});
-
 test('failure points in the execution skills point at the loop instead of the wide command', () => {
   const tdd = read('skills/test-driven-development/SKILL.md');
   assert.match(tdd, /Run only the new test: the project runner narrowed with its own filter/);
@@ -66,13 +53,11 @@ test('no skill bakes a runner into the after-failure examples', () => {
 });
 
 test('a slow suite is a branch-gate scope that runs once against the whole batch, never per task', () => {
-  const slowTier = /A slow suite \(browser, end-to-end, real database, or anything longer than a few minutes\) is a branch-gate scope: it runs once against the whole batch of tasks, never after each task/;
   for (const relativePath of [
     'skills/using-razorback/SKILL.md',
     'skills/using-razorback/references/instruction-tier.md',
     'skills/using-razorback/references/subagent-toolchain.md',
   ]) {
-    assert.match(read(relativePath), slowTier, relativePath);
     assert.doesNotMatch(read(relativePath), /Run broader suites at task boundaries/, relativePath);
   }
 

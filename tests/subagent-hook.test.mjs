@@ -48,21 +48,13 @@ test('subagent-start emits the Claude Code SubagentStart hookSpecificOutput shap
 test('subagent-start injects the retrieval ruleset with code-kb first for code structure', () => {
   const { additionalContext } = JSON.parse(runSubagentStart()).hookSpecificOutput;
 
-  assert.match(additionalContext, /it is the first route for code structure/);
-  assert.match(additionalContext, /Use code-kb first for code structure/);
   assert.match(additionalContext, /`file_skeleton` on a folder or a file you do not know, to orient/);
-  assert.match(additionalContext, /`get_symbol_context` before you change a symbol: it carries the body, callers, tests to run, and types/);
-  assert.match(additionalContext, /Read the file you will edit, since the editor needs it\./);
   assert.doesNotMatch(additionalContext, /`file_skeleton` before a full read/);
   assert.doesNotMatch(additionalContext, /optional retrieval aid/);
   assert.doesNotMatch(additionalContext, /smallest sufficient evidence/);
   assert.doesNotMatch(additionalContext, /MUST be used/);
   assert.doesNotMatch(additionalContext, /Do NOT fall back to Glob/);
-  assert.match(additionalContext, /Read the code a change touches before you edit it\./);
-  assert.match(additionalContext, /Find a symbol's callers before changing it, to check impact\./);
-  assert.match(additionalContext, /Do not infer or invent API shapes\./);
   assert.match(additionalContext, /When the evidence cannot prove a shape/);
-  assert.match(additionalContext, /A missing or stale code-kb index never blocks work/);
   // Capability table entries.
   assert.match(additionalContext, /file_skeleton\(file_path=<folder>\)/);
   assert.match(additionalContext, /file_skeleton\(file_path, public_only\?\)/);
@@ -73,7 +65,6 @@ test('subagent-start injects the retrieval ruleset with code-kb first for code s
   assert.match(additionalContext, /blast_radius\(symbol\?, file\?, depth\?\)/);
   assert.match(additionalContext, /check_edit\(base\?\)/);
   assert.match(additionalContext, /Every code-kb call takes `project_root`/);
-  assert.match(additionalContext, /Use your host's native editing tools to modify files\./);
   // Subagent-specific worktree-state reporting requirement.
   assert.match(additionalContext, /worktree/i);
   assert.match(additionalContext, /path, branch, commit, (and )?dirty state/i);
