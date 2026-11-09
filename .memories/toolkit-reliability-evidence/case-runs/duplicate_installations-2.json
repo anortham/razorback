@@ -1,1 +1,0 @@
-{"schema_version":1,"evidence_kind":"agent-run","cases":[{"id":"duplicate_installations","packet_id":"c985e7d5f1dbf53b5941a232546893e3ce59f3f8e3447652b9bd8ddbf3747d8e","actions":["inspect_selected_install_roots","compare_skill_copies","report_exact_redundant_registration","name_canonical_source","report_coverage_gap"],"terminal_state":"complete","user_questions":0}]}

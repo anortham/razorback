@@ -1,9 +1,9 @@
 ---
 id: inner-loop-test-isolation
 title: Inner-loop test isolation
-status: active
+status: completed
 created: 2026-09-12T18:12:34.925Z
-updated: 2026-09-12T21:14:04.028Z
+updated: 2026-11-09T20:46:36.709Z
 tags:
   - verification
   - process

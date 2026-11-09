@@ -1,1 +1,0 @@
-{"schema_version":1,"evidence_kind":"agent-run","cases":[{"id":"unsupported_structural_coverage","packet_id":"f293c01f3180d35ab1ffd9809a3ba15071b3b827ae3e1ac4ef5d6b3a78bd497b","actions":["read_coverage_warning","read_source_file","search_references_natively","report_coverage_gap"],"terminal_state":"active","user_questions":0}]}

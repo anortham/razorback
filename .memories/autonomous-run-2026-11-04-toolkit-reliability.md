@@ -110,3 +110,12 @@ After creating the local tag, `git fetch origin` pruned it because global `/home
 Publication completed on 2026-11-05 at 01:03:49 UTC. `git push --follow-tags origin main` advanced `main` to `03e6763da2e45684d66641dd5fced2f953ce337f` and published annotated tag `v0.49.0` at release commit `4ebc9d3a6ae5d1f8c82f7744383bafc01e89a4e2`. `scripts/bump-version.sh --release 0.49.0` created [the GitHub release](https://github.com/anortham/razorback/releases/tag/v0.49.0).
 
 GitHub Actions passed for both refs: branch `main` at `03e6763` passed run [41945827302](https://github.com/anortham/razorback/actions/runs/41945827302); tag `v0.49.0` at `4ebc9d3` passed run [41945827229](https://github.com/anortham/razorback/actions/runs/41945827229). The tag workflow includes the manifest-to-tag version check. This release leaves the duplicate global registration cleanup unauthorized and untouched.
+
+## Evidence files removed from the working tree, 2026-11-09
+
+The owner approved removal of `.memories/toolkit-reliability-evidence/` (118 files, 3.5 MB). Each path that this report and the plan name is still in git history. Tag `v0.53.0` is the last release that holds the folder:
+
+```bash
+git ls-tree -r --name-only v0.53.0 -- .memories/toolkit-reliability-evidence
+git show v0.53.0:.memories/toolkit-reliability-evidence/behavior-acceptance.json
+```
