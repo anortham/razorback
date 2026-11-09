@@ -28,3 +28,21 @@ export function copyBumpVersionFiles(prefix) {
 export function bumpVersion(dir, ...args) {
   return spawnSync('bash', [path.join(dir, 'scripts/bump-version.sh'), ...args], { cwd: dir, encoding: 'utf8' });
 }
+
+/** Runs the copy of bump-version.sh with a jq that ends each output line with CRLF, as jq for Windows does. */
+export function bumpVersionWithCrlfJq(dir, ...args) {
+  const realJq = spawnSync('sh', ['-c', 'command -v jq'], { encoding: 'utf8' }).stdout.trim();
+  const shimDir = fs.mkdtempSync(path.join(os.tmpdir(), 'razorback-crlf-jq-'));
+  try {
+    const shim = path.join(shimDir, 'jq');
+    fs.writeFileSync(shim, `#!/bin/sh\n"${realJq}" "$@" | sed 's/$/\\r/'\n`);
+    fs.chmodSync(shim, 0o755);
+    return spawnSync('bash', [path.join(dir, 'scripts/bump-version.sh'), ...args], {
+      cwd: dir,
+      encoding: 'utf8',
+      env: { ...process.env, PATH: `${shimDir}${path.delimiter}${process.env.PATH}` },
+    });
+  } finally {
+    fs.rmSync(shimDir, { recursive: true, force: true });
+  }
+}

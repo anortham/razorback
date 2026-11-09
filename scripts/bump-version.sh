@@ -23,6 +23,12 @@ fi
 
 # --- helpers ---
 
+# jq for Windows ends each output line with CRLF. Without this, a config value
+# carries a carriage return into a comparison, a pattern, or a rewritten manifest.
+jq() {
+  command jq "$@" | tr -d '\r'
+}
+
 # Convert a dotted field path to a jq path: "plugins.0.version" -> .plugins[0].version
 jq_path() {
   echo "$1" | sed -E 's/\.([0-9]+)/[\1]/g' | sed 's/^/./' | sed 's/\.\././g'

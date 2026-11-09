@@ -3,7 +3,7 @@ import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { bumpVersion as bump, copyBumpVersionFiles, requiresJq } from './helpers/bump-version-fixture.mjs';
+import { bumpVersion as bump, bumpVersionWithCrlfJq, copyBumpVersionFiles, requiresJq } from './helpers/bump-version-fixture.mjs';
 import { git as runGit, identityFlags, initRepository, removeTree } from './helpers/git-fixture.mjs';
 import { root } from './helpers/repo.mjs';
 
@@ -90,6 +90,32 @@ test('--release notes drop the release commit and the configured noise subjects'
   const result = bump(dir, '--release', '1.1.0', '--dry-run');
   assert.doesNotMatch(result.stdout, /- release: 1\.1\.0/);
   assert.doesNotMatch(result.stdout, /- chore: record checkpoint/);
+});
+
+const posixShim = {
+  skip: requiresJq.skip || (process.platform === 'win32' && 'the extensionless PATH shim needs a POSIX command lookup; jq.exe gives CRLF here without it'),
+};
+
+test('--release reads the config the same when jq ends lines with CRLF', posixShim, (t) => {
+  const dir = makeFixture();
+  t.after(() => removeTree(dir));
+
+  const result = bumpVersionWithCrlfJq(dir, '--release', '1.1.0', '--dry-run');
+  assert.equal(result.status, 0, `stdout:\n${result.stdout}\n${result.stderr}`);
+  assert.doesNotMatch(result.stdout, /\r/, 'a carriage return from jq reached the output');
+  assert.doesNotMatch(result.stdout, /- chore: record checkpoint/);
+  assert.match(result.stdout, /- feat: add a thing/);
+});
+
+test('a version bump writes LF manifests when jq ends lines with CRLF', posixShim, (t) => {
+  const dir = makeFixture();
+  t.after(() => removeTree(dir));
+
+  const result = bumpVersionWithCrlfJq(dir, '1.2.0');
+  assert.equal(result.status, 0, `stdout:\n${result.stdout}\n${result.stderr}`);
+  const manifest = fs.readFileSync(path.join(dir, 'package.json'), 'utf8');
+  assert.doesNotMatch(manifest, /\r/);
+  assert.equal(JSON.parse(manifest).version, '1.2.0');
 });
 
 test('--release notes stop at the previous tag', requiresJq, (t) => {
