@@ -60,6 +60,11 @@ function fail(message) {
   process.exit(2);
 }
 
+// The native call expands a Windows 8.3 short name (RUNNER~1) to its long form.
+// git prints the long form, so the JS realpath left a short-name working
+// directory looking as if it were outside the repository.
+const realpath = fs.realpathSync.native;
+
 function isWithin(parent, candidate) {
   const relative = path.relative(parent, candidate);
   return relative === ''
@@ -90,7 +95,7 @@ function assertContained(target, label, root) {
   }
 
   const ancestor = existingAncestor(absolute);
-  const physicalAncestor = fs.realpathSync(ancestor);
+  const physicalAncestor = realpath(ancestor);
   if (!isWithin(root, physicalAncestor)) {
     fail(`${label} escapes the repository: ${target} resolves to ${physicalAncestor}`);
   }
@@ -98,7 +103,7 @@ function assertContained(target, label, root) {
 
 function canonicalPlanPath(planValue) {
   const candidate = path.resolve(process.cwd(), planValue);
-  const canonical = fs.realpathSync(candidate);
+  const canonical = realpath(candidate);
   if (!fs.statSync(canonical).isFile()) {
     fail(`no such plan file: ${planValue}`);
   }
@@ -111,7 +116,7 @@ function canonicalLedgerPath(identity, root) {
     : [path.resolve(process.cwd(), identity), path.resolve(root, identity)];
   for (const candidate of candidates) {
     try {
-      return fs.realpathSync(candidate);
+      return realpath(candidate);
     } catch (error) {
       if (error.code !== 'ENOENT') throw error;
     }
@@ -144,7 +149,7 @@ function legacyMatches(legacyDir, planPath, root) {
 }
 
 try {
-  const rootPath = fs.realpathSync(rootArg);
+  const rootPath = realpath(rootArg);
   const planPath = canonicalPlanPath(planArg);
   if (!isWithin(rootPath, planPath)) {
     fail(`plan outside repository: ${planArg}`);
@@ -182,7 +187,7 @@ try {
 
   const dir = useLegacy ? legacyDir : keyDir;
   assertContained(dir, 'workspace', rootPath);
-  const physicalDir = fs.realpathSync(dir);
+  const physicalDir = realpath(dir);
   if (!isWithin(rootPath, physicalDir)) {
     fail(`workspace escapes the repository: ${dir} resolves to ${physicalDir}`);
   }

@@ -60,6 +60,31 @@ test('two plans resolve to two distinct plan-scoped directories', () => {
   assert.ok(existsSync(dirB));
 });
 
+function windowsShortPath(dir) {
+  const result = spawnSync('cmd.exe', ['/d', '/s', '/c', `for %I in ("${normalize(dir)}") do @echo %~sI`], {
+    encoding: 'utf8',
+    windowsVerbatimArguments: true,
+  });
+  assert.equal(result.status, 0, result.stderr);
+  return result.stdout.trim();
+}
+
+test('sdd-workspace accepts a working tree reached through a Windows 8.3 short path', {
+  skip: process.platform !== 'win32' && 'only Windows has 8.3 short path names',
+}, (t) => {
+  const longRepo = normalize(setupRepo('repository-with-a-long-name'));
+  const shortRepo = windowsShortPath(longRepo);
+  if (shortRepo.toLowerCase() === longRepo.toLowerCase()) {
+    t.skip('this volume creates no 8.3 short names');
+    return;
+  }
+
+  const result = runScript(shortRepo, 'sdd-workspace', 'plan-a.md');
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(normalize(result.stdout.trim()), join(longRepo, '.razorback', 'sdd', 'plan-a-622bfa9a0830'));
+});
+
 test('the workspace tree self-ignores via .razorback/sdd/.gitignore', () => {
   runScript(repo, 'sdd-workspace', 'plan-a.md');
   assert.equal(readFileSync(join(sddBase, '.gitignore'), 'utf8'), '*\n');
