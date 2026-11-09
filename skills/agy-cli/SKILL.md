@@ -38,7 +38,7 @@ refresh credentials (session lives in `~/.gemini/antigravity-cli/`).
 ## Defaults
 
 - **Model / effort**: inherit;
-  `--model <MODEL>` and `--effort low|medium|high` only on explicit choice.
+  `--model <MODEL>` and `--effort low|medium|high|xhigh|max` only on explicit choice.
   Set `AGY_MODEL` / `AGY_EFFORT` and let `${VAR:+--flag "$VAR"}` add the flag.
 - **Prompt**: `-p, --print <PROMPT>` (alias `--prompt`) for a string argument.
   For a file or pipe, omit `-p` and redirect stdin (`agy < FILE`); `-p` with
@@ -65,8 +65,9 @@ refresh credentials (session lives in `~/.gemini/antigravity-cli/`).
   waive the campaign budget. Before a second review call or any multi-reviewer
   dispatch, load `razorback:managing-review-campaigns`.
 - **Timeout is a failsafe, not a budget**: 1800000ms (30 min) on every review
-  call, plus `--print-timeout 30m` because agy's default print wait is 5
-  minutes (`5m0s`). Never lower either.
+  call, plus `--print-timeout 30m`. agy 1.5.3 waits with no limit by default
+  (`0s`); older versions stopped at 5 minutes. The flag gives both the same
+  30-minute bound. Never lower either.
 
 ## Second Opinion (read-only)
 

@@ -15,7 +15,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { git, identityFlags, initRepository, removeTree } from './helpers/git-fixture.mjs';
-import { bashBlocks } from './helpers/markdown.mjs';
+import { bashBlocks, section } from './helpers/markdown.mjs';
 import { read, root as repositoryRoot } from './helpers/repo.mjs';
 
 const script = join(repositoryRoot, 'skills/pre-merge-review/scripts/prepare-review-tree');
@@ -242,4 +242,49 @@ test('pre-merge payload construction includes the complete diff, stat, and commi
   assert.match(skill, /COMMIT_LOG=\$\(git log --oneline/);
   assert.match(prompt, /Diff:\n\$DIFF/);
   assert.match(codex, /\$FILE_STAT[\s\S]*?\$COMMIT_LOG[\s\S]*?\$DIFF/);
+});
+
+const REVIEWER_PROMPTS = [
+  'skills/pre-merge-review/reviewer-prompts/claude.md',
+  'skills/pre-merge-review/reviewer-prompts/codex.md',
+];
+
+test('reviewer prompts write the output files that the skill validates', () => {
+  const skill = read('skills/pre-merge-review/SKILL.md');
+  const validated = [...skill.matchAll(/validate-review-output" "\$OUT_DIR\/([^"]+)"/g)].map((match) => match[1]);
+  assert.deepEqual(validated, ['reviewer-output-general.json', 'reviewer-output-security.json']);
+
+  for (const rel of REVIEWER_PROMPTS) {
+    const prompt = read(rel);
+    const written = [...prompt.matchAll(/[^2]> "\$OUT_DIR\/([^"]+\.json)"/g)].map((match) => match[1]);
+    assert.ok(written.length > 0, `${rel} should redirect reviewer output into $OUT_DIR`);
+    for (const name of written) {
+      assert.match(name, /^reviewer-(output|normalized)-\$PASS\.json$/, `${rel} writes ${name}`);
+    }
+    assert.match(prompt, /^PASS=general$/m, `${rel} should name the general pass`);
+    assert.match(prompt, /^PASS=security$/m, `${rel} should name the security pass`);
+    assert.doesNotMatch(prompt, /(claude|codex)-output/, `${rel} should use the shared output names`);
+  }
+});
+
+test('reviewer output survives until the skill has parsed both passes', () => {
+  const skill = read('skills/pre-merge-review/SKILL.md');
+  const preparationBlock = bashBlocks(skill).find((block) => block.includes('prepare-review-tree'));
+  assert.match(preparationBlock, /^OUT_DIR=\$\(mktemp -d /m);
+  assert.match(skill, /rm -rf -- "\$REVIEW_ROOT" "\$OUT_DIR"/);
+
+  for (const rel of REVIEWER_PROMPTS) {
+    for (const block of bashBlocks(read(rel))) {
+      assert.doesNotMatch(block, /\btrap\b/, `${rel} should leave cleanup to the skill`);
+      assert.doesNotMatch(block, /^OUT_DIR=/m, `${rel} should reuse the skill's $OUT_DIR for both passes`);
+    }
+  }
+});
+
+test('reviewer failures map to the environment blocker, never to the test-failure blocker', () => {
+  for (const rel of REVIEWER_PROMPTS) {
+    const errors = section(read(rel), '## Error handling');
+    assert.match(errors, /\| Schema violation \/ malformed output \| #1 \|/);
+    assert.doesNotMatch(errors, /#5/, `${rel}: blocker #5 means test failures that do not converge`);
+  }
 });

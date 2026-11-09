@@ -1,0 +1,32 @@
+#!/usr/bin/env node
+
+import { readFileSync } from 'node:fs';
+
+// A system prompt file skips outbound redaction, so the placeholders get fixed
+// pointers to the redacted user message instead of the target, focus, or diff.
+const FILLS = [
+  ['{{TARGET_LABEL}}', 'stated in the user message'],
+  ['{{USER_FOCUS}}', 'stated in the user message'],
+  ['{{REVIEW_INPUT}}', 'The user message, or the bundle file that it names, holds the review input.'],
+];
+
+function render(template) {
+  let rendered = template;
+  for (const [placeholder, fill] of FILLS) {
+    if (rendered.split(placeholder).length !== 2) {
+      throw new Error(`template must contain ${placeholder} exactly once`);
+    }
+    rendered = rendered.replace(placeholder, () => fill);
+  }
+  const unfilled = rendered.match(/\{\{[A-Z_]+\}\}/);
+  if (unfilled) throw new Error(`template has an unknown placeholder ${unfilled[0]}`);
+  return rendered.endsWith('\n') ? rendered : `${rendered}\n`;
+}
+
+try {
+  if (process.argv.length !== 3) throw new Error('usage: render-system-prompt TEMPLATE_FILE');
+  process.stdout.write(render(readFileSync(process.argv[2], 'utf8')));
+} catch (error) {
+  process.stderr.write(`render-system-prompt failed: ${error instanceof Error ? error.message : 'invalid template'}\n`);
+  process.exitCode = 1;
+}

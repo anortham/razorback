@@ -23,17 +23,14 @@ Write the rendered prompt to `$PAYLOAD_FILE`, filter it through `$SKILL_DIR/../s
 OpenAI structured outputs reject the canonical schema's `uniqueItems`, `minItems`, `minLength`, and `minimum` keywords (HTTP 400 `invalid_json_schema` before the model runs). Sanitize with `openai-schema`; `validate-review-output` still enforces every constraint on the result.
 
 ```bash
-SCHEMA_FILE=$(mktemp)
+PASS=general
+SCHEMA_FILE="$OUT_DIR/openai-schema.json"
 if ! "$SKILL_DIR/../codex-cli/scripts/openai-schema" > "$SCHEMA_FILE"; then
-  rm -f -- "$SCHEMA_FILE"
   echo "schema preparation failed" >&2
   exit 1
 fi
 
 CODEX_MODEL="${RAZORBACK_CODEX_REVIEW_MODEL:-}"
-
-OUT_DIR=$(mktemp -d)
-trap 'rm -rf "$OUT_DIR"; rm -f "$SCHEMA_FILE"' EXIT
 
 cd "$REVIEW_ROOT" && cat "$REVIEW_PROMPT_FILE" | "$SKILL_DIR/../codex-cli/scripts/codex-exec" \
   --ephemeral --color never \
@@ -44,10 +41,10 @@ cd "$REVIEW_ROOT" && cat "$REVIEW_PROMPT_FILE" | "$SKILL_DIR/../codex-cli/script
   ${CODEX_MODEL:+-m "$CODEX_MODEL"} \
   --output-schema "$SCHEMA_FILE" \
   - \
-  > "$OUT_DIR/codex-output.json" 2> "$OUT_DIR/codex-stderr.log"
+  > "$OUT_DIR/reviewer-output-$PASS.json" 2> "$OUT_DIR/reviewer-stderr-$PASS.log"
 ```
 
-`OUT_DIR` is private per invocation and outside the worktree; its `trap` removes only reviewer output, not `$REVIEW_ROOT` (the caller removes that after both passes are parsed).
+`$OUT_DIR` comes from the skill's Step 1, outside both `$PROJECT_DIR` and `$REVIEW_ROOT`, and holds the schema file and the output of both passes. Set no `trap` on it: the skill removes `$OUT_DIR` and `$REVIEW_ROOT` after it has parsed both passes.
 
 Flags:
 
@@ -57,7 +54,7 @@ Flags:
 - `--ignore-user-config --ignore-rules` — user/project config and branch-controlled rules are not reviewer input.
 - `--output-schema` — sanitized shared schema. A completed result has `review_completed: true`, non-empty unique `files_inspected`, a `commands_run` array (may be empty), non-empty file/line/observation `evidence`; `needs-attention` requires a finding.
 - `-` — prompt from stdin (`$REVIEW_PROMPT_FILE`; only the small wrapper for large bundles).
-- `2> codex-stderr.log` — diagnostics for a blocker report; do not re-run to recover stderr.
+- `2> reviewer-stderr-$PASS.log` — diagnostics for a blocker report; do not re-run to recover stderr.
 
 **Timeout:** Bash `timeout` `1800000` (30 min), a failsafe for a hung process, not a budget. Do not lower it, and do not raise it and re-run.
 
@@ -66,11 +63,11 @@ Flags:
 No envelope. The validator exits non-zero on missing completion evidence or malformed output:
 
 ```bash
-"$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$OUT_DIR/codex-output.json" > "$OUT_DIR/codex-normalized.json"
-jq '.findings[]?' < "$OUT_DIR/codex-normalized.json"
+"$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$OUT_DIR/reviewer-output-$PASS.json" > "$OUT_DIR/reviewer-normalized-$PASS.json"
+jq '.findings[]?' < "$OUT_DIR/reviewer-normalized-$PASS.json"
 ```
 
-Do not gate on `jq -e '.findings[]'` (exit 4 on a valid empty array). Malformed, incomplete, or schema-invalid output consumes this pass's invocation and blocks the campaign; do not retry. A partial output is not completion evidence. Record `$OUT_DIR/codex-stderr.log` in the blocker report.
+Do not gate on `jq -e '.findings[]'` (exit 4 on a valid empty array). Malformed, incomplete, or schema-invalid output consumes this pass's invocation and blocks the campaign; do not retry. A partial output is not completion evidence. Record `$OUT_DIR/reviewer-stderr-$PASS.log` in the blocker report.
 
 **Cost:** codex reports no per-request token counts; render the morning-report cost line as "not reported by codex-cli".
 
@@ -83,12 +80,18 @@ Reviewer unavailability is a blocker: stop, do NOT push, do NOT create a PR, emi
 | `codex login status` non-zero | #1 | Tell the user to run `codex login`. |
 | Rate limit exhausted | #1 | Suggest retry after cooldown. |
 | `codex-exec` preflight exits 2 before any model turn (stderr names the `pwsh` it could not spawn) | none | Not a consumed invocation. Fix the host (MSI PowerShell 7 or `RAZORBACK_PWSH_DIR`) and dispatch again. |
-| Empty stdout | #1 | Cite `codex-stderr.log`. Consumed; do not re-run. |
-| Schema violation / malformed output | #5 | Consumed; do not re-run. |
+| Empty stdout | #1 | Cite `reviewer-stderr-$PASS.log`. Consumed; do not re-run. |
+| Schema violation / malformed output | #1 | The reviewer is unavailable for this run. Consumed; do not re-run. |
 | 30-minute failsafe trips without complete output | #1 | Consumed. Do NOT raise the timeout and re-run, and do NOT split the diff and re-run. |
 
 A run of 10-20+ minutes is working, not stuck. Wait for it.
 
 ## Security pass
 
-Same invocation, same flags, model handling, timeout, and stdin pipe, run a second time from the same `$REVIEW_ROOT`. Only the prompt differs: render `$SKILL_DIR/../security-review/security-adversarial-prompt.txt` with the same `$SOURCE_EVIDENCE` section into a fresh `PAYLOAD_FILE`, redact it, apply `prepare-review-artifact`, and pipe the fresh `$REVIEW_PROMPT_FILE`. Reusing the general prompt yields two general reviews and no security review. Capture stdout to `$OUT_DIR/reviewer-output-security.json` so `codex-output.json` is preserved. Apply the same parsing, cost, and error rules; a security-pass failure is reviewer unavailability, never a silent skip. If it fails, remove `"$REVIEW_ROOT"` before returning the blocker.
+Same invocation, same flags, schema file, model handling, timeout, and stdin pipe, run a second time from the same `$REVIEW_ROOT`. Only the pass name and the prompt differ:
+
+```bash
+PASS=security
+```
+
+Render `$SKILL_DIR/../security-review/security-adversarial-prompt.txt` with the same `$SOURCE_EVIDENCE` section into a fresh `PAYLOAD_FILE`, redact it, apply `prepare-review-artifact`, and pipe the fresh `$REVIEW_PROMPT_FILE`. Reusing the general prompt yields two general reviews and no security review. `$PASS` sends stdout to `$OUT_DIR/reviewer-output-security.json`, so `reviewer-output-general.json` is preserved. Apply the same parsing, cost, and error rules; a security-pass failure is reviewer unavailability, never a silent skip. If it fails, record the stderr log, then remove `"$REVIEW_ROOT"` and `"$OUT_DIR"` before returning the blocker.

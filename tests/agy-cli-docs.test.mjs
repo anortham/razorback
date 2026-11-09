@@ -55,7 +55,7 @@ test('agy-cli defines the Google provider for policy check', () => {
 test('agy-cli passes --print-timeout 30m on review invocation', () => {
   const skill = read('skills/agy-cli/SKILL.md');
   assert.match(skill, /--print-timeout 30m/);
-  assert.match(skill, /5m0s/);
+  assert.match(skill, /waits with no limit by default\s+\(`0s`\)/);
 });
 
 test('agy-cli cleans up raw PAYLOAD_FILE before artifact preparation', () => {

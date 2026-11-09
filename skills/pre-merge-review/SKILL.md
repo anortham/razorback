@@ -56,6 +56,7 @@ if ! "$SKILL_DIR/scripts/prepare-review-tree" "$PROJECT_DIR" "$REVIEW_REF" "$REV
   rm -rf -- "$REVIEW_ROOT"
   exit 1
 fi
+OUT_DIR=$(mktemp -d "${TMPDIR:-/tmp}/razorback-review-out.XXXXXX")
 DIFF=$(git diff "$BASE"..HEAD --no-ext-diff)
 FILE_STAT=$(git diff --stat "$BASE"..HEAD)
 COMMIT_LOG=$(git log --oneline "$BASE"..HEAD)
@@ -63,7 +64,7 @@ PLAN_PATH="docs/plans/<YYYY-MM-DD>-<feature>.md"
 SOURCE_EVIDENCE="<compact summary of changed symbols, public-API references, and likely tests>"
 ```
 
-`prepare-review-tree` exports tracked content of the ref only (no `.git`, no untracked files, no symlinks that escape the root) and rejects an output path inside the repo. Include a user focus only when the plan carried one. Use the CLI's default model unless one was explicitly selected.
+`$OUT_DIR` holds the reviewer output of both passes, outside both `$PROJECT_DIR` and `$REVIEW_ROOT`. `prepare-review-tree` exports tracked content of the ref only (no `.git`, no untracked files, no symlinks that escape the root) and rejects an output path inside the repo. Include a user focus only when the plan carried one. Use the CLI's default model unless one was explicitly selected.
 
 ## Step 2: Dispatch two passes
 
@@ -74,7 +75,7 @@ Apply the razorback:security-review policy check and re-read the policy immediat
 
 Follow [`reviewer-prompts/codex.md`](reviewer-prompts/codex.md) (`codex-exec … -s read-only`) or [`reviewer-prompts/claude.md`](reviewer-prompts/claude.md) (`claude -p --safe-mode --tools "Read,Grep,Glob" --strict-mcp-config`, no `--max-turns`, no `--max-budget-usd`). The reviewer never edits code.
 
-Count calls even when parsing later fails. Never dispatch a scope twice. If a dispatch fails, `rm -rf -- "$REVIEW_ROOT"` before returning the blocker.
+Count calls even when parsing later fails. Never dispatch a scope twice. If a dispatch fails, record its stderr log, then `rm -rf -- "$REVIEW_ROOT" "$OUT_DIR"` before returning the blocker.
 
 ### Redact each pass payload
 
@@ -83,17 +84,17 @@ Build the complete prompt (instruction, optional focus, labelled Target / File s
 ```bash
 PAYLOAD_FILE=$(mktemp)
 REDACTED_PAYLOAD_FILE=$(mktemp)
-printf '%s' "$RENDERED_PROMPT" > "$PAYLOAD_FILE"   # claude: $DIFF_AND_CONTEXT; codex: $ADVERSARIAL_PROMPT_WITH_DIFF
+printf '%s' "$RENDERED_PROMPT" > "$PAYLOAD_FILE"   # the prompt the reviewer-prompts file builds: claude's $DIFF_AND_CONTEXT, codex's filled adversarial template
 if ! "$SKILL_DIR/../security-review/scripts/redact-outbound" < "$PAYLOAD_FILE" > "$REDACTED_PAYLOAD_FILE"; then
   rm -f -- "$PAYLOAD_FILE" "$REDACTED_PAYLOAD_FILE"
-  rm -rf -- "$REVIEW_ROOT"
+  rm -rf -- "$REVIEW_ROOT" "$OUT_DIR"
   echo "outbound redaction failed" >&2
   exit 1
 fi
 rm -f -- "$PAYLOAD_FILE"
 if ! REVIEW_ARTIFACT=$("$SKILL_DIR/../security-review/scripts/prepare-review-artifact" "$REVIEW_ROOT" "$REDACTED_PAYLOAD_FILE"); then
   rm -f -- "$REDACTED_PAYLOAD_FILE"
-  rm -rf -- "$REVIEW_ROOT"
+  rm -rf -- "$REVIEW_ROOT" "$OUT_DIR"
   echo "review artifact preparation failed" >&2
   exit 1
 fi
@@ -114,7 +115,7 @@ Use `$REVIEW_PROMPT_FILE` for one pass, then remove the payload files and the ar
 
 ### Step 3: Run and parse each pass
 
-Capture the output directly to `$OUT_DIR/reviewer-output-general.json` and `$OUT_DIR/reviewer-output-security.json` (`$OUT_DIR` is a fresh mktemp directory outside both `$PROJECT_DIR` and `$REVIEW_ROOT`). Validate each output per [`../codex-cli/references/shared-cli-review.md`](../codex-cli/references/shared-cli-review.md); validate each pass against `schemas/review-output.schema.json` via:
+The reviewer-prompts file captures each pass directly to `$OUT_DIR/reviewer-output-$PASS.json`: `reviewer-output-general.json`, then `reviewer-output-security.json`. Validate each output per [`../codex-cli/references/shared-cli-review.md`](../codex-cli/references/shared-cli-review.md); validate each pass against `schemas/review-output.schema.json` via:
 
 ```bash
 "$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$OUT_DIR/reviewer-output-general.json"
@@ -123,7 +124,7 @@ Capture the output directly to `$OUT_DIR/reviewer-output-general.json` and `$OUT
 
 Do not gate on `jq -e '.findings[]'`; it exits 4 on a valid empty array. Malformed, incomplete, or schema-invalid output is a failed required-reviewer pass: close `blocked` with the consumed count, no retry. Merge both outputs into one list, tagging each finding `general` / `security`. Cost: claude sums `.total_cost_usd` and `.usage` across both passes; codex reports no per-request counts, so note the absence.
 
-After both outputs are parsed (or on any failure path), run `rm -rf -- "$REVIEW_ROOT"` explicitly; do not rely on an `EXIT` trap surviving between harness calls. This is practical reviewer isolation, not host-wide read confinement: a reviewer process can still read absolute host paths its CLI permits.
+After both outputs are parsed (or on any failure path), run `rm -rf -- "$REVIEW_ROOT" "$OUT_DIR"` explicitly; do not rely on an `EXIT` trap surviving between harness calls. On a blocker, copy the stderr log into the blocker report first. This is practical reviewer isolation, not host-wide read confinement: a reviewer process can still read absolute host paths its CLI permits.
 
 ## Step 4: Verify and classify
 

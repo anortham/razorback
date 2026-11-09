@@ -121,7 +121,8 @@ ADVERSARIAL_INSTRUCTION="${HEAD}${TARGET}${MID}${FOCUS:-none specified}${TAIL}"
 
 Then run Code Review Step 2 with `$ADVERSARIAL_INSTRUCTION` in place of
 `$REVIEW_INSTRUCTION` and the `Focus area:` lines dropped (focus is already in
-the template). claude-cli instead passes the template as a system prompt.
+the template). claude-cli instead renders the template into a system prompt file with its
+`scripts/render-system-prompt`, which points each placeholder at the user message.
 
 ## Shared failure handling
 

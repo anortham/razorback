@@ -183,11 +183,24 @@ Run Code Review with two deltas:
 REVIEW_INSTRUCTION="Perform an adversarial review of the complete code-change bundle. Return only the required completion schema with review_completed=true, files_inspected, commands_run, and concrete file/line evidence."
 ```
 
-and, in Step 3 before the stdin redirect:
+and, in Step 3, a rendered system prompt. Before the `claude -p` call:
 
 ```bash
-  --system-prompt-file "$SKILL_DIR/adversarial-prompt.txt" \
+SYSTEM_PROMPT_FILE=$(mktemp)
+"$SKILL_DIR/scripts/render-system-prompt" "$SKILL_DIR/adversarial-prompt.txt" > "$SYSTEM_PROMPT_FILE" \
+  || { rm -f -- "$SYSTEM_PROMPT_FILE"; echo "system prompt render failed" >&2; exit 1; }
 ```
+
+Before the stdin redirect:
+
+```bash
+  --system-prompt-file "$SYSTEM_PROMPT_FILE" \
+```
+
+Add `"$SYSTEM_PROMPT_FILE"` to the Step 3 cleanup. Never pass the template
+itself: its `{{TARGET_LABEL}}`, `{{USER_FOCUS}}`, and `{{REVIEW_INPUT}}`
+placeholders would reach Claude unfilled. The render points each one at the
+user message, because a system prompt file skips outbound redaction.
 
 `adversarial-prompt.txt` is the Claude member of the quartet; its only
 adaptation is the REVIEW METHOD line naming `Read`, `Grep`, and `Glob`.
