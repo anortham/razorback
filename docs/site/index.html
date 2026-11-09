@@ -116,7 +116,7 @@
           <tr>
             <th scope="row">Long plan runs</th>
             <td data-label="A bare agent">No rule for when to stop, and no saved state when the context compacts.</td>
-            <td data-label="With razorback">After you approve the plan, the run needs no per-task confirmation. It stops only for five kinds of real blocker. It writes a Goldfish checkpoint for a key decision, a surprising failure, or unfinished work.</td>
+            <td data-label="With razorback">After you approve the design or the plan, the run needs no per-task confirmation. It stops only for five kinds of real blocker. It writes a Goldfish checkpoint for a key decision, a surprising failure, or unfinished work.</td>
           </tr>
           <tr>
             <th scope="row">Tests</th>
@@ -159,7 +159,7 @@
             </div>
             <div>
               <dt>Razorback</dt>
-              <dd>Runs only when the request is unclear or makes a consequential choice. Names the path first: Spike, Bounded, or Architectural. It writes no code for a consequential choice you have not made. Architectural work gets a written spec in <code>docs/plans/</code>.</dd>
+              <dd>Runs only when the request is unclear or makes a consequential choice. Names the path first: Spike, Bounded, or Architectural. It writes no code for a consequential choice you have not made. Architectural work gets a written spec in <code>docs/plans/</code>, and you approve the design one time, at that spec.</dd>
             </div>
           </dl>
         </li>
@@ -168,7 +168,7 @@
           <dl class="roles">
             <div>
               <dt>You</dt>
-              <dd>Reply "approved". "Looks ok" does not start the run. This is your last stop before the agent runs the plan on its own. If you already authorized the work and the plan adds no new choice, the agent records that and does not ask again.</dd>
+              <dd>Usually nothing. A plan that stays inside a spec you approved, or inside your request, starts without a second approval. The agent asks only when the plan makes a new consequential choice. Then reply "approved"; "looks ok" does not start the run.</dd>
             </div>
             <div>
               <dt>Razorback</dt>
@@ -207,7 +207,7 @@
           <dl class="roles">
             <div>
               <dt>You</dt>
-              <dd>Choose the pre-merge reviewer when you approve the plan: codex, claude, or none. None is the default.</dd>
+              <dd>Choose the pre-merge reviewer in your approval reply: codex, claude, or none. None is the default.</dd>
             </div>
             <div>
               <dt>Razorback</dt>
@@ -224,7 +224,7 @@
             </div>
             <div>
               <dt>Razorback</dt>
-              <dd>Runs the branch gate, including the secrets scan and dependency audit. It writes a morning report to <code>.memories/</code>, pushes, and opens the pull request. It never merges.</dd>
+              <dd>Runs the branch gate, including the secrets scan and dependency audit. It writes a morning report to <code>.memories/</code> in one commit, pushes, and opens the pull request. It never merges.</dd>
             </div>
           </dl>
         </li>
@@ -289,8 +289,9 @@
           to the task, and logs it in the morning report. Its rule: "When in doubt, press on and flag."
         </p>
         <p>
-          The run ends at a pull request. Plan approval allows local commits only, so the agent asks once
-          before it pushes, unless you already allowed push and PR. Merging is yours.
+          The run ends at a pull request. Approval allows local commits only, so the approval question also
+          asks if the agent may push and open the PR. If you did not answer, the agent asks once before it
+          pushes. Merging is yours.
         </p>
       </div>
     </section>
@@ -312,7 +313,7 @@
         </li>
         <li>
           <h3>Approve with the word, then walk away</h3>
-          <p>"approved", "yes, go", or "run it" starts the run. Hedges such as "looks ok" do not. After approval the run does not pause between tasks.</p>
+          <p>"approved", "yes, go", or "run it" starts the run. Hedges such as "looks ok" do not. One approval covers the design and the plan. After approval the run does not pause between tasks.</p>
           <p class="say"><span class="say-label">Say</span> <code>approved</code></p>
           <a class="skill-ref" href="https://github.com/anortham/razorback/blob/main/skills/writing-plans/SKILL.md">writing-plans</a>
         </li>
@@ -324,7 +325,8 @@
         </li>
         <li>
           <h3>Allow push and PR up front for an unattended finish</h3>
-          <p>Plan approval allows local commits only. Without push and PR authority, the run stops once at the end with <code>Status: Awaiting publication approval</code>.</p>
+          <p>Approval allows local commits only. Answer the push and PR question in the same reply. Without that answer, the run stops once at the end with <code>Status: Awaiting publication approval</code>.</p>
+          <p class="say"><span class="say-label">Say</span> <code>approved, push and PR</code></p>
           <a class="skill-ref" href="https://github.com/anortham/razorback/blob/main/skills/finishing-a-development-branch/SKILL.md">finishing-a-development-branch</a>
         </li>
         <li>

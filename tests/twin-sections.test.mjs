@@ -67,10 +67,6 @@ const TWINS = [
         sdd: /^3\. \*\*Post-review\*\* — after Step 4a completes: .*$/,
       },
       {
-        name: 'SDD handoff moment 4: PR-URL commit checkpoint',
-        sdd: /^4\. \*\*PR-URL commit checkpoint\*\* — inside `finishing-a-development-branch` Step 7, .*$/,
-      },
-      {
         name: 'SDD states the no-recursion rule on its own line',
         sdd: /^Never create a checkpoint-only follow-up commit; it would need another checkpoint and recurse\.$/,
       },

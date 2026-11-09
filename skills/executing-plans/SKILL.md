@@ -40,8 +40,8 @@ Pre-merge-review owns the immutable `REVIEW CAMPAIGN` setup, its external invoca
 
 ## Step 4: Complete Development
 
-1. **Reconcile source-control state:** run Check B of `razorback:using-razorback` `references/source-control-hygiene.md`. Status every worktree this run created and every branch the plan produced. Land stranded commits here (re-run the branch gate) or carry them as named morning-report items. Never finish with state unaccounted for.
-2. Announce "I'm using the finishing-a-development-branch skill to complete this work." and run `razorback:finishing-a-development-branch` in Autonomous Mode: branch gate, push, PR, report, stop before merge.
+1. List every worktree and branch this run created. Never finish with state unaccounted for.
+2. Announce "I'm using the finishing-a-development-branch skill to complete this work." and run `razorback:finishing-a-development-branch` in Autonomous Mode with that list and the verification ledger. It runs the branch gate (Step 1) and reconciles source-control state (Step 2a), which is Check B of `razorback:using-razorback` `references/source-control-hygiene.md`, then pushes, opens the PR, writes the report, and stops before merge. Do not run either check here first: each runs once.
 
 ## Blockers
 
@@ -67,6 +67,8 @@ Write a `goldfish:checkpoint` only when it carries information a later session n
 
 In a long run, unfinished work before a likely context loss is a handoff: checkpoint the current task, the decisions made, and the next step. Before external review, capture the immutable REVIEW CAMPAIGN setup and current counters; after review, capture the terminal `REVIEW CAMPAIGN STATUS` block.
 
+`razorback:finishing-a-development-branch` owns the checkpoint of an unfinished stop at the end of the run. A run that ends with an open PR saves no further checkpoint.
+
 Save another checkpoint only when durable task state changes; an unchanged resume does not create a duplicate checkpoint.
 
 A checkpoint is a fast, non-blocking memory write. It is **not** a stop, a review gate, or a reason to ask the user anything — write it and immediately continue. A phase boundary is not a stop: finishing a phase never means pausing for confirmation. Never make a checkpoint-only follow-up commit, which would recurse.
@@ -84,5 +86,5 @@ On a resumed run only (a post-compaction note, a mismatch between expected and a
 
 ## Integration
 
-- `razorback:using-git-worktrees` — isolate first (Step 0b inventories outstanding worktrees); `source-control-hygiene.md` Check A before creating one, Check B before Step 4.
+- `razorback:using-git-worktrees` — isolate first (Step 0b inventories outstanding worktrees); `source-control-hygiene.md` Check A before creating one. Check B runs once, in the finish skill.
 - `razorback:writing-plans` produces the plan and propagates `reviewer_choice`; `razorback:pre-merge-review` at Step 3; `razorback:managing-review-campaigns` owns campaign state; `razorback:finishing-a-development-branch` finishes.

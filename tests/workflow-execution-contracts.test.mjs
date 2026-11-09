@@ -72,19 +72,21 @@ test('approval routing makes the checkpoint obligation visible before the long e
   assert.match(read('skills/using-razorback/references/run-recovery.md'), /Name the next action explicitly, even if it is to keep waiting for publication authority/);
 });
 
-test('post-PR checkpoint records the changed handoff in the report commit', () => {
+test('a complete run commits the report once and never writes the PR URL back', () => {
   const finishing = read('skills/finishing-a-development-branch/SKILL.md');
-  const postPrStep = finishing.slice(
-    finishing.indexOf('### Step 7: Write the PR URL back into the report'),
-    finishing.indexOf('### Step 8: Emit terminal pointer')
-  );
+  const report = read('skills/finishing-a-development-branch/morning-report-template.md');
+  const sdd = read('skills/subagent-driven-development/SKILL.md');
 
-  assert.match(postPrStep, /after the PR exists and before the PR-URL metadata commit/);
-  assert.match(postPrStep, /changes the run's handoff state/);
-  assert.match(postPrStep, /checkpoint artifact with the URL report/);
-  assert.match(postPrStep, /unchanged resume does not create a duplicate checkpoint/i);
-  assert.match(postPrStep, /Step 4 checkpoint contents/);
-  assert.match(postPrStep, /only when the latest checkpoint does not already capture this PR and report state/);
+  assert.match(finishing, /### Step 6: Create PR\n[\s\S]*### Step 7: Emit terminal pointer/);
+  assert.doesNotMatch(finishing, /### Step 8/);
+  assert.doesNotMatch(finishing, /Write the PR URL back/);
+  assert.match(finishing, /no later commit writes the URL back/);
+  assert.match(finishing, /A run that ends `Complete` saves no checkpoint here/);
+  for (const text of [finishing, report]) {
+    assert.match(text, /gh pr view/);
+    assert.doesNotMatch(text, /filled in after PR creation/);
+  }
+  assert.doesNotMatch(sdd, /PR-URL/);
 });
 
 test('other unfinished-work stops reuse the full checkpoint contract', () => {
@@ -95,7 +97,7 @@ test('other unfinished-work stops reuse the full checkpoint contract', () => {
   );
   const partialStep = finishing.slice(
     finishing.indexOf('### Step 6: Create PR'),
-    finishing.indexOf('### Step 7: Write the PR URL back into the report')
+    finishing.indexOf('### Step 7: Emit terminal pointer')
   );
 
   assert.match(blockedStep, /Step 4 checkpoint contents/);
@@ -139,8 +141,6 @@ test('checkpoints follow the selective policy and travel with their commit', () 
   }
   assert.match(sdd, /commit before you record/i);
   assert.match(sdd, /real commit SHA/i);
-  assert.match(sdd, /do not emit a duplicate checkpoint after finishing returns/i);
-  assert.match(finishing, /Step 7[\s\S]*PR-URL metadata commit[\s\S]*checkpoint artifact/i);
   assert.match(finishing, /The report is the run's handoff record/);
   assert.match(finishing, /unfinished work[\s\S]*save one `goldfish:checkpoint` before this commit/);
   assert.doesNotMatch(finishing, /this commit needs no separate checkpoint/);
@@ -191,6 +191,39 @@ test('plan files exist for handoff, multi-session, or coordination and do not pr
   assert.match(plans, /\*\*Coordination:\*\*/);
   assert.match(plans, /Do not prewrite the implementation/);
   assert.doesNotMatch(plans, /complete code/i);
-  assert.match(plans, /proceed without a second approval round/);
+  assert.match(plans, /proceed without an approval round/);
   assert.doesNotMatch(templates, /```python/);
+});
+
+test('one approval covers the design, the reviewer choice, and publication', () => {
+  const brainstorming = read('skills/brainstorming/SKILL.md');
+  const plans = read('skills/writing-plans/SKILL.md');
+  const finishing = read('skills/finishing-a-development-branch/SKILL.md');
+
+  assert.match(brainstorming, /Do not ask for approval section by section/);
+  assert.match(brainstorming, /the written spec is the one design approval/);
+  assert.doesNotMatch(brainstorming, /Ask after each section/);
+
+  for (const text of [brainstorming, plans]) {
+    assert.match(text, /whether I may push the branch and open the PR when the run is done/);
+    assert.match(text, /pre-merge reviewer/);
+  }
+
+  assert.match(plans, /A plan needs its own approval only when it makes a consequential choice the user has not made/);
+  assert.match(plans, /Never ask a separate question for push or PR authority/);
+  assert.match(plans, /Never infer push or PR authority/);
+  assert.doesNotMatch(plans, /Do not ask for missing push or PR authority here/);
+  assert.match(finishing, /this stop is the fallback/);
+});
+
+test('the branch gate and the source-control check each run once, in the finish skill', () => {
+  const executing = read('skills/executing-plans/SKILL.md');
+  const sdd = read('skills/subagent-driven-development/SKILL.md');
+
+  for (const skill of [executing, sdd]) {
+    assert.match(skill, /runs the branch gate \(Step 1\) and reconciles source-control state \(Step 2a\)/);
+    assert.match(skill, /Do not run either check here first/);
+  }
+  assert.doesNotMatch(sdd, /\*\*Final verification:\*\*/);
+  assert.match(sdd, /Clean up only after the finish skill reports `Complete`/);
 });

@@ -96,15 +96,13 @@ Read `references/fix-loop.md` (this directory) before every fix round, even when
 
 ## Step 4a: Pre-merge external review (if chosen)
 
-Reviewer choice `codex` or `claude`: ensure the ledger has a passing `branch-gate` for the current HEAD (run it now if not), then invoke `razorback:pre-merge-review` with the plan path, reviewer choice, verification strategy, verification ledger, and the ledger's deferred lines. `none` skips this step. Pre-merge-review owns the bounded campaign — one general pass plus one security pass, classification, fix dispatch, verification, the terminal `REVIEW CAMPAIGN STATUS` block; fixes verify locally with no post-fix external re-review. Then Step 5.
+Reviewer choice `codex` or `claude`: ensure the ledger has a passing `branch-gate` for the current HEAD (run it now if not). Branch-gate includes the plan's declared Security scope commands (`security-secrets`, `security-deps` — `razorback:security-review`); `none declared` skips them and is rendered in the morning report. Then invoke `razorback:pre-merge-review` with the plan path, reviewer choice, verification strategy, verification ledger, and the ledger's deferred lines. `none` skips this step. Pre-merge-review owns the bounded campaign — one general pass plus one security pass, classification, fix dispatch, verification, the terminal `REVIEW CAMPAIGN STATUS` block; fixes verify locally with no post-fix external re-review. Then Step 5.
 
 ## Step 5: Complete
 
-1. **Final verification:** `branch-gate` (or a passing ledger entry for this HEAD) plus required `expensive-specialist` scopes. Branch-gate includes the plan's declared Security scope commands (`security-secrets`, `security-deps` — `razorback:security-review`); `none declared` skips them and is rendered in the morning report.
-2. **Reconcile source-control state:** Check B of `razorback:using-razorback` `references/source-control-hygiene.md`. Status every worktree this run or a subagent created and every branch produced. Land stranded commits here (re-run branch-gate) or carry them as named morning-report items.
-3. **Collect rulings:** Before deleting the workspace, collect every `Ruling:` and `cap ruling` ledger line into the final message under "Rulings I made", in the order made, each with what it costs if wrong.
-4. **Clean up:** re-resolve the workspace with `"$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE` immediately before `rm -rf <printed path>`. Never delete a remembered path or sibling plan directories.
-5. `razorback:finishing-a-development-branch`.
+1. **Collect rulings:** collect every `Ruling:` and `cap ruling` ledger line into the final message under "Rulings I made", in the order made, each with what it costs if wrong.
+2. **Finish:** list every worktree and branch this run or a subagent created, then run `razorback:finishing-a-development-branch` with that list and the verification ledger. It runs the branch gate (Step 1) and reconciles source-control state (Step 2a), which is Check B of `razorback:using-razorback` `references/source-control-hygiene.md`. Do not run either check here first: each runs once, and a passing ledger entry for this HEAD is reused.
+3. **Clean up only after the finish skill reports `Complete`:** re-resolve the workspace with `"$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE` immediately before `rm -rf <printed path>`. Never delete a remembered path or sibling plan directories. On `Blocked`, `Partial`, or `Awaiting publication approval`, keep the workspace: the resumed run reads its ledger.
 
 ## Blockers
 
@@ -134,7 +132,8 @@ The lead also checkpoints at these handoff moments:
 1. **Likely context loss** — before compaction or a session end with work unfinished: current task, decisions made, next step, branch and worktree path. A multi-phase plan runs in one worktree by default; a phase that opens its own runs Step 0b of `razorback:using-git-worktrees` first.
 2. **Pre-review** — before Step 4a begins (if a reviewer was chosen): reviewer choice, diff range, verification strategy, the immutable REVIEW CAMPAIGN setup and current counters.
 3. **Post-review** — after Step 4a completes: findings, classifications, fix commits, and the terminal `REVIEW CAMPAIGN STATUS` block.
-4. **PR-URL commit checkpoint** — inside `finishing-a-development-branch` Step 7, after the PR exists and before its PR-URL metadata commit; do not emit a duplicate checkpoint after finishing returns.
+
+`razorback:finishing-a-development-branch` owns the checkpoint of an unfinished stop at the end of the run. A run that ends with an open PR saves no further checkpoint.
 
 Save another checkpoint only when durable task state changes; an unchanged resume does not create a duplicate checkpoint.
 
@@ -175,9 +174,9 @@ On a resumed run only (a post-compaction note, a mismatch between expected and a
 - Dispatch a separate reviewer subagent when the lead can review inline
 - Approve work from an implementer who cannot show the evidence behind its API shapes
 - Open a new phase worktree without running the Step 0b inventory against the prior phase's
-- Reach Step 5 without statusing every worktree the run created (Check B)
+- Reach Step 5 without the list of every worktree and branch the run and its subagents created
 - Pause for user input between tasks: the plan is approved, so run it to completion; only the blocker taxonomy stops it
 
 ## Integration
 
-`razorback:using-git-worktrees` first (Step 0b inventories outstanding worktrees; `source-control-hygiene.md` Check A before creating one, Check B before Step 5). `razorback:writing-plans` produces the plan; `razorback:requesting-code-review` supplies inline review criteria; `razorback:finishing-a-development-branch` finishes. `razorback:executing-plans` covers single-agent or no-delegation runs.
+`razorback:using-git-worktrees` first (Step 0b inventories outstanding worktrees; `source-control-hygiene.md` Check A before creating one; Check B runs once, in the finish skill). `razorback:writing-plans` produces the plan; `razorback:requesting-code-review` supplies inline review criteria; `razorback:finishing-a-development-branch` finishes. `razorback:executing-plans` covers single-agent or no-delegation runs.

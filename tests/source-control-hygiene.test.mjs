@@ -65,7 +65,7 @@ test('inventory obliges disclosure without blocking worktree creation', () => {
   assert.match(skill, /Create a worktree silently beside another worktree/);
 });
 
-test('both execution skills reconcile source-control state before finishing', () => {
+test('both execution skills hand the worktrees and branches of the run to the finish skill', () => {
   for (const file of ['skills/executing-plans/SKILL.md', 'skills/subagent-driven-development/SKILL.md']) {
     const skill = read(file);
     assert.ok(
@@ -74,8 +74,13 @@ test('both execution skills reconcile source-control state before finishing', ()
     );
     assert.match(
       skill,
-      /Reconcile source-control state/i,
-      `${file} hands off to the finish skill without reconciling worktree and branch state`,
+      /reconciles source-control state \(Step 2a\)/,
+      `${file} hands off to the finish skill without naming the step that reconciles worktree and branch state`,
+    );
+    assert.match(
+      skill,
+      /every worktree and branch this run .*created/,
+      `${file} does not pass the list of worktrees and branches that the finish skill must status`,
     );
   }
 });

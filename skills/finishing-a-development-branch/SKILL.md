@@ -33,7 +33,7 @@ Run the plan's `branch-gate` scope, or reuse a passing verification-ledger entry
 
 On failure: keep the branch local; diagnose, repair, and rerun the failed scope while a safe, plan-consistent recovery path remains. Capture the failing run to a file once; repair against the failing test ids through the runner's own filter (razorback:systematic-debugging Phase 4); rerun the failed scope once when every id passes, not after each repair. Follow razorback:security-review for scanner or security-finding failures. Record each attempt and refresh the ledger for the resulting HEAD. Do not classify the first failed run as blocker taxonomy #5.
 
-Only after recovery paths are exhausted, classify with the blocker taxonomy (#5 for unfixable test failures, #1 for environmental). No PR. Render a partial report with `Status: Blocked` (failure in `Tests`, blocker in `Blockers hit`), write it to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md`, then save a Goldfish checkpoint before committing when Goldfish is available. Use the Step 4 checkpoint contents, include the blocker, and set `next` to the recovery action. Stage the checkpoint with the report. Without Goldfish, the committed report and git state are the recovery path. Emit `Blocked. Report: <path>`, exit.
+Only after recovery paths are exhausted, classify with the blocker taxonomy (#5 for unfixable test failures, #1 for environmental). No PR. Render a partial report with `Status: Blocked` (failure in `Tests`, blocker in `Blockers hit`), write it to `.memories/autonomous-run-YYYY-MM-DD-<slug>.md`, then save a Goldfish checkpoint before committing when Goldfish is available. Use the Step 4 checkpoint contents, include the blocker, and set `next` to the recovery action. Stage the checkpoint with the report. Emit `Blocked. Report: <path>`, exit.
 
 ### Step 2: Determine base branch and merge-base commit
 
@@ -85,24 +85,36 @@ Three renderings:
 
 ### Step 4: Write full report + commit
 
-Write `.memories/autonomous-run-YYYY-MM-DD-<slug>.md` (plus the `.html` sibling when requested); `<slug>` is a short kebab-case plan identifier. Render `{{pr_url}}` as `pending — filled in after PR creation`; Step 7 writes the real URL.
+Write `.memories/autonomous-run-YYYY-MM-DD-<slug>.md` (plus the `.html` sibling when requested); `<slug>` is a short kebab-case plan identifier. Render `{{pr_url}}` as `opened after this report: gh pr view <branch>`. The report is committed before the PR exists, and no later commit writes the URL back: the PR and the terminal pointer carry it.
 
-The report is the run's handoff record. If the run will stop with unfinished work (`Blocked`, `Partial`, or `Awaiting publication approval`), save one `goldfish:checkpoint` before this commit when Goldfish is available. Pass the absolute project/worktree root as `workspace`. Structure the markdown body with **WHAT**, **WHY**, **HOW**, and **IMPACT**: describe the run and task in WHAT, the unfinished state in WHY, the report path and source-control, test, and authority evidence in HOW, and the resume action in IMPACT. Include the workspace-relative report path, plan/task identity, current branch and worktree, source commit actually tested, and publication authority state with its source. Set the tool's `next` field to the concrete resume action. Record the tested source commit in the report's `Tests` entry and checkpoint body from the verification ledger, before metadata-only report commits. Goldfish captures branch and commit metadata too, but that metadata may describe a later report commit.
+The report is the run's handoff record. If the run will stop with unfinished work (`Blocked`, `Partial`, or `Awaiting publication approval`), save one `goldfish:checkpoint` before this commit when Goldfish is available. A run that ends `Complete` saves no checkpoint here: the PR and the committed report are the record.
 
-For `Awaiting publication approval`, call `goldfish:checkpoint` once after rendering the report's waiting status and before committing it or making the request. Read the checkpoint response's `Saved:` path and stage that artifact with the report (and digest when requested) in the same commit. On a resumed run, compare the latest checkpoint with the report state and authority source. Save a checkpoint only when that durable state changed; an unchanged resume reuses the existing checkpoint. For other unfinished-work outcomes, use the same checkpoint contents and include the blocker or partial result. If Goldfish is unavailable, the report and git state remain sufficient for recovery. Do not make a checkpoint-only follow-up commit.
+**Step 4 checkpoint contents.** Pass the absolute project/worktree root as `workspace`. Structure the markdown body with **WHAT**, **WHY**, **HOW**, and **IMPACT**: describe the run and task in WHAT, the unfinished state in WHY, the report path and source-control, test, and authority evidence in HOW, and the resume action in IMPACT. Include the workspace-relative report path, plan/task identity, current branch and worktree, source commit actually tested, and publication authority state with its source. Set the tool's `next` field to the concrete resume action. Record the tested source commit in the report's `Tests` entry and checkpoint body from the verification ledger, before metadata-only report commits. Goldfish captures branch and commit metadata too, but that metadata may describe a later report commit.
+
+Three rules hold for every checkpoint this skill saves; the later steps name only the moment and the `next` value:
+
+- Read the checkpoint response's `Saved:` path and stage that artifact with the report (and digest when requested) in the same commit. Do not make a checkpoint-only follow-up commit.
+- On a resumed run, compare the latest checkpoint with the report state and authority source. Save a checkpoint only when that durable state changed; an unchanged resume reuses the existing checkpoint.
+- If Goldfish is unavailable, the report and git state remain sufficient for recovery.
+
+For `Awaiting publication approval`, call `goldfish:checkpoint` once after rendering the report's waiting status and before committing it or making the request. For other unfinished-work outcomes, use the same checkpoint contents and include the blocker or partial result.
 
 ```bash
 git add .memories/autonomous-run-YYYY-MM-DD-<slug>.md   # plus the .html sibling when requested, and a warranted checkpoint
 git commit -m "docs: autonomous run report for <plan name>"
 ```
 
-This commit and the Step 7 write-back are metadata-only (`.memories/` only), so Step 1 evidence carries over. Any change outside `.memories/` after Step 1 invalidates the evidence: rerun the branch gate before pushing. When a digest exists, every later report mutation updates the digest's matching field and stages both files in the same commit.
+This commit is metadata-only (`.memories/` only), so Step 1 evidence carries over. Any change outside `.memories/` after Step 1 invalidates the evidence: rerun the branch gate before pushing. When a digest exists, every later report mutation updates the digest's matching field and stages both files in the same commit.
 
 ### Step 4a: Request missing publication authority once
 
+Skip this step when Step 0 found push and PR authority recorded. `razorback:writing-plans` and `razorback:brainstorming` ask for both with the approval that starts the run, so this stop is the fallback for a run that started without them.
+
 After Steps 1–4 have produced local verification, source-control reconciliation, the committed prepared report, and its checkpoint when Goldfish is available, ask using the prepared report once for all missing push and PR actions. This is an approval boundary, not a blocker. Emit a local terminal pointer and stop until the user answers.
 
-On resumption, recall the checkpoint with the absolute project/worktree root as `workspace`, read its workspace-relative report path, then verify the live branch, worktree, HEAD, tested source commit, verification evidence, and authority source before continuing. If Goldfish is unavailable, read the committed report and git state. Preserve every previously authorized entry and its source; update only what the answer grants; never repeat granted questions. A checkpoint records prior user-granted authority; it does not grant authority or make implementation approval imply push or PR permission. Persist report status and authority metadata updates. When the authority state changes, save a new checkpoint using the Step 4 checkpoint contents before committing the updated report (and digest). Stage the report, checkpoint, and digest together, commit, then run the source-control state check before push. If anything outside `.memories/` changed, rerun the affected branch gate. If authority remains missing, keep `Status: Awaiting publication approval`; do not call the work blocked or failed. An unchanged resume does not create a duplicate checkpoint.
+On resumption, recall the checkpoint with the absolute project/worktree root as `workspace`, read its workspace-relative report path, then verify the live branch, worktree, HEAD, tested source commit, verification evidence, and authority source before continuing. If Goldfish is unavailable, read the committed report and git state. Preserve every previously authorized entry and its source; update only what the answer grants; never repeat granted questions. A checkpoint records prior user-granted authority; it does not grant authority or make implementation approval imply push or PR permission.
+
+Persist report status and authority metadata updates. When the authority state changes, save a new checkpoint using the Step 4 checkpoint contents, with `next` set to the push and the PR, before committing the updated report (and digest). Stage the report, checkpoint, and digest together, commit, then run the source-control state check before push. If anything outside `.memories/` changed, rerun the affected branch gate. If authority remains missing, keep `Status: Awaiting publication approval`; do not call the work blocked or failed. An unchanged resume does not create a duplicate checkpoint.
 
 ### Step 5: Push branch
 
@@ -124,24 +136,14 @@ Declare a blocker only after these paths are exhausted: record the blocker and d
 
 Walk the forge ladder; stop at the first rung that succeeds.
 
-1. `gh pr create --base "$BASE_BRANCH" --title "<plan or feature name>" --body "$(rendered_pr_summary)"` — capture the URL for Step 7.
+1. `gh pr create --base "$BASE_BRANCH" --title "<plan or feature name>" --body "$(rendered_pr_summary)"` — capture the URL for the terminal pointer.
 2. Another forge CLI (`glab mr create`, `tea pr create`) with equivalent arguments — capture the URL.
-3. The creation URL the forge printed on push — record `PR: not created — open <creation-url>`, `Status: Partial`, and when Goldfish is available save a checkpoint using the Step 4 checkpoint contents if this state is not already captured. Set `next` to open the printed creation URL. Stage the report, checkpoint, and digest when present together, commit, then push the committed artifacts and emit the URL in the pointer. If Goldfish is unavailable, use the report and git state.
-4. No rung worked — record the failure in `Blockers hit`, `Status: Partial`, and when Goldfish is available save a checkpoint using the Step 4 checkpoint contents if this state is not already captured. Set `next` to retry PR creation after resolving the recorded failure. Stage the report, checkpoint, and digest when present together, commit, then push the committed artifacts, emit the pointer, and exit. If Goldfish is unavailable, use the report and git state.
+3. The creation URL the forge printed on push — record `PR: not created — open <creation-url>`; `next` is to open that URL.
+4. No rung worked — record the failure in `Blockers hit`; `next` is to retry PR creation after resolving the recorded failure.
 
-### Step 7: Write the PR URL back into the report
+Rungs 1 and 2 end the run `Complete` with no further commit: the report stays as Step 4 committed it. Rungs 3 and 4 end the run `Status: Partial`: when Goldfish is available, save a checkpoint using the Step 4 checkpoint contents with that `next`, unless the latest checkpoint already captures this state. Stage the report, checkpoint, and digest when present together, commit, push the committed artifacts, emit the pointer (with the creation URL on rung 3), and exit.
 
-Rungs 1–2 only. Replace `pending — filled in after PR creation` with the URL, update the digest's `PR` field when present, commit, push. Metadata-only; gate evidence holds.
-
-The PR changes the run's handoff state. When Goldfish is available, save the post-PR checkpoint after the PR exists and before the PR-URL metadata commit only when the latest checkpoint does not already capture this PR and report state. Use the Step 4 checkpoint contents with the PR URL and current authority state, and set `next` to PR review. Stage the checkpoint artifact with the URL report and digest in the same commit. Without Goldfish, the run report carries the handoff together with git state. This satisfies the SDD milestone; do not emit a duplicate checkpoint after this skill returns. An unchanged resume does not create a duplicate checkpoint.
-
-```bash
-git add .memories/autonomous-run-YYYY-MM-DD-<slug>.md   # plus the .html sibling when requested, and a checkpoint when one exists
-git commit -m "docs: record PR URL in run report"
-git push
-```
-
-### Step 8: Emit terminal pointer
+### Step 7: Emit terminal pointer
 
 ```
 Done. PR: <url>. Report: .memories/autonomous-run-YYYY-MM-DD-<slug>.md.

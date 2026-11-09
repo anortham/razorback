@@ -64,7 +64,7 @@ Every path starts by reading the code the request touches (code-kb helps in an u
 2. **Ask clarifying questions**, one per message (see "Interviewing").
 3. **Propose 2-3 approaches** with trade-offs; lead with your recommendation and why.
 4. **Run `razorback:architecture-quality`** for non-trivial work and capture the approved module/interface shape before presenting the design. No architecture impact → note `No Architecture Impact`.
-5. **Present the design** in sections scaled to complexity (a few sentences up to 200-300 words): architecture, components, data flow, error handling, testing. Ask after each section whether it looks right and get user approval before moving on.
+5. **Draft the design** in sections scaled to complexity (a few sentences up to 200-300 words): architecture, components, data flow, error handling, testing. Do not ask for approval section by section: the written spec is the one design approval. A consequential choice the questions and approaches did not settle is still asked before the draft depends on it.
 6. **Proceed to "After the Design"**.
 
 **Terminal states are path-bound:** Architectural invokes `razorback:writing-plans`. Bounded proceeds to execution. Spike reports findings as a recommendation. Triage, or a re-classification to a lighter path, exits to direct work. No other exits.
@@ -84,8 +84,10 @@ Every path starts by reading the code the request touches (code-kb helps in an u
 1. **Write the design** to `docs/plans/YYYY-MM-DD-<topic>-design.md`. Do not commit yet.
 2. **Spec self-review:** placeholder scan (TBD, TODO, vague requirements), internal consistency, scope (one plan's worth?), ambiguity (pick one reading, make it explicit). Fix inline. If the session can dispatch subagents, you may instead dispatch a reviewer with `spec-document-reviewer-prompt.md` (this directory).
 3. **Doubt pass (conditional):** if `razorback:architecture-quality` rated risk medium/high, run the Doubt Pass from `razorback:cross-model-convergence` and fold surviving objections into the spec. Lead work, not a user gate.
-4. **User Review Gate:** User reviews written spec. Ask:
-   > "Spec written to `<path>`. Please review it and let me know if you want to make any changes before we start writing out the implementation plan."
+4. **User Review Gate:** User reviews written spec. This is the one approval for the design and for the run that follows. Give a summary of the design in a few lines, then ask:
+   > "Spec written to `<path>`. Please review it and reply **approved** or tell me what to change. Optional in the same reply: a pre-merge reviewer (codex or claude; none is the default), and whether I may push the branch and open the PR when the run is done."
+
+   Record the reviewer choice and the push and PR answer in the spec. razorback:writing-plans reads them and does not ask again when the plan stays inside the approved spec.
 
    The visual digest (`<design-doc>.html`, sibling basename, composed per the `razorback:using-razorback` skill's `references/digest-kit.md`) is opt-in: write it only when the user asked for a digest in this session or in project instructions, then add "with a visual digest at `<design-doc>.html`" to the ask. Never generate one unprompted. If the user requests changes, make them and re-run the self-review. Only proceed once the user approves.
 5. **Isolated workspace:** REQUIRED SUB-SKILL razorback:using-git-worktrees. Skip only with explicit user consent (small same-session work on a plain feature branch). Move the design doc into the worktree and commit it there as the branch's first commit; untracked files do not follow into a new worktree.
@@ -130,6 +132,7 @@ All of these mean: stop, name the open choice, and wait for the user's answer.
 - Clear, low-consequence requests went straight to the work, with no design round.
 - Ambiguous requests got the one question that separates their readings.
 - Every consequential choice the user had not made was named, and code waited for their answer.
+- An architectural design got one approval, at the written spec, and that reply carried the reviewer choice and the push and PR answer.
 - Bounded designs were presented directly in chat with no spec file.
 - Architectural specs landed in the task worktree as the branch's first commit, not on `main`.
 - Questions went out one at a time, each carrying a falsifiable guess.
