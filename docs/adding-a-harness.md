@@ -4,7 +4,7 @@ Razorback supports a small, deliberate set of harnesses. Adding one is a commitm
 
 ## Tiers
 
-**plugin-tier** — the full product: manifest, bootstrap, skills, agents, delegated execution. The host loads razorback as a plugin and discovers skills natively. Current: Claude Code, Codex CLI / ChatGPT desktop app, OpenCode. Cursor is plugin-tier but **frozen** — documented as-is, no new work.
+**plugin-tier** — the full product: manifest, bootstrap, skills, agents, delegated execution. The host loads razorback as a plugin and discovers skills natively. Current: Claude Code, Codex CLI / ChatGPT desktop app, OpenCode, and Antigravity (through `agy plugin import` or native skill discovery; no manifest of its own). Cursor is plugin-tier but **frozen** — documented as-is, no new work.
 
 **skill-tier** — the host discovers `skills/` but has no plugin manifest or hook. Skills load; bootstrap is manual or absent. No current occupants; use when a host has skill discovery but no plugin system.
 

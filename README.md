@@ -6,7 +6,7 @@
 
 Razorback is a skill set for coding-agent harnesses, diverged from [Superpowers](https://github.com/obra/superpowers) to add code-kb MCP for token-efficient codebase orientation. One coherent task runs directly in the current agent. A written plan runs through `executing-plans`, or through `subagent-driven-development` when its tasks are independent or benefit from a separate context.
 
-**Supported harnesses.** Claude Code, Codex CLI / ChatGPT desktop app (rebranded from Codex), OpenCode, and Antigravity get the full plugin: skills, agents, bootstrap, and delegated execution. Cursor is **frozen** — its plugin support still works and is documented below, but it receives no new work. Copilot CLI is **instruction-tier**: it picks up razorback's code-kb-first ruleset from `.github/copilot-instructions.md` and nothing else.
+**Supported harnesses.** Claude Code, Codex CLI / ChatGPT desktop app (rebranded from Codex), OpenCode, and Antigravity get the full plugin: skills, agents, bootstrap, and delegated execution. Cursor is **frozen** — its plugin support still works and is documented below, but it receives no new work. Copilot CLI is **instruction-tier**: it picks up razorback's code-kb-first ruleset from `.github/copilot-instructions.md` and nothing else. Cline, Kiro, Windsurf, and Cursor rules can use the same ruleset.
 
 ## Why?
 
@@ -134,6 +134,23 @@ curl -fsSL https://raw.githubusercontent.com/anortham/razorback/refs/heads/main/
 
 If the repo already has a `.github/copilot-instructions.md`, merge the ruleset in rather than overwriting.
 
+### Cline, Kiro, Windsurf, and Cursor rules (instruction-tier)
+
+The same ruleset ships as a rules file for four more hosts. Each gets the ruleset only: no skills, no agents, no delegated execution. Copy the file your host reads into the repo you work in:
+
+| Host | File |
+|------|------|
+| Cline | `.clinerules/razorback.md` |
+| Kiro | `.kiro/steering/razorback.md` |
+| Windsurf | `.windsurf/rules/razorback.md` |
+| Cursor rules (without the frozen plugin) | `.cursor/rules/razorback.mdc` |
+
+```bash
+FILE=.clinerules/razorback.md   # or another path from the table
+mkdir -p "$(dirname "$FILE")"
+curl -fsSL "https://raw.githubusercontent.com/anortham/razorback/refs/heads/main/$FILE" -o "$FILE"
+```
+
 ### After Installation
 
 Once loaded, razorback works automatically. The bootstrap path varies by harness:
@@ -250,6 +267,10 @@ Antigravity automatically discovers the updated skills on the next session start
 ### Copilot CLI (instruction-tier)
 
 Re-run the `curl` from the install section to refresh `.github/copilot-instructions.md`.
+
+### Cline, Kiro, Windsurf, and Cursor rules (instruction-tier)
+
+Re-run the `curl` from the install section for the file your host reads.
 
 ## Workflow
 

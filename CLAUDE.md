@@ -1,12 +1,12 @@
 # Razorback — Project Instructions
 
-Razorback is a skill set for Claude Code, Codex CLI / ChatGPT desktop app, and OpenCode that diverged from [Superpowers](https://github.com/obra/superpowers). It matches process to each task: clear, ordinary work proceeds directly in the current agent, and planning or delegation is used when a task benefits from it. code-kb MCP is the first route for code structure when it is available; Goldfish MCP is optional memory. A written plan runs through `executing-plans`, or through `subagent-driven-development` when its tasks are independent or benefit from a separate context.
+Razorback is a skill set for Claude Code, Codex CLI / ChatGPT desktop app, OpenCode, and Antigravity that diverged from [Superpowers](https://github.com/obra/superpowers). It matches process to each task: clear, ordinary work proceeds directly in the current agent, and planning or delegation is used when a task benefits from it. code-kb MCP is the first route for code structure when it is available; Goldfish MCP is optional memory. A written plan runs through `executing-plans`, or through `subagent-driven-development` when its tasks are independent or benefit from a separate context.
 
 ## External model policy
 Allowed providers: anthropic, openai, xai, google
 Reviewer choices permitted: codex, claude
 
-**Harness tiers.** Plugin-tier hosts (Claude Code, Codex CLI / ChatGPT desktop app, OpenCode) get a manifest, bootstrap, and full skill set. Cursor is **frozen** — its existing plugin support is documented as-is and receives no new work. Copilot CLI is **instruction-tier**: it gets the instruction-tier ruleset via `.github/copilot-instructions.md` and nothing else. See `docs/adding-a-harness.md` for the tier vocabulary and the per-tier file checklist.
+**Harness tiers.** Plugin-tier hosts (Claude Code, Codex CLI / ChatGPT desktop app, OpenCode) get a manifest, bootstrap, and full skill set. Antigravity is plugin-tier through `agy plugin import` or its native skill discovery, with no manifest of its own. Cursor is **frozen** — its existing plugin support is documented as-is and receives no new work. Copilot CLI is **instruction-tier**: it gets the instruction-tier ruleset via `.github/copilot-instructions.md` and nothing else. Cline, Kiro, Windsurf, and Cursor rules get the same ruleset from their synced host copies. See `docs/adding-a-harness.md` for the tier vocabulary and the per-tier file checklist.
 
 ## Project Structure
 
@@ -28,13 +28,20 @@ hooks/run-hook.cmd                 — Cross-platform polyglot wrapper (bash/cmd
 scripts/bump-version.sh            — Version sync across manifests
 scripts/check-rule-copies.mjs      — Syncs the instruction-tier ruleset across its host copies
 scripts/package-codex-plugin.sh    — Builds the Codex plugin package
+scripts/toolkit-doctor.mjs         — Read-only check of the installed toolkit (`npm run doctor`)
+scripts/run-toolkit-integration.mjs — Runs razorback against real code-kb and Goldfish servers in isolation (`npm run test:integration`)
+scripts/workflow-eval.mjs          — Prepares and grades workflow decision scenarios (see docs/workflow-evaluation.md)
 .clinerules/, .cursor/rules/, .kiro/steering/, .windsurf/rules/, .github/copilot-instructions.md — Host copies of the instruction-tier ruleset (synced, test-guarded)
 tests/*.test.mjs                   — Repo guard tests (`npm test`)
-.github/workflows/test.yml         — CI: runs npm test
+tests/helpers/                     — Shared test setup: repo reads, section extraction, temp git repos, hook harness
+tests/fixtures/workflow-eval/      — Scenarios and expectations for scripts/workflow-eval.mjs
+.github/workflows/test.yml         — CI: runs npm test on Linux and Windows
 .version-bump.json                 — Config for bump-version.sh (file list + audit excludes)
 index.js                           — OpenCode package entry point (stub)
 assets/                            — Plugin icons
 docs/adding-a-harness.md            — Tier vocabulary + file checklist for adding a harness
+docs/workflow-evaluation.md         — How to run and read the workflow decision evaluation
+TODO.md                             — Local backlog; the live queue is in Linear
 docs/site/                          — GitHub Pages landing site (deployed by .github/workflows/pages.yml; tests/site-content.test.mjs fails when a skill is added or removed without updating it)
 docs/plans/                         — Historical design and implementation plans
 docs/specs/                         — Design specifications
@@ -47,8 +54,10 @@ docs/specs/                         — Design specifications
 | Claude Code | plugin | `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `agents/`, `hooks/hooks.json`, `hooks/session-start`, `hooks/subagent-start`, `hooks/run-hook.cmd` | `SessionStart` hook injects `using-razorback` as `hookSpecificOutput.additionalContext`; `SubagentStart` hook injects the toolchain ruleset into dispatched subagents |
 | Codex CLI / ChatGPT desktop app | plugin | `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json`, `.codex/INSTALL.md`, `skills/using-razorback/references/codex-tools.md` | Preferred: install the Codex plugin from the repo-scoped marketplace entry. Fallback: local clone plus `~/.agents/skills/razorback/` symlink. Native skill discovery loads the installed skills at startup. |
 | OpenCode | plugin | `.opencode/plugins/razorback.js`, `AGENTS.md` symlink, `package.json`, `index.js` | Plugin's `config` hook registers skills path; `experimental.chat.messages.transform` injects bootstrap into first user message |
+| Antigravity (agy CLI / IDE) | plugin | none: `agy plugin import` reads the repo's `skills/`, `agents/`, and `hooks/` | `agy plugin import` stages skills, agents, and hooks into `~/.gemini/config`; alternatively, skills linked into `~/.gemini/config/skills/` or `.agents/skills/` load through native skill discovery |
 | Cursor (frozen) | plugin | `.cursor-plugin/plugin.json`, `hooks/hooks-cursor.json` (reuses `hooks/session-start`) | `sessionStart` hook injects `using-razorback` as `additional_context` (snake_case) |
 | Copilot CLI | instruction | `.github/copilot-instructions.md` (a synced host copy of the instruction-tier ruleset) | Copilot reads `.github/copilot-instructions.md` natively — no manifest, no hook, no skill loading |
+| Cline, Kiro, Windsurf, Cursor rules | instruction | `.clinerules/razorback.md`, `.kiro/steering/razorback.md`, `.windsurf/rules/razorback.md`, `.cursor/rules/razorback.mdc` (synced host copies) | The user copies the file into their repo; the host reads it natively |
 
 The ChatGPT desktop app was rebranded from Codex; both share the Codex plugin path above. Cursor is frozen: its support is documented as-is and gets no new work.
 
@@ -78,7 +87,9 @@ The ChatGPT desktop app was rebranded from Codex; both share the Codex plugin pa
 - `hooks/subagent-start` (Claude Code only) injects the compact toolchain ruleset (evidence rules, optional code-kb) into every dispatched subagent — subagents skip `using-razorback` by design, so this hook is what gives them the toolchain floor.
 
 ### Tests
-- `npm test` runs the guard suite in `tests/*.test.mjs` (also run by CI via `.github/workflows/test.yml`).
+- `npm test` runs the guard suite in `tests/*.test.mjs` (also run by CI via `.github/workflows/test.yml`, on Linux and on Windows under Git Bash).
+- Shared setup lives in `tests/helpers/`. Use `read`, `section`, and `initRepository` from there; do not define a local copy.
+- A rule phrase that the three rule sources must carry belongs in `INVARIANTS` in `scripts/check-rule-copies.mjs`, not in a second test.
 - `scripts/check-rule-copies.mjs` (exercised by `tests/rule-copies.test.mjs`) keeps the instruction-tier ruleset byte-identical across its host copies (`.clinerules/`, `.cursor/rules/`, `.kiro/steering/`, `.windsurf/rules/`, `.github/copilot-instructions.md`, `using-razorback` SKILL.md, `subagent-toolchain.md`).
 - The architecture-quality checklist duplication across skills is intentional and test-guarded — do not dedupe it.
 

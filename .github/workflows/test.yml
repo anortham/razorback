@@ -8,7 +8,15 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    # Git Bash on Windows: the hook scripts and the bash helpers need it.
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
 
@@ -22,12 +30,14 @@ jobs:
       - name: Run tests
         run: npm test
 
+      # The version checks read tracked files only, so one OS is enough.
       - name: Check version consistency
+        if: runner.os == 'Linux'
         run: ./scripts/bump-version.sh --audit
 
       # The audit only proves the manifests agree with each other. If every
       # manifest is stale together, it still passes. On tag runs, pin the
       # release to the tag so a stale-but-consistent version cannot ship.
       - name: Verify tag matches manifest version
-        if: github.ref_type == 'tag'
+        if: github.ref_type == 'tag' && runner.os == 'Linux'
         run: ./scripts/bump-version.sh --check "${GITHUB_REF_NAME#v}"

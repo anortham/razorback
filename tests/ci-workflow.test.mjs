@@ -32,6 +32,15 @@ test('CI workflow checks out the repo and sets up Node 22', () => {
   assert.match(workflow, /node-version:\s*'22'/, 'workflow must pin Node 22');
 });
 
+test('CI workflow runs the suite on Linux and Windows through bash', () => {
+  const workflow = read(WORKFLOW);
+
+  assert.match(workflow, /os:\s*\[\s*ubuntu-latest,\s*windows-latest\s*\]/, 'the matrix must cover Linux and Windows');
+  assert.match(workflow, /runs-on:\s*\$\{\{\s*matrix\.os\s*\}\}/, 'the job must run on each matrix OS');
+  assert.match(workflow, /fail-fast:\s*false/, 'a failure on one OS must not hide the result of the other');
+  assert.match(workflow, /defaults:\n\s+run:\n\s+shell:\s*bash/, 'steps must run in bash so the Windows job uses Git Bash');
+});
+
 test('CI workflow runs the full test suite', () => {
   const workflow = read(WORKFLOW);
   assert.match(workflow, /run:\s*npm test$/m, 'workflow must run `npm test`');
