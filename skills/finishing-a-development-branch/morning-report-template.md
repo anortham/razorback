@@ -9,7 +9,7 @@ The .html digest sibling (razorback:using-razorback references/digest-kit.md) is
 **Status:** {{status}} <!-- Complete | Blocked | Partial | Awaiting publication approval -->
 **Plan:** {{plan_path}}
 **Branch:** {{branch_name}}
-**PR:** {{pr_url}} <!-- URL | "pending — filled in after PR creation" | "not created — open <creation-url>" | "not created (blocked)" -->
+**PR:** {{pr_url}} <!-- "opened after this report: gh pr view <branch>" | "not created — open <creation-url>" | "not created (blocked)" -->
 **Publication authority:** local commit={{local_commit_authority}}; push={{push_authority}}; PR={{pr_authority}} <!-- each value names its source; push/PR add authorized/missing -->
 **Duration:** {{duration}}
 **Phases:** {{phases_complete}}/{{phases_total}} complete

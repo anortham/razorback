@@ -33,6 +33,6 @@ test('isolated workers and publication can proceed without a Goldfish checkpoint
     assert.match(read(`skills/${path}`), /If Goldfish is unavailable, record the decision or failure in your report/i, path);
   }
   const finishing = read('skills/finishing-a-development-branch/SKILL.md');
-  assert.match(finishing, /Without Goldfish, the run report carries the handoff/i);
+  assert.match(finishing, /If Goldfish is unavailable, the report and git state remain sufficient for recovery/);
   assert.doesNotMatch(finishing, /git add <checkpoint-path>/);
 });

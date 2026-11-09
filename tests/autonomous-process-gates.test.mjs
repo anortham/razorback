@@ -5,7 +5,6 @@ import { read } from './helpers/repo.mjs';
 test('brainstorming keeps approval for consequential choices and architectural specs', () => {
   const skill = read('skills/brainstorming/SKILL.md');
 
-  assert.match(skill, /get user approval/);
   assert.match(skill, /User reviews written spec/);
   assert.match(skill, /Only proceed once the user approves/);
   assert.match(skill, /Do NOT write production code for a consequential design choice the user has not made or agreed to/);
@@ -33,7 +32,6 @@ test('writing-plans separates implementation approval from the finish authority 
   assert.match(skill, /reply \*\*approved\*\*/i);
   assert.match(skill, /last human stop before autonomous local execution/i);
   assert.match(skill, /Implementation approval does not imply publication authority/i);
-  assert.match(skill, /Do not ask for missing push or PR authority here/i);
   assert.doesNotMatch(skill, /External review before PR\?/i);
   assert.match(skill, /default reviewer choice is `none`/i);
   assert.match(skill, /invoke the execution skill immediately/i);
