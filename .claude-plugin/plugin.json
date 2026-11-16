@@ -1,7 +1,7 @@
 {
   "name": "razorback",
   "description": "Development workflow that matches process to the task, with subagent-driven execution, inline review, and evidence-first codebase orientation.",
-  "version": "0.53.0",
+  "version": "0.54.0",
   "author": {
     "name": "anortham"
   },

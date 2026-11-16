@@ -95,7 +95,7 @@ The ChatGPT desktop app was rebranded from Codex; both share the Codex plugin pa
 
 ## Evidence Rules Pattern
 
-Razorback names the evidence a step needs, not the tool that gathers it. The evidence rules apply to the lead and every native implementer, reviewer, and fix worker: read the code a change touches, find callers before changing a symbol, and prove API shapes from current source. The agent uses the search, file read, and code navigation tools its host provides. Do not name a code index product or its tool calls in a skill, a prompt, or a rule copy. `tests/workflow-tool-contracts.test.mjs` fails when an active file names the index tool that razorback used before 0.54.0.
+Razorback names the evidence a step needs, not the tool that gathers it. The evidence rules apply to the lead and every native implementer, reviewer, and fix worker: read the code a change touches, find callers before changing a symbol, and prove API shapes from current source. The agent uses the search, file read, and code navigation tools its host provides. Do not name a code index product or its tool calls in a skill, a prompt, or a rule copy. `tests/workflow-tool-contracts.test.mjs` fails when an active file names the index tool that razorback used in earlier releases.
 
 The rules have three sources: `skills/using-razorback/SKILL.md` (the lead), `skills/using-razorback/references/subagent-rules.md` (dispatched subagents), and `skills/using-razorback/references/instruction-tier.md` (instruction-tier hosts).
 
