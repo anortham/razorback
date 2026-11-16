@@ -32,17 +32,17 @@ Before any status claim or expression of satisfaction:
 | Tests pass | Test output or ledger entry for current HEAD and required scope: 0 failures | Stale run, wrong scope, "should pass", a rerun on an unchanged tree | Short output: read it. Long output: capture it to a file on the first run, then search it or read a bounded slice. Never rerun to re-read |
 | Linter clean | Linter output: 0 errors | Partial check | Read the output |
 | Build succeeds | Build exit 0 | Linter passing, logs look good | Long logs: capture to file, then search or read a bounded slice |
-| Bug fixed | Original symptom passes at worker scope | Code changed, assumed fixed | Re-run the original repro |
+| Bug fixed | Original symptom passes at worker scope | Code changed, assumed fixed | Run the original repro once after the fix; a regression test that reproduces the symptom is that repro |
 | Feature works | Behavior observed in the running code: command output, or a screenshot compared with the request | Unit tests with the boundary that matters mocked | Run the change for real; build the loop when none exists (razorback:building-feedback-loops) |
-| Regression test works | Red-green cycle verified | Test passes once | Revert the fix, watch it fail, restore |
+| Regression test works | Red-green cycle verified | Test passes once | Cite the failing run you saw before the fix. Revert the fix to watch it fail only when the test was written after the fix |
 | Agent completed | VCS diff shows changes | Agent reports "success" | Read the diff |
-| Requirements met | Line-by-line checklist against the plan or spec | Tests passing alone | Read each symbol the requirement names (file read, or code-kb `get_symbol_context`) |
-| Architecture decision followed | Approved architecture visible in the diff, ADR note, or verified implementation | "Looks aligned" | Find the boundary's callers (search, or code-kb `find_references`); check what the change reaches (code-kb `blast_radius` when available) |
-| Review finding fixed | Fresh verification at the affected scope shows the finding no longer reproduces | Code changed, assumed fixed | Read the fixed symbol (file read, or code-kb `get_symbol_body`) |
+| Requirements met | Line-by-line checklist against the plan or spec | Tests passing alone | Read each symbol the requirement names |
+| Architecture decision followed | Approved architecture visible in the diff, ADR note, or verified implementation | "Looks aligned" | Search for the boundary's callers; check what the change reaches |
+| Review finding fixed | Fresh verification at the affected scope shows the finding no longer reproduces | Code changed, assumed fixed | Read the fixed symbol |
 | Work is integrated | `git log --oneline <base>..<branch>` per worktree: every commit landed, pushed, or named in the report | Tests pass, task marked done | Check B of the `razorback:using-razorback` skill's `references/source-control-hygiene.md` |
 | Nothing is stranded | `git worktree list` plus `git -C <path> status --short --branch` for each: no unreported dirty tree or unmerged branch | `git worktree list` alone — that is an inventory, not a cleanliness check | Status every listed path |
 
-Also prove API shapes from current source (file reads, or code-kb `find_references` and `get_symbol_context`) before claiming symbol names, signatures, config shapes, routes, CLI flags, or public contracts are correct.
+Also prove API shapes from current source before claiming symbol names, signatures, config shapes, routes, CLI flags, or public contracts are correct.
 
 ## Red Flags - STOP
 

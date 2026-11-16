@@ -18,7 +18,6 @@ The preferred path is the Codex plugin install flow from this repository's `.age
 
 - OpenAI Codex CLI or Codex desktop app
 - Git
-- code-kb MCP configured in Codex (optional)
 - [Goldfish MCP Server](https://github.com/anortham/goldfish) configured in Codex (optional)
 
 ### Steps
@@ -64,7 +63,7 @@ Codex CLI and the Codex desktop app share native skill discovery. With the prefe
 The `using-razorback` skill is discovered automatically and enforces skill usage discipline. No additional Codex hook setup is required for this plugin path or for the fallback symlink.
 
 **Note:** On Codex, one coherent task runs directly in the lead session. Delegated plan execution routes through `subagent-driven-development` for independent tasks, which dispatches fresh implementer subagents in parallel. If the current session cannot delegate, use `executing-plans`.
-The evidence rules apply to the lead session and every spawned worker: code-kb is the first route for code structure, and native search and file reads are the first route for literal text and small whole files.
+The evidence rules apply to the lead session and every spawned worker: read the code a change touches, find callers before changing a symbol, and prove API shapes from current source.
 
 **Desktop note:** The same Codex agent lifecycle applies in desktop sessions that expose `spawn_agent`, `send_input`, `wait_agent`, and `close_agent`. The separate `razorback:codex-cli` skill is for launching an external Codex CLI reviewer or delegate, not for the desktop app's built-in tools.
 
@@ -74,10 +73,6 @@ Skills are discovered automatically. Codex activates them when:
 - You mention a skill by name (e.g., "use brainstorming")
 - The task matches a skill's description
 - The `using-razorback` skill directs Codex to use one
-
-### code-kb MCP
-
-code-kb is optional. When it is configured, skills use it first for code structure. Without it, they use native search and file reads. Use code-kb by capability: `file_skeleton` on a folder or a file you do not know, to orient; `lookup_symbol` to locate symbols by name or concept, and routes or config keys (one short definition comes with its body); `get_symbol_context` before you change a symbol, since it carries the body, callers, tests to run, and types; and `check_edit` after you edit, to check for callers and tests the diff did not reach. Read the file you will edit, since the editor needs it. `get_symbol_body`, `find_references`, and `blast_radius` give a full body, the full list of callers or callees, and the full list of tests. Use your host's native editing tools to modify files.
 
 ### Goldfish MCP
 

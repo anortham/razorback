@@ -17,13 +17,13 @@
 
 Use these checks when Gate Mode finds structural relevance, when Candidate Mode is requested, or during an Audit Mode sweep. The point is not to decorate the plan. The point is to decide whether a structural change is real, useful, and local enough to justify itself.
 
-Each heuristic's `Find it` line names code-kb calls that gather its evidence. When code-kb is missing or stale, gather the same evidence with native search and file reads; a missing index result is not proof.
+Each heuristic's `Find it` line names the evidence to gather with search and file reads. A search with no result is not proof.
 
 ## Pass-Through Modules
 
 Smell: the module mostly forwards calls, renames values, or wraps behavior with no local policy.
 
-Find it: `get_symbol_body('<symbol>')` shows a body that only forwards; `find_references('<symbol>', direction='callers')` shows callers gaining nothing from the layer.
+Find it: the symbol's body only forwards; its callers gain nothing from the layer.
 
 Evidence: deleting it does not shrink caller burden and usually just removes a layer of ceremony.
 
@@ -35,7 +35,7 @@ Tests: wrapper-only tests are weak. Prefer tests through the caller-facing inter
 
 Smell: the same policy, parsing, or validation shows up in multiple files.
 
-Find it: `lookup_symbol('<rule or validation concept>')` across candidate symbols, then inspect implementations with `get_symbol_body` or `get_symbol_context` — hits across multiple files are the evidence.
+Find it: search for the rule or validation concept, then read each implementation — hits across multiple files are the evidence.
 
 Evidence: the same bug fix, rule, or fallback keeps appearing in different places.
 
@@ -47,7 +47,7 @@ Tests: shared behavior should be tested once through the shared interface, not c
 
 Smell: callers need to know implementation details, or a helper exposes the wrong amount of behavior.
 
-Find it: `get_symbol_context('<symbol>')` for the interface shape; `find_references('<symbol>', direction='callers')` for what every caller is forced to know.
+Find it: read the symbol for the interface shape; read its callers for what every caller is forced to know.
 
 Evidence: the API shape leaks storage, transport, or orchestration details that callers should not own.
 
@@ -59,7 +59,7 @@ Tests: tests should talk to the level the caller actually uses, not the level th
 
 Smell: tests mock internals, assert private state, or poke at methods callers never use.
 
-Find it: `find_references('<internal helper>', direction='callers')` — test files in a private helper's caller list are the smell.
+Find it: search for the callers of the internal helper — test files in a private helper's caller list are the smell.
 
 Evidence: refactors break tests even when behavior does not change.
 
@@ -71,7 +71,7 @@ Tests: move the test to the caller-facing interface whenever possible. The inter
 
 Smell: a new abstraction, plugin point, or adapter appears before the variation exists.
 
-Find it: `find_references('<interface>', direction='callers')` — one implementation and no second adapter means the seam is hypothetical.
+Find it: search for the implementations and callers of the interface — one implementation and no second adapter means the seam is hypothetical.
 
 Evidence: only one implementation exists, no real caller need is present, and the seam adds indirection.
 
@@ -83,7 +83,7 @@ Tests: every seam should earn a test that proves the variation or the boundary i
 
 Smell: one behavior change requires edits in many files.
 
-Find it: `blast_radius(symbol='<symbol>')` — a wide blast radius for a single rule is the signal.
+Find it: search for every caller and test the symbol reaches — a wide reach for a single rule is the signal.
 
 Evidence: the same rule, shape, or guard is scattered across call sites or duplicated branches.
 
@@ -95,7 +95,7 @@ Tests: shotgun surgery is often a sign that the test surface or module boundary 
 
 Smell: a catch block, fallback, or guard hides failure and the code keeps going as if nothing happened.
 
-Find it: a text search for `catch`, `except`, or `|| default` patterns scoped to the area (for example `rg -n 'catch|except' <area>`), then `get_symbol_body` on each hit's enclosing symbol. `lookup_symbol` does not search function bodies.
+Find it: a text search for `catch`, `except`, or `|| default` patterns scoped to the area (for example `rg -n 'catch|except' <area>`), then read each hit's enclosing symbol.
 
 Evidence: the failure is logged, ignored, or converted into a default value without a clear recovery path.
 
@@ -107,7 +107,7 @@ Tests: assert the error path or explicit fallback. Silent failure is usually a b
 
 Smell: raw strings, numbers, and flags carry hidden invariants that are repeated everywhere.
 
-Find it: a text search for the validation or parsing snippet (for example `rg -n '<snippet>'`); then `find_references` on a shared parser; the text-search hits missing from its caller list skip the parser.
+Find it: a text search for the validation or parsing snippet (for example `rg -n '<snippet>'`); then search for the callers of the shared parser; the snippet hits missing from its caller list skip the parser.
 
 Evidence: the same validation or parsing appears in multiple callers.
 
@@ -119,7 +119,7 @@ Tests: value objects or typed wrappers should be tested at their interface, wher
 
 Smell: the code was split into many tiny pieces, but the pieces did not buy any leverage.
 
-Find it: `file_skeleton('<file>')` listing many tiny symbols in one file; `find_references` showing chains of single-caller hops.
+Find it: one file lists many tiny symbols; their callers form chains of single-caller hops.
 
 Evidence: caller code gets longer, the number of seams grows, and no complexity actually disappeared.
 
@@ -131,7 +131,7 @@ Tests: if the module is shallow, end-to-end interface tests usually matter more 
 
 Smell: new code gets added without integrating with or removing the old path.
 
-Find it: `find_references('<old symbol>', direction='callers')` — zero remaining callers means a dead path; `lookup_symbol` both paths to confirm the overlap.
+Find it: search for the callers of the old symbol — zero remaining callers means a dead path; read both paths to confirm the overlap.
 
 Evidence: two paths now do the same thing, or dead code remains next to the new path.
 

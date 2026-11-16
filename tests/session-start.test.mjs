@@ -136,27 +136,6 @@ test('unknown-platform fallback injects SKILL.md verbatim, markers included', ()
   assert.ok(payloadOf.fallback().includes(read('skills/using-razorback/SKILL.md').trim()));
 });
 
-test('every branch carries the full code-kb toolchain table', () => {
-  const tableRows = [
-    /\| \*\*Orient\*\* .* \| `file_skeleton\(file_path=<folder>\)` \|/,
-    /\| `file_skeleton\(file_path, public_only\?\)` \|/,
-    /\| `lookup_symbol\(query, path\?, kind\?\)` \|/,
-    /\| `get_symbol_body\(symbol_name, file_path\?\)` \|/,
-    /\| `get_symbol_context\(symbol_name, file_path\?\)` \|/,
-    /`find_references\(symbol_name, direction="callers"\|"callees"\)`/,
-    /\| `blast_radius\(symbol\?, file\?, depth\?\)` \|/,
-    /\| `check_edit\(base\?\)` \|/,
-  ];
-
-  for (const [branch, payload] of Object.entries(payloadOf)) {
-    const text = payload();
-    assert.match(text, /## Your Toolchain/, `${branch} must carry the toolchain section`);
-    for (const row of tableRows) {
-      assert.match(text, row, `${branch} is missing toolchain row ${row}`);
-    }
-  }
-});
-
 test('every branch carries every check-rule-copies invariant', () => {
   assert.ok(RULE_INVARIANTS.length > 0, 'no invariant parsed from check-rule-copies.mjs');
   for (const [branch, payload] of Object.entries(payloadOf)) {

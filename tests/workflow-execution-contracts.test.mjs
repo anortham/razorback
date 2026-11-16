@@ -205,7 +205,7 @@ test('one approval covers the design, the reviewer choice, and publication', () 
   assert.doesNotMatch(brainstorming, /Ask after each section/);
 
   for (const text of [brainstorming, plans]) {
-    assert.match(text, /whether I may push the branch and open the PR when the run is done/);
+    assert.match(text, /say yes or no: may I push the branch and open the PR when the run is done\?/);
     assert.match(text, /pre-merge reviewer/);
   }
 
@@ -214,6 +214,8 @@ test('one approval covers the design, the reviewer choice, and publication', () 
   assert.match(plans, /Never infer push or PR authority/);
   assert.doesNotMatch(plans, /Do not ask for missing push or PR authority here/);
   assert.match(finishing, /this stop is the fallback/);
+  assert.match(plans, /declined at approval/);
+  assert.match(finishing, /declined at approval/);
 });
 
 test('the branch gate and the source-control check each run once, in the finish skill', () => {

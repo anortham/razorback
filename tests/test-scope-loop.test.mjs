@@ -56,7 +56,7 @@ test('a slow suite is a branch-gate scope that runs once against the whole batch
   for (const relativePath of [
     'skills/using-razorback/SKILL.md',
     'skills/using-razorback/references/instruction-tier.md',
-    'skills/using-razorback/references/subagent-toolchain.md',
+    'skills/using-razorback/references/subagent-rules.md',
   ]) {
     assert.doesNotMatch(read(relativePath), /Run broader suites at task boundaries/, relativePath);
   }

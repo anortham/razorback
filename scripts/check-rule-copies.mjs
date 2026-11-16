@@ -3,8 +3,8 @@
 //
 // Layer 1: every host copy, once its host-specific frontmatter is stripped, must
 // byte-equal the canonical body.
-// Layer 2: SKILL.md is the runtime source of truth, and subagent-toolchain.md is the
-// dispatched-subagent restatement. Both carry the exploration rules but legitimately
+// Layer 2: SKILL.md is the runtime source of truth, and subagent-rules.md is the
+// dispatched-subagent restatement. Both carry the evidence rules but legitimately
 // differ in framing and length, so neither can be byte-compared. Instead, assert the
 // load-bearing rules survive verbatim in ALL THREE files. Rewording a rule in any one of
 // them trips this, which is the reminder to propagate it to the other two.
@@ -23,7 +23,7 @@ const trim = (text) => text.trim();
 
 const CANONICAL_PATH = 'skills/using-razorback/references/instruction-tier.md';
 const SKILL_PATH = 'skills/using-razorback/SKILL.md';
-const SUBAGENT_PATH = 'skills/using-razorback/references/subagent-toolchain.md';
+const SUBAGENT_PATH = 'skills/using-razorback/references/subagent-rules.md';
 
 // Compact copies: same body as the canonical, host-specific frontmatter stripped.
 const COPIES = [
@@ -36,26 +36,20 @@ const COPIES = [
 
 // Load-bearing rules that must appear verbatim in EVERY invariant source below.
 const INVARIANTS = [
-  'it is the first route for code structure',
-  'Use code-kb first for code structure',
-  '`get_symbol_context` before you change a symbol: it carries the body, callers, tests to run, and types',
-  'Read the file you will edit, since the editor needs it',
   'Read the code a change touches before you edit it',
   "Find a symbol's callers before changing it",
+  'A search that finds no caller is not proof that none exists',
   'Do not infer or invent API shapes',
   'choose the safest plan-consistent path', // evidence-gap rule
-  'A missing or stale code-kb index never blocks work', // optional-tool rule
-  'Restricted external CLI reviewers',
   'Do not rerun any scope on an unchanged tree', // test-scope rule
   "capture a wide run's output to a file", // read captured output, never rerun to re-read
   'rerun only the failing test ids', // after-failure loop
   'A slow suite (browser, end-to-end, real database, or anything longer than a few minutes) is a branch-gate scope: it runs once against the whole batch of tasks, never after each task', // slow-tier rule
-  "Use your host's native editing tools to modify files", // no code-kb edit tools
 ];
 
-// The three files that restate the exploration rules. Not byte-comparable to each other:
+// The three files that restate the evidence rules. Not byte-comparable to each other:
 // the canonical is the compact instruction-tier ruleset, SKILL.md is the full runtime skill,
-// and subagent-toolchain.md is the dispatched-subagent restatement.
+// and subagent-rules.md is the dispatched-subagent restatement.
 const INVARIANT_SOURCES = [CANONICAL_PATH, SKILL_PATH, SUBAGENT_PATH];
 
 const canonical = read(CANONICAL_PATH);

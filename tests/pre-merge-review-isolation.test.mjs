@@ -236,15 +236,15 @@ const REVIEWER_PROMPTS = [
   'skills/pre-merge-review/reviewer-prompts/codex.md',
 ];
 
-test('reviewer prompts write the output files that the skill validates', () => {
+test('reviewer prompts write and validate the output files, and the skill does not validate them again', () => {
   const skill = read('skills/pre-merge-review/SKILL.md');
-  const validated = [...skill.matchAll(/validate-review-output" "\$OUT_DIR\/([^"]+)"/g)].map((match) => match[1]);
-  assert.deepEqual(validated, ['reviewer-output-general.json', 'reviewer-output-security.json']);
+  assert.doesNotMatch(skill, /validate-review-output" "\$OUT_DIR/);
 
   for (const rel of REVIEWER_PROMPTS) {
     const prompt = read(rel);
     const written = [...prompt.matchAll(/[^2]> "\$OUT_DIR\/([^"]+\.json)"/g)].map((match) => match[1]);
     assert.ok(written.length > 0, `${rel} should redirect reviewer output into $OUT_DIR`);
+    assert.match(prompt, /validate-review-output" "\$OUT_DIR\/reviewer-output-\$PASS\.json"/, `${rel} should validate each pass`);
     for (const name of written) {
       assert.match(name, /^reviewer-(output|normalized)-\$PASS\.json$/, `${rel} writes ${name}`);
     }

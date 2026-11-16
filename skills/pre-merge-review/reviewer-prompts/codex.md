@@ -6,7 +6,7 @@ Invocation for `codex` as the pre-merge adversarial reviewer. Background: `razor
 
 - `codex --version` succeeds; `codex login status` exits 0 (else blocker taxonomy #1, `razorback:using-razorback` `references/blocker-taxonomy.md`).
 - `$REVIEW_ROOT` (exported tree from Step 1, outside `$PROJECT_DIR`, shared by both passes) and `$DIFF`, `$FILE_STAT`, `$COMMIT_LOG`, `$SOURCE_EVIDENCE`, optional `$USER_FOCUS` exist. Never run Codex from the live worktree.
-- This reviewer does not run code-kb and never claims to. It works from the lead's source-backed bundle and the exported tree, and reports missing evidence when they cannot support a conclusion.
+- This reviewer works from the lead's source-backed bundle and the exported tree, and reports missing evidence when they cannot support a conclusion.
 
 ## Build the adversarial prompt
 

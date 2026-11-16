@@ -37,9 +37,9 @@ function createSourceRoot(name) {
   return sourceRoot;
 }
 
-function writeConfig(name, goldfish, codeKb) {
+function writeConfig(name, goldfish) {
   const configPath = join(testRoot, `${name}.json`);
-  writeFileSync(configPath, JSON.stringify({ goldfish, code_kb: codeKb }));
+  writeFileSync(configPath, JSON.stringify({ goldfish }));
   return configPath;
 }
 
@@ -52,7 +52,7 @@ test('explicit integration requires a config path and reports usage', () => {
 
   assert.equal(result.status, 2);
   assert.match(result.stderr, /--config <absolute-path>/);
-  assert.doesNotMatch(result.stdout + result.stderr, /GOLDFISH_HOME|CODE_KB_HOME|HOME=/);
+  assert.doesNotMatch(result.stdout + result.stderr, /GOLDFISH_HOME|HOME=/);
 });
 
 test('explicit integration rejects a missing config without a successful skip', () => {
@@ -60,7 +60,7 @@ test('explicit integration rejects a missing config without a successful skip', 
 
   assert.equal(result.status, 2);
   assert.match(result.stderr, /Cannot read integration config/);
-  assert.doesNotMatch(result.stdout + result.stderr, /mcpServers|GOLDFISH_HOME|CODE_KB_HOME/);
+  assert.doesNotMatch(result.stdout + result.stderr, /mcpServers|GOLDFISH_HOME/);
 });
 
 test('explicit integration does not print config values or execute a configured shell', () => {
@@ -68,7 +68,6 @@ test('explicit integration does not print config values or execute a configured 
   const sentinel = 'integration-config-secret-sentinel';
   writeFileSync(configPath, JSON.stringify({
     goldfish: { source_root: `/missing/${sentinel}`, command: '/bin/sh', args: ['-c', `touch /tmp/${sentinel}`] },
-    code_kb: { source_root: `/missing/${sentinel}`, command: `/missing/${sentinel}`, args: [] },
   }));
   const result = run(['--config', configPath]);
 
@@ -79,14 +78,12 @@ test('explicit integration does not print config values or execute a configured 
 
 test('explicit integration rejects a shell executable reached through a symlink', { skip: process.platform === 'win32' }, () => {
   const goldfishRoot = createSourceRoot('shell-alias-goldfish-source');
-  const codeKbRoot = createSourceRoot('shell-alias-code-kb-source');
   const shellAlias = join(testRoot, 'shell-alias');
   const sideEffect = join(testRoot, 'shell-alias-side-effect');
   symlinkSync('/bin/sh', shellAlias);
   const configPath = writeConfig(
     'shell-alias',
     sourceRecord(goldfishRoot, shellAlias, ['-c', 'touch "$1"', 'sh', sideEffect]),
-    sourceRecord(codeKbRoot),
   );
   const result = run(['--config', configPath]);
 
@@ -100,7 +97,6 @@ test('explicit integration rejects invalid record shapes before launching comman
   const configPath = writeConfig(
     'invalid-record',
     { ...sourceRecord(sourceRoot), args: 'not-an-argument-array' },
-    sourceRecord(sourceRoot),
   );
   const result = run(['--config', configPath]);
 
@@ -114,7 +110,6 @@ test('explicit integration reports an unavailable executable without printing co
   const configPath = writeConfig(
     'missing-executable',
     sourceRecord(sourceRoot, join(testRoot, sentinel)),
-    sourceRecord(sourceRoot),
   );
   const result = run(['--config', configPath]);
 
@@ -124,12 +119,10 @@ test('explicit integration reports an unavailable executable without printing co
 });
 
 test('explicit integration reports a missing source root without printing its path', () => {
-  const codeKbRoot = createSourceRoot('missing-source-code-kb');
   const sentinel = 'missing-source-secret-sentinel';
   const configPath = writeConfig(
     'missing-source-root',
     sourceRecord(join(testRoot, sentinel)),
-    sourceRecord(codeKbRoot),
   );
   const result = run(['--config', configPath]);
 
@@ -140,12 +133,10 @@ test('explicit integration reports a missing source root without printing its pa
 
 test('explicit integration requires clean source revisions before starting services', () => {
   const goldfishRoot = createSourceRoot('dirty-goldfish-source');
-  const codeKbRoot = createSourceRoot('clean-code-kb-source');
   writeFileSync(join(goldfishRoot, 'source.txt'), 'uncommitted\n');
   const configPath = writeConfig(
     'dirty-source',
     sourceRecord(goldfishRoot),
-    sourceRecord(codeKbRoot),
   );
   const inherited = { ...process.env, GIT_DIR: join(testRoot, 'nonexistent-global-git-dir') };
   const result = run(['--config', configPath], 5000, inherited);
@@ -186,7 +177,6 @@ test('integration report version matches the exact installed SDK pin', () => {
 
 test('integration transport receives command arguments directly in a scrubbed temporary environment', () => {
   const goldfishRoot = createSourceRoot('argv-goldfish-source');
-  const codeKbRoot = createSourceRoot('argv-code-kb-source');
   const argvProbe = join(testRoot, 'argv-probe.mjs');
   const capturePath = join(testRoot, 'argv-capture.json');
   writeFileSync(argvProbe, [
@@ -198,7 +188,6 @@ test('integration transport receives command arguments directly in a scrubbed te
   const configPath = writeConfig(
     'direct-argv',
     sourceRecord(goldfishRoot, process.execPath, [argvProbe, capturePath, 'argument with spaces', '--plain-argv']),
-    sourceRecord(codeKbRoot),
   );
   const result = run(['--config', configPath], 45000, inherited);
 
@@ -212,7 +201,7 @@ test('integration transport receives command arguments directly in a scrubbed te
   assert.doesNotMatch(result.stdout + result.stderr, /direct-argv-secret-sentinel/);
 });
 
-test('real Goldfish and code-kb integration runs only with explicit config', {
+test('real Goldfish integration runs only with explicit config', {
   skip: integrationConfig ? false : 'external integration skipped: set RAZORBACK_TOOLKIT_INTEGRATION_CONFIG to an explicit local config',
 }, () => {
   const result = run(['--config', integrationConfig], 120000);
@@ -222,5 +211,4 @@ test('real Goldfish and code-kb integration runs only with explicit config', {
   assert.equal(report.schema_version, 1);
   assert.equal(report.status, 'pass');
   assert.match(report.sources.goldfish.revision, /^[0-9a-f]{40}$/);
-  assert.match(report.sources.code_kb.revision, /^[0-9a-f]{40}$/);
 });

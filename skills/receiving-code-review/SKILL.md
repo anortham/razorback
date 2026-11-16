@@ -41,12 +41,12 @@ BEFORE implementing:
   3. Reason for the current implementation?
   4. Works on all platforms/versions?
   5. Does the reviewer have the full context?
-  6. Inspect the symbol with native search and file reads, or code-kb `get_symbol_context`, which carries its callers and tests to run
-  7. Trace callers with native search or code-kb (`find_references` for the full list) to check impact
+  6. Inspect the symbol with native search and file reads
+  7. Search for its callers to check impact
 
 IF suggestion seems wrong: push back with technical reasoning
 IF can't easily verify:
-  Investigate current source with native tools or code-kb and the smallest relevant verification command.
+  Investigate current source and run the smallest relevant verification command.
   Autonomous run: classify as flagged-for-review in the report and continue unless it matches the blocker taxonomy.
   Interactive: ask one specific clarifying question.
 IF conflicts with the user's prior decisions:
@@ -56,7 +56,7 @@ IF conflicts with the user's prior decisions:
 
 External architecture feedback is evaluated through `razorback:architecture-quality` before implementation.
 
-**YAGNI check:** when a reviewer suggests "implementing properly", find references with native search or code-kb `find_references`. Unused → "This endpoint isn't called. Remove it (YAGNI)?" Used → implement properly. The reviewer doesn't set scope; the user does.
+**YAGNI check:** when a reviewer suggests "implementing properly", search for references. Unused → "This endpoint isn't called. Remove it (YAGNI)?" Used → implement properly. The reviewer doesn't set scope; the user does.
 
 ## Implementation Order
 

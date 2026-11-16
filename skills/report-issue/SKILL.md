@@ -9,7 +9,7 @@ File a GitHub issue against `anortham/razorback`. Never file it against the repo
 
 **Announce at start:** "I'm using the report-issue skill to file an issue against razorback."
 
-**Not here:** a problem in code-kb, Goldfish, or the host itself. Send code-kb problems to `anortham/code-kb` and Goldfish problems to `anortham/goldfish` (each has its own `report-issue` skill), and host problems to the host's own tracker.
+**Not here:** a problem in Goldfish or the host itself. Send Goldfish problems to `anortham/goldfish` (it has its own `report-issue` skill), and host problems to the host's own tracker.
 
 ## Steps
 
@@ -21,7 +21,6 @@ ROOT=$(builtin cd -P "$SKILL_DIR/../.." && pwd)
 grep -h -m1 '"version"' "$ROOT/.claude-plugin/plugin.json" "$ROOT/.codex-plugin/plugin.json" "$ROOT/package.json" 2>/dev/null | head -1
 [ -e "$ROOT/.git" ] && git -C "$ROOT" rev-parse --short HEAD && git -C "$ROOT" status --porcelain | wc -l
 uname -srm
-code-kb --version
 ```
 
    Also record the host and its version (`claude --version`, `codex --version`, or `opencode --version`), the model you run as, and whether the Goldfish tools are in this session. On Windows without bash, use `ver` in place of `uname`. A command that fails gives `unknown` or `not installed`, not a stop.
@@ -33,7 +32,7 @@ code-kb --version
 - Host: <harness> <version>
 - Model: <model>
 - OS: <os>
-- code-kb: <version | not installed>; Goldfish: <available | not available>
+- Goldfish: <available | not available>
 
 ### Skill or hook
 <name>

@@ -6,7 +6,8 @@ import { read, root } from './helpers/repo.mjs';
 const activeMatches = (pattern) => {
   const result = spawnSync('git', [
     'grep', '--untracked', '-n', '-E', pattern, '--', '.',
-    ':!docs/plans', ':!.memories', ':!tests/workflow-tool-contracts.test.mjs',
+    ':!docs/plans', ':!docs/specs', ':!.memories', ':!TODO.md', ':!.gitignore',
+    ':!tests/workflow-tool-contracts.test.mjs',
   ], { cwd: root, encoding: 'utf8' });
   assert.ok(result.status === 0 || result.status === 1, result.stderr || result.error?.message);
   return result.stdout.trim();
@@ -51,21 +52,11 @@ test('Codex mapping follows live schemas and treats wait wakeups as notification
 });
 
 test('external reviewers receive a lead-built source evidence bundle without MCP access', () => {
-  const bootstrap = read('skills/using-razorback/SKILL.md');
-  const subagent = read('skills/using-razorback/references/subagent-toolchain.md');
-  const canonical = read('skills/using-razorback/references/instruction-tier.md');
-  const project = read('CLAUDE.md');
   const preMerge = read('skills/pre-merge-review/SKILL.md');
   const claude = read('skills/pre-merge-review/reviewer-prompts/claude.md');
   const codex = read('skills/pre-merge-review/reviewer-prompts/codex.md');
 
-  assert.match(project, /external CLI reviewers/i);
-  for (const text of [bootstrap, subagent, canonical, project]) {
-    assert.match(text, /source-backed\s+evidence/i);
-  }
-
   for (const text of [preMerge, claude, codex]) {
-    assert.match(text, /does not run code-kb/i);
     assert.match(text, /missing evidence/i);
   }
 
@@ -74,26 +65,10 @@ test('external reviewers receive a lead-built source evidence bundle without MCP
   assert.match(codex, /\$SOURCE_EVIDENCE/);
 });
 
-test('active files do not reference removed code-kb tool names', () => {
+test('active files do not name code-kb or its tools', () => {
   const result = activeMatches(
-    '(find_symbol|get_context_slice|code_kb_stats|codebase_outline|search_symbols|find_structural_facts|telemetry_summary)'
+    '(code-kb|code_kb|file_skeleton|lookup_symbol|get_symbol_body|get_symbol_context|find_references|blast_radius|check_edit)'
   );
 
-  assert.equal(result, '', `Active repository files must not name a removed code-kb tool:\n${result}`);
-});
-
-test('active guidance uses native editing tools instead of code-kb edit tools', () => {
-  const guidance = [
-    'skills/using-razorback/SKILL.md',
-    'skills/using-razorback/references/instruction-tier.md',
-    'skills/using-razorback/references/subagent-toolchain.md',
-  ];
-
-  for (const file of guidance) {
-    assert.match(read(file), /Use your host's native editing tools to modify files\./);
-  }
-
-  const result = activeMatches('replace_symbol_body');
-
-  assert.equal(result, '', `Active repository files still reference the removed edit tool:\n${result}`);
+  assert.equal(result, '', `Active repository files must not name code-kb or a code-kb tool:\n${result}`);
 });

@@ -70,9 +70,9 @@ planning and orchestration available when the task benefits from them.
   8 to 12 tasks spanning repairs, unfamiliar modules, cross-file changes, and
   resumed work. Pin model/effort, harness version, repository state (baseline
   `v0.44.4`), task input,
-  and acceptance checks. Hold Goldfish and code-kb availability and configuration
-  constant for the workflow comparison; vary memory and retrieval separately
-  afterward with their project follow-ups. Use matched tasks, randomized order,
+  and acceptance checks. Hold Goldfish availability and configuration
+  constant for the workflow comparison; vary memory separately
+  afterward with its project follow-up. Use matched tasks, randomized order,
   and repeated runs where affordable. Request a budget before paid replays.
   Record accepted outcomes, defects, human corrections/review time, elapsed time,
   actual input/output/cache tokens, and unnecessary documents generated.
@@ -81,9 +81,8 @@ planning and orchestration available when the task benefits from them.
   not software quality. Use existing logs and a small results table, not a new
   evaluation platform; expand the rollout only where outcome evidence supports it.
 
-Coordinate with [Goldfish's backlog](../goldfish/TODO.md) and
-[code-kb's plan](../code-kb/docs/plans/2026-09-23-retrieval-value-and-optional-routing.md).
-These references name sibling projects; each backlog remains usable on its own. Historical plans
+Coordinate with [Goldfish's backlog](../goldfish/TODO.md).
+This reference names a sibling project; each backlog remains usable on its own. Historical plans
 remain evidence and are not rewritten to describe the new defaults.
 
 ## Needs a decision

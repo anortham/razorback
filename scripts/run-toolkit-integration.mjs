@@ -19,9 +19,6 @@ import { fileURLToPath } from 'node:url';
 
 const projectRoot = resolve(import.meta.dirname, '..');
 const timeoutMs = 30000;
-const indexingAttempts = 40;
-const indexingWaitMs = 1000;
-const indexingMessage = /^Indexing .+ started; call again in a few seconds\./;
 
 class RunnerError extends Error {
   constructor(message, exitCode = 1) {
@@ -45,10 +42,10 @@ function readConfig(configPath) {
     throw new RunnerError('Cannot read integration config; provide a readable JSON file.', 2);
   }
   if (!config || typeof config !== 'object' || Array.isArray(config)
-    || Object.keys(config).sort().join(',') !== 'code_kb,goldfish') {
-    throw new RunnerError('Integration config must contain goldfish and code_kb records.', 2);
+    || Object.keys(config).join(',') !== 'goldfish') {
+    throw new RunnerError('Integration config must contain one goldfish record.', 2);
   }
-  for (const name of ['goldfish', 'code_kb']) validateSource(name, config[name]);
+  validateSource('goldfish', config.goldfish);
   return config;
 }
 
@@ -148,31 +145,6 @@ function commitFixture(root, message, environment) {
   return runGit(['rev-parse', 'HEAD'], root, 'fixture Git commit');
 }
 
-function createCodeKbWorktrees(root, environment) {
-  const repository = join(root, 'code-kb-history');
-  const alpha = join(root, 'code-kb-alpha');
-  const beta = join(root, 'code-kb-beta');
-  mkdirSync(repository, { recursive: true });
-  runFixtureGit(['init', '-q'], repository, environment);
-  runFixtureGit(['config', 'user.name', 'Razorback toolkit integration'], repository, environment);
-  runFixtureGit(['config', 'user.email', 'toolkit-integration@example.invalid'], repository, environment);
-  runFixtureGit(['commit', '--allow-empty', '-q', '-m', 'integration base'], repository, environment);
-  const base = runGit(['rev-parse', 'HEAD'], repository, 'fixture Git base');
-  runFixtureGit(['worktree', 'add', '-q', '-b', 'toolkit-alpha', alpha, base], repository, environment);
-  runFixtureGit(['worktree', 'add', '-q', '-b', 'toolkit-beta', beta, base], repository, environment);
-  createFixtureProject(alpha, 'toolkit-alpha');
-  createFixtureProject(beta, 'toolkit-beta');
-  writeFileSync(join(alpha, 'src', 'alpha.js'), 'export function workspaceAlphaMarker() { return "alpha"; }\n');
-  writeFileSync(join(beta, 'src', 'beta.js'), 'export function workspaceBetaMarker() { return "beta"; }\n');
-  mkdirSync(join(alpha, 'docs'), { recursive: true });
-  writeFileSync(join(alpha, 'docs', 'coverage.md'), '# anchor_markdown\n\nNative fallback marker: workspaceAlphaMarker()\n');
-  for (const worktree of [alpha, beta]) {
-    runFixtureGit(['add', '-A'], worktree, environment);
-    runFixtureGit(['commit', '-q', '-m', `Add ${basename(worktree)} source`], worktree, environment);
-  }
-  return { alpha, beta };
-}
-
 function runDoctorDuplicateFixture(tempRoot, environment) {
   const fixtureRoot = join(tempRoot, 'doctor');
   const project = join(fixtureRoot, 'project');
@@ -227,9 +199,8 @@ function runDoctorDuplicateFixture(tempRoot, environment) {
 export function createEnvironment(tempRoot, commands = []) {
   const home = join(tempRoot, 'home');
   const temp = join(tempRoot, 'tmp');
-  const codeKbHome = join(home, 'code-kb');
   const goldfishHome = join(home, 'goldfish');
-  for (const directory of [home, temp, join(home, 'appdata'), join(home, 'config'), join(home, 'data'), join(home, 'cache'), codeKbHome, goldfishHome]) {
+  for (const directory of [home, temp, join(home, 'appdata'), join(home, 'config'), join(home, 'data'), join(home, 'cache'), goldfishHome]) {
     mkdirSync(directory, { recursive: true });
   }
   const gitConfig = join(home, 'gitconfig');
@@ -273,8 +244,6 @@ export function createEnvironment(tempRoot, commands = []) {
   }
   environment.GOLDFISH_HOME = goldfishHome;
   environment.GOLDFISH_WORKSPACE = '';
-  environment.CODE_KB_HOME = codeKbHome;
-  environment.CODE_KB_NO_TELEMETRY = '1';
   environment.GIT_CONFIG_NOSYSTEM = '1';
   environment.GIT_CONFIG_GLOBAL = gitConfig;
   return { environment, goldfishHome, home, temp };
@@ -286,7 +255,6 @@ function resultText(result) {
 
 function assertToolResult(result, label) {
   const text = resultText(result);
-  if (indexingMessage.test(text)) return text;
   if (result?.isError || !result?.content?.length) throw new RunnerError(`${label} failed.`);
   return text;
 }
@@ -327,22 +295,11 @@ async function createClient(Client, StdioClientTransport, config, cwd, environme
 async function callTool(client, name, args, label) {
   try {
     const result = await withTimeout(client.callTool({ name, arguments: args }), label);
-    const text = assertToolResult(result, label);
-    if (indexingMessage.test(text)) return { indexing: true, text };
-    return { indexing: false, text };
+    return assertToolResult(result, label);
   } catch (error) {
     if (error instanceof RunnerError) throw error;
     throw new RunnerError(`${label} failed.`);
   }
-}
-
-async function callCodeKb(client, name, args, label) {
-  for (let attempt = 0; attempt < indexingAttempts; attempt++) {
-    const result = await callTool(client, name, args, label);
-    if (!result.indexing) return result.text;
-    await new Promise((resolvePromise) => setTimeout(resolvePromise, indexingWaitMs));
-  }
-  throw new RunnerError(`${label} did not become ready after code-kb reported indexing.`);
 }
 
 async function loadClientSdk() {
@@ -365,15 +322,11 @@ export function readClientSdkVersion() {
 async function runIntegration(config, sources, tempRoot, state) {
   let goldfishClient;
   let goldfishResumeClient;
-  let codeKbClient;
   const report = {
     schema_version: 1,
     status: 'pass',
     timestamp: new Date().toISOString(),
-    sources: {
-      goldfish: sources.goldfish,
-      code_kb: sources.code_kb,
-    },
+    sources: { goldfish: sources.goldfish },
     checks: [],
   };
 
@@ -382,25 +335,12 @@ async function runIntegration(config, sources, tempRoot, state) {
     const goldfishBeta = join(tempRoot, 'goldfish-beta');
     const alphaGit = createGitFixtureProject(goldfishAlpha, 'goldfish-alpha', state.environment);
     createGitFixtureProject(goldfishBeta, 'goldfish-beta', state.environment);
-    const codeKbProjects = createCodeKbWorktrees(join(tempRoot, 'projects'), state.environment);
     const { Client, StdioClientTransport } = await loadClientSdk();
     goldfishClient = await createClient(Client, StdioClientTransport, config.goldfish, goldfishAlpha, state.environment, 'Goldfish');
-    codeKbClient = await createClient(Client, StdioClientTransport, config.code_kb, codeKbProjects.alpha, state.environment, 'code-kb');
 
     const goldfishTools = new Set((await withTimeout(goldfishClient.listTools(), 'Goldfish tool discovery')).tools.map(({ name }) => name));
     if (!goldfishTools.has('checkpoint') || !goldfishTools.has('recall')) throw new RunnerError('Goldfish checkpoint and recall tools were not discovered.');
-    const codeKbTools = (await withTimeout(codeKbClient.listTools(), 'code-kb tool discovery')).tools;
-    const codeKbToolMap = new Map(codeKbTools.map((tool) => [tool.name, tool]));
-    if (!codeKbToolMap.has('file_skeleton') || !codeKbToolMap.has('find_references') || !codeKbToolMap.has('lookup_symbol')) {
-      throw new RunnerError('Required code-kb structural tools were not discovered.');
-    }
-    if (codeKbTools.some((tool) => !tool.inputSchema.required?.includes('project_root'))) {
-      throw new RunnerError('A code-kb tool schema omitted required project_root.');
-    }
-    if (!codeKbToolMap.get('file_skeleton').inputSchema.required?.includes('file_path')) {
-      throw new RunnerError('code-kb file_skeleton did not require file_path.');
-    }
-    report.checks.push('real MCP tool discovery and explicit root schemas');
+    report.checks.push('real Goldfish tool discovery');
 
     const pointer = '.memories/autonomous-run-toolkit-reliability.md';
     const checkpointMarker = `razorback toolkit project alpha ${Date.now()}`;
@@ -454,10 +394,10 @@ async function runIntegration(config, sources, tempRoot, state) {
       ].join('\n'),
       next: nextAction,
     }, 'Goldfish checkpoint');
-    if (!saved.text.includes('Checkpoint saved:') || !saved.text.includes('Saved:')) {
+    if (!saved.includes('Checkpoint saved:') || !saved.includes('Saved:')) {
       throw new RunnerError('Goldfish did not confirm saving the precommit checkpoint file.');
     }
-    const savedFileLine = saved.text.split('\n').find((line) => line.startsWith('Saved: '));
+    const savedFileLine = saved.split('\n').find((line) => line.startsWith('Saved: '));
     const savedFileSuffix = ' — include this file in your git commit.';
     const savedFilePath = savedFileLine?.endsWith(savedFileSuffix)
       ? savedFileLine.slice('Saved: '.length, -savedFileSuffix.length)
@@ -470,7 +410,7 @@ async function runIntegration(config, sources, tempRoot, state) {
     }
     const checkpointContent = readFileSync(checkpointFile, 'utf8');
     const capturedCommit = runGit(['rev-parse', '--short', alphaGit.sourceCommit], goldfishAlpha, 'Goldfish captured commit');
-    if (!saved.text.includes(`Branch: ${alphaGit.branch} @ ${capturedCommit}`)
+    if (!saved.includes(`Branch: ${alphaGit.branch} @ ${capturedCommit}`)
       || !checkpointContent.includes(`Branch/worktree: ${alphaGit.branch} / ${goldfishAlpha}`)
       || !checkpointContent.includes(`Report: ${pointer}`)
       || !checkpointContent.includes(`Tested source commit: ${alphaGit.sourceCommit}`)
@@ -492,7 +432,7 @@ async function runIntegration(config, sources, tempRoot, state) {
       limit: 5,
       full: true,
     }, 'Goldfish isolation recall');
-    if (betaRecall.text.includes(checkpointMarker) || betaRecall.text.includes(pointer)) {
+    if (betaRecall.includes(checkpointMarker) || betaRecall.includes(pointer)) {
       throw new RunnerError('Goldfish returned checkpoint content across separate project roots.');
     }
     const alphaRecall = await callTool(goldfishResumeClient, 'recall', {
@@ -500,8 +440,8 @@ async function runIntegration(config, sources, tempRoot, state) {
       limit: 5,
       full: true,
     }, 'Goldfish handoff recall');
-    if (!alphaRecall.text.includes(checkpointMarker) || !alphaRecall.text.includes(pointer)
-      || !alphaRecall.text.includes(alphaGit.sourceCommit) || !alphaRecall.text.includes(nextAction)) {
+    if (!alphaRecall.includes(checkpointMarker) || !alphaRecall.includes(pointer)
+      || !alphaRecall.includes(alphaGit.sourceCommit) || !alphaRecall.includes(nextAction)) {
       throw new RunnerError('Goldfish recall did not return the saved report pointer.');
     }
     const recalledReport = readFileSync(reportPath, 'utf8');
@@ -529,65 +469,13 @@ async function runIntegration(config, sources, tempRoot, state) {
     };
     report.checks.push('Goldfish fresh-session recall reads a committed report with separate tested and metadata commits, live authority, and next action');
 
-    const alphaSkeleton = await callCodeKb(codeKbClient, 'file_skeleton', {
-      file_path: 'src/alpha.js',
-      project_root: codeKbProjects.alpha,
-    }, 'code-kb alpha file skeleton');
-    if (!alphaSkeleton.includes('function workspaceAlphaMarker()') || alphaSkeleton.includes('workspaceBetaMarker')) {
-      throw new RunnerError('code-kb file_skeleton returned the wrong structure for the alpha worktree.');
-    }
-    const betaSkeleton = await callCodeKb(codeKbClient, 'file_skeleton', {
-      file_path: 'src/beta.js',
-      project_root: codeKbProjects.beta,
-    }, 'code-kb beta file skeleton');
-    if (!betaSkeleton.includes('function workspaceBetaMarker()') || betaSkeleton.includes('workspaceAlphaMarker')) {
-      throw new RunnerError('code-kb file_skeleton returned the wrong structure after switching worktrees.');
-    }
-    const alphaInBeta = await callCodeKb(codeKbClient, 'lookup_symbol', {
-      query: 'workspaceAlphaMarker',
-      project_root: codeKbProjects.beta,
-    }, 'code-kb cross-project negative lookup');
-    if (!alphaInBeta.includes('No exact name match;')
-      || alphaInBeta.includes('function workspaceAlphaMarker(') || alphaInBeta.includes('src/alpha.js')) {
-      throw new RunnerError('code-kb returned alpha declarations when queried within the beta worktree.');
-    }
-    const alphaAfterSwitch = await callCodeKb(codeKbClient, 'file_skeleton', {
-      file_path: 'src/alpha.js',
-      project_root: codeKbProjects.alpha,
-    }, 'code-kb alpha file skeleton after switching back');
-    if (!alphaAfterSwitch.includes('function workspaceAlphaMarker()') || alphaAfterSwitch.includes('workspaceBetaMarker')) {
-      throw new RunnerError('code-kb leaked structural results after switching back to the alpha worktree.');
-    }
-    const markdownSkeleton = await callCodeKb(codeKbClient, 'file_skeleton', {
-      file_path: 'docs/coverage.md',
-      project_root: codeKbProjects.alpha,
-    }, 'code-kb Markdown structural skeleton');
-    if (!markdownSkeleton.includes('section anchor_markdown')) {
-      throw new RunnerError('code-kb did not return the Markdown heading declaration.');
-    }
-    const markdownCoverage = await callCodeKb(codeKbClient, 'find_references', {
-      symbol_name: 'anchor_markdown',
-      file_path: 'docs/coverage.md',
-      project_root: codeKbProjects.alpha,
-    }, 'code-kb Markdown coverage report');
-    if (!markdownCoverage.includes('Coverage: the index records no reference sites in markdown files')) {
-      throw new RunnerError('code-kb did not report the documented Markdown reference coverage gap.');
-    }
-    const markdownSource = readFileSync(join(codeKbProjects.alpha, 'docs', 'coverage.md'), 'utf8');
-    const nativeSearchMatches = markdownSource.match(/workspaceAlphaMarker\(\)/g)?.length ?? 0;
-    if (nativeSearchMatches !== 1) throw new RunnerError('The native fallback did not find the source reference in the Markdown file.');
     const doctorFixture = runDoctorDuplicateFixture(tempRoot, state.environment);
     report.duplicate_installation = doctorFixture;
-    report.unsupported_coverage = { language: 'markdown', warning_verified: true, native_search_matches: nativeSearchMatches };
-    report.checks.push('code-kb switches indexes between linked worktrees using each absolute project_root and excludes cross-project declarations');
-    report.checks.push('code-kb reports unsupported Markdown reference coverage and native source search finds the missed text');
     report.checks.push('read-only toolkit doctor reports exact duplicate skill roots and a canonical plugin without mutation');
     report.isolation = {
       goldfish_workspaces: 2,
-      code_kb_linked_worktrees: 2,
       goldfish_home_isolated: true,
-      code_kb_home_isolated: true,
-      indexes_and_logs_under_temp: true,
+      memories_and_logs_under_temp: true,
     };
     report.mcp_client = `@modelcontextprotocol/client@${readClientSdkVersion()}`;
     return report;
@@ -595,7 +483,7 @@ async function runIntegration(config, sources, tempRoot, state) {
     if (error instanceof RunnerError) throw error;
     throw new RunnerError('The isolated toolkit integration failed.');
   } finally {
-    await Promise.all([goldfishClient, goldfishResumeClient, codeKbClient].filter(Boolean).map((client) => client.close().catch(() => {})));
+    await Promise.all([goldfishClient, goldfishResumeClient].filter(Boolean).map((client) => client.close().catch(() => {})));
   }
 }
 
@@ -606,22 +494,17 @@ async function main(args) {
   try {
     const state = createEnvironment(tempRoot);
     gitEnvironment = state.environment;
-    const sources = {
-      goldfish: verifySource('goldfish', config.goldfish),
-      code_kb: verifySource('code-kb', config.code_kb),
-    };
+    const sources = { goldfish: verifySource('goldfish', config.goldfish) };
     state.environment.PATH = [...new Set([
       ...state.environment.PATH.split(delimiter),
-      ...[config.goldfish, config.code_kb].map(({ command }) => dirname(realpathSync(command))),
+      dirname(realpathSync(config.goldfish.command)),
     ])].join(delimiter);
     const report = await runIntegration(config, sources, tempRoot, state);
-    for (const name of ['goldfish', 'code_kb']) {
-      const sourceRoot = realpathSync(config[name].source_root);
-      const currentRevision = runGit(['rev-parse', 'HEAD'], sourceRoot, `${name} final revision`);
-      const currentStatus = runGit(['status', '--porcelain', '--untracked-files=all'], sourceRoot, `${name} final Git status`);
-      if (currentRevision !== sources[name].revision || currentStatus) {
-        throw new RunnerError(`The configured ${name} source changed during integration.`);
-      }
+    const sourceRoot = realpathSync(config.goldfish.source_root);
+    const currentRevision = runGit(['rev-parse', 'HEAD'], sourceRoot, 'goldfish final revision');
+    const currentStatus = runGit(['status', '--porcelain', '--untracked-files=all'], sourceRoot, 'goldfish final Git status');
+    if (currentRevision !== sources.goldfish.revision || currentStatus) {
+      throw new RunnerError('The configured goldfish source changed during integration.');
     }
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   } finally {

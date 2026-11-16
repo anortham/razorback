@@ -8,7 +8,7 @@ description: Learn how to write effective Skills that Claude can discover and us
 >
 > **Where razorback departs from this guide, on purpose:**
 > - `claude-cli` contains the reserved word "claude". It predates the rule and keeps its name so existing `razorback:claude-cli` references keep working. New skill names follow the rule.
-> - MCP tools are named as "code-kb `find_references`", not `code-kb:find_references`. Each host prefixes MCP tool names differently (Claude Code exposes `mcp__code-kb__find_references`), so razorback names the server next to the bare tool name and lets the host resolve it.
+> - MCP tools are named as "Goldfish `checkpoint`", not `goldfish:checkpoint`. Each host prefixes MCP tool names differently, so razorback names the server next to the bare tool name and lets the host resolve it.
 
 ## Contents
 

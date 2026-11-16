@@ -27,9 +27,9 @@ test('codex plugin manifest matches package metadata and Codex contract', () => 
 
   assert.deepEqual(manifest.interface, {
     displayName: 'Razorback',
-    shortDescription: 'code-kb-powered development workflow skills.',
+    shortDescription: 'Development workflow skills that match process to the task.',
     longDescription:
-      'Development workflow skills for Codex with evidence-first orientation, optional code-kb, TDD discipline, and subagent-driven execution.',
+      'Development workflow skills for Codex with evidence-first orientation, TDD discipline, and subagent-driven execution.',
     developerName: 'anortham',
     category: 'Productivity',
     capabilities: ['Write'],

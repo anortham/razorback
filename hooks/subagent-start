@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # SubagentStart hook for razorback plugin (Claude Code only).
 #
-# Injects the compact toolchain ruleset into every dispatched subagent.
-# Subagents never see the using-razorback toolchain table -- they skip that
+# Injects the compact subagent ruleset into every dispatched subagent.
+# Subagents never see the using-razorback evidence rules -- they skip that
 # skill by design (<SUBAGENT-STOP>) -- so without this hook every dispatch
-# prompt has to restate the retrieval rules from scratch. This makes the floor
+# prompt has to restate the rules from scratch. This makes the floor
 # automatic; prompt files still name task-specific symbols.
 #
 # razorback: injects into all subagents, add agent-type matcher if Explore-agent noise shows up.
@@ -25,15 +25,15 @@ case "$0" in
 esac
 PLUGIN_ROOT="${SCRIPT_DIR}/.."
 
-# Read the subagent toolchain ruleset with the read builtin (no external
+# Read the subagent ruleset with the read builtin (no external
 # command, for the same PATH-independence reason). read returns 1 at end of
 # file, hence || true; the loop drops trailing newlines as command substitution did.
-toolchain_md="${PLUGIN_ROOT}/skills/using-razorback/references/subagent-toolchain.md"
-toolchain_content="Error reading subagent-toolchain reference"
-if [ -r "$toolchain_md" ]; then
-  IFS= read -r -d '' toolchain_content < "$toolchain_md" || true
-  while [[ $toolchain_content == *$'\n' ]]; do
-    toolchain_content="${toolchain_content%$'\n'}"
+rules_md="${PLUGIN_ROOT}/skills/using-razorback/references/subagent-rules.md"
+rules_content="Error reading subagent-rules reference"
+if [ -r "$rules_md" ]; then
+  IFS= read -r -d '' rules_content < "$rules_md" || true
+  while [[ $rules_content == *$'\n' ]]; do
+    rules_content="${rules_content%$'\n'}"
   done
 fi
 
@@ -51,7 +51,7 @@ escape_for_json() {
     json_escaped="$s"
 }
 
-escape_for_json "$toolchain_content"
+escape_for_json "$rules_content"
 subagent_context="<EXTREMELY_IMPORTANT>\n${json_escaped}\n</EXTREMELY_IMPORTANT>"
 
 # Output context injection as JSON.

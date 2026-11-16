@@ -4,13 +4,13 @@
     "name": "Alan Northam"
   },
   "metadata": {
-    "description": "code-kb-powered development workflow skills for Claude Code"
+    "description": "Development workflow skills for Claude Code"
   },
   "plugins": [
     {
       "name": "razorback",
       "source": "./",
-      "description": "code-kb-powered development workflow skills. Fork of Superpowers with explicit code-kb integration.",
+      "description": "Development workflow skills that match process to the task. Diverged from Superpowers.",
       "version": "0.53.0",
       "category": "productivity"
     }

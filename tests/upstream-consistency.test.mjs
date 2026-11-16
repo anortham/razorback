@@ -39,7 +39,7 @@ test('spec reviewer catches inline task text instead of the canonical brief path
   );
 });
 
-test('parallel dispatch refreshes evidence without requiring code-kb', () => {
+test('parallel dispatch refreshes evidence after a write batch', () => {
   const body = read('skills/subagent-driven-development/SKILL.md');
   const parallelDispatch = body.slice(
     body.indexOf('### Parallel Dispatch (Independent Tasks)'),
@@ -51,6 +51,4 @@ test('parallel dispatch refreshes evidence without requiring code-kb', () => {
     /After a completed batch of file writes, re-read the changed source before the next dispatch\./,
     'parallel dispatch must refresh its source evidence after a write batch'
   );
-  assert.match(parallelDispatch, /If using code-kb/);
-  assert.match(parallelDispatch, /native search and file reads/);
 });

@@ -44,7 +44,7 @@ A dispatch consumes its invocation even when output is unusable. A required revi
 
 `SKILL_DIR` is this skill's own directory, the base directory the host names when it loads the skill. Shell variables do not survive between tool calls, so set `SKILL_DIR=<that absolute path>` at the start of each shell command that runs a script. Run Steps 1-3 in one shell command, or carry each variable into the next.
 
-Inspect changed symbols, trace callers of changed public APIs, and identify relevant tests with native search and file reads, or code-kb when useful; summarize that as `$SOURCE_EVIDENCE`. The external reviewer does not run code-kb; it reads the bundle and the exported tree and reports missing evidence when they cannot support a conclusion.
+Inspect changed symbols, trace callers of changed public APIs, and identify relevant tests with native search and file reads; summarize that as `$SOURCE_EVIDENCE`. The external reviewer reads the bundle and the exported tree and reports missing evidence when they cannot support a conclusion.
 
 ```bash
 BASE=$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null) || { echo "no main or master branch: set BASE to the merge-base with the target branch" >&2; exit 1; }
@@ -115,12 +115,7 @@ Use `$REVIEW_PROMPT_FILE` for one pass, then remove the payload files and the ar
 
 ### Step 3: Run and parse each pass
 
-The reviewer-prompts file captures each pass directly to `$OUT_DIR/reviewer-output-$PASS.json`: `reviewer-output-general.json`, then `reviewer-output-security.json`. Validate each output per [`../codex-cli/references/shared-cli-review.md`](../codex-cli/references/shared-cli-review.md); validate each pass against `schemas/review-output.schema.json` via:
-
-```bash
-"$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$OUT_DIR/reviewer-output-general.json"
-"$SKILL_DIR/../codex-cli/scripts/validate-review-output" "$OUT_DIR/reviewer-output-security.json"
-```
+The reviewer-prompts file captures each pass directly to `$OUT_DIR/reviewer-output-$PASS.json` (`reviewer-output-general.json`, then `reviewer-output-security.json`) and validates it once with `validate-review-output` against `schemas/review-output.schema.json`, which writes `$OUT_DIR/reviewer-normalized-$PASS.json`. Read the normalized files; do not validate a pass a second time.
 
 Do not gate on `jq -e '.findings[]'`; it exits 4 on a valid empty array. Malformed, incomplete, or schema-invalid output is a failed required-reviewer pass: close `blocked` with the consumed count, no retry. Merge both outputs into one list, tagging each finding `general` / `security`. Cost: claude sums `.total_cost_usd` and `.usage` across both passes; codex reports no per-request counts, so note the absence.
 
@@ -128,7 +123,7 @@ After both outputs are parsed (or on any failure path), run `rm -rf -- "$REVIEW_
 
 ## Step 4: Verify and classify
 
-Full protocol with examples: [`verification-protocol.md`](verification-protocol.md). Verify every finding against current source with native tools or code-kb and classify:
+Full protocol with examples: [`verification-protocol.md`](verification-protocol.md). Verify every finding against current source and classify:
 
 | Class | Action |
 |---|---|

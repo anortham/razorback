@@ -21,7 +21,7 @@ Fresh implementer dispatch (delegation available):
 
     ## Symbol target
 
-    [The symbol or code region this finding touches, plus one short note if public API impact matters. No raw inspect/trace output; inspect current source with code-kb or native tools before editing.]
+    [The symbol or code region this finding touches, plus one short note if public API impact matters. No raw inspect/trace output; inspect current source before editing.]
 
     ## Plan context
 
@@ -38,11 +38,9 @@ Fresh implementer dispatch (delegation available):
 
     ## Orientation (REQUIRED before coding)
 
-    1. Inspect the symbol the finding touches, its callers, callees, and tests to run: code-kb
-       `get_symbol_context(symbol_name, file_path?)`; file reads and a search only to check it.
-    2. Read the file you will edit, since the editor needs it.
-    3. Find every caller (code-kb `find_references(symbol_name, direction="callers")` for the
-       full list, or a search) if your fix changes caller-visible behavior.
+    1. Read the symbol the finding touches and the file you will edit.
+    2. Find the tests that cover the symbol.
+    3. Search for every caller if your fix changes caller-visible behavior.
 
     Do not infer or invent API shapes: confirm symbol names, function
     signatures, config shapes, route names, CLI flags, and public contracts from
@@ -74,7 +72,7 @@ Fresh implementer dispatch (delegation available):
     - What you changed (file:line references)
     - Commit SHA (first 7 chars)
     - Verification scope, command, commit SHA, result, and timestamp
-    - **API-shape evidence** - the search, file read, or code-kb call that confirmed any symbol names, function signatures, config shapes, route names, CLI flags, or public contracts you relied on
+    - **API-shape evidence** - the search or file read that confirmed any symbol names, function signatures, config shapes, route names, CLI flags, or public contracts you relied on
     - Observations for the morning report's judgment-calls log
 
     If BLOCKED: what blocked you and what the lead needs to do (re-dispatch

@@ -7,7 +7,6 @@ For the bare-minimum quick install, see [`.opencode/INSTALL.md`](../.opencode/IN
 ## Prerequisites
 
 - [opencode.ai](https://opencode.ai) installed
-- **code-kb MCP** (optional): the first route for code structure when configured. Without it, skills use native search and file reads.
 
 ## Installation
 
@@ -124,7 +123,7 @@ The plugin (`.opencode/plugins/razorback.js`) wires two hooks:
 ### Execution model
 
 One coherent task runs directly in the lead session. Delegated plan execution in opencode uses `subagent-driven-development` for independent tasks: a fresh subagent per task, with the lead doing inline review. Sequential plans use `executing-plans`, and ad-hoc parallel work uses `dispatching-parallel-agents`.
-The evidence rules apply to the lead session and every child task session: code-kb is the first route for code structure, and native search and file reads are the first route for literal text and small whole files.
+The evidence rules apply to the lead session and every child task session: read the code a change touches, find callers before changing a symbol, and prove API shapes from current source.
 
 ### Tool mapping
 

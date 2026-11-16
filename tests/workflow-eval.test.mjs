@@ -85,7 +85,7 @@ function collectKeys(value, keys = new Set()) {
   return keys;
 }
 
-test('prepare emits fifteen blind, source-linked scenario packets', () => {
+test('prepare emits fourteen blind, source-linked scenario packets', () => {
   const output = join(testRoot, 'blind-packets.json');
   const packets = prepare(output);
 
@@ -94,7 +94,7 @@ test('prepare emits fifteen blind, source-linked scenario packets', () => {
     'push_recovery',
     'checkpoint',
     'single_task',
-    'missing_code_kb',
+    'audit_unreadable_scope',
     'restricted_reviewer',
     'live_tools',
     'instruction_priority',
@@ -102,9 +102,8 @@ test('prepare emits fifteen blind, source-linked scenario packets', () => {
     'parallel_commit',
     'worktree_switch',
     'approval_pause_recovery',
-    'missing_tool_fallback',
+    'evidence_before_fix',
     'duplicate_installations',
-    'unsupported_structural_coverage',
   ]);
   assert.equal(packets.source.kind, 'working-tree');
   assert.match(packets.source.revision, /^[0-9a-f]{40}$/);
@@ -128,16 +127,15 @@ test('prepare emits fifteen blind, source-linked scenario packets', () => {
   }
 });
 
-test('prepare emits five blind toolkit-reliability scenario packets', () => {
+test('prepare emits four blind toolkit-reliability scenario packets', () => {
   const packets = prepare(join(testRoot, 'toolkit-packets.json'));
-  const toolkitCases = packets.cases.slice(-5);
+  const toolkitCases = packets.cases.slice(-4);
 
   assert.deepEqual(toolkitCases.map(({ id }) => id), [
     'worktree_switch',
     'approval_pause_recovery',
-    'missing_tool_fallback',
+    'evidence_before_fix',
     'duplicate_installations',
-    'unsupported_structural_coverage',
   ]);
   assert.ok(toolkitCases.every(({ facts, workflow }) => facts.length > 0 && workflow.length > 0));
   assert.ok(toolkitCases.every(({ workflow }) => workflow.every(({ sha256 }) => /^[0-9a-f]{64}$/.test(sha256))));
@@ -162,8 +160,7 @@ test('approval decisions require a recoverable checkpoint before asking for publ
 test('toolkit fallback cases grade evidence boundaries without arbitrary terminal states or action ordering', () => {
   const packets = prepare(join(testRoot, 'toolkit-fallback-packets.json'));
   const answers = materializeValidAnswers(packets);
-  const fallback = answers.cases.find(({ id }) => id === 'missing_tool_fallback');
-  const coverage = answers.cases.find(({ id }) => id === 'unsupported_structural_coverage');
+  const fallback = answers.cases.find(({ id }) => id === 'evidence_before_fix');
 
   assert.deepEqual(fallback.actions, [
     'reproduce_focused_failure',
@@ -175,14 +172,13 @@ test('toolkit fallback cases grade evidence boundaries without arbitrary termina
     'continue_task',
   ]);
   assert.equal(fallback.terminal_state, 'complete');
-  assert.equal(coverage.terminal_state, 'complete');
   assert.equal(grade(packets, answers).result.status, 0);
 
   fallback.actions.splice(fallback.actions.indexOf('continue_task'), 1);
   fallback.actions.splice(fallback.actions.indexOf('report_evidence_gaps'), 0, 'continue_task');
   const incomplete = grade(packets, answers);
   assert.equal(incomplete.result.status, 1);
-  assert.ok(incomplete.report.cases.find(({ id }) => id === 'missing_tool_fallback').reasons
+  assert.ok(incomplete.report.cases.find(({ id }) => id === 'evidence_before_fix').reasons
     .some((reason) => reason.includes('continue_task must occur after report_evidence_gaps')));
 });
 
@@ -214,9 +210,9 @@ test('grade accepts source-required checks while preserving the approval checkpo
 test('grade accepts equivalent fallback evidence without waiving callers or focused reproduction', () => {
   const packets = prepare(join(testRoot, 'equivalent-fallback-evidence.json'));
   const answers = materializeValidAnswers(packets);
-  const fallback = answers.cases.find(({ id }) => id === 'missing_tool_fallback');
+  const fallback = answers.cases.find(({ id }) => id === 'evidence_before_fix');
   fallback.actions = ['reproduce_focused_failure', 'read_source_file', 'search_callers_natively', 'search_references_natively', 'report_coverage_gap', 'continue_task'];
-  const audit = answers.cases.find(({ id }) => id === 'missing_code_kb');
+  const audit = answers.cases.find(({ id }) => id === 'audit_unreadable_scope');
   audit.actions[audit.actions.indexOf('report_evidence_gaps')] = 'report_coverage_gap';
 
   assert.equal(grade(packets, answers).result.status, 0);
@@ -224,7 +220,7 @@ test('grade accepts equivalent fallback evidence without waiving callers or focu
   fallback.actions.splice(fallback.actions.indexOf('search_callers_natively'), 1);
   const noCallers = grade(packets, answers);
   assert.equal(noCallers.result.status, 1);
-  assert.ok(noCallers.report.cases.find(({ id }) => id === 'missing_tool_fallback').reasons
+  assert.ok(noCallers.report.cases.find(({ id }) => id === 'evidence_before_fix').reasons
     .includes('missing required action search_callers_natively'));
   fallback.actions.unshift('search_callers_natively');
   fallback.actions.splice(fallback.actions.indexOf('reproduce_focused_failure'), 1);
@@ -237,7 +233,6 @@ test('grade accepts explicit root binding and post-evidence continuation while e
   const scenario = (id) => answers.cases.find((answer) => answer.id === id);
   scenario('worktree_switch').actions.unshift('inspect_live_git');
   scenario('approval_pause_recovery').actions.unshift('set_goldfish_workspace');
-  scenario('unsupported_structural_coverage').actions.push('continue_task');
 
   assert.equal(grade(packets, answers).result.status, 0);
 
@@ -258,12 +253,12 @@ test('grade allows native fallback with sufficient evidence and safe toolkit fol
   worktree.push('continue_task');
   worktree.unshift('inspect_plan', 'inspect_ledger');
   scenario('approval_pause_recovery').actions.push('preserve_evidence', 'inspect_git', 'inspect_worktree_state');
-  scenario('missing_tool_fallback').actions = ['reproduce_focused_failure', 'inspect_git', 'read_source_file', 'search_callers_natively', 'identify_next_action', 'continue_task'];
+  scenario('evidence_before_fix').actions = ['reproduce_focused_failure', 'inspect_git', 'read_source_file', 'search_callers_natively', 'identify_next_action', 'continue_task'];
   scenario('duplicate_installations').actions.push('read_coverage_warning', 'report_coverage_gap', 'identify_next_action');
 
   assert.equal(grade(packets, answers).result.status, 0);
 
-  scenario('missing_tool_fallback').actions.splice(2, 0, 'claim_code_kb_checked');
+  scenario('evidence_before_fix').actions.splice(2, 0, 'claim_unverified_callers');
   assert.equal(grade(packets, answers).result.status, 1);
 });
 
@@ -331,7 +326,7 @@ test('grade accepts the checked-in valid decisions when linked to their packets'
 
   assert.equal(result.status, 0, result.stderr);
   assert.equal(report.success, true);
-  assert.deepEqual(report.summary, { total: 15, passed: 15, failed: 0 });
+  assert.deepEqual(report.summary, { total: 14, passed: 14, failed: 0 });
   assert.deepEqual(report.measurements, {
     latency_ms: 'unavailable',
     input_tokens: 'unavailable',
@@ -439,18 +434,18 @@ test('grade requires interrupted work reconciliation before completion', () => {
 test('grade rejects more than one audit scope question', () => {
   const packets = prepare(join(testRoot, 'question-range-packets.json'));
   const oneQuestion = materializeValidAnswers(packets);
-  const missingCodeKb = oneQuestion.cases.find(({ id }) => id === 'missing_code_kb');
-  missingCodeKb.actions = ['native_text_search', 'preserve_evidence', 'ask_scope_question'];
-  missingCodeKb.terminal_state = 'awaiting_user';
-  missingCodeKb.user_questions = 1;
+  const unreadableScope = oneQuestion.cases.find(({ id }) => id === 'audit_unreadable_scope');
+  unreadableScope.actions = ['native_text_search', 'preserve_evidence', 'ask_scope_question'];
+  unreadableScope.terminal_state = 'awaiting_user';
+  unreadableScope.user_questions = 1;
 
   assert.equal(grade(packets, oneQuestion).result.status, 0);
 
   const twoQuestions = structuredClone(oneQuestion);
-  twoQuestions.cases.find(({ id }) => id === 'missing_code_kb').user_questions = 2;
+  twoQuestions.cases.find(({ id }) => id === 'audit_unreadable_scope').user_questions = 2;
   const { result, report } = grade(packets, twoQuestions);
   assert.equal(result.status, 1);
-  assert.match(report.cases.find(({ id }) => id === 'missing_code_kb').reasons.join('\n'), /user_questions must be between 0 and 1/);
+  assert.match(report.cases.find(({ id }) => id === 'audit_unreadable_scope').reasons.join('\n'), /user_questions must be between 0 and 1/);
 });
 
 test('grade still requires exactly one publication approval question', () => {
@@ -574,45 +569,45 @@ test('grade rejects delegating one coherent task and a checkpoint on a routine c
   assert.match(report.cases.find(({ id }) => id === 'checkpoint').reasons.join('\n'), /forbidden action checkpoint_precommit/);
 });
 
-test('grade rejects blocking an audit on missing code-kb when native search works', () => {
-  const packets = prepare(join(testRoot, 'missing-code-kb-block-packets.json'));
+test('grade rejects blocking an audit when native search works', () => {
+  const packets = prepare(join(testRoot, 'audit-block-packets.json'));
   const answers = materializeValidAnswers(packets);
-  const missingCodeKb = answers.cases.find(({ id }) => id === 'missing_code_kb');
-  missingCodeKb.actions = ['preserve_evidence', 'report_blocked'];
-  missingCodeKb.terminal_state = 'blocked';
+  const unreadableScope = answers.cases.find(({ id }) => id === 'audit_unreadable_scope');
+  unreadableScope.actions = ['preserve_evidence', 'report_blocked'];
+  unreadableScope.terminal_state = 'blocked';
 
   const { result, report } = grade(packets, answers);
 
   assert.equal(result.status, 1);
-  const reasons = report.cases.find(({ id }) => id === 'missing_code_kb').reasons.join('\n');
+  const reasons = report.cases.find(({ id }) => id === 'audit_unreadable_scope').reasons.join('\n');
   assert.match(reasons, /forbidden action report_blocked/);
   assert.match(reasons, /missing required action native_text_search/);
 });
 
 test('grade accepts either audit outcome and rejects mismatched scope questions', () => {
-  const packets = prepare(join(testRoot, 'code-kb-outcome-packets.json'));
+  const packets = prepare(join(testRoot, 'audit-outcome-packets.json'));
   const restoration = materializeValidAnswers(packets);
-  const missingCodeKb = restoration.cases.find(({ id }) => id === 'missing_code_kb');
-  missingCodeKb.actions = ['native_text_search', 'preserve_evidence', 'ask_scope_question'];
-  missingCodeKb.terminal_state = 'awaiting_user';
-  missingCodeKb.user_questions = 1;
+  const unreadableScope = restoration.cases.find(({ id }) => id === 'audit_unreadable_scope');
+  unreadableScope.actions = ['native_text_search', 'preserve_evidence', 'ask_scope_question'];
+  unreadableScope.terminal_state = 'awaiting_user';
+  unreadableScope.user_questions = 1;
 
   assert.equal(grade(packets, restoration).result.status, 0);
 
   const mismatched = structuredClone(restoration);
-  mismatched.cases.find(({ id }) => id === 'missing_code_kb').user_questions = 0;
+  mismatched.cases.find(({ id }) => id === 'audit_unreadable_scope').user_questions = 0;
   const { result, report } = grade(packets, mismatched);
   assert.equal(result.status, 1);
-  assert.match(report.cases.find(({ id }) => id === 'missing_code_kb').reasons.join('\n'), /ask_scope_question requires user_questions between 1 and 1/);
+  assert.match(report.cases.find(({ id }) => id === 'audit_unreadable_scope').reasons.join('\n'), /ask_scope_question requires user_questions between 1 and 1/);
 });
 
 test('grade accepts reporting an evidence gap while asking once about the scope', () => {
-  const packets = prepare(join(testRoot, 'combined-code-kb-outcome-packets.json'));
+  const packets = prepare(join(testRoot, 'combined-audit-outcome-packets.json'));
   const answers = materializeValidAnswers(packets);
-  const missingCodeKb = answers.cases.find(({ id }) => id === 'missing_code_kb');
-  missingCodeKb.actions = ['native_text_search', 'preserve_evidence', 'report_evidence_gaps', 'ask_scope_question'];
-  missingCodeKb.terminal_state = 'awaiting_user';
-  missingCodeKb.user_questions = 1;
+  const unreadableScope = answers.cases.find(({ id }) => id === 'audit_unreadable_scope');
+  unreadableScope.actions = ['native_text_search', 'preserve_evidence', 'report_evidence_gaps', 'ask_scope_question'];
+  unreadableScope.terminal_state = 'awaiting_user';
+  unreadableScope.user_questions = 1;
 
   const { result, report } = grade(packets, answers);
 
@@ -620,17 +615,17 @@ test('grade accepts reporting an evidence gap while asking once about the scope'
 });
 
 test('grade rejects a scope question with a complete terminal state', () => {
-  const packets = prepare(join(testRoot, 'mismatched-code-kb-state-packets.json'));
+  const packets = prepare(join(testRoot, 'mismatched-audit-state-packets.json'));
   const answers = materializeValidAnswers(packets);
-  const missingCodeKb = answers.cases.find(({ id }) => id === 'missing_code_kb');
-  missingCodeKb.actions = ['native_text_search', 'preserve_evidence', 'report_evidence_gaps', 'ask_scope_question'];
-  missingCodeKb.terminal_state = 'complete';
-  missingCodeKb.user_questions = 1;
+  const unreadableScope = answers.cases.find(({ id }) => id === 'audit_unreadable_scope');
+  unreadableScope.actions = ['native_text_search', 'preserve_evidence', 'report_evidence_gaps', 'ask_scope_question'];
+  unreadableScope.terminal_state = 'complete';
+  unreadableScope.user_questions = 1;
 
   const { result, report } = grade(packets, answers);
 
   assert.equal(result.status, 1);
-  assert.match(report.cases.find(({ id }) => id === 'missing_code_kb').reasons.join('\n'), /ask_scope_question requires terminal_state awaiting_user/);
+  assert.match(report.cases.find(({ id }) => id === 'audit_unreadable_scope').reasons.join('\n'), /ask_scope_question requires terminal_state awaiting_user/);
 });
 
 test('grade accepts safe evidence and follow-through alternatives across cases', () => {
@@ -643,8 +638,8 @@ test('grade accepts safe evidence and follow-through alternatives across cases',
     'lead_quality_review',
     'mark_task_complete',
   ];
-  const missingCodeKb = answers.cases.find(({ id }) => id === 'missing_code_kb');
-  missingCodeKb.actions = ['preserve_evidence', 'native_text_search', 'report_evidence_gaps', 'report_ledger'];
+  const unreadableScope = answers.cases.find(({ id }) => id === 'audit_unreadable_scope');
+  unreadableScope.actions = ['preserve_evidence', 'native_text_search', 'report_evidence_gaps', 'report_ledger'];
   const liveTools = answers.cases.find(({ id }) => id === 'live_tools');
   liveTools.actions = [
     'track_durable_plan',

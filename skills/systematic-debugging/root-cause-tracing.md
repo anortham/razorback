@@ -55,7 +55,7 @@ await execFileAsync('git', ['init'], { cwd: projectDir });
 
 ### 3. Ask: What Called This?
 
-**Inspect the symbol first** and trace its callers with native search and file reads, or code-kb `get_symbol_context` and `find_references` when useful. Confirm uncertain or missing indexed edges against current source.
+**Inspect the symbol first** and trace its callers with search and file reads. A search that finds no caller is not proof that none exists.
 
 If that reveals the chain, skip to step 5 (find original trigger). If the chain is too dynamic or indirect for static analysis, trace manually:
 

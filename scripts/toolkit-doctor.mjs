@@ -264,7 +264,7 @@ function inspectHooks(root, roots, host) {
     'hooks/session-start',
     'hooks/subagent-start',
     'skills/using-razorback/SKILL.md',
-    'skills/using-razorback/references/subagent-toolchain.md',
+    'skills/using-razorback/references/subagent-rules.md',
   ]);
   const invalidRegistrations = [];
   let configurationValid = true;

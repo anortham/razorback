@@ -132,7 +132,7 @@ test('subagent-driven-development keeps SDD artifacts self-ignored and worktree-
   }
 });
 
-test('code-kb guidance forbids guessed API shapes in active workflows', () => {
+test('evidence rules forbid guessed API shapes in active workflows', () => {
   const usingRazorback = read('skills/using-razorback/SKILL.md');
   const writingPlans = read('skills/writing-plans/SKILL.md');
   const sdd = read('skills/subagent-driven-development/SKILL.md');
@@ -148,7 +148,7 @@ test('code-kb guidance forbids guessed API shapes in active workflows', () => {
   assert.match(sdd, /API-shape evidence requirement/);
   assert.match(implementerPrompt, /## API Shape Evidence/);
   assert.match(implementerPrompt, /name the evidence that proved each shape/);
-  assert.match(reviewSkill, /code-kb-backed\s+API-shape evidence/);
+  assert.match(reviewSkill, /API-shape evidence from current source/);
   assert.match(fixDispatchPrompt, /API-shape evidence/);
 });
 

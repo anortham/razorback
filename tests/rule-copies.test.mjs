@@ -10,7 +10,7 @@ const checker = path.join(root, 'scripts', 'check-rule-copies.mjs');
 
 const CANONICAL = 'skills/using-razorback/references/instruction-tier.md';
 const SKILL = 'skills/using-razorback/SKILL.md';
-const SUBAGENT = 'skills/using-razorback/references/subagent-toolchain.md';
+const SUBAGENT = 'skills/using-razorback/references/subagent-rules.md';
 const COPIES = [
   '.cursor/rules/razorback.mdc',
   '.windsurf/rules/razorback.md',
@@ -87,10 +87,10 @@ test('checker fails when a rule invariant is missing from the canonical', () => 
   assert.match(result.stderr, /invariant/i);
 });
 
-// subagent-toolchain.md restates the same exploration rules for dispatched subagents. It is not
+// subagent-rules.md restates the same exploration rules for dispatched subagents. It is not
 // byte-comparable to the canonical (different framing, extra worktree-state clause), so it
 // is held to the invariant layer only — a reworded rule there must still trip the checker.
-test('checker fails when a rule invariant is missing from subagent-toolchain.md', () => {
+test('checker fails when a rule invariant is missing from subagent-rules.md', () => {
   const dir = makeFixture();
   edit(dir, SUBAGENT, (text) =>
     text.replace("Find a symbol's callers before changing it", 'Look around a bit first')
@@ -98,5 +98,5 @@ test('checker fails when a rule invariant is missing from subagent-toolchain.md'
 
   const result = runChecker(dir);
   assert.equal(result.status, 1, 'expected exit 1 for a missing invariant');
-  assert.match(result.stderr, /subagent-toolchain\.md is missing rule invariant/);
+  assert.match(result.stderr, /subagent-rules\.md is missing rule invariant/);
 });

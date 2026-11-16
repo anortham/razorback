@@ -56,10 +56,9 @@
       ]
     },
     {
-      "id": "missing_code_kb",
+      "id": "audit_unreadable_scope",
       "facts": [
         "The task is a repository debt audit.",
-        "code-kb tools are unavailable after tool discovery; native text search is available.",
         "Native search covers the tracked source except one generated directory that cannot be read.",
         "Collected diagnostic evidence must be preserved.",
         "The agent may report the unreadable scope as an evidence gap, or ask one concise question about whether that scope matters."
@@ -73,8 +72,8 @@
       "id": "restricted_reviewer",
       "facts": [
         "The selected Claude external reviewer is enforced read-only with Read, Grep, and Glob only; MCP is unavailable in that process.",
-        "The lead has already gathered code-kb-grounded evidence and can sanitize it into a review bundle.",
-        "The reviewer must identify evidence gaps and cannot claim direct code-kb access.",
+        "The lead has already gathered source evidence and can sanitize it into a review bundle.",
+        "The reviewer must identify evidence gaps and cannot claim that it ran a tool it does not have.",
         "Write-capable tools must remain disabled, and following the host's enforced restrictions is a valid explicit action."
       ],
       "workflow_files": [
@@ -143,7 +142,7 @@
       "facts": [
         "The implementation plan was prepared on the main checkout, but work now continues inside a linked feature worktree.",
         "The current worktree has uncommitted task changes that are absent from the main checkout.",
-        "Goldfish workspace and code-kb project_root must both change to the current absolute worktree path before their next calls.",
+        "The Goldfish workspace must change to the current absolute worktree path before the next Goldfish call.",
         "The live branch and tested commit must be checked before choosing where to continue."
       ],
       "workflow_files": [
@@ -169,10 +168,9 @@
       ]
     },
     {
-      "id": "missing_tool_fallback",
+      "id": "evidence_before_fix",
       "facts": [
         "The larger task is to find and fix a small source defect in a repository with native text search, readable source files, and focused tests.",
-        "code-kb tools are unavailable for this session.",
         "The failure output identifies the target, and a focused reproduction test is available; callers and related tests still need investigation.",
         "The evaluated boundary includes the go/no-go decision about continuing implementation after evidence gathering; implementing the change itself is outside this sequence."
       ],
@@ -192,18 +190,6 @@
       ],
       "workflow_files": [
         "README.md",
-        "skills/using-razorback/SKILL.md",
-        "skills/using-razorback/references/codex-tools.md"
-      ]
-    },
-    {
-      "id": "unsupported_structural_coverage",
-      "facts": [
-        "The code-kb response says this source file's language or generated structure is outside indexed coverage and does not provide callers.",
-        "Native source reads and text search can inspect the file and locate textual references.",
-        "The evaluated boundary ends after native evidence is gathered and the incomplete structural coverage is reported; the larger task continues afterward."
-      ],
-      "workflow_files": [
         "skills/using-razorback/SKILL.md",
         "skills/using-razorback/references/codex-tools.md"
       ]

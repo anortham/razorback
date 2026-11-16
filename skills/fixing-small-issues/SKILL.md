@@ -21,8 +21,8 @@ No worktree, no project setup, no baseline or full-suite run until the change ta
 
 ## Step 1: Investigate (no infrastructure)
 
-- Locate the target: a search for the symptom or error text, a file read, or code-kb (`lookup_symbol`, which shows the body of one short definition, and `get_symbol_context` if it might be shared, which carries its callers).
-- Defects: razorback:systematic-debugging Phase 1 — reproduce, find root cause.
+- Locate the target: a search for the symptom or error text, then a file read. If the target might be shared, search for its callers.
+- Defects: reproduce the symptom and name the root cause with evidence before any fix. Load razorback:systematic-debugging only when the cause is still unclear after that first look.
 - Tweaks: confirm the exact target (selector, constant, string) in current source.
 
 ## Step 2: Triage (measure, don't vibe)
@@ -45,15 +45,15 @@ The quick-fix tier applies only when ALL criteria hold. Project instructions may
 ## Step 3: Fix in place
 
 - Work on the current checkout. Protected branch → plain feature branch, never a worktree.
-- TDD applies when suitable automation can test the behavior: add a failing regression test first, then the minimal fix (razorback:test-driven-development). A missing test is not an exception. Only when there is no suitable automated test surface because automation is unsuitable for the behavior, not merely absent from the current test suite, may you use a manual check; record why automation is unsuitable and a concrete observable before-and-after result. Stricter project instructions can prohibit this exception, and it does not waive tests for other behavior in the same change.
+- TDD applies when suitable automation can test the behavior: add a failing regression test first, watch it fail for the expected reason, then make the minimal fix. Load razorback:test-driven-development only when the test shape is unclear. A missing test is not an exception. Only when there is no suitable automated test surface because automation is unsuitable for the behavior, not merely absent from the current test suite, may you use a manual check; record why automation is unsuitable and a concrete observable before-and-after result. Stricter project instructions can prohibit this exception, and it does not waive tests for other behavior in the same change.
 - One fix at a time. No while-I'm-here improvements.
 - If the fix cuts a real corner with a known ceiling, mark it: `# razorback: <ceiling>, <upgrade trigger>` (`//` in C-family languages), e.g. `# razorback: global lock, per-account locks if throughput matters`. razorback:harvesting-debt collects markers into a ledger later; an unmarked shortcut rots.
 
 ## Step 4: Verify the affected scope only
 
-- Identify affected callers and tests with native search and file reads, or code-kb (the tests to run in `get_symbol_context`, and `blast_radius` for the full list) when useful. Its predictions can be incomplete; verify coverage against current source and reconfirm the symptom is gone. A failing test iterates on its own id until it passes; the impacted set runs once after (razorback:systematic-debugging Phase 4). razorback:verification-before-completion applies in full.
-- The full suite is NOT part of this tier; the full suite runs at the branch gate (CI or pre-merge).
-- Commit with a clear message. The PR belongs to the branch, not to the item: with more items queued, go to the next item (Batch mode). When the branch is done, run the branch gate once and open one PR with a plain body (items done, items left out and why, gate result).
+- Identify affected callers and tests with native search and file reads, and reconfirm the symptom is gone. A failing test iterates on its own id until it passes; the impacted set runs once after. Claim the fix only with that fresh output (razorback:verification-before-completion).
+- The full suite never runs per fix. It runs once, at the branch gate.
+- Commit with a clear message. The PR belongs to the branch, not to the item: with more items queued, go to the next item (Batch mode). When the branch is done, run the branch gate once. Push and open one PR with a plain body (items done, items left out and why, gate result) when the request or project instructions already granted push and PR; otherwise ask once, after the gate.
 - In the closing summary, list any `# razorback:` markers left (`<file>:<line>` + ceiling), or say "no markers left."
 
 ## Batch mode: a list of small items
@@ -64,7 +64,7 @@ A list of small, independent items (a backlog, a review's nits, a to-do list) is
 - Triage each item against the Step 2 criteria when you reach it. Fix it (Step 3), verify its affected scope (Step 4), commit it, move on. A harness task list tracks the items.
 - Measure the criteria and the escalation triggers per item, never against the sum of the branch. Eleven two-file fixes are eleven quick fixes, not a 22-file change.
 - An item that fails a criterion or fires a trigger leaves the batch: note it, finish the other items, then route the leftover through razorback:brainstorming triage. One hard item never promotes the whole list to a plan.
-- The full suite and any slow suite run once, after the last item, as the branch gate. Then one PR for the batch. Never a gate or a PR per item.
+- The full suite and any slow suite run once, after the last item, as the branch gate. Then one PR for the batch, under the push rule in Step 4. Never a gate or a PR per item.
 - No plan file, no worker, no ledger, no task report, no morning report. A plan file needs a handoff, a multi-session effort, or a coordination need (razorback:writing-plans), never an item count.
 - Independent items may run in parallel subagents with disjoint files (razorback:dispatching-parallel-agents). The lead reviews each diff, then one gate and one PR.
 
@@ -73,7 +73,7 @@ A list of small, independent items (a backlog, a review's nits, a to-do list) is
 Checked continuously while fixing:
 
 - The change needs a **3rd source file** or **~2× the line budget**
-- The root cause lands in **shared or public code** (API, schema, shared state, security boundary) — check callers and impact with native search or code-kb
+- The root cause lands in **shared or public code** (API, schema, shared state, security boundary) — check callers and impact with a search
 - A **second fix attempt fails**
 - The fix needs a **dependency change or a new module**
 

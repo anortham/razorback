@@ -11,13 +11,13 @@ description: Supplies the criteria for the lead's inline review, and dispatches 
 
 After each implementer reports DONE in `razorback:subagent-driven-development` (or on its own work in `razorback:executing-plans`), the lead checks two things:
 
-**Spec compliance:** built what was requested, nothing missing, nothing extra. Use native search and file reads, or code-kb when useful, then compare the changed code to the task requirements line by line.
+**Spec compliance:** built what was requested, nothing missing, nothing extra. Use native search and file reads, then compare the changed code to the task requirements line by line.
 
 **Code quality:**
-- Inspect key modified symbols with file reads or code-kb `get_symbol_context`, which carries their callers and tests to run.
-- Trace callers with native search or the callers in code-kb `get_symbol_context` (`find_references` for the full list) to verify dependents still work.
+- Read the key modified symbols.
+- Search for their callers to verify dependents still work.
 - Tests verify behavior, not that code runs.
-- Reject the report if it relies on symbol names, function signatures, config shapes, route names, CLI flags, or public contracts without API-shape evidence from current source (code-kb-backed API-shape evidence or file reads).
+- Reject the report if it relies on symbol names, function signatures, config shapes, route names, CLI flags, or public contracts without API-shape evidence from current source.
 - Compare the diff against the approved architecture, not just the symptom. When repeated findings show the same structural issue, route it through `razorback:architecture-quality` Candidate Mode instead of looping patches.
 
 **If issues found:** route the fix back through the harness-native follow-up path (resume the implementer where possible, else dispatch a fresh one with fix context). Review cap: 3 iterations. The canonical three-way cap contract is in `razorback:subagent-driven-development` Step 3 ("Cap adjudication").
@@ -26,7 +26,7 @@ After each implementer reports DONE in `razorback:subagent-driven-development` (
 
 Standalone review is for ad-hoc or baseline review: when stuck, before a refactor, after a major feature outside an approved plan, or before merging ad-hoc work. Planned pre-merge external review uses `razorback:pre-merge-review`, which owns the branch-gate, chosen-reviewer, classification, fix, and report flow. A standalone external CLI second opinion stays in its provider skill (`razorback:codex-cli` or `razorback:claude-cli`) under the redaction and policy gate below; do not force it through a plan or clean-HEAD gate.
 
-Harness-native reviewer agents use code-kb first for code structure. Restricted external reviewers in a planned pre-merge review get the lead's sanitized source-backed evidence and report missing evidence without MCP.
+Restricted external reviewers in a planned pre-merge review get the lead's sanitized source-backed evidence and report missing evidence without MCP.
 
 **1. Get the commit range:**
 ```bash

@@ -26,13 +26,10 @@ Lead inline review — spec compliance for Task N:
 
     ## How to Review
 
-    Use code-kb first for code structure, and native search for literal text:
-    1. Orient in a file you do not know (code-kb `file_skeleton(file_path)`).
-    2. Inspect the symbol the requirement centers on (code-kb `get_symbol_context(symbol_name, file_path?)`,
-       which carries its body, callers, and tests to run).
-    3. Confirm the implementation connects to the codebase through those callers (code-kb
-       `find_references(symbol_name, direction="callers")` for the full list).
-    Read the sections the change touches; a missing index result is not proof.
+    1. Read the sections the change touches.
+    2. Read the symbol the requirement centers on.
+    3. Search for its callers and confirm the implementation connects to the codebase
+       through them. A search that finds no caller is not proof that none exists.
 
     The spec is a vision document: for behavior it is silent on, judge by what a reasonable
     person using this software would expect, and grade the finding by its effect on that

@@ -45,27 +45,11 @@ test('subagent-start emits the Claude Code SubagentStart hookSpecificOutput shap
   assert.deepEqual(Object.keys(parsed), ['hookSpecificOutput']);
 });
 
-test('subagent-start injects the retrieval ruleset with code-kb first for code structure', () => {
+test('subagent-start injects the evidence rules and the worktree report rule', () => {
   const { additionalContext } = JSON.parse(runSubagentStart()).hookSpecificOutput;
 
-  assert.match(additionalContext, /`file_skeleton` on a folder or a file you do not know, to orient/);
-  assert.doesNotMatch(additionalContext, /`file_skeleton` before a full read/);
-  assert.doesNotMatch(additionalContext, /optional retrieval aid/);
-  assert.doesNotMatch(additionalContext, /smallest sufficient evidence/);
-  assert.doesNotMatch(additionalContext, /MUST be used/);
-  assert.doesNotMatch(additionalContext, /Do NOT fall back to Glob/);
+  assert.match(additionalContext, /Read the code a change touches before you edit it/);
   assert.match(additionalContext, /When the evidence cannot prove a shape/);
-  // Capability table entries.
-  assert.match(additionalContext, /file_skeleton\(file_path=<folder>\)/);
-  assert.match(additionalContext, /file_skeleton\(file_path, public_only\?\)/);
-  assert.match(additionalContext, /lookup_symbol\(query, path\?, kind\?\)/);
-  assert.match(additionalContext, /get_symbol_body\(symbol_name, file_path\?\)/);
-  assert.match(additionalContext, /get_symbol_context\(symbol_name, file_path\?\)/);
-  assert.match(additionalContext, /find_references\(symbol_name, direction="callers"\|"callees"\)/);
-  assert.match(additionalContext, /blast_radius\(symbol\?, file\?, depth\?\)/);
-  assert.match(additionalContext, /check_edit\(base\?\)/);
-  assert.match(additionalContext, /Every code-kb call takes `project_root`/);
-  // Subagent-specific worktree-state reporting requirement.
   assert.match(additionalContext, /worktree/i);
   assert.match(additionalContext, /path, branch, commit, (and )?dirty state/i);
 });
@@ -73,21 +57,19 @@ test('subagent-start injects the retrieval ruleset with code-kb first for code s
 test('subagent-start escapes the reference content so it round-trips through JSON', () => {
   const stdout = runSubagentStart();
   const { additionalContext } = JSON.parse(stdout).hookSpecificOutput;
-  const source = read('skills/using-razorback/references/subagent-toolchain.md');
+  const source = read('skills/using-razorback/references/subagent-rules.md');
 
-  // The escaped payload rehydrates the reference file verbatim: newlines,
-  // quotes, backslashes and table pipes all survive the JSON round-trip.
   assert.ok(
     additionalContext.includes(source.trim()),
-    'additionalContext must contain the unmodified subagent-toolchain.md content',
+    'additionalContext must contain the unmodified subagent-rules.md content',
   );
   // The JSON string value must carry escaped newlines, not raw ones.
   const payload = stdout.slice(stdout.indexOf('"additionalContext"'));
   assert.match(payload, /\\n/);
 });
 
-test('subagent-toolchain reference stays compact and carries no skill-invocation instructions', () => {
-  const reference = read('skills/using-razorback/references/subagent-toolchain.md');
+test('subagent-rules reference stays compact and carries no skill-invocation instructions', () => {
+  const reference = read('skills/using-razorback/references/subagent-rules.md');
   const lines = reference.trim().split('\n');
 
   assert.ok(lines.length <= 45, `expected a compact ruleset, got ${lines.length} lines`);
@@ -138,20 +120,20 @@ test('hooks.json is valid JSON and registers both SessionStart and SubagentStart
 test('subagent-start emits the SubagentStart shape when PATH is empty', () => {
   const payload = nestedPayload(runIsolated([hook]));
 
-  assert.match(payload, /Use code-kb first for code structure/);
-  assert.doesNotMatch(payload, /Error reading subagent-toolchain reference/);
+  assert.match(payload, /Read the code a change touches before you edit it/);
+  assert.doesNotMatch(payload, /Error reading subagent-rules reference/);
 });
 
 test('run-hook.cmd dispatches subagent-start when PATH is empty', () => {
   const payload = nestedPayload(runIsolated([wrapper, 'subagent-start']));
 
-  assert.match(payload, /Use code-kb first for code structure/);
+  assert.match(payload, /Read the code a change touches before you edit it/);
 });
 
 test('subagent-start run by bare filename from hooks/ still resolves the plugin root', () => {
   const payload = nestedPayload(runIsolated(['subagent-start'], { cwd: join(root, 'hooks') }));
 
-  assert.doesNotMatch(payload, /Error reading subagent-toolchain reference/);
+  assert.doesNotMatch(payload, /Error reading subagent-rules reference/);
 });
 
 test('subagent-start exits 0 silently when stdout is closed early', () => {
@@ -180,7 +162,7 @@ test('hooks/subagent-start uses bash builtins only', () => {
   assert.doesNotMatch(script, /\b(awk|cat|dirname|sed|grep|pwd)\b/);
   assert.doesNotMatch(script, /<</);
   assert.match(script, /^case "\$0" in$/m);
-  assert.match(script, /IFS= read -r -d '' toolchain_content < "\$toolchain_md"/);
+  assert.match(script, /IFS= read -r -d '' rules_content < "\$rules_md"/);
   assert.match(script, /^emit_json\(\) \{$/m);
   assert.match(script, /trap '' PIPE/);
   assert.match(script, /printf "\$@" 2>\/dev\/null \|\| true/);

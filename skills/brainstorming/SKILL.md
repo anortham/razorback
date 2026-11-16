@@ -43,7 +43,7 @@ Re-classify when the evidence changes. Hidden complexity discovered mid-task upg
 
 ## Path Workflows
 
-Every path starts by reading the code the request touches (code-kb helps in an unfamiliar area) plus `git log --oneline -10`.
+Every path starts by reading the code the request touches plus `git log --oneline -10`.
 
 ### Spike Workflow
 1. **Explore project context** enough to frame the probe.
@@ -75,7 +75,7 @@ Every path starts by reading the code the request touches (code-kb helps in an u
 - Process steps are your own calls, never questions: whether to write something up, where a file goes, whether to look further, how to show a result. Do them and say what you did.
 - When a choice has options you can name, sketch each one concretely with its trade-off and say which you would pick. Ask an open question, with nothing to pick from, only when you do not yet know why the user wants the thing.
 - One question per message, with a falsifiable guess: "I'm guessing X because Y — is that right?" Prefer multiple choice; guess first, labelled.
-- Environment facts (repo contents, tool support, config values) come from the repo (search, file reads, code-kb) or a subagent, never the user. Only questions downstream of that fact wait.
+- Environment facts (repo contents, tool support, config values) come from the repo (search, file reads) or a subagent, never the user. Only questions downstream of that fact wait.
 - A question is on the frontier when its prerequisites are settled. If the dialogue loops on a question only running code can answer, take the razorback:prototyping off-ramp and record the verdict on return.
 - Stop asking when no frontier question can materially change product intent, safety, scope, or architecture, you can state purpose, constraints, and success criteria in your own words, and your last material question produced no correction. Record chosen defaults and move on.
 
@@ -85,7 +85,7 @@ Every path starts by reading the code the request touches (code-kb helps in an u
 2. **Spec self-review:** placeholder scan (TBD, TODO, vague requirements), internal consistency, scope (one plan's worth?), ambiguity (pick one reading, make it explicit). Fix inline. If the session can dispatch subagents, you may instead dispatch a reviewer with `spec-document-reviewer-prompt.md` (this directory).
 3. **Doubt pass (conditional):** if `razorback:architecture-quality` rated risk medium/high, run the Doubt Pass from `razorback:cross-model-convergence` and fold surviving objections into the spec. Lead work, not a user gate.
 4. **User Review Gate:** User reviews written spec. This is the one approval for the design and for the run that follows. Give a summary of the design in a few lines, then ask:
-   > "Spec written to `<path>`. Please review it and reply **approved** or tell me what to change. Optional in the same reply: a pre-merge reviewer (codex or claude; none is the default), and whether I may push the branch and open the PR when the run is done."
+   > "Spec written to `<path>`. Please review it and reply **approved** or tell me what to change. In the same reply, say yes or no: may I push the branch and open the PR when the run is done? Name a pre-merge reviewer if you want one (codex or claude; none is the default)."
 
    Record the reviewer choice and the push and PR answer in the spec. razorback:writing-plans reads them and does not ask again when the plan stays inside the approved spec.
 

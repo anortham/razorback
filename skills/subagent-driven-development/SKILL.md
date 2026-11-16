@@ -22,7 +22,7 @@ Dispatch, follow-up, and wait tool names per harness: read `references/harness-d
 1. Read the plan once. `TaskCreate` per task. If the plan names a Spec, read that too: the spec is the authority the plan argues from, and conflicts inside the plan resolve against it. A plan with no reachable spec gets a ledger note saying so — rulings made without one are provisional.
 2. Read the ledger: `ws=$("$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE); cat "$ws/progress.md"`. Trust it only when its first line names this plan file; any other ledger (or a stray one at the old flat path) is another plan's — leave it, start fresh.
 3. Tasks marked complete **with a named commit** are DONE (verify with `git log`). A completion line whose SHA is missing, `pending`, or absent from `git log` is **INCOMPLETE** — the `parallel-lead-commit` crash window: `git status`, inspect the task's owned files, then re-review and commit the approved edits (Commit Mode Contract) or re-dispatch.
-4. Read the plan's areas so review can spot drift: file reads, or code-kb `file_skeleton` on the folders the plan modifies.
+4. Read the plan's areas so review can spot drift.
 5. Validate the plan's `## Parallel Execution Contract`: a safe batch with 2+ eligible tasks dispatches together. Safe = non-overlapping file ownership, no ordering dependency, `Serialization required: No`. Serialized lanes need `Serialization required: Yes` plus a `Dependency reason`. Serializing a safe batch requires a recorded dependency or tool limitation — caution is not one.
 6. **Pre-dispatch conflict scan:** before dispatching Task 1, read `references/preflight.md` (this directory), write its conflict table to the ledger, and rule on every conflict it finds.
 
@@ -59,7 +59,7 @@ Workspace: `"$SKILL_DIR/scripts/sdd-workspace" PLAN_FILE` prints `<repo-root>/.r
 
 ### Parallel Dispatch (Independent Tasks)
 
-One call per task in a single turn; file ownership per subagent. Coupled tasks (same files, shared state, ordering) run one at a time with the `Dependency reason` recorded. Review each task inline as it returns; never batch reviews. After a completed batch of file writes, re-read the changed source before the next dispatch. If using code-kb, check that its results reflect those writes; use native search and file reads if its index is stale or unavailable.
+One call per task in a single turn; file ownership per subagent. Coupled tasks (same files, shared state, ordering) run one at a time with the `Dependency reason` recorded. Review each task inline as it returns; never batch reviews. After a completed batch of file writes, re-read the changed source before the next dispatch.
 
 ### Batch Small Same-Shape Work
 
@@ -80,7 +80,7 @@ One pass by the lead. No reviewer subagents. Checklists: `./spec-reviewer-prompt
 - Did this avoid speculative extensibility?
 - Did it fix the structural cause, not only the symptom?
 
-**Quality:** tests assert meaningful values; no duplication, tight coupling, unclear names, missing error paths. code-kb `get_symbol_context` on key symbols, which carries their callers and tests to run; `find_references` for the full list of callers of a changed API. Do not ask a reviewer or yourself to re-run tests the implementer already ran on the same code — the implementer's report carries the test evidence. Reviewers will not re-run tests for you; if evidence is missing or illegible, re-read the report or bounce it back to the worker to provide pristine test output rather than rerunning full test suites. Concrete plans get a quality-focused pass; ambiguous or safety-sensitive tasks get the full pass.
+**Quality:** tests assert meaningful values; no duplication, tight coupling, unclear names, missing error paths. Read the key symbols and search for the callers of a changed API. Do not ask a reviewer or yourself to re-run tests the implementer already ran on the same code — the implementer's report carries the test evidence. Reviewers will not re-run tests for you; if evidence is missing or illegible, re-read the report or bounce it back to the worker to provide pristine test output rather than rerunning full test suites. Concrete plans get a quality-focused pass; ambiguous or safety-sensitive tasks get the full pass.
 
 **Severity:** only Critical and Important enter the fix loop (Step 4). Minor → `minor (deferred)` ledger line for Step 4a.
 

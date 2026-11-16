@@ -27,7 +27,7 @@ function makeInstall(root, host, { version = '1.2.3', skillNames = ['using-razor
   }
   if (host === 'claude') {
     fs.mkdirSync(path.join(root, 'skills', 'using-razorback', 'references'), { recursive: true });
-    fs.writeFileSync(path.join(root, 'skills', 'using-razorback', 'references', 'subagent-toolchain.md'), 'fixture');
+    fs.writeFileSync(path.join(root, 'skills', 'using-razorback', 'references', 'subagent-rules.md'), 'fixture');
     writeJson(path.join(root, '.claude-plugin', 'plugin.json'), { name: 'razorback', version, description: 'not output' });
     writeJson(path.join(root, '.claude-plugin', 'marketplace.json'), { plugins: [{ name: 'razorback', version }] });
     writeJson(path.join(root, 'hooks', 'hooks.json'), {
@@ -108,7 +108,7 @@ test('Claude doctor verifies the hook bootstrap payload files', t => {
 
   const outside = path.join(root, 'private.md');
   fs.writeFileSync(outside, 'SECRET_SENTINEL_51a6');
-  const payload = path.join(installRoot, 'skills', 'using-razorback', 'references', 'subagent-toolchain.md');
+  const payload = path.join(installRoot, 'skills', 'using-razorback', 'references', 'subagent-rules.md');
   fs.rmSync(payload);
   fs.symlinkSync(outside, payload);
   const unsafe = runDoctor(doctorArgs(projectRoot, 'claude', [installRoot], ['--json']));
@@ -124,7 +124,7 @@ test('Claude hook assets must exist and each hook command must name a bundled as
   fs.mkdirSync(projectRoot);
   makeInstall(installRoot, 'claude');
   fs.rmSync(path.join(installRoot, 'hooks', 'subagent-start'));
-  fs.rmSync(path.join(installRoot, 'skills', 'using-razorback', 'references', 'subagent-toolchain.md'));
+  fs.rmSync(path.join(installRoot, 'skills', 'using-razorback', 'references', 'subagent-rules.md'));
   writeJson(path.join(installRoot, 'hooks', 'hooks.json'), {
     hooks: { SessionStart: [{ hooks: [{ command: 'hooks/missing.sh' }] }], SubagentStart: [{ hooks: [{ command: 'hooks/subagent-start' }] }] },
   });
@@ -134,7 +134,7 @@ test('Claude hook assets must exist and each hook command must name a bundled as
   const report = JSON.parse(result.stdout);
   assert.equal(report.status, 'findings');
   assert.ok(report.checks.some(check => check.id === 'hook-assets' && check.status === 'fail'));
-  assert.ok(report.checks.find(check => check.id === 'hook-assets').evidence.installs[0].missing.includes('skills/using-razorback/references/subagent-toolchain.md'));
+  assert.ok(report.checks.find(check => check.id === 'hook-assets').evidence.installs[0].missing.includes('skills/using-razorback/references/subagent-rules.md'));
   assert.ok(report.checks.some(check => check.id === 'capabilities' && check.status === 'fail'));
 });
 

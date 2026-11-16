@@ -28,7 +28,7 @@ Dispatch one implementer subagent:
 
     ## Ambiguity
 
-    Re-read the brief and Contract inputs, then check current source with code-kb or native tools. If still
+    Re-read the brief and Contract inputs, then check current source. If still
     ambiguous, pick the plan-consistent option and note it in your report (file:line + reason).
 
     Stop and report BLOCKED only for the blocker taxonomy: broken credentials/env with no
@@ -48,16 +48,9 @@ Dispatch one implementer subagent:
 
     ## Codebase Orientation
 
-    Read the code the change touches before writing code. Use code-kb first for code
-    structure: `file_skeleton(file_path)` on a folder or a file you do not know, and
-    `get_symbol_context(symbol_name, file_path?)` for a symbol you change; it carries the
-    body, callers, tests to run, and types. Read the file you will edit, since the editor
-    needs it. Use a search or file read first for a literal error or string and for a small
-    file you edit as a whole. Find a symbol's callers before changing it (the callers in
-    `get_symbol_context`, `find_references(symbol_name, direction="callers")` for the full
-    list, then a search if the answer is empty or marked heuristic). After your edits, run
-    `check_edit` and handle each caller or test it lists outside your diff. If code-kb is
-    missing or its index is stale, use native search and file reads.
+    Read the code the change touches before writing code. Search for a symbol's callers
+    before changing it; a search that finds no caller is not proof that none exists. After
+    your edits, check that each caller and test of a changed symbol still holds.
 
     ## API Shape Evidence
 
@@ -140,7 +133,7 @@ Dispatch one implementer subagent:
     - What you implemented; files changed
     - Verification invariant, scope label, command, commit SHA if any, result, timestamp;
       hard-gate vs report-only metrics when relevant
-    - **API-shape evidence** — the search, file read, or code-kb call that confirmed each
+    - **API-shape evidence** — the search or file read that confirmed each
       symbol name, signature, config shape, route, CLI flag, or public contract relied on
     - **Judgment calls made** — `file:line - chose X over Y because [reason]`, one per
       ambiguity resolved without asking (feeds the morning report)

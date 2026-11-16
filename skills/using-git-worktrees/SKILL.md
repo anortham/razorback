@@ -19,7 +19,7 @@ GIT_COMMON=$(cd "$(git rev-parse --git-common-dir)" 2>/dev/null && pwd -P)
 git rev-parse --show-superproject-working-tree 2>/dev/null   # a path means submodule, not worktree
 ```
 
-- `GIT_DIR != GIT_COMMON` and not a submodule → already in a linked worktree. Report "Already in isolated workspace at `<path>` on branch `<name>`" (or "detached HEAD, externally managed; branch creation needed at finish time"). Skip to Step 2.
+- `GIT_DIR != GIT_COMMON` and not a submodule → already in a linked worktree. Report "Already in isolated workspace at `<path>` on branch `<name>`" (or "detached HEAD, externally managed; branch creation needed at finish time"). Skip to Step 2. If this session already ran setup and the baseline in this worktree, stop here: neither runs again.
 - Otherwise → normal checkout. Continue to Step 0b.
 
 ## Step 0b: Inventory Existing Worktrees and Branches
@@ -85,7 +85,7 @@ Run the project-documented setup command (repo docs, scripts, CI metadata, manif
 
 ## Step 3: Verify clean baseline
 
-Run the project-defined baseline or smoke scope.
+Run the project-defined baseline or smoke scope. A slow suite (browser, end-to-end, real database, or anything longer than a few minutes) is not a baseline: it runs once, at the branch gate.
 
 - A failed baseline is evidence to investigate, not an automatic blocker. Diagnose it first. Repair a relevant, recoverable failure when the approved task safely covers it, then rerun the baseline.
 - If the failure is unrelated and cannot be repaired within scope, record its command and evidence. Continue only when an isolated affected-change check proves the task; otherwise stop under the blocker taxonomy. An isolated check does not waive a required branch gate. Do not proceed to publication with a failing required gate.
@@ -134,7 +134,7 @@ Ready to implement <feature-name>
 
 ## Integration
 
-**Called by:** razorback:brainstorming (Phase 4), razorback:subagent-driven-development, razorback:executing-plans — REQUIRED before executing tasks. **Escape hatch:** the user can opt out with explicit consent for small, same-session work on a feature branch; record the consent.
+**Called by:** razorback:brainstorming, razorback:subagent-driven-development, razorback:executing-plans — REQUIRED before executing tasks. **Escape hatch:** the user can opt out with explicit consent for small, same-session work on a feature branch; record the consent.
 
 **Never called by:** razorback:fixing-small-issues. Quick-fix-tier work happens on the current checkout by policy — no worktree, no baseline verification, and no consent question needed.
 

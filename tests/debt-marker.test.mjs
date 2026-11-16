@@ -40,13 +40,11 @@ test('the debt-marker convention is documented in both skills', () => {
   assert.match(harvest, /\/\//);
 });
 
-test('harvesting-debt searches marker text, uses code-kb optionally, and reports evidence gaps', () => {
+test('harvesting-debt searches marker text and reports evidence gaps', () => {
   const skill = read('skills/harvesting-debt/SKILL.md');
 
   assert.match(skill, /rg -n 'razorback:'/);
   assert.doesNotMatch(skill, /Do not fall back to shell search/);
-  assert.match(skill, /lookup_symbol\(query='razorback:'\)/);
-  assert.doesNotMatch(skill, /code-kb scan/);
   assert.match(skill, /incomplete audit/i);
   assert.match(skill, /evidence gap/i);
   assert.match(skill, /truncated|omitted|continuation/i);

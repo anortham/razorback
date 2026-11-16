@@ -108,7 +108,7 @@ This commit is metadata-only (`.memories/` only), so Step 1 evidence carries ove
 
 ### Step 4a: Request missing publication authority once
 
-Skip this step when Step 0 found push and PR authority recorded. `razorback:writing-plans` and `razorback:brainstorming` ask for both with the approval that starts the run, so this stop is the fallback for a run that started without them.
+Skip this step when Step 0 found push and PR authority recorded. Skip the question also when the ledger records `declined at approval`: keep the branch local, report `Status: Awaiting publication approval`, and exit. `razorback:writing-plans` and `razorback:brainstorming` ask for both with the approval that starts the run, so this stop is the fallback for a run that started without them.
 
 After Steps 1–4 have produced local verification, source-control reconciliation, the committed prepared report, and its checkpoint when Goldfish is available, ask using the prepared report once for all missing push and PR actions. This is an approval boundary, not a blocker. Emit a local terminal pointer and stop until the user answers.
 

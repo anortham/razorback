@@ -16,7 +16,7 @@ Invocation for `claude -p` as the pre-merge adversarial reviewer. Background: `r
 - `claude --version` succeeds; `claude auth status` exits 0 (else blocker taxonomy #1, [`blocker-taxonomy.md`](../../using-razorback/references/blocker-taxonomy.md)).
 - Do not add `--bare`: bare mode skips OAuth and keychain auth reads.
 - `$REVIEW_ROOT` (exported tree from Step 1, outside `$PROJECT_DIR`, shared by both passes) and `$DIFF`, `$FILE_STAT`, `$COMMIT_LOG`, `$SOURCE_EVIDENCE`, optional `$USER_FOCUS` exist. Never run Claude from the live worktree.
-- This reviewer does not run code-kb (`--strict-mcp-config` removes MCP) and never claims to. It works from the lead's source-backed bundle and the exported tree, and reports missing evidence when they cannot support a conclusion.
+- This reviewer has no MCP tools (`--strict-mcp-config` removes them). It works from the lead's source-backed bundle and the exported tree, and reports missing evidence when they cannot support a conclusion.
 
 ## Build the user prompt
 

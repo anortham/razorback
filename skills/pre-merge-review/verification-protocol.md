@@ -1,6 +1,6 @@
 # Verification Protocol
 
-External reviewers over-report. Classify every finding against the actual code before acting. Verify with native search and file reads, or code-kb when useful: inspect the referenced symbol, trace callers when a public API or shared utility is touched, and confirm the cited source region.
+External reviewers over-report. Classify every finding against the actual code before acting. Verify with native search and file reads: inspect the referenced symbol, trace callers when a public API or shared utility is touched, and confirm the cited source region.
 
 ## Classifications
 

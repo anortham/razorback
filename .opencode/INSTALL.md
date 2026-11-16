@@ -3,7 +3,6 @@
 ## Prerequisites
 
 - [OpenCode.ai](https://opencode.ai) installed
-- **code-kb MCP** is optional for indexed retrieval; native search and file reads are always available.
 - **Goldfish MCP** is optional for persistent memory; existing plans and reports can carry handoffs.
 
 ## Installation
@@ -83,10 +82,6 @@ Then restart OpenCode.
 1. Use the `skill` tool to list what's discovered
 2. Confirm the plugin is loading (see above) — if it is, the skills directory is registered automatically
 3. Confirm you don't have a stale `skills.paths` entry pointing at a symlinked location
-
-### code-kb MCP not available
-
-Use native search and file reads. Configure code-kb only when indexed retrieval helps; its absence does not block the workflow.
 
 ### Tool mapping
 

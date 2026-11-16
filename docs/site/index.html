@@ -45,8 +45,7 @@
         Antigravity. It matches the process to the task: clear work goes straight to a test-first build,
         a review, and a pull request for you to merge. Unclear or consequential work first gets a design
         you agree with, and a plan when the work needs a handoff or parallel workers. It can use
-        <a href="https://anortham.github.io/code-kb/">code-kb</a> to explore code and
-        <a href="https://github.com/anortham/goldfish">Goldfish</a> to keep decisions across sessions; both are optional.
+        <a href="https://github.com/anortham/goldfish">Goldfish</a> to keep decisions across sessions; Goldfish is optional.
       </p>
       <p class="actions">
         <a class="button primary" href="#setup">Install razorback</a>
@@ -101,7 +100,7 @@
           <tr>
             <th scope="row">Exploring code</th>
             <td data-label="A bare agent">Searches with grep and reads whole files until it finds what it needs.</td>
-            <td data-label="With razorback">Uses code-kb first for code structure (symbols, file interfaces, callers, affected tests), and a search or a file read for literal text or a small file. It finds a function's callers before it changes the function.</td>
+            <td data-label="With razorback">Reads the code a change touches before it edits. It finds a function's callers before it changes the function, and it confirms names and signatures from current source.</td>
           </tr>
           <tr>
             <th scope="row">Subagents</th>
@@ -325,7 +324,7 @@
         </li>
         <li>
           <h3>Allow push and PR up front for an unattended finish</h3>
-          <p>Approval allows local commits only. Answer the push and PR question in the same reply. Without that answer, the run stops once at the end with <code>Status: Awaiting publication approval</code>.</p>
+          <p>Approval allows local commits only. Answer the push and PR question with yes or no in the same reply. Without that answer, the run stops once at the end with <code>Status: Awaiting publication approval</code>.</p>
           <p class="say"><span class="say-label">Say</span> <code>approved, push and PR</code></p>
           <a class="skill-ref" href="https://github.com/anortham/razorback/blob/main/skills/finishing-a-development-branch/SKILL.md">finishing-a-development-branch</a>
         </li>
@@ -404,7 +403,7 @@
         <div class="skill-group">
           <h3>Start here</h3>
           <ul>
-            <li id="skill-using-razorback"><a href="https://github.com/anortham/razorback/blob/main/skills/using-razorback/SKILL.md"><code data-skill="using-razorback">using-razorback</code></a> Loads at session start. Lists the skills, matches the process to the task by uncertainty, consequence, and coordination, and holds the code-kb rules.</li>
+            <li id="skill-using-razorback"><a href="https://github.com/anortham/razorback/blob/main/skills/using-razorback/SKILL.md"><code data-skill="using-razorback">using-razorback</code></a> Loads at session start. Lists the skills, matches the process to the task by uncertainty, consequence, and coordination, and holds the evidence rules.</li>
           </ul>
         </div>
 
@@ -482,9 +481,8 @@
 
       <div class="prereqs">
         <h3>Before you start</h3>
-        <p>Razorback works with native tools alone. Two optional MCP servers add to it:</p>
+        <p>Razorback works with native tools alone. One optional MCP server adds to it:</p>
         <ul>
-          <li><strong><a href="https://github.com/anortham/code-kb">code-kb</a></strong> for symbol lookup, callers, and likely tests in unfamiliar code. It needs Node.js 18 or newer on your <code>PATH</code>.</li>
           <li><strong><a href="https://github.com/anortham/goldfish">Goldfish</a></strong> for decision and handoff checkpoints, briefs, and recall. It needs Bun 1.0 or newer.</li>
         </ul>
         <p>Razorback itself is pure content: no build step and no runtime dependencies.</p>
@@ -502,13 +500,8 @@
           <h3 class="pane-title">Claude Code</h3>
           <ol class="install">
             <li>
-              <h4>Install code-kb</h4>
-              <p>Send these as two separate prompts:</p>
-              <pre><code>/plugin marketplace add anortham/code-kb
-/plugin install code-kb@code-kb</code></pre>
-            </li>
-            <li>
               <h4>Install Goldfish</h4>
+              <p>Send these as two separate prompts:</p>
               <pre><code>/plugin marketplace add anortham/goldfish
 /plugin install goldfish@goldfish</code></pre>
             </li>
@@ -536,12 +529,6 @@ claude --plugin-dir /path/to/razorback</code></pre>
           <h3 class="pane-title">Codex CLI &amp; ChatGPT desktop app</h3>
           <p>The ChatGPT desktop app was rebranded from Codex. Both use these steps.</p>
           <ol class="install">
-            <li>
-              <h4>Install code-kb</h4>
-              <pre><code>codex plugin marketplace add anortham/code-kb
-codex plugin add code-kb@code-kb</code></pre>
-              <p>Codex does not trust plugin hooks by default. Run <code>codex</code>, open <code>/hooks</code>, and trust the four code-kb hooks.</p>
-            </li>
             <li>
               <h4>Install Goldfish</h4>
               <pre><code>codex plugin marketplace add anortham/goldfish
@@ -581,20 +568,6 @@ cmd /c mklink /J "$env:USERPROFILE\.agents\skills\razorback" "$env:USERPROFILE\.
           <h3 class="pane-title">OpenCode</h3>
           <ol class="install">
             <li>
-              <h4>Add code-kb</h4>
-              <p>Point OpenCode at your code-kb binary in <code>opencode.json</code>:</p>
-              <pre><code>{
-  "$schema": "https://opencode.ai/config.json",
-  "mcp": {
-    "code-kb": {
-      "type": "local",
-      "command": ["/absolute/path/to/code-kb", "serve"],
-      "enabled": true
-    }
-  }
-}</code></pre>
-            </li>
-            <li>
               <h4>Add Goldfish</h4>
               <pre><code>{
   "$schema": "https://opencode.ai/config.json",
@@ -628,10 +601,6 @@ cmd /c mklink /J "$env:USERPROFILE\.agents\skills\razorback" "$env:USERPROFILE\.
         <div class="tabpane" id="pane-antigravity" role="tabpanel" aria-labelledby="tab-antigravity">
           <h3 class="pane-title">Antigravity</h3>
           <ol class="install">
-            <li>
-              <h4>Install code-kb</h4>
-              <pre><code>agy plugin install https://github.com/anortham/code-kb</code></pre>
-            </li>
             <li>
               <h4>Add Goldfish</h4>
               <pre><code>agy mcp add goldfish bun run /absolute/path/to/goldfish/src/server.ts</code></pre>
@@ -679,11 +648,9 @@ agy plugin import .</code></pre>
 
   <footer class="site-footer">
     <div>
-      <h2>Part of a small toolkit</h2>
+      <h2>Optional companion</h2>
       <ul class="toolkit">
-        <li><a href="https://anortham.github.io/code-kb/">code-kb</a> Code intelligence for agents. Razorback uses it when it helps.</li>
         <li><a href="https://github.com/anortham/goldfish">Goldfish</a> Persistent memory: checkpoints, briefs, and recall.</li>
-        <li><a href="https://anortham.github.io/julie-extractors/">julie-extractors</a> The parser engine behind code-kb.</li>
       </ul>
     </div>
     <div class="colophon">

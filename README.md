@@ -1,26 +1,25 @@
 # Razorback
 
-**code-kb-powered development workflow for Claude Code, Codex CLI / ChatGPT desktop app, OpenCode, and Antigravity.**
+**A development workflow that matches process to the task, for Claude Code, Codex CLI / ChatGPT desktop app, OpenCode, and Antigravity.**
 
 > Website: [anortham.github.io/razorback](https://anortham.github.io/razorback/) — the setup path from nothing to a working install, on one page.
 
-Razorback is a skill set for coding-agent harnesses, diverged from [Superpowers](https://github.com/obra/superpowers) to add code-kb MCP for token-efficient codebase orientation. One coherent task runs directly in the current agent. A written plan runs through `executing-plans`, or through `subagent-driven-development` when its tasks are independent or benefit from a separate context.
+Razorback is a skill set for coding-agent harnesses, diverged from [Superpowers](https://github.com/obra/superpowers). It matches process to each task: clear work proceeds directly, and a plan or delegation is used when the task benefits from it. One coherent task runs directly in the current agent. A written plan runs through `executing-plans`, or through `subagent-driven-development` when its tasks are independent or benefit from a separate context.
 
-**Supported harnesses.** Claude Code, Codex CLI / ChatGPT desktop app (rebranded from Codex), OpenCode, and Antigravity get the full plugin: skills, agents, bootstrap, and delegated execution. Cursor is **frozen** — its plugin support still works and is documented below, but it receives no new work. Copilot CLI is **instruction-tier**: it picks up razorback's code-kb-first ruleset from `.github/copilot-instructions.md` and nothing else. Cline, Kiro, Windsurf, and Cursor rules can use the same ruleset.
+**Supported harnesses.** Claude Code, Codex CLI / ChatGPT desktop app (rebranded from Codex), OpenCode, and Antigravity get the full plugin: skills, agents, bootstrap, and delegated execution. Cursor is **frozen** — its plugin support still works and is documented below, but it receives no new work. Copilot CLI is **instruction-tier**: it picks up razorback's ruleset from `.github/copilot-instructions.md` and nothing else. Cline, Kiro, Windsurf, and Cursor rules can use the same ruleset.
 
 ## Why?
 
-AI-assisted development burns tokens on repetitive codebase exploration. Every agent and subagent re-discovers the same code through Glob/Grep/Read chains. Razorback solves this two ways:
+Coding agents waste effort in two ways: they run heavy process on clear work, and they guess at code they did not read. Razorback addresses both:
 
-- **code-kb MCP (optional)** adds purpose-built tools — `file_skeleton`, `lookup_symbol`, `get_symbol_body`, `get_symbol_context`, `find_references`, `blast_radius`, and `check_edit` — for unfamiliar modules, callers, and likely tests.
-- **Evidence rules apply to every worker**: the lead, implementers, reviewers, and fix workers use code-kb first for code structure (symbols, file interfaces, callers, affected tests) and native search for literal text and small whole files.
+- **Process that fits the task**: clear work proceeds directly. A spec, a plan, or delegation is used only when uncertainty, consequence, or coordination calls for it.
+- **Evidence rules apply to every worker**: the lead, implementers, reviewers, and fix workers read the code a change touches, find callers before changing a symbol, and prove API shapes from current source.
 - **Parallel subagent dispatch with inline review by the lead** keeps the main agent's context clean while letting independent tasks move concurrently.
 - **Autonomous execution of approved plans** with optional pre-merge external review (codex / claude) and, when Goldfish is installed, decision and handoff checkpoints; runs overnight without waking you for anything short of a real blocker
 
 ## Requirements
 
 - A supported harness: [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Codex CLI / ChatGPT desktop app](https://openai.com/codex/), [OpenCode](https://opencode.ai), or [Antigravity](https://github.com/google-deepmind) — plus frozen support for [Cursor](https://cursor.sh)
-- [code-kb MCP](https://github.com/anortham/code-kb) — optional; adds symbol lookup, callers, and likely tests. Work completes with native tools when it is missing.
 - [Goldfish MCP Server](https://github.com/anortham/goldfish) — optional; adds decision and handoff checkpoints, briefs, and recall. Without it, the plan, the ledger, and git state carry recovery.
 - For Codex: enable `multi_agent = true` in `~/.codex/config.toml` so parallel execution skills can dispatch subagents
 
@@ -299,7 +298,7 @@ The core process scales with the task. Clear, ordinary work goes straight to TDD
 
 | Skill | Purpose |
 |-------|---------|
-| using-razorback | Entry point: skill routing, execution model, code-kb toolchain |
+| using-razorback | Entry point: skill routing, execution model, evidence rules |
 | brainstorming | Requirements exploration, design, approach selection |
 | prototyping | Throwaway-code off-ramp from brainstorming for empirical design questions: logic TUIs or UI variants, captured on a `prototype/<slug>` branch |
 | fixing-small-issues | Quick-fix tier: triage small defects/tweaks by objective criteria, fix in place, affected-scope verification |
@@ -337,7 +336,7 @@ The core process scales with the task. Clear, ordinary work goes straight to TDD
 | File | Purpose |
 |------|---------|
 | [Workflow decision evaluation](docs/workflow-evaluation.md) | Prepare blind baseline/revised packets and grade fresh-agent decisions with the local deterministic evaluator |
-| subagent-driven-development/implementer-prompt.md | Implementer spawn: task assignment, file ownership, code-kb directives, status protocol |
+| subagent-driven-development/implementer-prompt.md | Implementer spawn: task assignment, file ownership, evidence directives, status protocol |
 | subagent-driven-development/fix-prompt.md | Fix-round prompt with reviewer findings and reframed-context guidance |
 | subagent-driven-development/spec-reviewer-prompt.md | Review guide: spec compliance criteria |
 | subagent-driven-development/code-quality-reviewer-prompt.md | Review guide: code quality criteria |

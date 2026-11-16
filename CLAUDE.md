@@ -1,6 +1,6 @@
 # Razorback — Project Instructions
 
-Razorback is a skill set for Claude Code, Codex CLI / ChatGPT desktop app, OpenCode, and Antigravity that diverged from [Superpowers](https://github.com/obra/superpowers). It matches process to each task: clear, ordinary work proceeds directly in the current agent, and planning or delegation is used when a task benefits from it. code-kb MCP is the first route for code structure when it is available; Goldfish MCP is optional memory. A written plan runs through `executing-plans`, or through `subagent-driven-development` when its tasks are independent or benefit from a separate context.
+Razorback is a skill set for Claude Code, Codex CLI / ChatGPT desktop app, OpenCode, and Antigravity that diverged from [Superpowers](https://github.com/obra/superpowers). It matches process to each task: clear, ordinary work proceeds directly in the current agent, and planning or delegation is used when a task benefits from it. Goldfish MCP is optional memory. A written plan runs through `executing-plans`, or through `subagent-driven-development` when its tasks are independent or benefit from a separate context.
 
 ## External model policy
 Allowed providers: anthropic, openai, xai, google
@@ -21,7 +21,7 @@ agents/*.md                        — Agent definitions (Claude Code / Cursor)
 hooks/hooks.json                   — Claude Code hook configuration (SessionStart + SubagentStart)
 hooks/hooks-cursor.json            — Cursor hook configuration (sessionStart, camelCase)
 hooks/session-start                — Polyglot bash script injecting using-razorback
-hooks/subagent-start               — SubagentStart script injecting the toolchain ruleset into subagents (Claude Code)
+hooks/subagent-start               — SubagentStart script injecting the subagent ruleset into subagents (Claude Code)
 hooks/run-hook.cmd                 — Cross-platform polyglot wrapper (bash/cmd)
 .opencode/plugins/razorback.js     — OpenCode plugin (config hook + messages.transform)
 .codex/INSTALL.md                  — Codex install instructions
@@ -29,7 +29,7 @@ scripts/bump-version.sh            — Version sync across manifests
 scripts/check-rule-copies.mjs      — Syncs the instruction-tier ruleset across its host copies
 scripts/package-codex-plugin.sh    — Builds the Codex plugin package
 scripts/toolkit-doctor.mjs         — Read-only check of the installed toolkit (`npm run doctor`)
-scripts/run-toolkit-integration.mjs — Runs razorback against real code-kb and Goldfish servers in isolation (`npm run test:integration`)
+scripts/run-toolkit-integration.mjs — Runs razorback against a real Goldfish server in isolation (`npm run test:integration`)
 scripts/workflow-eval.mjs          — Prepares and grades workflow decision scenarios (see docs/workflow-evaluation.md)
 .clinerules/, .cursor/rules/, .kiro/steering/, .windsurf/rules/, .github/copilot-instructions.md — Host copies of the instruction-tier ruleset (synced, test-guarded)
 tests/*.test.mjs                   — Repo guard tests (`npm test`)
@@ -51,7 +51,7 @@ docs/specs/                         — Design specifications
 
 | Harness | Tier | Harness-specific files | Bootstrap mechanism |
 |---------|------|------------------------|---------------------|
-| Claude Code | plugin | `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `agents/`, `hooks/hooks.json`, `hooks/session-start`, `hooks/subagent-start`, `hooks/run-hook.cmd` | `SessionStart` hook injects `using-razorback` as `hookSpecificOutput.additionalContext`; `SubagentStart` hook injects the toolchain ruleset into dispatched subagents |
+| Claude Code | plugin | `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `agents/`, `hooks/hooks.json`, `hooks/session-start`, `hooks/subagent-start`, `hooks/run-hook.cmd` | `SessionStart` hook injects `using-razorback` as `hookSpecificOutput.additionalContext`; `SubagentStart` hook injects the subagent ruleset into dispatched subagents |
 | Codex CLI / ChatGPT desktop app | plugin | `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json`, `.codex/INSTALL.md`, `skills/using-razorback/references/codex-tools.md` | Preferred: install the Codex plugin from the repo-scoped marketplace entry. Fallback: local clone plus `~/.agents/skills/razorback/` symlink. Native skill discovery loads the installed skills at startup. |
 | OpenCode | plugin | `.opencode/plugins/razorback.js`, `AGENTS.md` symlink, `package.json`, `index.js` | Plugin's `config` hook registers skills path; `experimental.chat.messages.transform` injects bootstrap into first user message |
 | Antigravity (agy CLI / IDE) | plugin | none: `agy plugin import` reads the repo's `skills/`, `agents/`, and `hooks/` | `agy plugin import` stages skills, agents, and hooks into `~/.gemini/config`; alternatively, skills linked into `~/.gemini/config/skills/` or `.agents/skills/` load through native skill discovery |
@@ -84,43 +84,24 @@ The ChatGPT desktop app was rebranded from Codex; both share the Codex plugin pa
 - Hook scripts are extensionless bash files for cross-platform compatibility.
 - `run-hook.cmd` is a polyglot that works as both a cmd.exe batch file and bash script. On Windows without Git Bash, it emits a stderr warning and exits 0 (plugin still loads, bootstrap disabled).
 - `hooks/session-start` detects the harness from the `CURSOR_PLUGIN_ROOT` / `CLAUDE_PLUGIN_ROOT` env vars and emits the JSON shape that harness expects; unknown platforms fall back to the SDK-standard top-level `additionalContext`.
-- `hooks/subagent-start` (Claude Code only) injects the compact toolchain ruleset (evidence rules, optional code-kb) into every dispatched subagent — subagents skip `using-razorback` by design, so this hook is what gives them the toolchain floor.
+- `hooks/subagent-start` (Claude Code only) injects the compact subagent ruleset (evidence rules, test scope, worktree report) into every dispatched subagent — subagents skip `using-razorback` by design, so this hook is what gives them the evidence floor.
 
 ### Tests
 - `npm test` runs the guard suite in `tests/*.test.mjs` (also run by CI via `.github/workflows/test.yml`, on Linux and on Windows under Git Bash).
 - Shared setup lives in `tests/helpers/`. Use `read`, `section`, and `initRepository` from there; do not define a local copy.
 - A rule phrase that the three rule sources must carry belongs in `INVARIANTS` in `scripts/check-rule-copies.mjs`, not in a second test.
-- `scripts/check-rule-copies.mjs` (exercised by `tests/rule-copies.test.mjs`) keeps the instruction-tier ruleset byte-identical across its host copies (`.clinerules/`, `.cursor/rules/`, `.kiro/steering/`, `.windsurf/rules/`, `.github/copilot-instructions.md`, `using-razorback` SKILL.md, `subagent-toolchain.md`).
+- `scripts/check-rule-copies.mjs` (exercised by `tests/rule-copies.test.mjs`) keeps the instruction-tier ruleset byte-identical across its host copies (`.clinerules/`, `.cursor/rules/`, `.kiro/steering/`, `.windsurf/rules/`, `.github/copilot-instructions.md`, `using-razorback` SKILL.md, `subagent-rules.md`).
 - The architecture-quality checklist duplication across skills is intentional and test-guarded — do not dedupe it.
 
-## code-kb MCP Integration Pattern
+## Evidence Rules Pattern
 
-Razorback treats code-kb as the first route for code structure: a symbol's definition, a file's interface, callers and callees, and the tests a change affects. Native search and file reads are the first route for literal text and small whole files, and the check after a code-kb answer that is empty, capped, heuristic, or in conflict. A missing or stale index never blocks work. Do not reword this as "optional" or "the smallest source": code-kb's 2026-10 tests showed that Claude agents then skip it entirely. Skills reference code-kb by **capability** first, and then by the concrete code-kb tool name. Removed code-kb tool names must not appear in active files; `tests/workflow-tool-contracts.test.mjs` lists them and enforces this.
+Razorback names the evidence a step needs, not the tool that gathers it. The evidence rules apply to the lead and every native implementer, reviewer, and fix worker: read the code a change touches, find callers before changing a symbol, and prove API shapes from current source. The agent uses the search, file read, and code navigation tools its host provides. Do not name a code index product or its tool calls in a skill, a prompt, or a rule copy. `tests/workflow-tool-contracts.test.mjs` fails when an active file names the index tool that razorback used before 0.54.0.
 
-When modifying skills, name code-kb at exploration/investigation points where it helps, by capability:
+The rules have three sources: `skills/using-razorback/SKILL.md` (the lead), `skills/using-razorback/references/subagent-rules.md` (dispatched subagents), and `skills/using-razorback/references/instruction-tier.md` (instruction-tier hosts).
 
-| Capability | code-kb tool |
-|---|---|
-| Orient — a folder's files and their top-level symbols | `file_skeleton(file_path=<folder>)` |
-| List the symbols of a file you do not know, without bodies (`public_only` keeps the public surface) | `file_skeleton(file_path, public_only?)` |
-| Find a symbol by name, prefix, or `Owner.member`, by concept words (ranked matches follow when no name matches), or a route or config key (a query with `/`, `.`, `{`, or `:`); a query that names one short definition also shows its body | `lookup_symbol(query, path?, kind?)` |
-| Inspect a symbol — full implementation body | `get_symbol_body(symbol_name, file_path?)` |
-| Prepare to change a symbol — body, return type, callers, tests to run, sibling conventions, dependencies, types, and open ends in one answer | `get_symbol_context(symbol_name, file_path?)` |
-| Find references — the full list of callers (labeled proven, likely, unresolved, or excluded; writes first for a field or variable) or callees, when the callers in `get_symbol_context` are not enough | `find_references(symbol_name, direction="callers"|"callees")` |
-| Assess impact / blast radius — the full list of tests a change affects, or with no target the tests of the whole diff | `blast_radius(symbol?, file?, depth?)` |
-| Check an edit — callers and tests the diff did not reach, after you edit | `check_edit(base?)` |
+Restricted external CLI reviewers invoked by `pre-merge-review` run without MCP under an enforced read-only allowlist. The lead supplies a sanitized source-backed evidence bundle, the reviewer reports missing evidence, and the lead verifies every finding against current source.
 
-The order matches code-kb's routing block: `file_skeleton` to orient in a folder or a file you do not know, `get_symbol_context` for the symbol you will change, then read the file you will edit, since the editor needs it. `find_references` and `blast_radius` are drill-downs for the full list, not required steps after `get_symbol_context`. `check_edit` runs after every edit. `tests/code-kb-routing.test.mjs` fails when an active file puts `file_skeleton` ahead of every read or chains those drill-downs after `get_symbol_context`.
-
-Every code-kb call takes `project_root`: the absolute path of the project or git worktree you work in. Change it when you move to another worktree.
-
-Use your host's native editing tools to modify files.
-
-code-kb indexes symbols, signatures, docstrings, references, and structural facts across the workspace. It builds and refreshes its index automatically, with no config and no manual scan. `lookup_symbol` lists the routes and config keys that match a query with `/`, `.`, `{`, or `:`; the full set of structural facts (routes, queries, models, config keys) is CLI-only: `code-kb facts [category]`. CLI 1:1 commands: `code-kb skeleton`, `lookup` (name, prefix, or concept), `body`, `context`, `refs`, `blast-radius` (alias `impact`), and `check`. The CLI-only commands `outline`, `search`, `facts`, and `stats` (alias `telemetry`) have no MCP tool.
-
-The evidence rules apply to the lead and every native implementer, reviewer, and fix worker: read the code a change touches, find callers before changing a symbol, and prove API shapes from current source. Restricted external CLI reviewers invoked by `pre-merge-review` run without MCP under an enforced read-only allowlist. The lead supplies a sanitized source-backed evidence bundle, the reviewer reports missing evidence instead of claiming code-kb use, and the lead verifies every finding against current source.
-
-Use evidence-first language in lead-facing skills: "read the code a change touches before editing it" and name code-kb where it helps. In **subagent-facing prompt files** (implementer/fix/reviewer prompts), name the evidence expected inline — e.g. "a file read, or code-kb `get_symbol_context(symbol_name='<symbol>')`" — because dispatched subagents do not receive the using-razorback toolchain table.
+In **subagent-facing prompt files** (implementer/fix/reviewer prompts), state the evidence expected inline, for example "read the symbol and search for its callers". The `SubagentStart` hook supplies the evidence rules on Claude Code only.
 
 ## Naming Rules
 - All skill cross-references use `razorback:` prefix, never `superpowers:`
@@ -128,7 +109,7 @@ Use evidence-first language in lead-facing skills: "read the code a change touch
 - SessionStart hook announces "You have razorback."
 
 ## Dependencies
-- code-kb MCP is **optional** — a retrieval aid for unfamiliar modules, callers, and likely tests. Work completes with native search and file reads when it is missing or stale.
+- No required tools. Work completes with the search and file read tools every host provides.
 - Goldfish MCP server is **optional** — when available, it holds decision and handoff checkpoints, briefs, and recall. Checkpoints follow its selective policy: a consequential decision, a surprising failure, or unfinished work that needs a handoff. A warranted checkpoint is written before its commit and staged with it. Without Goldfish, the plan, the ledger, and git state carry recovery.
 
 ## Execution Model
@@ -174,7 +155,7 @@ The `.version-bump.json` config drives the script. `.memories/` and `docs/plans/
 - Outcome checks: root-cause investigation, test-first changes, review of completed changes, and truthful completion claims backed by fresh verification
 - Anti-rationalization tables in skills (their rows guard both directions: ceremony for clear work, and silent consequential choices)
 - Two-pass review of completed changes (spec compliance + code quality, done by the lead or current agent, not separate agents)
-- Evidence-first exploration: code-kb first for code structure, native search first for literal text
+- Evidence-first exploration: read the code a change touches, find callers before changing a symbol, prove API shapes from current source
 - Safeguards: explicit file ownership for parallel edits, source-control hygiene, secret scanning, and approval before push, publish, or release
 - Single-repo marketplace layout (Claude Code reads `.claude-plugin/marketplace.json` from this repo; Codex reads `.agents/plugins/marketplace.json`)
 - Autonomous-by-default execution (blocker-gated, not task-gated) with optional pre-merge external review

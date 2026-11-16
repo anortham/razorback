@@ -28,7 +28,7 @@ Wrote code before the test? Delete it. Not as "reference", not "adapted" while w
 
 ## Red-Green-Refactor
 
-**Understand before testing.** Inspect the function, its callers, and nearby tests with native search and file reads, or code-kb when useful (`get_symbol_context`, which carries the callers and tests to run; `file_skeleton` on a file you do not know). Skip only if you just wrote the code.
+**Understand before testing.** Inspect the function, its callers, and nearby tests with native search and file reads. Skip only if you just wrote the code.
 
 ### RED — one minimal failing test
 
@@ -117,11 +117,11 @@ Can't check all boxes? You skipped TDD. Start over.
 
 | Problem | Solution |
 |---------|----------|
-| Don't know how to test | Inspect nearby tests using native tools or code-kb. Write the wished-for API, then the assertion first. In an approved autonomous run, pick the smallest plan-consistent test shape, log it, and stop only for blocker-taxonomy ambiguity. |
+| Don't know how to test | Inspect nearby tests. Write the wished-for API, then the assertion first. In an approved autonomous run, pick the smallest plan-consistent test shape, log it, and stop only for blocker-taxonomy ambiguity. |
 | Test too complicated | Design too complicated. Simplify interface. |
 | Must mock everything | Code too coupled. Use dependency injection. |
 | Test setup huge | Extract helpers. Still complex? Simplify design. |
-| Don't know existing patterns | Read nearby tests, or use code-kb `file_skeleton` for their organization |
+| Don't know existing patterns | Read nearby tests and follow their organization |
 
 **Bug found?** Root-cause it with razorback:systematic-debugging, then write the failing reproduction test and follow the cycle when automation can cover the behavior. If no suitable automated test surface exists, use the no-test-surface exception and record its required evidence.
 

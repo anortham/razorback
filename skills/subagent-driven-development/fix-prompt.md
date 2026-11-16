@@ -31,11 +31,8 @@ SendMessage (to: "<implementer-agent-id-or-name>"):
 
     ## Re-Orientation (REQUIRED before editing)
 
-    Re-read the code you change, even on a resume: code-kb
-    `get_symbol_context(symbol_name, file_path?)`, which carries the body, callers, and tests to
-    run, and a read of the file you edit, since the editor needs it. Find the callers if they
-    could observe the change (those callers, `find_references(symbol_name, direction="callers")`
-    for the full list, or a search). Do not infer or invent
+    Re-read the code you change, even on a resume. Search for the callers if they
+    could observe the change. Do not infer or invent
     API shapes — confirm symbol names, function signatures, config shapes, route names, CLI flags,
     or public contracts from current source, or say what evidence is missing.
 
